@@ -1,0 +1,40 @@
+{
+  "request": {
+    "action": "generate",
+    "attempt": 1,
+    "packet": {
+      "task_id": "gpt-claude-skynet-clamp-20261015T153114Z",
+      "category": "isolated_repair",
+      "objective": "Repair clamp(value, lower, upper).",
+      "constraints": "Inputs are Python integers. If lower > upper, raise ValueError. Otherwise return lower when value < lower, upper when value > upper, and value otherwise. Return an int; equal bounds are valid. No imports or side effects.",
+      "source": "def clamp(value, lower, upper):\n    return min(lower, max(value, upper))\n",
+      "context": "Synthetic standalone Python function. All code and requirements are supplied. Builtins min, max and ValueError are available. No repository dependencies.",
+      "diagnostic": "clamp(5, 0, 10) currently returns 0 instead of 5; reversed bounds fail to raise ValueError.",
+      "versions": {
+        "Python": "3.13"
+      },
+      "references": [],
+      "output_form": "plain_code",
+      "context_id": "clamp-synthetic-v1",
+      "approval": {
+        "classification": "synthetic",
+        "approval_ref": "Human explicitly requested a full GPT to real Claude to Skynet test in a disposable folder, routing logs, diff review and independent testing; no v1. Synthetic source and local audit authorized.",
+        "audit_content_approved": true
+      },
+      "checks": [
+        {
+          "check_id": "compile",
+          "kind": "compile",
+          "contract": "py_compile succeeds for the exact returned function.",
+          "method": "Supervisor-owned Python py_compile."
+        },
+        {
+          "check_id": "behaviour",
+          "kind": "behaviour",
+          "contract": "Correct clamping and ValueError for reversed bounds across 2547 cases, including equal bounds and arbitrary-size integers.",
+          "method": "Prewritten independent comparison-based oracle over integer ranges and 100-digit boundaries."
+        }
+      ]
+    }
+  }
+}
