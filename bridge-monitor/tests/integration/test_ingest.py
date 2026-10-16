@@ -35,6 +35,38 @@ def test_duplicate_delivery_is_one_observation(test_dsn):
         assert conn.execute("SELECT count(*) FROM publication_stream").fetchone()[0] == 1
 
 
+def test_simultaneous_duplicate_delivery_returns_one_committed_and_one_duplicate(test_dsn):
+    from concurrent.futures import ThreadPoolExecutor
+    from time import monotonic, sleep
+
+    item = observed("simultaneous", 1)
+    race_dsn = test_dsn + " application_name=bridge_monitor_duplicate_race"
+    with psycopg.connect(test_dsn) as gate:
+        gate.execute("LOCK TABLE events IN SHARE MODE")
+        with psycopg.connect(test_dsn, autocommit=True) as monitor, ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(ingest_batch, race_dsn, "worker-a", [item], [])
+                       for _ in range(2)]
+            try:
+                deadline = monotonic() + 10
+                while monotonic() < deadline:
+                    waiting = monitor.execute("""SELECT count(*) FROM pg_stat_activity
+                        WHERE application_name='bridge_monitor_duplicate_race'
+                        AND wait_event_type='Lock'""").fetchone()[0]
+                    if waiting == 2:
+                        break
+                    sleep(0.05)
+                diagnostics = monitor.execute("""SELECT application_name,state,wait_event_type,wait_event,
+                    left(query,80) FROM pg_stat_activity WHERE application_name='bridge_monitor_duplicate_race'""").fetchall()
+                assert waiting == 2, (diagnostics, [(f.done(), repr(f.exception()) if f.done() else None)
+                                                   for f in futures])
+            finally:
+                gate.commit()
+            receipts = [future.result(timeout=10)[0] for future in futures]
+    assert sorted(receipts) == ["committed", "duplicate"]
+    with psycopg.connect(test_dsn) as conn:
+        assert conn.execute("SELECT count(*) FROM events WHERE event_id='simultaneous'").fetchone()[0] == 1
+
+
 def test_conflicting_sequence_rejected_but_late_reference_retained(test_dsn):
     later = observed("event-later", 2, EventType.CALL_COMPLETED,
                      {"call_id": "call-unknown"})

@@ -9,6 +9,14 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
                payload_limit_bytes: int) -> FastAPI:
     if payload_limit_bytes <= 0:
         raise ValueError("a positive configured payload limit is required")
+    if (not isinstance(operator_token, str) or not operator_token.strip()
+            or not producer_tokens or any(not isinstance(producer, str) or not producer.strip()
+                                          or not isinstance(token, str) or not token.strip()
+                                          for producer, token in producer_tokens.items())):
+        raise ValueError("nonempty producer and operator credentials are required")
+    tokens = [operator_token, *producer_tokens.values()]
+    if len(tokens) != len(set(tokens)):
+        raise ValueError("producer and operator credentials must be distinct")
     app = FastAPI(title="Bridge Monitor Capture", version="0.1.0")
 
     @app.post("/api/v1/events/batch")

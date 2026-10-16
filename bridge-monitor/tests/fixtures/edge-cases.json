@@ -1,5 +1,10 @@
 {
   "schema_version": 1,
+  "root_task_id": "edge-task",
+  "producer_id": "seed-edge-cases",
+  "producer_incarnation": "fixture-v1",
+  "created_at": "2026-10-16T11:00:00Z",
+  "capture_completeness": "unknown",
   "cases": [
     "retry_same_work_item",
     "decomposition_parent_excluded",
@@ -9,5 +14,412 @@
     "unknown_final_lineage",
     "pending_route"
   ],
-  "status_events": ["capacity.reserved", "admission.blocked", "capture.spool_pressure", "capture.gap", "capture.recovered"]
+  "events": [
+    {
+      "event_id": "task",
+      "event_type": "task.created",
+      "task_id": "edge-task",
+      "payload": {
+        "scope": {
+          "kind": "edge-cases"
+        }
+      }
+    },
+    {
+      "event_id": "work-retry",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "payload": {}
+    },
+    {
+      "event_id": "call-retry-1",
+      "event_type": "call.received",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-1"
+    },
+    {
+      "event_id": "decision-retry",
+      "event_type": "delegation.decided",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-1",
+      "payload": {
+        "decision_id": "edge-decision-retry",
+        "route": "local",
+        "eligibility": "eligible"
+      }
+    },
+    {
+      "event_id": "dispatch-retry-1",
+      "event_type": "call.dispatched",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-1",
+      "payload": {
+        "destination": "skynet"
+      }
+    },
+    {
+      "event_id": "call-failed-retry-1",
+      "event_type": "call.failed",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-1"
+    },
+    {
+      "event_id": "call-retry-2",
+      "event_type": "call.received",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-2"
+    },
+    {
+      "event_id": "dispatch-retry-2",
+      "event_type": "call.dispatched",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-2",
+      "payload": {
+        "destination": "skynet"
+      }
+    },
+    {
+      "event_id": "result-retry",
+      "event_type": "result.delivered",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-2",
+      "payload": {
+        "result_id": "edge-result-retry"
+      }
+    },
+    {
+      "event_id": "disposition-retry",
+      "event_type": "disposition.recorded",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "call_id": "edge-call-retry-2",
+      "payload": {
+        "disposition_id": "edge-disposition-retry",
+        "result_id": "edge-result-retry",
+        "actor_id": "claude-edge",
+        "stage": "claude",
+        "judgment": "accepted"
+      }
+    },
+    {
+      "event_id": "resolution-retry",
+      "event_type": "work.resolved",
+      "task_id": "edge-task",
+      "work_item_id": "edge-retry",
+      "payload": {
+        "resolution_id": "edge-resolution-retry",
+        "outcome": "local_retained",
+        "final_result_id": "edge-result-retry"
+      }
+    },
+    {
+      "event_id": "work-parent",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-parent",
+      "payload": {}
+    },
+    {
+      "event_id": "work-child",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-child",
+      "payload": {
+        "parent_work_item_id": "edge-parent"
+      }
+    },
+    {
+      "event_id": "decision-child",
+      "event_type": "delegation.decided",
+      "task_id": "edge-task",
+      "work_item_id": "edge-child",
+      "payload": {
+        "decision_id": "edge-decision-child",
+        "route": "paid",
+        "eligibility": "eligible"
+      }
+    },
+    {
+      "event_id": "resolution-child",
+      "event_type": "work.resolved",
+      "task_id": "edge-task",
+      "work_item_id": "edge-child",
+      "payload": {
+        "resolution_id": "edge-resolution-child",
+        "outcome": "paid_direct"
+      }
+    },
+    {
+      "event_id": "work-sup",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "payload": {}
+    },
+    {
+      "event_id": "call-sup",
+      "event_type": "call.received",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "call_id": "edge-call-sup"
+    },
+    {
+      "event_id": "decision-sup",
+      "event_type": "delegation.decided",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "call_id": "edge-call-sup",
+      "payload": {
+        "decision_id": "edge-decision-sup",
+        "route": "local",
+        "eligibility": "eligible"
+      }
+    },
+    {
+      "event_id": "dispatch-sup",
+      "event_type": "call.dispatched",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "call_id": "edge-call-sup",
+      "payload": {
+        "destination": "skynet"
+      }
+    },
+    {
+      "event_id": "result-sup",
+      "event_type": "result.delivered",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "call_id": "edge-call-sup",
+      "payload": {
+        "result_id": "edge-result-sup"
+      }
+    },
+    {
+      "event_id": "disposition-sup-first",
+      "event_type": "disposition.recorded",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "call_id": "edge-call-sup",
+      "payload": {
+        "disposition_id": "edge-disposition-sup-first",
+        "result_id": "edge-result-sup",
+        "actor_id": "claude-edge",
+        "stage": "claude",
+        "judgment": "accepted"
+      }
+    },
+    {
+      "event_id": "disposition-sup-corrected",
+      "event_type": "disposition.recorded",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "call_id": "edge-call-sup",
+      "payload": {
+        "disposition_id": "edge-disposition-sup-corrected",
+        "result_id": "edge-result-sup",
+        "actor_id": "claude-edge",
+        "stage": "claude",
+        "judgment": "revised",
+        "supersedes_id": "edge-disposition-sup-first"
+      }
+    },
+    {
+      "event_id": "resolution-sup",
+      "event_type": "work.resolved",
+      "task_id": "edge-task",
+      "work_item_id": "edge-sup",
+      "payload": {
+        "resolution_id": "edge-resolution-sup",
+        "outcome": "paid_revision_with_contribution"
+      }
+    },
+    {
+      "event_id": "work-late",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-late",
+      "payload": {}
+    },
+    {
+      "event_id": "call-late",
+      "event_type": "call.received",
+      "task_id": "edge-task",
+      "work_item_id": "edge-late",
+      "call_id": "edge-call-late"
+    },
+    {
+      "event_id": "decision-late",
+      "event_type": "delegation.decided",
+      "task_id": "edge-task",
+      "work_item_id": "edge-late",
+      "call_id": "edge-call-late",
+      "payload": {
+        "decision_id": "edge-decision-late",
+        "route": "local",
+        "eligibility": "eligible"
+      }
+    },
+    {
+      "event_id": "dispatch-late",
+      "event_type": "call.dispatched",
+      "task_id": "edge-task",
+      "work_item_id": "edge-late",
+      "call_id": "edge-call-late",
+      "payload": {
+        "destination": "skynet"
+      }
+    },
+    {
+      "event_id": "response-late",
+      "event_type": "response.completed",
+      "work_item_id": "edge-late",
+      "call_id": "edge-call-late",
+      "payload": {
+        "result_id": "edge-late-result"
+      }
+    },
+    {
+      "event_id": "work-mixed",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-mixed",
+      "payload": {}
+    },
+    {
+      "event_id": "call-mixed",
+      "event_type": "call.received",
+      "task_id": "edge-task",
+      "work_item_id": "edge-mixed",
+      "call_id": "edge-call-mixed"
+    },
+    {
+      "event_id": "decision-mixed-a",
+      "event_type": "delegation.decided",
+      "task_id": "edge-task",
+      "work_item_id": "edge-mixed",
+      "call_id": "edge-call-mixed",
+      "payload": {
+        "decision_id": "edge-decision-mixed-a",
+        "route": "local",
+        "eligibility": "eligible",
+        "guidance_manifest": {
+          "state": "no_guidance"
+        }
+      }
+    },
+    {
+      "event_id": "decision-mixed-b",
+      "event_type": "delegation.decided",
+      "task_id": "edge-task",
+      "work_item_id": "edge-mixed",
+      "call_id": "edge-call-mixed",
+      "payload": {
+        "decision_id": "edge-decision-mixed-b",
+        "route": "local",
+        "eligibility": "eligible",
+        "guidance_manifest": {
+          "state": "selected",
+          "version": 1,
+          "ids": [
+            "rule-1"
+          ]
+        }
+      }
+    },
+    {
+      "event_id": "dispatch-mixed",
+      "event_type": "call.dispatched",
+      "task_id": "edge-task",
+      "work_item_id": "edge-mixed",
+      "call_id": "edge-call-mixed",
+      "payload": {
+        "destination": "skynet"
+      }
+    },
+    {
+      "event_id": "work-unknown",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-unknown",
+      "payload": {}
+    },
+    {
+      "event_id": "call-unknown",
+      "event_type": "call.received",
+      "task_id": "edge-task",
+      "work_item_id": "edge-unknown",
+      "call_id": "edge-call-unknown"
+    },
+    {
+      "event_id": "decision-unknown",
+      "event_type": "delegation.decided",
+      "task_id": "edge-task",
+      "work_item_id": "edge-unknown",
+      "call_id": "edge-call-unknown",
+      "payload": {
+        "decision_id": "edge-decision-unknown",
+        "route": "local",
+        "eligibility": "eligible"
+      }
+    },
+    {
+      "event_id": "dispatch-unknown",
+      "event_type": "call.dispatched",
+      "task_id": "edge-task",
+      "work_item_id": "edge-unknown",
+      "call_id": "edge-call-unknown",
+      "payload": {
+        "destination": "skynet"
+      }
+    },
+    {
+      "event_id": "result-unknown",
+      "event_type": "result.delivered",
+      "task_id": "edge-task",
+      "work_item_id": "edge-unknown",
+      "call_id": "edge-call-unknown",
+      "payload": {
+        "result_id": "edge-result-unknown"
+      }
+    },
+    {
+      "event_id": "disposition-unknown",
+      "event_type": "disposition.recorded",
+      "task_id": "edge-task",
+      "work_item_id": "edge-unknown",
+      "call_id": "edge-call-unknown",
+      "payload": {
+        "disposition_id": "edge-disposition-unknown",
+        "result_id": "edge-result-unknown",
+        "actor_id": "claude-edge",
+        "stage": "claude",
+        "judgment": "accepted"
+      }
+    },
+    {
+      "event_id": "resolution-unknown",
+      "event_type": "work.resolved",
+      "task_id": "edge-task",
+      "work_item_id": "edge-unknown",
+      "payload": {
+        "resolution_id": "edge-resolution-unknown",
+        "outcome": "unknown"
+      }
+    },
+    {
+      "event_id": "work-pending",
+      "event_type": "work_item.created",
+      "task_id": "edge-task",
+      "work_item_id": "edge-pending",
+      "payload": {}
+    }
+  ]
 }

@@ -32,11 +32,18 @@ def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:
         prompt = conn.execute("""SELECT m.original_content_id FROM messages m
             JOIN calls c ON c.call_id=m.call_id
             WHERE c.work_item_id=%s AND m.original_content_id IS NOT NULL
-            ORDER BY c.created_at LIMIT 1""", (work_item_id,)).fetchone()
+            AND m.role='user' AND m.direction='out'
+            AND EXISTS (SELECT 1 FROM events dispatch WHERE dispatch.call_id=c.call_id
+                AND dispatch.event_type='call.dispatched'
+                AND dispatch.payload->>'destination'='skynet')
+            ORDER BY c.created_at,m.message_id LIMIT 1""", (work_item_id,)).fetchone()
         local = conn.execute("""SELECT r.delivered_content_id FROM results r
             JOIN calls c ON c.call_id=r.call_id
             WHERE c.work_item_id=%s AND r.delivered_at IS NOT NULL
-            ORDER BY r.delivered_at LIMIT 1""", (work_item_id,)).fetchone()
+            AND EXISTS (SELECT 1 FROM events dispatch WHERE dispatch.call_id=c.call_id
+                AND dispatch.event_type='call.dispatched'
+                AND dispatch.payload->>'destination'='skynet')
+            ORDER BY r.delivered_at,r.result_id LIMIT 1""", (work_item_id,)).fetchone()
         event_rows = conn.execute("""SELECT event_id,event_type,occurred_at,payload
             FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 200""",
             (work_item_id,)).fetchall()

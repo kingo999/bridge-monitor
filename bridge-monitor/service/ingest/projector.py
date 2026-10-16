@@ -1,4 +1,7 @@
+import math
+
 from contracts.events import EventEnvelope, EventType
+from contracts.outcomes import DispositionRecord
 from psycopg.types.json import Jsonb
 
 
@@ -6,6 +9,70 @@ CAPACITY_TYPES = {EventType.CAPACITY_RESERVED, EventType.CAPACITY_RELEASED,
                   EventType.CALL_QUEUED, EventType.CALL_DISPATCHED, EventType.ADMISSION_BLOCKED}
 CAPTURE_TYPES = {EventType.CAPTURE_GAP, EventType.CAPTURE_DEGRADED,
                  EventType.CAPTURE_RECOVERED, EventType.SPOOL_PRESSURE}
+
+
+def validate_projectable_event(event: EventEnvelope) -> None:
+    """Reject malformed facts before they can be stored with deferred references."""
+    p = event.payload
+
+    def required(name: str, value: object) -> None:
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{event.event_type.value} requires {name}")
+
+    kind = event.event_type
+    if kind == EventType.TASK_CREATED:
+        required("task_id", event.task_id or p.get("task_id"))
+    elif kind == EventType.WORK_ITEM_CREATED:
+        required("work_item_id", event.work_item_id or p.get("work_item_id"))
+        required("task_id", event.task_id or p.get("task_id"))
+    elif kind == EventType.CALL_RECEIVED:
+        required("call_id", event.call_id or p.get("call_id"))
+        required("work_item_id", event.work_item_id)
+    elif kind == EventType.CALL_DISPATCHED:
+        required("call_id", event.call_id or p.get("call_id"))
+        required("work_item_id", event.work_item_id)
+        required("destination", p.get("destination"))
+    elif kind == EventType.DELEGATION_DECIDED:
+        required("decision_id", p.get("decision_id"))
+        required("route", p.get("route"))
+        required("work_item_id", event.work_item_id)
+    elif kind == EventType.ATTEMPT_STARTED:
+        required("attempt_id", event.attempt_id or p.get("attempt_id"))
+        required("call_id", event.call_id or p.get("call_id"))
+        number = p.get("attempt_number")
+        if type(number) is not int or number < 1:
+            raise ValueError("attempt.started requires positive attempt_number")
+    elif kind == EventType.MODEL_SELECTED:
+        required("model_execution_id", event.model_execution_id)
+        required("attempt_id", event.attempt_id)
+        required("requested_model", event.requested_model)
+    elif kind == EventType.MODEL_REPORTED:
+        required("model_execution_id", event.model_execution_id)
+        required("reported_model", event.reported_model)
+    elif kind == EventType.RESPONSE_DELTA:
+        required("message_id", p.get("message_id"))
+        number = p.get("chunk_sequence")
+        if type(number) is not int or number < 1:
+            raise ValueError("response.delta requires positive chunk_sequence")
+    elif kind == EventType.RESULT_DELIVERED:
+        required("result_id", p.get("result_id"))
+        required("call_id", event.call_id)
+    elif kind == EventType.DISPOSITION_RECORDED:
+        DispositionRecord.model_validate(p)
+    elif kind == EventType.WORK_RESOLVED:
+        required("resolution_id", p.get("resolution_id"))
+        required("outcome", p.get("outcome"))
+        required("work_item_id", event.work_item_id)
+    if kind in CAPACITY_TYPES | CAPTURE_TYPES:
+        for name in ("active", "queued", "held_uncertain", "blocked", "known_gaps"):
+            if name in p and (type(p[name]) is not int or p[name] < 0):
+                raise ValueError(f"{name} must be a nonnegative integer")
+        if "capture_state" in p and p["capture_state"] not in ("healthy", "degraded", "unknown"):
+            raise ValueError("invalid capture_state")
+        pressure = p.get("spool_pressure")
+        if pressure is not None and (type(pressure) not in (int, float)
+                                     or not math.isfinite(pressure) or not 0 <= pressure <= 1):
+            raise ValueError("spool_pressure must be between zero and one")
 
 
 def missing_references(conn, event: EventEnvelope) -> list[str]:
@@ -28,6 +95,10 @@ def missing_references(conn, event: EventEnvelope) -> list[str]:
         require("attempts", "attempt_id", event.attempt_id, "attempt")
         for name in ("raw_content_id", "delivered_content_id"):
             require("content_objects", "content_id", p.get(name), "content")
+    elif event.event_type == EventType.MODEL_SELECTED:
+        require("attempts", "attempt_id", event.attempt_id, "attempt")
+    elif event.event_type == EventType.MODEL_REPORTED:
+        require("model_executions", "model_execution_id", event.model_execution_id, "model_execution")
     elif event.event_type == EventType.DISPOSITION_RECORDED:
         require("results", "result_id", p.get("result_id"), "result")
         require("dispositions", "disposition_id", p.get("supersedes_id"), "disposition")
@@ -78,6 +149,22 @@ def project_domain(conn, event: EventEnvelope) -> None:
                      VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(call_id) DO NOTHING""",
                      (event.call_id or p["call_id"], event.work_item_id, p.get("parent_call_id"),
                       p.get("parent_attempt_id"), event.requested_model, event.occurred_at))
+    elif kind == EventType.ATTEMPT_STARTED:
+        conn.execute("""INSERT INTO attempts(attempt_id,call_id,attempt_number,status)
+                     VALUES (%s,%s,%s,'started') ON CONFLICT(attempt_id) DO NOTHING""",
+                     (event.attempt_id or p["attempt_id"], event.call_id or p["call_id"],
+                      p["attempt_number"]))
+    elif kind == EventType.MODEL_SELECTED:
+        conn.execute("""INSERT INTO model_executions
+                     (model_execution_id,attempt_id,requested_model,model_evidence)
+                     VALUES (%s,%s,%s,%s) ON CONFLICT(model_execution_id) DO NOTHING""",
+                     (event.model_execution_id, event.attempt_id, event.requested_model,
+                      Jsonb(p.get("evidence", {}))))
+    elif kind == EventType.MODEL_REPORTED:
+        conn.execute("""UPDATE model_executions SET reported_model=%s,
+                     model_evidence=model_evidence || %s WHERE model_execution_id=%s""",
+                     (event.reported_model, Jsonb(p.get("evidence", {})),
+                      event.model_execution_id))
     elif kind == EventType.DELEGATION_DECIDED:
         conn.execute("""INSERT INTO delegation_decisions
                      (decision_id,work_item_id,child_call_id,route,eligibility,reason,policy_version,

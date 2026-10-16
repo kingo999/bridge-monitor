@@ -45,3 +45,13 @@ def test_oversized_content_is_rejected_without_silent_truncation(client):
     response = client.post("/api/v1/events/batch", headers={"Authorization": "Bearer producer-secret"},
                            json=body)
     assert response.status_code == 413
+
+
+def test_empty_or_shared_credentials_are_rejected_at_startup(test_dsn):
+    for producers, operator in [({"worker-a": ""}, "operator-secret"),
+                                ({"worker-a": "producer-secret"}, ""),
+                                ({"worker-a": "same"}, "same"),
+                                ({"worker-a": "same", "worker-b": "same"}, "operator-secret")]:
+        with pytest.raises(ValueError):
+            create_app(test_dsn, producer_tokens=producers, operator_token=operator,
+                       payload_limit_bytes=8)

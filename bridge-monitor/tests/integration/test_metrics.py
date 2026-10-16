@@ -51,8 +51,12 @@ def test_replay_is_idempotent_and_synthetic_excluded_by_default(seeded):
 def test_as_of_cutoff_does_not_gain_later_dispositions(seeded):
     from datetime import datetime, timezone
     report = query_metrics(seeded, CohortQuery(origin="synthetic",
-                            as_of=datetime(2026, 10, 16, 10, 0, tzinfo=timezone.utc)))
-    assert report.metrics["routed"].denominator == 0
+                            as_of=datetime(2026, 10, 16, 10, 1, 1, 650000,
+                                           tzinfo=timezone.utc)))
+    assert report.metrics["routed"].denominator == 61
+    assert report.metrics["routed"].numerator == 1
+    assert report.coverage["disposition"].denominator == 1
+    assert report.coverage["disposition"].numerator == 0
 
 
 def test_paid_result_after_local_dispatch_is_not_a_local_response(seeded):

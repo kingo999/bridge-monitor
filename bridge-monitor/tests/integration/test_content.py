@@ -68,3 +68,43 @@ def test_out_of_order_chunks_keep_order_and_reject_conflicting_sequence(test_dsn
             ("chunk-a",), ("chunk-b",)]
     with pytest.raises(ValueError, match="chunk sequence conflict"):
         ingest_batch(test_dsn, "worker-a", [delta("evt-conflict", 3, 1, "chunk-b")], [])
+
+
+def test_content_identity_cannot_be_reused_with_different_metadata(test_dsn):
+    original = ContentObject.from_bytes("body-a", b"same", role="user", direction="out",
+                                        content_type="text/plain", origin="synthetic",
+                                        capture_layer="runtime")
+    altered = original.model_copy(update={"role": "assistant"})
+    assert ingest_batch(test_dsn, "worker-a", [], [original]) == []
+    with pytest.raises(ValueError, match="content ID conflict"):
+        ingest_batch(test_dsn, "worker-a", [], [altered])
+
+
+def test_simultaneous_identical_content_uploads_are_idempotent(test_dsn):
+    from concurrent.futures import ThreadPoolExecutor
+    from time import monotonic, sleep
+
+    body = ContentObject.from_bytes("simultaneous-content", b"same", role="user",
+                                    direction="out", content_type="text/plain",
+                                    origin="synthetic", capture_layer="test")
+    race_dsn = test_dsn + " application_name=bridge_monitor_content_race"
+    with psycopg.connect(test_dsn) as gate:
+        gate.execute("LOCK TABLE content_objects IN SHARE MODE")
+        with psycopg.connect(test_dsn, autocommit=True) as monitor, ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(ingest_batch, race_dsn, "worker-a", [], [body])
+                       for _ in range(2)]
+            try:
+                deadline = monotonic() + 10
+                while monotonic() < deadline:
+                    waiting = monitor.execute("""SELECT count(*) FROM pg_stat_activity
+                        WHERE application_name='bridge_monitor_content_race'
+                        AND wait_event_type='Lock'""").fetchone()[0]
+                    if waiting == 2:
+                        break
+                    sleep(0.05)
+                assert waiting == 2
+            finally:
+                gate.commit()
+            assert [future.result(timeout=10) for future in futures] == [[], []]
+    with psycopg.connect(test_dsn) as conn:
+        assert conn.execute("SELECT count(*) FROM content_objects WHERE content_id='simultaneous-content'").fetchone()[0] == 1

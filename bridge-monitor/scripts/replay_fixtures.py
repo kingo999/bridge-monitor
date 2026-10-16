@@ -12,12 +12,29 @@ def replay_fixture(dsn: str, source: Path) -> list[str]:
     start = datetime.fromisoformat(fixture["created_at"].replace("Z", "+00:00"))
     producer = fixture["producer_id"]
     incarnation = fixture["producer_incarnation"]
+    if "events" in fixture:
+        records = []
+        for sequence, source_event in enumerate(fixture["events"], start=1):
+            details = dict(source_event)
+            records.append(EventEnvelope(
+                event_id=details.pop("event_id"),
+                event_type=details.pop("event_type"),
+                schema_version=fixture["schema_version"],
+                producer_id=producer, producer_incarnation=incarnation,
+                producer_sequence=sequence,
+                occurred_at=start + timedelta(milliseconds=sequence),
+                origin="synthetic", observation_layer="fixture",
+                capture_completeness=fixture.get("capture_completeness", "unknown"),
+                **details,
+            ))
+        return ingest_batch(dsn, producer, records, [])
     seq = 0
     events = []
     content = []
 
     def add(kind: EventType, when: datetime, *, task_id=None, work_item_id=None,
-            call_id=None, payload=None, requested_model=None):
+            call_id=None, attempt_id=None, model_execution_id=None,
+            payload=None, requested_model=None, reported_model=None):
         nonlocal seq
         seq += 1
         events.append(EventEnvelope(
@@ -26,7 +43,9 @@ def replay_fixture(dsn: str, source: Path) -> list[str]:
             producer_sequence=seq, occurred_at=when, origin="synthetic",
             observation_layer="fixture", capture_completeness="complete",
             task_id=task_id, work_item_id=work_item_id, call_id=call_id,
-            requested_model=requested_model, payload=payload or {}))
+            attempt_id=attempt_id, model_execution_id=model_execution_id,
+            requested_model=requested_model, reported_model=reported_model,
+            payload=payload or {}))
 
     root = fixture["root_task_id"]
     add(EventType.TASK_CREATED, start, task_id=root, payload={"scope": {"kind": "demonstration"}})
@@ -49,6 +68,8 @@ def replay_fixture(dsn: str, source: Path) -> list[str]:
                     payload={"resolution_id": f"resolution-{item}", "outcome": "paid_direct"})
                 continue
             call = f"demo-call-{item_no:03d}"
+            attempt = f"demo-attempt-{item_no:03d}"
+            model_execution = f"demo-model-{item_no:03d}"
             result = f"demo-result-{item_no:03d}"
             prompt_content = f"demo-prompt-{item_no:03d}"
             response_content = f"demo-response-{item_no:03d}"
@@ -62,6 +83,15 @@ def replay_fixture(dsn: str, source: Path) -> list[str]:
             ])
             add(EventType.CALL_RECEIVED, when + timedelta(milliseconds=100),
                 task_id=root, work_item_id=item, call_id=call, requested_model="qwen-seed")
+            add(EventType.ATTEMPT_STARTED, when + timedelta(milliseconds=110),
+                task_id=root, work_item_id=item, call_id=call, attempt_id=attempt,
+                payload={"attempt_number": 1})
+            add(EventType.MODEL_SELECTED, when + timedelta(milliseconds=120),
+                task_id=root, work_item_id=item, call_id=call, attempt_id=attempt,
+                model_execution_id=model_execution, requested_model="qwen-seed")
+            add(EventType.MODEL_REPORTED, when + timedelta(milliseconds=130),
+                task_id=root, work_item_id=item, call_id=call, attempt_id=attempt,
+                model_execution_id=model_execution, reported_model="qwen-seed")
             add(EventType.DELEGATION_DECIDED, when + timedelta(milliseconds=200),
                 task_id=root, work_item_id=item, call_id=call,
                 payload={"decision_id": f"decision-{item}", "route": "local",
@@ -75,7 +105,7 @@ def replay_fixture(dsn: str, source: Path) -> list[str]:
                 task_id=root, work_item_id=item, call_id=call,
                 payload={"destination": "skynet"})
             add(EventType.RESULT_DELIVERED, when + timedelta(milliseconds=600),
-                task_id=root, work_item_id=item, call_id=call,
+                task_id=root, work_item_id=item, call_id=call, attempt_id=attempt,
                 payload={"result_id": result,
                          "raw_content_id": response_content,
                          "delivered_content_id": response_content})

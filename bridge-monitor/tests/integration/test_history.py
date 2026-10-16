@@ -51,3 +51,43 @@ def test_each_delegated_demonstration_item_has_visible_prompt_and_response(seede
     selected = inspect_exchange(seeded, "demo-work-100", role="operator")
     assert selected["original_prompt"] == "What is 2 + 2?\n"
     assert selected["local_response"] == "4\n"
+
+
+def test_synthetic_delegations_retain_requested_and_reported_models(seeded):
+    with psycopg.connect(seeded) as conn:
+        assert conn.execute("""SELECT count(*) FROM model_executions
+            WHERE requested_model='qwen-seed' AND reported_model='qwen-seed'""").fetchone()[0] == 40
+        assert conn.execute("SELECT count(*) FROM attempts").fetchone()[0] == 40
+
+
+def test_inspector_keeps_paid_exchange_out_of_local_prompt_and_response(seeded):
+    from datetime import datetime, timezone
+    from contracts.content import ContentObject
+    from contracts.events import EventEnvelope, EventType
+    from service.ingest.store import ingest_batch
+
+    early = datetime(2026, 10, 16, 10, 1, tzinfo=timezone.utc)
+    def paid_event(identifier, sequence, kind, payload):
+        return EventEnvelope(event_id=identifier, event_type=kind, schema_version=1,
+            producer_id="paid-inspection", producer_incarnation="first",
+            producer_sequence=sequence, occurred_at=early, origin="synthetic",
+            observation_layer="test", capture_completeness="complete",
+            task_id="demo-task-001", work_item_id="demo-work-061",
+            call_id="paid-call-061", payload=payload)
+
+    paid_content = [
+        ContentObject.from_bytes("paid-prompt-061", b"Paid prompt\n", role="user",
+            direction="out", content_type="text/plain", origin="synthetic", capture_layer="test"),
+        ContentObject.from_bytes("paid-response-061", b"Paid answer\n", role="assistant",
+            direction="in", content_type="text/plain", origin="synthetic", capture_layer="test"),
+    ]
+    ingest_batch(seeded, "paid-inspection", [
+        paid_event("paid-call-061", 1, EventType.CALL_RECEIVED, {}),
+        paid_event("paid-message-061", 2, EventType.MESSAGE_SENT,
+                   {"message_id": "paid-message-061", "original_content_id": "paid-prompt-061"}),
+        paid_event("paid-result-061", 3, EventType.RESULT_DELIVERED,
+                   {"result_id": "paid-result-061", "delivered_content_id": "paid-response-061"}),
+    ], paid_content)
+    selected = inspect_exchange(seeded, "demo-work-061", role="operator")
+    assert selected["original_prompt_content_id"] == "demo-prompt-061"
+    assert selected["local_response_content_id"] == "demo-response-061"

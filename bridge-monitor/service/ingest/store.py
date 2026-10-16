@@ -7,8 +7,8 @@ from psycopg.types.json import Jsonb
 
 from contracts.content import ContentObject
 from contracts.events import EventEnvelope, EventType
-from contracts.outcomes import DispositionRecord
-from service.ingest.projector import missing_references, project_domain, project_status
+from service.ingest.projector import (missing_references, project_domain, project_status,
+                                     validate_projectable_event)
 from service.ingest.publication import publish
 
 
@@ -27,26 +27,43 @@ EVENT_COLUMNS = ("event_id,event_type,schema_version,producer_id,producer_incarn
 
 
 def _reconcile_unresolved(conn) -> None:
-    # A bounded fixed point: each pass must resolve at least one stored reference.
+    # Scan every pending page before deciding that the fixed point has stalled.
     while True:
-        with conn.cursor(row_factory=dict_row) as cursor:
-            pending = cursor.execute(
-                f"SELECT {EVENT_COLUMNS} FROM events WHERE cardinality(unresolved_references)>0 "
-                "ORDER BY occurred_at,event_id LIMIT 1000").fetchall()
         progress = False
-        for row in pending:
-            row["occurred_at"] = row["occurred_at"].astimezone(timezone.utc)
-            row["received_at"] = row["received_at"].astimezone(timezone.utc)
-            event = EventEnvelope.model_validate(row)
-            missing = missing_references(conn, event)
-            if not missing:
-                project_domain(conn, event)
-                conn.execute("UPDATE events SET unresolved_references=ARRAY[]::text[] WHERE event_id=%s",
-                             (event.event_id,))
-                progress = True
-            else:
-                conn.execute("UPDATE events SET unresolved_references=%s WHERE event_id=%s",
-                             (missing, event.event_id))
+        after = None
+        while True:
+            with conn.cursor(row_factory=dict_row) as cursor:
+                pending = cursor.execute(
+                    f"SELECT {EVENT_COLUMNS} FROM events "
+                    "WHERE cardinality(unresolved_references)>0 "
+                    "AND unresolved_references[1] NOT LIKE 'projection_error:%%' "
+                    "AND (%s::timestamptz IS NULL OR (occurred_at,event_id)>(%s,%s)) "
+                    "ORDER BY occurred_at,event_id LIMIT 1000",
+                    (after[0] if after else None, after[0] if after else None,
+                     after[1] if after else None)).fetchall()
+            if not pending:
+                break
+            after = (pending[-1]["occurred_at"], pending[-1]["event_id"])
+            for row in pending:
+                row["occurred_at"] = row["occurred_at"].astimezone(timezone.utc)
+                row["received_at"] = row["received_at"].astimezone(timezone.utc)
+                event = EventEnvelope.model_validate(row)
+                missing = missing_references(conn, event)
+                if not missing:
+                    try:
+                        with conn.transaction():
+                            project_domain(conn, event)
+                    except (ValueError, KeyError, TypeError, psycopg.IntegrityError,
+                            psycopg.DataError) as exc:
+                        conn.execute("UPDATE events SET unresolved_references=%s WHERE event_id=%s",
+                                     ([f"projection_error:{type(exc).__name__}"], event.event_id))
+                    else:
+                        conn.execute("UPDATE events SET unresolved_references=ARRAY[]::text[] WHERE event_id=%s",
+                                     (event.event_id,))
+                        progress = True
+                else:
+                    conn.execute("UPDATE events SET unresolved_references=%s WHERE event_id=%s",
+                                 (missing, event.event_id))
         if not progress:
             break
 
@@ -57,6 +74,8 @@ def ingest_batch(dsn: str, authenticated_producer: str,
         raise PermissionError("authenticated producer required")
     if any(e.producer_id != authenticated_producer for e in events):
         raise PermissionError("producer identity mismatch")
+    for event in events:
+        validate_projectable_event(event)
     receipts: list[str] = []
     with psycopg.connect(dsn) as conn:
         with conn.transaction():
@@ -65,22 +84,36 @@ def ingest_batch(dsn: str, authenticated_producer: str,
                 if item.content_id in seen_content:
                     raise ValueError("duplicate content identity in batch")
                 seen_content.add(item.content_id)
-                old_content = conn.execute("SELECT sha256,raw_bytes,completeness FROM content_objects WHERE content_id=%s",
-                                           (item.content_id,)).fetchone()
+                old_content = conn.execute("""SELECT raw_bytes,byte_length,sha256,role,direction,
+                    content_type,encoding,origin,capture_layer,completeness,message_id,block_order
+                    FROM content_objects WHERE content_id=%s""", (item.content_id,)).fetchone()
+                incoming = (item.raw_bytes, item.byte_length, item.sha256, item.role,
+                            item.direction, item.content_type, item.encoding, item.origin,
+                            item.capture_layer, item.completeness, item.message_id,
+                            item.block_order)
                 if old_content:
-                    if old_content[0] != item.sha256 or bytes(old_content[1]) != item.raw_bytes or old_content[2] != item.completeness:
+                    stored = ((bytes(old_content[0]) if old_content[0] is not None else None),
+                              *old_content[1:])
+                    if stored != incoming:
                         raise ValueError("content ID conflict")
                     continue
-                conn.execute("""INSERT INTO content_objects
+                inserted_content = conn.execute("""INSERT INTO content_objects
                     (content_id,raw_bytes,byte_length,sha256,role,direction,content_type,encoding,
                      origin,capture_layer,completeness,message_id,block_order)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT(content_id) DO NOTHING RETURNING content_id""",
                     (item.content_id, item.raw_bytes, item.byte_length, item.sha256, item.role,
                      item.direction, item.content_type, item.encoding, item.origin,
-                     item.capture_layer, item.completeness, item.message_id, item.block_order))
+                     item.capture_layer, item.completeness, item.message_id, item.block_order)).fetchone()
+                if not inserted_content:
+                    old_content = conn.execute("""SELECT raw_bytes,byte_length,sha256,role,direction,
+                        content_type,encoding,origin,capture_layer,completeness,message_id,block_order
+                        FROM content_objects WHERE content_id=%s""", (item.content_id,)).fetchone()
+                    stored = ((bytes(old_content[0]) if old_content[0] is not None else None),
+                              *old_content[1:])
+                    if stored != incoming:
+                        raise ValueError("content ID conflict")
             for event in events:
-                if event.event_type == EventType.DISPOSITION_RECORDED:
-                    DispositionRecord.model_validate(event.payload)
                 digest = _event_hash(event)
                 existing = conn.execute("SELECT payload_hash FROM events WHERE event_id=%s",
                                         (event.event_id,)).fetchone()
@@ -96,13 +129,14 @@ def ingest_batch(dsn: str, authenticated_producer: str,
                     raise ValueError("producer sequence conflict")
                 call_id = event.call_id or event.payload.get("call_id")
                 unresolved = missing_references(conn, event)
-                conn.execute("""INSERT INTO events
+                inserted_event = conn.execute("""INSERT INTO events
                     (event_id,event_type,schema_version,producer_id,producer_incarnation,
                      producer_sequence,occurred_at,received_at,origin,observation_layer,
                      capture_completeness,task_id,work_item_id,session_id,call_id,attempt_id,
                      model_execution_id,worker_instance_id,parent_event_id,requested_model,
                      reported_model,config_version,payload,payload_hash,unresolved_references)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,now(),%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT(event_id) DO NOTHING RETURNING event_id""",
                     (event.event_id, event.event_type.value, event.schema_version,
                      event.producer_id, event.producer_incarnation, event.producer_sequence,
                      event.occurred_at, event.origin, event.observation_layer,
@@ -110,12 +144,21 @@ def ingest_batch(dsn: str, authenticated_producer: str,
                      event.session_id, call_id, event.attempt_id, event.model_execution_id,
                      event.worker_instance_id, event.parent_event_id, event.requested_model,
                      event.reported_model, event.config_version, Jsonb(event.payload), digest,
-                     unresolved))
-                conn.execute("""INSERT INTO producer_sequences
+                     unresolved)).fetchone()
+                if not inserted_event:
+                    existing = conn.execute("SELECT payload_hash FROM events WHERE event_id=%s",
+                                            (event.event_id,)).fetchone()
+                    if not existing or existing[0] != digest:
+                        raise ValueError("event ID conflict")
+                    receipts.append("duplicate")
+                    continue
+                sequence_insert = conn.execute("""INSERT INTO producer_sequences
                     (producer_id, producer_incarnation, producer_sequence, event_id)
-                    VALUES (%s,%s,%s,%s)""",
+                    VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING RETURNING event_id""",
                     (event.producer_id, event.producer_incarnation,
-                     event.producer_sequence, event.event_id))
+                     event.producer_sequence, event.event_id)).fetchone()
+                if not sequence_insert:
+                    raise ValueError("producer sequence conflict")
                 if not unresolved:
                     project_domain(conn, event)
                 project_status(conn, event)
