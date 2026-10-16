@@ -216,11 +216,17 @@ def project_domain(conn, event: EventEnvelope) -> None:
                      (p["result_id"], event.call_id, event.attempt_id,
                       p.get("raw_content_id"), p.get("delivered_content_id"), event.occurred_at))
     elif kind == EventType.DISPOSITION_RECORDED:
+        optional = ("reason_code", "substantive_change", "repair_effort", "failure_category",
+                    "guidance_ids", "correction_execution_ids", "evidence_refs")
         conn.execute("""INSERT INTO dispositions
-                     (disposition_id,result_id,actor_id,stage,judgment,reason,supersedes_id,recorded_at)
-                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(disposition_id) DO NOTHING""",
+                     (disposition_id,result_id,actor_id,stage,judgment,reason,supersedes_id,
+                      recorded_at,part_id,input_sha256,output_result_id,details)
+                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                     ON CONFLICT(disposition_id) DO NOTHING""",
                      (p["disposition_id"], p["result_id"], p["actor_id"], p["stage"],
-                      p["judgment"], p.get("reason"), p.get("supersedes_id"), event.occurred_at))
+                      p["judgment"], p.get("reason"), p.get("supersedes_id"), event.occurred_at,
+                      p.get("part_id"), p.get("input_sha256"), p.get("output_result_id"),
+                      Jsonb({key: p[key] for key in optional if key in p})))
     elif kind == EventType.WORK_RESOLVED:
         conn.execute("""INSERT INTO work_resolutions
                      (resolution_id,work_item_id,outcome,final_result_id,recorded_at)

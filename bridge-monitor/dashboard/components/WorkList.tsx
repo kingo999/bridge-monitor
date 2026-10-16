@@ -15,11 +15,12 @@ export default function WorkList({ items, selectedId, onSelect, search, onSearch
       <input aria-label="Search work items" className="work-search" type="search" placeholder="Search ID or category"
         value={search} onChange={e => onSearch(e.target.value)} /></div>
     <div className="work-table-wrap"><table className="work-table"><thead><tr>
-      <th>Work item</th><th>Model</th><th>Skynet routing</th><th>Status</th><th>Created</th>
+      <th>Work item</th><th>Model</th><th>Guidance</th><th>Skynet routing</th><th>Status</th><th>Created</th>
     </tr></thead><tbody>{items.map(item => <tr key={item.work_item_id} className={selectedId === item.work_item_id ? 'selected' : ''}>
       <td><button type="button" onClick={() => onSelect(item.work_item_id)} aria-current={selectedId === item.work_item_id ? 'true' : undefined}>
         <strong>{item.category || item.work_item_id}</strong><small>{item.work_item_id}</small></button></td>
       <td>{item.reported_model || item.requested_model || <span className="muted">Unknown</span>}</td>
+      <td>{item.guidance_group || 'Unknown'}</td>
       <td><span className={`pill ${item.routed ? 'routed' : item.paid_route ? 'paid' : 'pending'}`}>{route(item)}</span></td>
       <td>{item.resolution || 'In progress / unknown'}</td>
       <td>{new Date(item.created_at).toLocaleTimeString()}</td>

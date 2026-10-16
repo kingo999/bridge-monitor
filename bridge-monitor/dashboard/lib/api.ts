@@ -11,7 +11,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export type CohortFilters = {
   origin: Origin; consumerStage: string; createdFrom: string; createdUntil: string;
-  completedOnly: boolean;
+  completedOnly: boolean; guidanceGroup: string; failureCategory: string;
+  repairEffort: string; exampleReuseStatus: string;
 };
 
 export function queryString(filters: CohortFilters): string {
@@ -19,6 +20,10 @@ export function queryString(filters: CohortFilters): string {
   if (filters.createdFrom) params.set('created_from', new Date(filters.createdFrom).toISOString());
   if (filters.createdUntil) params.set('created_until', new Date(filters.createdUntil).toISOString());
   if (filters.completedOnly) params.set('completed_only', 'true');
+  if (filters.guidanceGroup) params.set('guidance_group', filters.guidanceGroup);
+  if (filters.failureCategory) params.set('failure_category', filters.failureCategory);
+  if (filters.repairEffort) params.set('repair_effort', filters.repairEffort);
+  if (filters.exampleReuseStatus) params.set('example_reuse_status', filters.exampleReuseStatus);
   return params.toString();
 }
 

@@ -62,6 +62,16 @@ def test_subprocess_runner_keeps_cli_stderr_inside_project(tmp_path):
     assert runner.last_stderr_path.read_text(encoding="utf-8") == "diagnostic\n"
 
 
+def test_subprocess_runner_stops_active_process_on_cancellation(tmp_path):
+    runner = SubprocessRunner(cwd=tmp_path, timeout_seconds=10,
+                              client_tool_timeout_seconds=5)
+    command = [sys.executable, "-c", "import time; time.sleep(10)"]
+    assert list(runner.stream(command, "probe", cancel_requested=lambda: True)) == []
+    assert runner.cancelled is True
+    assert runner.terminated is True
+    assert runner.returncode != 0
+
+
 def test_stream_captures_intermediate_text_tool_events_and_final_model(tmp_path):
     frames = [
         {"type": "system", "subtype": "init", "model": "claude-opus-4"},

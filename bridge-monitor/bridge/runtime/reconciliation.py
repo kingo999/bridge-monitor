@@ -46,12 +46,15 @@ def reconcile_execution(dsn: str, call_id: str, evidence: dict, *,
                            "WHERE call_id=%s", (call_id,)).fetchone()
         if not row or row[0] == "queued":
             raise ValueError("no dispatched execution to reconcile")
+        if row[0] == "completed":
+            raise ValueError("completed execution cannot be reconciled as lost")
         state = _state_from_evidence(call_id, row[1], row[2], evidence)
         if row[0] == "terminated":
             state = "terminated"
         if state == "terminated":
             conn.execute("UPDATE runtime_jobs SET state='terminated',slot_held=false "
                          "WHERE call_id=%s", (call_id,))
+            conn.execute("DELETE FROM runtime_source_locks WHERE holder_call_id=%s", (call_id,))
         elif state == "live" and row[0] != "terminated":
             conn.execute("UPDATE runtime_jobs SET state='active' WHERE call_id=%s", (call_id,))
             conn.execute("UPDATE runtime_incarnations SET state='live' WHERE incarnation_id=%s "

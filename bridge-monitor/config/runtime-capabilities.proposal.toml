@@ -1,4 +1,6 @@
 # Review proposal only. The unverified paid-client deadline blocks live local readiness.
+cancellation_poll_ms = 250
+workspace_max_bytes = 104857600
 [claude]
 executable = "claude"
 context_tokens = 200000 # Conservative Sonnet family floor; verify effective CLI model.

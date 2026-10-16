@@ -31,5 +31,6 @@ def runtime_dsn(test_dsn):
                      "runtime_recovery_links, runtime_fallback_transitions, "
                      "runtime_source_locks, runtime_reconciliations, runtime_jobs, "
                      "runtime_task_budgets, runtime_pool_cursor, runtime_incarnations, "
-                     "runtime_policy_activations, runtime_active_policy")
+                     "runtime_policy_activations, runtime_active_policy, "
+                     "example_reviews, guidance_pack_versions")
     return test_dsn

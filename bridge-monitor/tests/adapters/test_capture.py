@@ -1,4 +1,7 @@
 from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, Timer
+import time
 
 from contracts.events import EventType
 from bridge.telemetry.emitter import TelemetryEmitter
@@ -60,3 +63,77 @@ def test_overflow_records_gap_and_degrades_admission(tmp_path):
     emitter.replay()
     assert any(event.event_type == EventType.CAPTURE_GAP for event in collector.events)
     assert spool.known_gaps() == 1
+
+
+def test_transient_shared_spool_pending_does_not_reject_new_work(tmp_path):
+    entered = Event()
+    release = Event()
+
+    class SlowCollector(Collector):
+        def __init__(self):
+            super().__init__()
+            self.first = True
+
+        def ingest_batch(self, producer, events, content):
+            if self.first:
+                self.first = False
+                entered.set()
+                release.wait(timeout=2)
+            return super().ingest_batch(producer, events, content)
+
+    collector = SlowCollector()
+    path = tmp_path / "shared.sqlite"
+    first = TelemetryEmitter(DurableSpool(path, limit_bytes=100000), collector,
+                             producer_id="shared", incarnation="first")
+    second = TelemetryEmitter(DurableSpool(path, limit_bytes=100000), collector,
+                              producer_id="shared", incarnation="second")
+    with ThreadPoolExecutor(max_workers=1) as workers:
+        pending = workers.submit(first.emit, EventType.TASK_CREATED, task_id="task-1")
+        assert entered.wait(timeout=2)
+        timer = Timer(0.05, release.set)
+        timer.start()
+        try:
+            assert second.may_admit_new_work("reject_new_work")
+        finally:
+            release.set()
+            timer.join()
+        assert pending.result(timeout=2)
+    assert first.spool.pending_count() == 0
+
+
+def test_shared_spool_entry_has_one_collector_drain_at_a_time(tmp_path):
+    entered = Event()
+    release = Event()
+    second_collector_call = Event()
+
+    class BlockingCollector(Collector):
+        def __init__(self):
+            super().__init__()
+            self.calls = 0
+
+        def ingest_batch(self, producer, events, content):
+            self.calls += 1
+            if self.calls == 1:
+                entered.set()
+                release.wait(timeout=2)
+            else:
+                second_collector_call.set()
+            return super().ingest_batch(producer, events, content)
+
+    collector = BlockingCollector()
+    path = tmp_path / "shared.sqlite"
+    first = TelemetryEmitter(DurableSpool(path, limit_bytes=100000), collector,
+                             producer_id="shared", incarnation="first")
+    second = TelemetryEmitter(DurableSpool(path, limit_bytes=100000), collector,
+                              producer_id="shared", incarnation="second")
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        pending = workers.submit(first.emit, EventType.TASK_CREATED, task_id="task-1")
+        assert entered.wait(timeout=2)
+        replay = workers.submit(second.replay)
+        time.sleep(0.05)
+        assert not second_collector_call.is_set()
+        release.set()
+        assert pending.result(timeout=2)
+        replay.result(timeout=2)
+    assert collector.calls == 1
+    assert first.spool.pending_count() == 0

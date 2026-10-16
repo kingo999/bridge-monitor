@@ -2,6 +2,7 @@
 
 import json
 import re
+import threading
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -21,7 +22,8 @@ class QwenAdapter:
     def __init__(self, client, *, endpoint: str, model: str, context_tokens: int,
                  output_tokens: int, timeout_seconds: int, allowed: bool = True,
                  keep_alive: str = "10m", temperature: float = 0.0,
-                 expected_digest: str = ""):
+                 expected_digest: str = "", cancellation_probe=None,
+                 cancel_poll_seconds: float = 0.25):
         if not endpoint.startswith(("http://", "https://")) or not model:
             raise ValueError("validated endpoint and model are required")
         if min(context_tokens, output_tokens, timeout_seconds) <= 0:
@@ -40,6 +42,8 @@ class QwenAdapter:
         self.keep_alive = keep_alive
         self.temperature = temperature
         self.expected_digest = expected_digest
+        self.cancellation_probe = cancellation_probe
+        self.cancel_poll_seconds = cancel_poll_seconds
 
     def preflight(self) -> ModelPreflight:
         if not self.allowed:
@@ -101,6 +105,7 @@ class QwenAdapter:
         reported = None
         terminal = None
         message_id = str(uuid.uuid4())
+        cancelled = threading.Event()
         try:
             with self.client.stream("POST", f"{self.endpoint}/api/generate", json=wire,
                                     timeout=timeout) as response:
@@ -109,36 +114,65 @@ class QwenAdapter:
                                  payload={"status_code": response.status_code})
                     return AdapterResult(state="failed")
                 emitter.emit(EventType.RESPONSE_STARTED, payload={"lease_id": lease.lease_id}, **common)
-                for raw_line in response.iter_lines():
-                    if datetime.now(timezone.utc) >= effective_deadline:
-                        raise TimeoutError("local execution deadline reached during response")
-                    if not raw_line:
-                        continue
-                    row = json.loads(raw_line)
-                    if not isinstance(row, dict):
-                        raise ValueError("invalid Ollama response frame")
-                    if isinstance(row.get("model"), str):
-                        if reported and reported != row["model"]:
-                            raise ValueError("reported model changed during response")
-                        reported = row["model"]
-                    delta = row.get("response", "")
-                    if delta:
-                        if not isinstance(delta, str):
-                            raise ValueError("invalid response text")
-                        parts.append(delta)
-                        emitter.emit(EventType.RESPONSE_DELTA,
-                                     body=delta.encode("utf-8"), role="assistant", direction="in",
-                                     requested_model=self.model, reported_model=reported,
-                                     message_id=message_id, chunk_sequence=len(parts), **common)
-                    if row.get("done") is True:
-                        terminal = row
-                        break
+                stop_monitor = threading.Event()
+                def monitor_cancel():
+                    while not stop_monitor.wait(self.cancel_poll_seconds):
+                        try:
+                            requested = self.cancellation_probe(call)
+                        except Exception:
+                            continue
+                        if requested:
+                            cancelled.set()
+                            try:
+                                response.close()
+                            except Exception:
+                                pass
+                            return
+                watcher = None
+                if self.cancellation_probe is not None:
+                    watcher = threading.Thread(target=monitor_cancel, daemon=True)
+                    watcher.start()
+                try:
+                    for raw_line in response.iter_lines():
+                        if cancelled.is_set():
+                            raise InterruptedError("local cancellation requested")
+                        if datetime.now(timezone.utc) >= effective_deadline:
+                            raise TimeoutError("local execution deadline reached during response")
+                        if not raw_line:
+                            continue
+                        row = json.loads(raw_line)
+                        if not isinstance(row, dict):
+                            raise ValueError("invalid Ollama response frame")
+                        if isinstance(row.get("model"), str):
+                            if reported and reported != row["model"]:
+                                raise ValueError("reported model changed during response")
+                            reported = row["model"]
+                        delta = row.get("response", "")
+                        if delta:
+                            if not isinstance(delta, str):
+                                raise ValueError("invalid response text")
+                            parts.append(delta)
+                            emitter.emit(EventType.RESPONSE_DELTA,
+                                         body=delta.encode("utf-8"), role="assistant", direction="in",
+                                         requested_model=self.model, reported_model=reported,
+                                         message_id=message_id, chunk_sequence=len(parts), **common)
+                        if row.get("done") is True:
+                            terminal = row
+                            break
+                finally:
+                    stop_monitor.set()
+                    if watcher is not None:
+                        watcher.join(timeout=1)
         except Exception as exc:
             emitter.emit(EventType.ATTEMPT_UNCERTAIN,
-                         payload={"reason": "transport_or_frame_loss", "exception_type": type(exc).__name__,
+                         payload={"reason": "cancellation_requested" if cancelled.is_set()
+                                  else "transport_or_frame_loss", "exception_type": type(exc).__name__,
                                   "partial_output": bool(parts)}, **common)
             return AdapterResult(state="uncertain", reported_model=reported,
-                                 uncertainty="request_may_have_run")
+                                 uncertainty="request_may_have_run", cancelled=cancelled.is_set())
+        if cancelled.is_set():
+            return AdapterResult(state="uncertain", reported_model=reported,
+                                 uncertainty="request_may_have_run", cancelled=True)
         if terminal is None or reported != self.model:
             emitter.emit(EventType.ATTEMPT_UNCERTAIN,
                          payload={"reason": "missing_terminal_or_model_evidence"}, **common)

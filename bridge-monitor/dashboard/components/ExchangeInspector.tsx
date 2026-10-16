@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type { WorkDetail } from '@/lib/contracts.generated';
 import ExecutionTimeline from './ExecutionTimeline';
+import GuidanceDetails from './GuidanceDetails';
 import ResponseComparison from './ResponseComparison';
 
-type Tab = 'exchange' | 'decision' | 'timeline';
+type Tab = 'exchange' | 'decision' | 'guidance' | 'timeline';
 
 function BodyCard({ title, content, fallback }: { title: string; content: string | null; fallback: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -70,7 +71,7 @@ export default function ExchangeInspector({ id, refreshKey }: { id: string | nul
     {detail && <><div className="inspector-summary"><h3>{detail.work_item.category || detail.work_item.work_item_id}</h3>
       <p>Requested: {primaryModel?.requested_model || 'Unknown'} · Reported: {primaryModel?.reported_model || 'Unknown'}</p></div>
       <div className="inspector-tabs" role="tablist" aria-label="Inspector views">
-        {(['exchange', 'decision', 'timeline'] as Tab[]).map(value => <button key={value} type="button"
+        {(['exchange', 'decision', 'guidance', 'timeline'] as Tab[]).map(value => <button key={value} type="button"
           role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{value}</button>)}</div>
       <div className="inspector-content">
         {tab === 'exchange' && <>
@@ -94,6 +95,7 @@ export default function ExchangeInspector({ id, refreshKey }: { id: string | nul
           <h3>Final resolution</h3>{detail.resolutions.length ? detail.resolutions.map(r => <p key={r.resolution_id}>{r.outcome} · {new Date(r.recorded_at).toLocaleString()}</p>) : <p className="muted">Unknown / pending</p>}
           <p className="coverage-note">Text differences do not establish semantic acceptance. GPT final survival requires its own acknowledgement.</p>
         </div>}
+        {tab === 'guidance' && <GuidanceDetails detail={detail} />}
         {tab === 'timeline' && <ExecutionTimeline detail={detail} />}
       </div>
       <div className="inspector-footer">Claude disposition: <strong>{selectedDisposition?.judgment || 'Unreported'}</strong> · GPT disposition: <strong>{detail.dispositions.find(d => d.stage === 'gpt')?.judgment || 'Unknown'}</strong></div>

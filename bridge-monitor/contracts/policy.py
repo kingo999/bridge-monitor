@@ -70,12 +70,29 @@ class Review(BaseModel):
     approval_reference: str = Field(min_length=1)
 
 
+class ApprovedGuidancePack(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pack_version_id: str = Field(min_length=1)
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    enabled: bool = True
+    categories: list[str] = Field(default_factory=list)
+    scopes: list[str] = Field(default_factory=list)
+
+
+class GuidancePolicy(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    packs: list[ApprovedGuidancePack] = Field(default_factory=list)
+    required_categories: list[str] = Field(default_factory=list)
+    max_bytes: int = Field(default=0, ge=0)
+
+
 class PolicyInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     limits: Limits = Field(default_factory=Limits)
     deployment: Deployment
     fallback: Fallback
     review: Review
+    guidance: GuidancePolicy = Field(default_factory=GuidancePolicy)
 
 
 class PolicySnapshot(BaseModel):
@@ -85,6 +102,7 @@ class PolicySnapshot(BaseModel):
     deployment: Deployment
     fallback: Fallback
     review: Review
+    guidance: GuidancePolicy = Field(default_factory=GuidancePolicy)
 
 
 class PolicyValidation(BaseModel):

@@ -12,20 +12,23 @@ from tests.integration.test_admission import _policy
 from tests.integration.test_ownership import _setup
 
 
-def _seed_chain(dsn, *, dispatch_qwen=True):
+def _seed_chain(dsn, *, dispatch_qwen=True, budget=2, recipient_call_id=None):
     policy, version = _setup(dsn)
     root = f"root-{uuid.uuid4()}"
     work = f"work-{uuid.uuid4()}"
     claude, qwen = f"claude-{uuid.uuid4()}", f"qwen-{uuid.uuid4()}"
     task = TaskPacket(task_id=root, work_item_id=work, category="analysis",
-                      scope=["read"], token_budget=1000, call_budget=2)
+                      scope=["read"], token_budget=1000, call_budget=budget)
     now = datetime.now(timezone.utc)
     with psycopg.connect(dsn) as conn:
         conn.execute("INSERT INTO tasks(task_id,origin,scope,created_at) VALUES(%s,'synthetic','{}',%s)", (root, now))
         conn.execute("INSERT INTO work_items(work_item_id,task_id,origin,created_at) "
                      "VALUES(%s,%s,'synthetic',%s)", (work, root, now))
-        conn.execute("INSERT INTO calls(call_id,work_item_id,requested_model,created_at) "
-                     "VALUES(%s,%s,'claude-test',%s)", (claude, work, now))
+        if recipient_call_id:
+            conn.execute("INSERT INTO calls(call_id,work_item_id,created_at) VALUES(%s,%s,%s)",
+                         (recipient_call_id, work, now))
+        conn.execute("INSERT INTO calls(call_id,work_item_id,parent_call_id,requested_model,created_at) "
+                     "VALUES(%s,%s,%s,'claude-test',%s)", (claude, work, recipient_call_id, now))
         conn.execute("INSERT INTO calls(call_id,work_item_id,parent_call_id,parent_attempt_id,"
                      "requested_model,created_at) VALUES(%s,%s,%s,%s,'qwen-test',%s)",
                      (qwen, work, claude, f"{claude}:attempt:1", now))
@@ -35,11 +38,18 @@ def _seed_chain(dsn, *, dispatch_qwen=True):
         conn.execute("INSERT INTO model_executions(model_execution_id,attempt_id,requested_model,reported_model) "
                      "VALUES(%s,%s,'claude-test','claude-test')",
                      (f"{claude}:model:1", f"{claude}:attempt:1"))
+        conn.execute("INSERT INTO content_objects(content_id,raw_bytes,byte_length,sha256,role,"
+                     "direction,content_type,encoding,origin,capture_layer,completeness,block_order) "
+                     "VALUES(%s,%s,%s,%s,'user','out','text/plain','utf-8','synthetic',"
+                     "'test','complete',0)",
+                     (f"prompt-{qwen}", b"scoped child prompt", 19,
+                      hashlib.sha256(b"scoped child prompt").hexdigest()))
     for call, pool in ((claude, "claude"), (qwen, "qwen")):
         request = CallRequest(call_id=call, task=task, requested_model=f"{pool}-test",
                               parent_call_id=claude if pool == "qwen" else None)
         decision = admit_call(dsn, request, policy, policy_version=version, pool=pool,
                               reserve_tokens=100,
+                              prompt_content_id=f"prompt-{qwen}" if pool == "qwen" else None,
                               local_cutoff_at=now + timedelta(seconds=20) if pool == "qwen" else None)
         assert decision.state == "queued"
         register_incarnation(dsn, f"inc-{call}", f"worker-{call}")

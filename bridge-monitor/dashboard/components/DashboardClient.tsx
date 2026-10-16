@@ -13,6 +13,7 @@ import WorkList from './WorkList';
 
 const initialFilters: CohortFilters = {
   origin: 'observed', consumerStage: 'claude', createdFrom: '', createdUntil: '', completedOnly: false,
+  guidanceGroup: '', failureCategory: '', repairEffort: '', exampleReuseStatus: '',
 };
 
 export default function DashboardClient() {

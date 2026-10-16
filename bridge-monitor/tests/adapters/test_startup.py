@@ -26,11 +26,19 @@ client_timeout_verified = false
     return config
 
 
+def test_parent_runtime_requires_recovery_credential(tmp_path, monkeypatch):
+    monkeypatch.setenv("BRIDGE_MONITOR_DSN", "unused-test-dsn")
+    monkeypatch.delenv("BRIDGE_MONITOR_SYSTEM_TOKEN", raising=False)
+    with pytest.raises(ValueError, match="SYSTEM_TOKEN"):
+        build_coordinator(_runtime_file(tmp_path), audience="parent", project_root=tmp_path)
+
+
 def test_parent_runtime_uses_active_policy_and_project_local_configuration(runtime_dsn,
                                                                              tmp_path,
                                                                              monkeypatch):
     _, version = _setup(runtime_dsn)
     monkeypatch.setenv("BRIDGE_MONITOR_DSN", runtime_dsn)
+    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "test-system-token")
     project = tmp_path / "bridge-monitor"
     project.mkdir()
     python = project / ".venv" / "Scripts" / "python.exe"
@@ -59,6 +67,7 @@ def test_runtime_refuses_configuration_outside_project(runtime_dsn, tmp_path,
 def test_runtime_refuses_launch_without_reviewed_active_policy(runtime_dsn, tmp_path,
                                                                 monkeypatch):
     monkeypatch.setenv("BRIDGE_MONITOR_DSN", runtime_dsn)
+    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "test-system-token")
     project = tmp_path / "bridge-monitor"
     project.mkdir()
     with pytest.raises(ValueError, match="reviewed policy"):
@@ -98,6 +107,7 @@ def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, tmp_path,
     config = _runtime_file(tmp_path)
     monkeypatch.setenv("BRIDGE_MONITOR_DSN", runtime_dsn)
     monkeypatch.setenv("BRIDGE_MONITOR_RUNTIME_CONFIG", str(config))
+    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "test-system-token")
 
     async def listed(audience):
         args = ["-m", "bridge.mcp_server", "--audience", audience]
@@ -111,5 +121,5 @@ def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, tmp_path,
                 return {item.name for item in (await session.list_tools()).tools}
 
     assert asyncio.run(listed("parent")) == {
-        "delegate_claude", "complete_work", "get_execution_status"}
+        "delegate_claude", "complete_work", "get_execution_status", "cancel_work"}
     assert asyncio.run(listed("claude")) == {"delegate_local_analysis"}

@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from bridge.runtime.reconciliation import reconcile_execution
+from bridge.runtime.recovery import reconcile_owner_and_recover
 
 
 def main() -> int:
@@ -25,9 +25,9 @@ def main() -> int:
     if not dsn or not token:
         parser.error("BRIDGE_MONITOR_DSN and BRIDGE_MONITOR_OPERATOR_TOKEN are required")
     evidence = json.loads(Path(args.evidence_file).read_text(encoding="utf-8"))
-    state = reconcile_execution(dsn, args.call_id, evidence,
-                                actor_kind="operator", actor_id=args.actor_id, auth_token=token)
-    print(json.dumps({"call_id": args.call_id, "state": state}))
+    outcome = reconcile_owner_and_recover(dsn, args.call_id, evidence,
+        actor_kind="operator", actor_id=args.actor_id, auth_token=token)
+    print(json.dumps({"call_id": args.call_id, **outcome}))
     return 0
 
 

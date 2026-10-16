@@ -3,9 +3,11 @@
 import argparse
 import os
 import sys
+import threading
 import time
 import uuid
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 
 import psycopg
 
@@ -15,16 +17,25 @@ from contracts.work import CallRequest, ExecutionBinding, TaskPacket
 from bridge.adapters.codex_ingress import CodexIngress, runtime_status
 from bridge.runtime.completions import record_completion
 from bridge.runtime.ownership import (claim_dispatch, claim_launch,
-                                      mark_execution_uncertain, register_incarnation)
+                                      mark_execution_uncertain, register_incarnation,
+                                      abort_unlaunched)
+from bridge.runtime.workspaces import (fingerprint_source, materialize_source,
+                                       release_source, isolated_workspace_target)
 from bridge.guidance.gates import check_readiness
+from bridge.guidance.selection import resolve_guidance
 from bridge.runtime.fallback import commit_fallback
 from bridge.runtime.scheduler import cancel_queued
+from bridge.runtime.scheduler import request_cancel_tree
+from bridge.runtime.recovery import reconcile_owner_and_recover
 
 
 class BridgeCoordinator:
     def __init__(self, dsn, policy, policy_version, emitter, *, claude_adapter,
                  qwen_adapter=None, parent_call_id: str | None = None,
                  parent_lease_id: str | None = None,
+                 source_roots: dict[str, str] | None = None,
+                 workspace_base: str | Path | None = None,
+                 workspace_max_bytes: int = 104857600,
                  local_capability: dict | None = None, paid_capability: dict | None = None):
         self.dsn = dsn
         self.policy = policy
@@ -36,6 +47,9 @@ class BridgeCoordinator:
         self.parent_lease_id = parent_lease_id
         self.local_capability = local_capability or {}
         self.paid_capability = paid_capability or {}
+        self.source_roots = source_roots or {}
+        self.workspace_base = Path(workspace_base) if workspace_base else None
+        self.workspace_max_bytes = workspace_max_bytes
         self.ingress = CodexIngress(dsn, emitter, policy, policy_version)
         self.incarnations = {pool: str(uuid.uuid4()) for pool in ("claude", "qwen")}
         self.workers = {pool: f"bridge-{pool}-{uuid.uuid4()}" for pool in ("claude", "qwen")}
@@ -43,16 +57,36 @@ class BridgeCoordinator:
         for pool in ("claude", "qwen"):
             register_incarnation(dsn, self.incarnations[pool], self.workers[pool])
 
+    def _refresh_policy(self):
+        self.policy = self.ingress.refresh_policy()
+        self.policy_version = self.policy.version
+
     def delegate_claude(self, task: TaskPacket, prompt: str, *, requested_model: str,
-                        reserve_tokens: int) -> dict:
+                        reserve_tokens: int, source_id: str | None = None) -> dict:
+        self._refresh_policy()
         if requested_model != self.policy.fallback.paid_model_profile:
             return {"state": "rejected", "reason": "unvalidated_paid_model_choice"}
+        if task.context.get("source_id") and source_id != task.context["source_id"]:
+            return {"state": "rejected", "reason": "source_binding_required"}
+        source_snapshot = None
+        if source_id:
+            if source_id not in self.source_roots or "source-read" not in task.scope:
+                return {"state": "rejected", "reason": "source_scope_not_approved"}
+            if self.workspace_base is None:
+                return {"state": "rejected", "reason": "source_workspace_unavailable"}
+            source_snapshot = fingerprint_source(self.source_roots[source_id],
+                max_bytes=self.workspace_max_bytes)
+            task = task.model_copy(update={"context": {**task.context, "source_id": source_id}})
         call_id = str(uuid.uuid4())
-        request = CallRequest(call_id=call_id, task=task, requested_model=requested_model)
+        request = CallRequest(call_id=call_id, task=task, requested_model=requested_model,
+                              parent_call_id=f"gpt:{task.task_id}")
         decision = self.ingress.submit(request, prompt=prompt, pool="claude",
-                                       reserve_tokens=reserve_tokens)
+                                       reserve_tokens=reserve_tokens,
+                                       source_snapshot=source_snapshot,
+                                       source_mode="read" if source_id else None)
         if decision.state != "queued":
             return {"state": decision.state, "reason": decision.reason, "call_id": call_id}
+        self.owned_calls.add(call_id)
         poll_seconds = self.policy.deployment.queue_poll_ms / 1000
         with psycopg.connect(self.dsn) as conn:
             queue_deadline = conn.execute("SELECT queue_deadline_at FROM runtime_jobs "
@@ -69,6 +103,7 @@ class BridgeCoordinator:
         return self.get_execution_status(call_id)
 
     def delegate_local_analysis(self, prompt: str) -> dict:
+        self._refresh_policy()
         if not self.parent_call_id or not self.parent_lease_id:
             raise PermissionError("trusted parent execution binding required")
         with psycopg.connect(self.dsn) as conn:
@@ -90,18 +125,20 @@ class BridgeCoordinator:
                             parent_attempt_id=f"{self.parent_call_id}:attempt:1")
         now = datetime.now(timezone.utc)
         required = {key: task.context.get(key, "") for key in task.required_context_keys}
+        guidance = resolve_guidance(self.dsn, self.policy, task, prompt)
+        effective_prompt = guidance.effective_prompt
         local_ctx = self.local_capability.get("context_tokens", 0)
         paid_ctx = self.paid_capability.get("context_tokens", 0)
         local_output = self.policy.deployment.qwen_output_tokens
         paid_output = self.policy.deployment.fallback_allowance_tokens
-        byte_bound = (len(prompt.encode("utf-8")) +
+        byte_bound = (len(effective_prompt.encode("utf-8")) +
                       self.local_capability.get("template_overhead_tokens", 128)
                       if self.local_capability.get("byte_upper_bound_validated") is True else None)
         compatible = self.paid_capability.get("reported_models", [])
         if (not self.local_capability.get("client_timeout_verified") or
                 not self.paid_capability.get("client_timeout_verified")):
             compatible = []
-        readiness = check_readiness(task=task, prompt=prompt,
+        readiness = check_readiness(task=task, prompt=effective_prompt,
             classification_source="ingress_verified", parent_scope=task.scope,
             required_context=required, measured_input_tokens=byte_bound,
             local_context_tokens=local_ctx, local_reserved_output_tokens=local_output,
@@ -113,6 +150,15 @@ class BridgeCoordinator:
                 seconds=self.policy.deployment.client_timeout_seconds),
             fallback_seconds=self.policy.deployment.fallback_allowance_seconds,
             delivery_margin_seconds=self.policy.deployment.delivery_margin_seconds)
+        guidance_facts = {**readiness.gate_facts,
+                          "guidance_gate": "pass" if guidance.state == "ready" else "fail",
+                          "guidance_reason": guidance.reason,
+                          "guidance_bytes": guidance.manifest.get("byte_length", 0)}
+        readiness = readiness.__class__(
+            "paid" if guidance.state == "blocked" else readiness.route,
+            guidance.reason if guidance.state == "blocked" else readiness.reason,
+            guidance.manifest, guidance_facts,
+            None if guidance.state == "blocked" else readiness.local_cutoff_at)
         if (not local_model or "REQUIRED" in local_model.upper() or self.qwen_adapter is None
                 or parent[4] < paid_output):
             readiness = readiness.__class__("paid", "local_profile_or_fallback_allowance_unavailable",
@@ -139,9 +185,13 @@ class BridgeCoordinator:
             return {"state": "paid_continuation_required" if captured else "capture_degraded",
                     "child_call_id": child_id, "reason": readiness.reason,
                     "route": "paid", "not_routed": True}
+        guidance_decision_id = str(uuid.uuid4())
         decision = self.ingress.submit(child, prompt=prompt, pool="qwen",
             reserve_tokens=byte_bound + local_output,
-            local_cutoff_at=readiness.local_cutoff_at)
+            local_cutoff_at=readiness.local_cutoff_at,
+            effective_prompt=effective_prompt, guidance_manifest=readiness.manifest,
+            gate_facts=readiness.gate_facts, guidance_decision_id=guidance_decision_id,
+            expected_policy_version=self.policy_version)
         if decision.state != "queued":
             if decision.reason == "capture_degraded":
                 return {"state": "capture_degraded", "child_call_id": child_id,
@@ -155,7 +205,7 @@ class BridgeCoordinator:
         self.emitter.emit(EventType.DELEGATION_DECIDED, call_id=child_id,
             task_id=task.task_id, work_item_id=task.work_item_id,
             config_version=self.policy_version,
-            payload={"decision_id": str(uuid.uuid4()), "route": "local",
+            payload={"decision_id": guidance_decision_id, "route": "local",
                      "eligibility": "eligible", "reason": "baseline_ready",
                      "guidance_manifest": readiness.manifest,
                      "gate_facts": readiness.gate_facts})
@@ -202,14 +252,26 @@ class BridgeCoordinator:
     def _load_job(self, call_id: str):
         with psycopg.connect(self.dsn) as conn:
             row = conn.execute("SELECT j.request,c.raw_bytes,j.pool,j.work_item_id,"
-                               "j.requested_model,j.local_cutoff_at "
+                               "j.requested_model,j.local_cutoff_at,j.source_snapshot,j.source_mode "
                                "FROM runtime_jobs j LEFT JOIN content_objects c "
                                "ON c.content_id=j.prompt_content_id WHERE j.call_id=%s",
                                (call_id,)).fetchone()
         if not row or row[1] is None:
             raise ValueError("admitted execution has no exact captured prompt")
         return (CallRequest.model_validate(row[0]), bytes(row[1]).decode("utf-8"),
-                row[2], row[3], row[4], row[5])
+                row[2], row[3], row[4], row[5], row[6], row[7])
+
+    def _source_for_call(self, call_id: str, source_id: str) -> Path:
+        source = Path(self.source_roots[source_id])
+        with psycopg.connect(self.dsn) as conn:
+            prior = conn.execute("SELECT c.parent_call_id FROM runtime_recovery_links l "
+                "JOIN calls c ON c.call_id=l.child_call_id "
+                "WHERE l.recovery_call_id=%s", (call_id,)).fetchone()
+        if prior and self.workspace_base is not None:
+            preserved = isolated_workspace_target(self.workspace_base, prior[0], "source")
+            if preserved.is_dir():
+                return preserved
+        return source
 
     def _claimed_completion(self, lease, attempt_id: str, result_id: str,
                             content_id: str, claim: dict | None,
@@ -301,7 +363,7 @@ class BridgeCoordinator:
                                incarnation_id=self.incarnations[pool], call_id=call_id)
         if not lease:
             return None
-        request, prompt, job_pool, work_item_id, model, local_cutoff_at = self._load_job(lease.call_id)
+        request, prompt, job_pool, work_item_id, model, local_cutoff_at, source_snapshot, source_mode = self._load_job(lease.call_id)
         if job_pool != pool:
             raise ValueError("dispatch pool mismatch")
         task = request.task
@@ -320,6 +382,22 @@ class BridgeCoordinator:
                 reason = "local_cutoff_passed_before_launch"
             if reason:
                 return self._commit_predispatch_fallback(lease, reason)
+        workspace = None
+        if source_mode:
+            source_id = task.context.get("source_id")
+            if (pool != "claude" or source_mode != "read" or not source_id
+                    or source_id not in self.source_roots or self.workspace_base is None):
+                abort_unlaunched(self.dsn, lease)
+                return {"state": "rejected", "call_id": lease.call_id,
+                        "reason": "source_binding_unavailable"}
+            try:
+                workspace = materialize_source(self._source_for_call(lease.call_id, source_id),
+                    self.workspace_base, lease.call_id, source_snapshot,
+                    max_bytes=self.workspace_max_bytes)
+            except (OSError, ValueError):
+                abort_unlaunched(self.dsn, lease)
+                return {"state": "rejected", "call_id": lease.call_id,
+                        "reason": "source_snapshot_changed_or_unavailable"}
         if not claim_launch(self.dsn, lease):
             return {"state": "uncertain", "call_id": lease.call_id,
                     "reason": "launch_already_claimed"}
@@ -343,7 +421,7 @@ class BridgeCoordinator:
             return {"state": "uncertain", "call_id": lease.call_id,
                     "reason": "adapter_unavailable"}
         self.owned_calls.add(lease.call_id)
-        result = (adapter.run(lease, task, prompt, self.emitter) if pool == "claude"
+        result = (adapter.run(lease, task, prompt, self.emitter, workspace=workspace) if pool == "claude"
                   else adapter.run(lease, prompt, self.emitter, task=task,
                                    deadline_at=local_cutoff_at))
         if (pool == "qwen" and result.state == "denied" and
@@ -351,10 +429,25 @@ class BridgeCoordinator:
             return self._commit_predispatch_fallback(lease,
                 "local_cutoff_passed_before_request", confirmed_not_sent=True)
         if result.state != "completed" or result.answer is None:
-            mark_execution_uncertain(self.dsn, lease.call_id,
-                                     reason=result.uncertainty or result.state)
-            return {"state": result.state, "call_id": lease.call_id,
-                    "reason": result.uncertainty}
+            response = {"state": result.state, "call_id": lease.call_id,
+                        "reason": result.uncertainty}
+            token = os.environ.get("BRIDGE_MONITOR_SYSTEM_TOKEN")
+            if pool == "claude" and result.terminated and token:
+                recovery = reconcile_owner_and_recover(self.dsn, lease.call_id,
+                    {"kind": "process_exit_with_call_correlation",
+                     "call_id": lease.call_id, "lease_id": lease.lease_id,
+                     "owner_incarnation": lease.owner_incarnation, "terminated": True},
+                    actor_kind="system", actor_id="coordinator", auth_token=token)
+                response["state"] = recovery["state"]
+                response["recovery"] = recovery
+                for item in recovery["recoveries"]:
+                    if item["state"] == "queued":
+                        threading.Thread(target=self.run_one, args=("claude",),
+                            kwargs={"call_id": item["recovery_call_id"]}, daemon=True).start()
+            else:
+                mark_execution_uncertain(self.dsn, lease.call_id,
+                                         reason=result.uncertainty or result.state)
+            return response
         result_id, content_id = str(uuid.uuid4()), str(uuid.uuid4())
         if pool == "claude":
             envelope, claim_diagnostics = self._claimed_completion(
@@ -380,6 +473,8 @@ class BridgeCoordinator:
                                    "delivered_content_id": content_id}, **common)
         self.emitter.emit(EventType.CALL_COMPLETED, attempt_id=attempt_id,
                           payload={"result_id": result_id}, **common)
+        if source_mode:
+            release_source(self.dsn, lease.call_id, task.context["source_id"])
         return {"state": "completed", "call_id": lease.call_id, "result_id": result_id,
                 "answer": result.answer, "reported_model": result.reported_model,
                 "accounting_complete": completion.accounting_complete}
@@ -396,6 +491,12 @@ class BridgeCoordinator:
                 "policy_version": row[3], "lease_id": row[4], "call_id": call_id,
                 "result_id": result[0] if result else None,
                 "delivered": bool(result and result[1]), "capture": self.emitter.health()}
+
+    def cancel_work(self, call_id: str, *, reason: str) -> dict:
+        if call_id not in self.owned_calls:
+            raise PermissionError("cancellation is outside this bridge client's owned calls")
+        affected = request_cancel_tree(self.dsn, call_id, reason=reason)
+        return {"call_id": call_id, "cancellation_requested": list(affected)}
 
     def complete_work(self, call_id: str, envelope: CompletionEnvelope) -> dict:
         if call_id not in self.owned_calls or envelope.call_id != call_id:
@@ -418,10 +519,11 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
     if audience == "parent":
         @mcp.tool()
         def delegate_claude(task: dict, prompt: str, requested_model: str,
-                            reserve_tokens: int) -> dict:
+                            reserve_tokens: int, source_id: str | None = None) -> dict:
             """Submit a scoped Claude worker call and return its result or durable queue ticket."""
             return coordinator.delegate_claude(TaskPacket.model_validate(task), prompt,
-                requested_model=requested_model, reserve_tokens=reserve_tokens)
+                requested_model=requested_model, reserve_tokens=reserve_tokens,
+                source_id=source_id)
 
         @mcp.tool()
         def complete_work(call_id: str, envelope: dict) -> dict:
@@ -432,6 +534,11 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
         def get_execution_status(call_id: str) -> dict:
             """Inspect durable ownership, result and capture health for a call."""
             return coordinator.get_execution_status(call_id)
+
+        @mcp.tool()
+        def cancel_work(call_id: str, reason: str) -> dict:
+            """Request cancellation of this client's call and its managed descendants."""
+            return coordinator.cancel_work(call_id, reason=reason)
     elif audience == "claude":
         @mcp.tool()
         def delegate_local_analysis(prompt: str) -> dict:

@@ -16,6 +16,31 @@ def _reject_placeholder(value: str, label: str) -> None:
         raise ValueError(f"{label} must be a real reviewed value")
 
 
+def _activate_validated(conn, snapshot: PolicySnapshot, operator_id: str) -> None:
+    """Persist a validated snapshot while the caller holds the arbitration lock."""
+    for ref in snapshot.guidance.packs:
+        row = conn.execute("SELECT sha256 FROM guidance_pack_versions WHERE pack_version_id=%s",
+                           (ref.pack_version_id,)).fetchone()
+        if not row or row[0] != ref.sha256:
+            raise ValueError(f"guidance reference {ref.pack_version_id} is not registered at its approved hash")
+    conn.execute("INSERT INTO config_versions(version,source_hash,review_reference,activated_at,policy) "
+                 "VALUES(%s,%s,%s,now(),%s) ON CONFLICT(version) DO NOTHING",
+                 (snapshot.version, snapshot.source_hash, snapshot.review.approval_reference,
+                  Jsonb(snapshot.model_dump())))
+    stored = conn.execute("SELECT source_hash FROM config_versions WHERE version=%s",
+                          (snapshot.version,)).fetchone()
+    if stored[0] != snapshot.source_hash:
+        raise ValueError("policy version collision")
+    conn.execute("INSERT INTO runtime_active_policy(singleton,version,source_hash) "
+                 "VALUES(true,%s,%s) ON CONFLICT(singleton) DO UPDATE "
+                 "SET version=excluded.version,source_hash=excluded.source_hash,activated_at=now()",
+                 (snapshot.version, snapshot.source_hash))
+    conn.execute("INSERT INTO runtime_policy_activations(activation_id,version,source_hash,"
+                 "approval_reference,operator_id) VALUES(%s,%s,%s,%s,%s)",
+                 (str(uuid.uuid4()), snapshot.version, snapshot.source_hash,
+                  snapshot.review.approval_reference, operator_id))
+
+
 def activate_policy(dsn: str, proposed: dict, capabilities: dict, *,
                     approved_hash: str, operator_id: str) -> PolicySnapshot:
     validation = validate_policy(proposed, capabilities)
@@ -30,24 +55,7 @@ def activate_policy(dsn: str, proposed: dict, capabilities: dict, *,
         raise ValueError("approval hash does not match validated policy hash")
     with psycopg.connect(dsn) as conn, conn.transaction():
         conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
-        conn.execute("INSERT INTO config_versions(version,source_hash,review_reference,activated_at,policy) "
-                     "VALUES(%s,%s,%s,now(),%s) ON CONFLICT(version) DO UPDATE "
-                     "SET review_reference=excluded.review_reference,policy=excluded.policy,activated_at=now() "
-                     "WHERE config_versions.source_hash=excluded.source_hash",
-                     (snapshot.version, snapshot.source_hash, snapshot.review.approval_reference,
-                      Jsonb(snapshot.model_dump())))
-        stored = conn.execute("SELECT source_hash FROM config_versions WHERE version=%s",
-                              (snapshot.version,)).fetchone()
-        if stored[0] != snapshot.source_hash:
-            raise ValueError("policy version collision")
-        conn.execute("INSERT INTO runtime_active_policy(singleton,version,source_hash) "
-                     "VALUES(true,%s,%s) ON CONFLICT(singleton) DO UPDATE "
-                     "SET version=excluded.version,source_hash=excluded.source_hash,activated_at=now()",
-                     (snapshot.version, snapshot.source_hash))
-        conn.execute("INSERT INTO runtime_policy_activations(activation_id,version,source_hash,"
-                     "approval_reference,operator_id) VALUES(%s,%s,%s,%s,%s)",
-                     (str(uuid.uuid4()), snapshot.version, snapshot.source_hash,
-                      snapshot.review.approval_reference, operator_id))
+        _activate_validated(conn, snapshot, operator_id)
     return snapshot
 
 

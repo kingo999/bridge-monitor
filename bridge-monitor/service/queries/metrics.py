@@ -4,6 +4,7 @@ import psycopg
 
 from contracts.queries import CohortQuery, MetricSet, MetricValue
 from service.queries.cohorts import cutoff, leaf_work_items
+from service.queries.guidance import work_guidance, matches_guidance_filters, result_guidance_group
 
 
 DEFINITION_VERSION = "phase1-v1"
@@ -19,7 +20,10 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
     with psycopg.connect(dsn) as conn:
         with conn.transaction():
             conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
-            work_ids = set(leaf_work_items(conn, query, as_of))
+            all_work_ids = set(leaf_work_items(conn, query, as_of))
+            guidance = work_guidance(conn, all_work_ids, as_of)
+            work_ids = {work_id for work_id in all_work_ids
+                        if matches_guidance_filters(guidance[work_id], query)}
             dispatched = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM events
                 WHERE event_type='call.dispatched' AND payload->>'destination'='skynet'
                 AND occurred_at<=%s AND work_item_id IS NOT NULL""", (as_of,)) if row[0] in work_ids}
@@ -28,14 +32,19 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
             eligible = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM delegation_decisions
                 WHERE eligibility='eligible' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
             not_routed = paid_decisions - dispatched
-            result_rows = conn.execute("""SELECT r.result_id, c.work_item_id
+            result_rows = conn.execute("""SELECT r.result_id, c.work_item_id,c.call_id,r.delivered_at
                 FROM results r JOIN calls c ON c.call_id=r.call_id
                 WHERE r.delivered_at IS NOT NULL AND r.delivered_at<=%s
                 AND EXISTS (SELECT 1 FROM events dispatch
                     WHERE dispatch.call_id=c.call_id AND dispatch.event_type='call.dispatched'
                     AND dispatch.payload->>'destination'='skynet'
                     AND dispatch.occurred_at<=%s)""", (as_of, as_of)).fetchall()
-            result_ids = {result_id for result_id, work_id in result_rows if work_id in dispatched}
+            pack_filter = (query.guidance_group and query.guidance_group not in
+                           ("no_guidance", "unknown", "mixed", "not_dispatched"))
+            result_ids = {result_id for result_id, work_id, call_id, delivered_at in result_rows
+                          if (work_id in all_work_ids and
+                              (result_guidance_group(guidance[work_id], call_id, delivered_at) == query.guidance_group
+                               if pack_filter else work_id in dispatched))}
             disposition_rows = defaultdict(list)
             for disposition_id, result_id, judgment, supersedes_id in conn.execute("""SELECT
                 disposition_id,result_id,judgment,supersedes_id FROM dispositions
@@ -64,6 +73,9 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
     final_resolution = sum(bool(resolution[work_id] & {"local_retained", "paid_revision_with_contribution", "paid_replaced"})
                            for work_id in dispatched)
     return MetricSet(definition_version=DEFINITION_VERSION, cohort=query, as_of=as_of,
+                     guidance_groups={group: sum(facts["guidance_group"] == group
+                         for work_id, facts in guidance.items() if work_id in work_ids)
+                         for group in sorted({guidance[work_id]["guidance_group"] for work_id in work_ids})},
                      metrics={
                          "routed": _metric(D, W),
                          "not_routed": _metric(len(not_routed), W),

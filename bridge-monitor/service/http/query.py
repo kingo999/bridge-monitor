@@ -14,10 +14,15 @@ def query_router(dsn: str, operator_token: str, sessions: dict) -> APIRouter:
 
     def cohort(origin: str, consumer_stage: str, created_from: datetime | None,
                created_until: datetime | None, as_of: datetime | None,
-               completed_only: bool) -> CohortQuery:
+               completed_only: bool, guidance_group: str | None = None,
+               failure_category: str | None = None, repair_effort: str | None = None,
+               example_reuse_status: str | None = None) -> CohortQuery:
         return CohortQuery(origin=origin, consumer_stage=consumer_stage,
                            created_from=created_from, created_until=created_until,
-                           as_of=as_of, completed_only=completed_only)
+                           as_of=as_of, completed_only=completed_only,
+                           guidance_group=guidance_group, failure_category=failure_category,
+                           repair_effort=repair_effort,
+                           example_reuse_status=example_reuse_status)
 
     @router.get("/snapshot")
     def snapshot(request: Request, authorization: str | None = Header(default=None),
@@ -33,11 +38,15 @@ def query_router(dsn: str, operator_token: str, sessions: dict) -> APIRouter:
                    origin: str = "observed", consumer_stage: str = "claude",
                    created_from: datetime | None = None, created_until: datetime | None = None,
                    as_of: datetime | None = None, completed_only: bool = False,
+                   guidance_group: str | None = None, failure_category: str | None = None,
+                   repair_effort: str | None = None, example_reuse_status: str | None = None,
                    limit: int = 50, offset: int = 0):
         require_browser_operator(request, authorization, operator_token, sessions)
         try:
             return list_work_items(dsn, cohort(origin, consumer_stage, created_from,
-                                               created_until, as_of, completed_only),
+                                               created_until, as_of, completed_only,
+                                               guidance_group, failure_category, repair_effort,
+                                               example_reuse_status),
                                    limit=limit, offset=offset)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
@@ -55,9 +64,13 @@ def query_router(dsn: str, operator_token: str, sessions: dict) -> APIRouter:
     def metrics(request: Request, authorization: str | None = Header(default=None),
                 origin: str = "observed", consumer_stage: str = "claude",
                 created_from: datetime | None = None, created_until: datetime | None = None,
-                as_of: datetime | None = None, completed_only: bool = False):
+                as_of: datetime | None = None, completed_only: bool = False,
+                guidance_group: str | None = None, failure_category: str | None = None,
+                repair_effort: str | None = None, example_reuse_status: str | None = None):
         require_browser_operator(request, authorization, operator_token, sessions)
         return query_metrics(dsn, cohort(origin, consumer_stage, created_from,
-                                         created_until, as_of, completed_only))
+                                         created_until, as_of, completed_only,
+                                         guidance_group, failure_category, repair_effort,
+                                         example_reuse_status))
 
     return router

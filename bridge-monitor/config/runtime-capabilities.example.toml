@@ -1,5 +1,11 @@
 # Copy to a project-local runtime file. These values are independent observations
 # and must be verified before enabling local delegation in a live pilot.
+cancellation_poll_ms = 250
+workspace_max_bytes = 104857600
+
+# Explicitly map a short source ID to an absolute read-only source root.
+# [sources]
+# app = "C:/AI/example-project/src"
 [claude]
 executable = "claude"
 context_tokens = 0 # REQUIRED: effective paid-model context capacity

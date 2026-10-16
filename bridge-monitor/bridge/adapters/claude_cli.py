@@ -50,20 +50,33 @@ def worker_system_prompt(task) -> str:
 
 class SubprocessRunner:
     def __init__(self, *, cwd: str | Path, timeout_seconds: int,
-                 client_tool_timeout_seconds: int):
+                 client_tool_timeout_seconds: int,
+                 cancel_poll_seconds: float = 0.25,
+                 diagnostic_root: str | Path | None = None):
         self.cwd = Path(cwd)
         self.timeout_seconds = timeout_seconds
         self.client_tool_timeout_seconds = client_tool_timeout_seconds
+        self.cancel_poll_seconds = cancel_poll_seconds
+        self.diagnostic_root = Path(diagnostic_root) if diagnostic_root else self.cwd / "var" / "logs" / "claude-cli"
         self.returncode = None
         self.timed_out = False
         self.last_stderr_path = None
+        self.cancelled = False
+        self.terminated = False
 
-    def stream(self, command: list[str], prompt: str):
+    def fork(self, *, cwd: str | Path | None = None):
+        """Give every concurrent call its own process state and receipt."""
+        return SubprocessRunner(cwd=cwd or self.cwd, timeout_seconds=self.timeout_seconds,
+            client_tool_timeout_seconds=self.client_tool_timeout_seconds,
+            cancel_poll_seconds=self.cancel_poll_seconds,
+            diagnostic_root=self.diagnostic_root)
+
+    def stream(self, command: list[str], prompt: str, *, cancel_requested=None):
         env = os.environ.copy()
         env.pop("CLAUDECODE", None)
         env["MCP_TOOL_TIMEOUT"] = str(self.client_tool_timeout_seconds * 1000)
         env["CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS"] = "0"
-        diagnostic = self.cwd / "var" / "logs" / "claude-cli" / f"{uuid.uuid4()}.stderr.txt"
+        diagnostic = self.diagnostic_root / f"{uuid.uuid4()}.stderr.txt"
         diagnostic.parent.mkdir(parents=True, exist_ok=True)
         self.last_stderr_path = diagnostic
         with diagnostic.open("wb") as stderr_sink:
@@ -72,17 +85,37 @@ class SubprocessRunner:
                                        text=True, encoding="utf-8", errors="replace")
             timer = threading.Timer(self.timeout_seconds, self._expire, args=(process,))
             timer.start()
+            stop_monitor = threading.Event()
+            def monitor_cancel():
+                while not stop_monitor.wait(self.cancel_poll_seconds):
+                    try:
+                        requested = cancel_requested()
+                    except Exception:
+                        continue
+                    if requested and process.poll() is None:
+                        self.cancelled = True
+                        process.kill()
+                        return
+            watcher = None
+            if cancel_requested is not None:
+                watcher = threading.Thread(target=monitor_cancel, daemon=True)
+                watcher.start()
             try:
                 process.stdin.write(prompt)
                 process.stdin.close()
                 for line in process.stdout:
                     yield line
                 self.returncode = process.wait()
+                self.terminated = True
             finally:
                 timer.cancel()
+                stop_monitor.set()
+                if watcher is not None:
+                    watcher.join(timeout=1)
                 if process.poll() is None:
                     process.kill()
                     self.returncode = process.wait()
+                self.terminated = process.poll() is not None
 
     def _expire(self, process):
         if process.poll() is None:
@@ -93,7 +126,8 @@ class SubprocessRunner:
 class ClaudeCLIAdapter:
     def __init__(self, runner, *, executable: str, model: str,
                  mcp_config_path: str | Path | None = None,
-                 mcp_config_factory=None, allowed: bool = True):
+                 mcp_config_factory=None, allowed: bool = True,
+                 cancellation_probe=None):
         if (mcp_config_path is None) == (mcp_config_factory is None):
             raise ValueError("exactly one child MCP configuration source is required")
         self.runner = runner
@@ -102,8 +136,9 @@ class ClaudeCLIAdapter:
         self.mcp_config_factory = mcp_config_factory
         self.model = model
         self.allowed = allowed
+        self.cancellation_probe = cancellation_probe
 
-    def run(self, lease, task, prompt: str, emitter) -> AdapterResult:
+    def run(self, lease, task, prompt: str, emitter, *, workspace=None) -> AdapterResult:
         ensure_lease(lease)
         if not self.allowed:
             emitter.emit(EventType.ADMISSION_BLOCKED, call_id=lease.call_id,
@@ -127,12 +162,18 @@ class ClaudeCLIAdapter:
         message_id = str(uuid.uuid4())
         chunk_number = 0
         tool_by_index = {}
+        runner = self.runner.fork(cwd=workspace) if isinstance(self.runner, SubprocessRunner) else self.runner
         try:
             config_path = (self.mcp_config_factory(lease) if self.mcp_config_factory
                            else self.mcp_config_path)
             command = build_claude_command(self.executable, self.model, config_path,
                                             system_prompt=system_prompt)
-            for line in self.runner.stream(command, prompt):
+            if isinstance(runner, SubprocessRunner) and self.cancellation_probe is not None:
+                lines = runner.stream(command, prompt,
+                    cancel_requested=lambda: self.cancellation_probe(lease.call_id))
+            else:
+                lines = runner.stream(command, prompt)
+            for line in lines:
                 if not line.strip():
                     continue
                 frame = json.loads(line)
@@ -182,20 +223,29 @@ class ClaudeCLIAdapter:
                 if frame.get("type") == "result":
                     final = frame
         except Exception as exc:
+            if "lines" in locals() and hasattr(lines, "close"):
+                lines.close()
             emitter.emit(EventType.ATTEMPT_UNCERTAIN,
                          payload={"reason": "claude_stream_lost", "exception_type": type(exc).__name__},
                          **common)
             return AdapterResult(state="uncertain", reported_model=reported,
-                                 uncertainty="execution_may_have_run")
-        if getattr(self.runner, "timed_out", False) or getattr(self.runner, "returncode", 0):
+                                 uncertainty="execution_may_have_run",
+                                 terminated=getattr(runner, "terminated", False),
+                                 cancelled=getattr(runner, "cancelled", False))
+        if (getattr(runner, "cancelled", False) or getattr(runner, "timed_out", False)
+                or getattr(runner, "returncode", 0)):
             emitter.emit(EventType.ATTEMPT_UNCERTAIN,
-                         payload={"reason": "claude_exit_unconfirmed", "returncode": self.runner.returncode},
+                         payload={"reason": "claude_exit_unconfirmed", "returncode": runner.returncode},
                          **common)
             return AdapterResult(state="uncertain", reported_model=reported,
-                                 uncertainty="execution_outcome_unconfirmed")
+                                 uncertainty="execution_cancelled" if getattr(runner, "cancelled", False)
+                                             else "execution_outcome_unconfirmed",
+                                 terminated=getattr(runner, "terminated", False),
+                                 cancelled=getattr(runner, "cancelled", False))
         if not final or final.get("is_error") or not isinstance(final.get("result"), str):
             emitter.emit(EventType.CALL_FAILED, payload={"reason": "no_successful_result"}, **common)
-            return AdapterResult(state="failed", reported_model=reported)
+            return AdapterResult(state="failed", reported_model=reported,
+                                 terminated=getattr(runner, "terminated", False))
         raw_answer = final["result"]
         answer = raw_answer
         completion_claim = None

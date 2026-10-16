@@ -33,6 +33,7 @@ class EventType(str, Enum):
     MODEL_REPORTED = "model.reported"
     MESSAGE_SENT = "message.sent"
     MESSAGE_RECEIVED = "message.received"
+    PROMPT_TRANSFORMED = "prompt.transformed"
     RESPONSE_STARTED = "response.started"
     RESPONSE_DELTA = "response.delta"
     RESPONSE_COMPLETED = "response.completed"

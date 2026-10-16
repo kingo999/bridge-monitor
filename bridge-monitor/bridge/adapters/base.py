@@ -12,6 +12,8 @@ class AdapterResult:
     raw_answer: str | None = None
     raw_content_id: str | None = None
     completion_claim: dict | None = None
+    terminated: bool = False
+    cancelled: bool = False
 
 
 def ensure_lease(lease, expected_call_id: str | None = None) -> None:

@@ -24,7 +24,11 @@ def test_policy_activation_binds_reviewed_hash(runtime_dsn):
     with psycopg.connect(test_dsn) as conn:
         row = conn.execute("SELECT review_reference, source_hash FROM config_versions WHERE version=%s",
                            (activated.version,)).fetchone()
-    assert row == (proposed["review"]["approval_reference"], expected.source_hash)
+        activation = conn.execute("SELECT approval_reference FROM runtime_policy_activations "
+            "WHERE version=%s AND operator_id='operator-1' "
+            "ORDER BY activated_at DESC LIMIT 1", (activated.version,)).fetchone()
+    assert row[1] == expected.source_hash
+    assert activation == (proposed["review"]["approval_reference"],)
 
 
 def test_placeholder_review_and_unknown_capability_rejected(runtime_dsn):
@@ -37,3 +41,21 @@ def test_placeholder_review_and_unknown_capability_rejected(runtime_dsn):
     proposed["review"]["approval_reference"] = "approval-1"
     with pytest.raises(ValueError, match="profile"):
         activate_policy(test_dsn, proposed, {}, approved_hash="x", operator_id="operator-1")
+
+
+def test_reactivation_keeps_original_policy_review_snapshot(runtime_dsn):
+    dsn = runtime_dsn
+    proposed = _policy().model_dump()
+    caps = {"claude-test": {"context_tokens": 10000}}
+    digest = validate_policy(proposed, caps).snapshot.source_hash
+    first = activate_policy(dsn, proposed, caps, approved_hash=digest, operator_id="operator-1")
+    original_ref = first.review.approval_reference
+    proposed["review"]["approval_reference"] = "second-independent-review"
+    activate_policy(dsn, proposed, caps, approved_hash=digest, operator_id="operator-2")
+    with psycopg.connect(dsn) as conn:
+        stored = conn.execute("SELECT review_reference,policy->'review'->>'approval_reference' "
+            "FROM config_versions WHERE version=%s", (first.version,)).fetchone()
+        activations = conn.execute("SELECT approval_reference FROM runtime_policy_activations "
+            "WHERE version=%s ORDER BY activated_at", (first.version,)).fetchall()
+    assert stored == (original_ref, original_ref)
+    assert sorted(row[0] for row in activations) == sorted([original_ref, "second-independent-review"])

@@ -1,4 +1,6 @@
 # Valid only with the project-local Codex CLI pilot command's 600-second MCP override.
+cancellation_poll_ms = 250
+workspace_max_bytes = 104857600
 [claude]
 executable = "claude"
 context_tokens = 200000

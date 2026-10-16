@@ -13,6 +13,10 @@ class CohortQuery(BaseModel):
     origin: Literal["observed", "imported", "synthetic", "all"] = "observed"
     consumer_stage: str = "claude"
     completed_only: bool = False
+    guidance_group: str | None = None
+    failure_category: str | None = None
+    repair_effort: str | None = None
+    example_reuse_status: str | None = None
 
 
 class MetricValue(BaseModel):
@@ -28,6 +32,7 @@ class MetricSet(BaseModel):
     unit: str = "work_items/results"
     metrics: dict[str, MetricValue]
     coverage: dict[str, MetricValue] = Field(default_factory=dict)
+    guidance_groups: dict[str, int] = Field(default_factory=dict)
 
 
 class PublicationCursor(BaseModel):

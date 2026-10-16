@@ -12,6 +12,10 @@ class GuidanceManifest(BaseModel):
     version: int = 1
     state: Literal["supplied", "no_guidance", "unknown"]
     supplied_content_ids: list[str] = Field(default_factory=list)
+    pack_version_id: str | None = None
+    pack_sha256: str | None = None
+    selection_source: Literal["configuration", "claude"] | None = None
+    supplied: list[dict[str, Any]] = Field(default_factory=list)
     excluded: list[dict[str, Any]] = Field(default_factory=list)
 
 

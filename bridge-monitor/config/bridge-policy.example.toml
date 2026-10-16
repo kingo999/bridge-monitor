@@ -34,6 +34,13 @@ qwen_temperature = 0.0
 [fallback]
 paid_model_profile = "REQUIRED"
 
+[guidance]
+# Empty baseline: approved pack references are added only after registration
+# and a hash-specific human review of this policy file.
+packs = []
+required_categories = []
+max_bytes = 0
+
 [review]
 reviewer = "REQUIRED"
 approval_reference = "REQUIRED"

@@ -1,6 +1,7 @@
 """Convert bridge observations to contract events and replay the durable spool."""
 
 import uuid
+import time
 from datetime import datetime, timezone
 
 from contracts.content import ContentObject
@@ -35,8 +36,8 @@ class TelemetryEmitter:
                                                message_id=message_id)
             if event_type in (EventType.MESSAGE_SENT, EventType.MESSAGE_RECEIVED):
                 p.update({"message_id": message_id or str(uuid.uuid4()), "role": role,
-                          "direction": direction, "original_content_id": content_id,
-                          "effective_content_id": content_id})
+                          "direction": direction, "original_content_id": content_id})
+                p.setdefault("effective_content_id", content_id)
             elif event_type == EventType.RESPONSE_DELTA:
                 p.update({"message_id": message_id or str(uuid.uuid4()),
                           "chunk_sequence": chunk_sequence or 1, "content_id": content_id})
@@ -56,18 +57,19 @@ class TelemetryEmitter:
         return stored
 
     def _flush_pending(self) -> None:
-        while entry := self.spool.first():
-            seq, event, content = entry
-            try:
-                receipts = self.collector.ingest_batch(self.producer_id, [event],
-                                                       [content] if content else [])
-                if len(receipts) != 1 or receipts[0] not in ("committed", "duplicate"):
-                    raise RuntimeError("collector did not acknowledge event")
-            except Exception:
-                self.collector_healthy = False
-                break
-            self.spool.acknowledge(seq)
-            self.collector_healthy = True
+        with self.spool.drain_lock():
+            while entry := self.spool.first():
+                seq, event, content = entry
+                try:
+                    receipts = self.collector.ingest_batch(self.producer_id, [event],
+                                                           [content] if content else [])
+                    if len(receipts) != 1 or receipts[0] not in ("committed", "duplicate"):
+                        raise RuntimeError("collector did not acknowledge event")
+                except Exception:
+                    self.collector_healthy = False
+                    break
+                self.spool.acknowledge(seq)
+                self.collector_healthy = True
 
     def replay(self) -> None:
         self._flush_pending()
@@ -83,7 +85,21 @@ class TelemetryEmitter:
     def may_admit_new_work(self, degraded_admission: str) -> bool:
         if degraded_admission == "allow_with_gaps":
             return True
-        return self.collector_healthy and self.spool.pending_count() == 0 and self.spool.unreported_gaps() == 0
+        if self.spool.unreported_gaps():
+            return False
+        # Multiple bridge processes can briefly share a pending spool entry.
+        # Give its collector acknowledgement a bounded chance to settle before
+        # treating that ordinary contention as a capture outage.
+        deadline = time.monotonic() + 0.5
+        while True:
+            if self.spool.pending_count() == 0 and self.collector_healthy:
+                return True
+            self._flush_pending()
+            if self.spool.pending_count() == 0 and self.collector_healthy:
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.025)
 
     def health(self) -> dict:
         return {"state": "healthy" if self.collector_healthy and not self.spool.pending_count() else "degraded",

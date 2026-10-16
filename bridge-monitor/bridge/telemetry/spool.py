@@ -1,8 +1,11 @@
 """Bounded SQLite spool for collector outages, with durable loss accounting."""
 
 import base64
+from contextlib import contextmanager
 import json
+import os
 import sqlite3
+import time
 from pathlib import Path
 
 from contracts.content import ContentObject
@@ -28,6 +31,35 @@ class DurableSpool:
         db.execute("PRAGMA journal_mode=WAL")
         db.execute("PRAGMA synchronous=FULL")
         return db
+
+    @contextmanager
+    def drain_lock(self):
+        """Fence collector delivery of this spool across threads and processes."""
+        lock_path = self.path.with_name(self.path.name + ".drain.lock")
+        with lock_path.open("a+b") as lock_file:
+            deadline = time.monotonic() + 10
+            while True:
+                try:
+                    lock_file.seek(0)
+                    if os.name == "nt":
+                        import msvcrt
+                        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except OSError:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError("spool drain lock unavailable")
+                    time.sleep(0.025)
+            try:
+                yield
+            finally:
+                lock_file.seek(0)
+                if os.name == "nt":
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
     def _meta(self, key: str) -> int:
         with self._connect() as db:
