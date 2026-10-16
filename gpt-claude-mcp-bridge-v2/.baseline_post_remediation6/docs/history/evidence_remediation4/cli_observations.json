@@ -1,0 +1,128 @@
+{
+  "commands": {
+    "--version": {
+      "exit_code": 0,
+      "output": "codex-cli 0.162.1\n"
+    },
+    "exec --help": {
+      "exit_code": 0,
+      "output": "Run Codex non-interactively\n\nUsage: codex exec [OPTIONS] [PROMPT]\n       codex exec [OPTIONS] <COMMAND> [ARGS]\n\nCommands:\n  resume  Resume a previous session by id or pick the most recent with --last\n  fork    Fork a previous session by id into a new session\n  review  Run a code review against the current repository\n  help    Print this message or the help of the given subcommand(s)\n\nArguments:\n  [PROMPT]\n          Initial instructions for the agent. If not provided as an argument (or if `-` is used),\n          instructions are read from stdin. If stdin is piped and a prompt is also provided, stdin\n          is appended as a `<stdin>` block\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n      --strict-config\n          Error out when config.toml contains fields that are not recognized by this version of\n          Codex\n\n  -i, --image <FILE>...\n          Optional image(s) to attach to the initial prompt\n\n  -m, --model <MODEL>\n          Model the agent should use\n\n      --oss\n          Use open-source provider\n\n      --local-provider <OSS_PROVIDER>\n          Specify which local provider to use (lmstudio or ollama). If not specified with --oss,\n          will use config default or show selection\n\n  -p, --profile <CONFIG_PROFILE_V2>\n          Layer $CODEX_HOME/<name>.config.toml on top of the base user config\n\n  -s, --sandbox <SANDBOX_MODE>\n          Select the sandbox policy to use when executing model-generated shell commands\n          \n          [possible values: read-only, workspace-write, danger-full-access]\n\n      --approve-for-me\n          Route approval requests through automatic review using the workspace-write sandbox\n\n      --dangerously-bypass-approvals-and-sandbox\n          Skip all confirmation prompts and execute commands without sandboxing. EXTREMELY\n          DANGEROUS. Intended solely for running in environments that are externally sandboxed\n\n      --dangerously-bypass-hook-trust\n          Run enabled hooks without requiring persisted hook trust for this invocation. DANGEROUS.\n          Intended only for automation that already vets hook sources\n\n  -C, --cd <DIR>\n          Tell the agent to use the specified directory as its working root\n\n      --worktree\n          Run the session in a new managed Git worktree\n\n      --add-dir <DIR>\n          Additional directories that should be writable alongside the primary workspace\n\n      --thread-source <SOURCE>\n          Source classification for newly created or forked threads\n\n      --cyber-access-program <PROGRAM>\n          Request an experimental Cyber access program for this turn (OpenAI provider only). Omit to\n          use server defaults. Not supported with review; fork requires a prompt\n          \n          [possible values: standard, daybreak_blue, daybreak_red]\n\n      --skip-git-repo-check\n          Allow running Codex outside a Git repository\n\n      --ephemeral\n          Run without persisting session files to disk\n\n      --ignore-user-config\n          Do not load `$CODEX_HOME/config.toml`; auth still uses `CODEX_HOME`\n\n      --ignore-rules\n          Do not load user or project execpolicy `.rules` files\n\n      --output-schema <FILE>\n          Path to a JSON Schema file describing the model's final response shape\n\n      --color <COLOR>\n          Specifies color settings for use in the output\n          \n          [default: auto]\n          [possible values: always, never, auto]\n\n      --json\n          Print events to stdout as JSONL\n\n  -o, --output-last-message <FILE>\n          Specifies file where the last message from the agent should be written\n\n  -h, --help\n          Print help (see a summary with '-h')\n\n  -V, --version\n          Print version\n"
+    },
+    "exec resume --help": {
+      "exit_code": 0,
+      "output": "Resume a previous session by id or pick the most recent with --last\n\nUsage: codex exec resume [OPTIONS] [SESSION_ID] [PROMPT]\n\nArguments:\n  [SESSION_ID]\n          Conversation/session id (UUID) or thread name. UUIDs take precedence if it parses. If\n          omitted, use --last to pick the most recent recorded session\n\n  [PROMPT]\n          Prompt to send after resuming the session. If `-` is used, read from stdin\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n      --last\n          Resume the most recent recorded session (newest) without specifying an id\n\n      --all\n          Show all sessions (disables cwd filtering)\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n  -i, --image <FILE>\n          Optional image(s) to attach to the prompt sent after resuming\n\n      --strict-config\n          Error out when config.toml contains fields that are not recognized by this version of\n          Codex\n\n  -m, --model <MODEL>\n          Model the agent should use\n\n      --dangerously-bypass-approvals-and-sandbox\n          Skip all confirmation prompts and execute commands without sandboxing. EXTREMELY\n          DANGEROUS. Intended solely for running in environments that are externally sandboxed\n\n      --dangerously-bypass-hook-trust\n          Run enabled hooks without requiring persisted hook trust for this invocation. DANGEROUS.\n          Intended only for automation that already vets hook sources\n\n      --worktree\n          Run the session in a new managed Git worktree\n\n      --thread-source <SOURCE>\n          Source classification for newly created or forked threads\n\n      --cyber-access-program <PROGRAM>\n          Request an experimental Cyber access program for this turn (OpenAI provider only). Omit to\n          use server defaults. Not supported with review; fork requires a prompt\n          \n          [possible values: standard, daybreak_blue, daybreak_red]\n\n      --skip-git-repo-check\n          Allow running Codex outside a Git repository\n\n      --ephemeral\n          Run without persisting session files to disk\n\n      --ignore-user-config\n          Do not load `$CODEX_HOME/config.toml`; auth still uses `CODEX_HOME`\n\n      --ignore-rules\n          Do not load user or project execpolicy `.rules` files\n\n      --output-schema <FILE>\n          Path to a JSON Schema file describing the model's final response shape\n\n      --json\n          Print events to stdout as JSONL\n\n  -o, --output-last-message <FILE>\n          Specifies file where the last message from the agent should be written\n\n  -h, --help\n          Print help (see a summary with '-h')\n"
+    },
+    "features list": {
+      "exit_code": 0,
+      "output": " under development  true\nitem_ids                                 removed            true\njs_repl                                  removed            false\njs_repl_tools_only                       removed            false\nlocal_thread_store_compression           under development  false\nlocal_thread_store_shared_compression    removed            false\nlogin_shell_package_path                 experimental       false\nmcp_2026_07_28                           under development  false\nmcp_oauth_refresh_coordination           under development  false\nmemories                                 stable             false\nmentions_v2                              stable             true\nmodel_catalog_in_context                 under development  false\nmulti_agent                              stable             true\nmulti_agent_mode                         removed            false\nmulti_agent_v2                           stable             false\nmulti_agent_v2_dynamic_tools             under development  false\nnetwork_proxy                            experimental       false\nnon_prefixed_mcp_tool_names              under development  false\nnonfatal_clock_read_errors               under development  false\nomit_app_server_notification_media       under development  false\npersonality                              removed            false\nplugin_hooks                             removed            false\nplugin_sharing                           stable             true\nplugins                                  stable             true\npowershell_shell_version                 under development  false\nprefer_mxc                               under development  false\nprevent_idle_sleep                       experimental       false\npsp                                      under development  false\nrealtime_conversation                    stable             true\nreasoning_effort_override                under development  false\nrecommended_plugins                      stable             false\nremote_compaction_v2                     removed            false\nremote_control                           removed            false\nremote_models                            removed            false\nremote_plugin                            stable             true\nrequest_permissions_tool                 under development  false\nrequest_rule                             removed            false\nresize_all_images                        removed            true\nrespect_system_proxy                     under development  false\nresponses_websockets                     removed            false\nresponses_websockets_v2                  removed            false\nretain_client_developer_messages         under development  false\nrollout_budget                           under development  false\nruntime_metrics                          under development  false\nsearch_tool                              removed            false\nsecret_auth_storage                      stable             true\nsend_async_message                       removed            false\nsend_message_to_user_async               under development  false\nshell_snapshot                           stable             true\nshell_snapshot_v2                        under development  false\nshell_tool                               stable             true\nshell_zsh_fork                           under development  false\nskill_env_var_dependency_prompt          removed            false\nskill_mcp_dependency_install             stable             true\nskill_search                             stable             true\nskip_host_skill_discovery                under development  false\nsleep_tool                               stable             true\nsqlite                                   removed            true\nstable_environment_tools                 under development  false\nstandalone_web_search                    under development  false\nsteer                                    removed            true\nstep_model_switching                     under development  false\nsystem_proxy_fallback                    stable             true\nterminal_resize_reflow                   removed            true\nterminal_visualization_instructions      under development  false\ntoken_budget                             under development  false\ntool_call_mcp_elicitation                stable             true\ntool_search                              removed            false\ntool_search_always_defer_mcp_tools       removed            true\ntool_suggest                             stable             true\ntranscript_v2                            deprecated         false\ntui_app_server                           removed            true\nultrafast_mode                           stable             true\nunavailable_dummy_tools                  removed            false\nunbounded_connection_retries             stable             true\nundo                                     removed            false\nunified_exec                             stable             true\nunified_exec_tty                         stable             true\nunified_exec_zsh_fork                    removed            true\nunified_image_budget                     under development  false\nuse_agent_identity                       under development  false\nuse_legacy_landlock                      deprecated         false\nuse_linux_sandbox_bwrap                  removed            false\nuse_xaa                                  under development  false\nview_image                               stable             true\nweb_search_cached                        deprecated         false\nweb_search_request                       deprecated         false\nwindows_sandbox_service                  under development  false\nworkspace_dependencies                   stable             true\nworkspace_owner_usage_nudge              removed            false\nworktrees                                stable             true\nwrite_stdin_approval                     stable             true\n"
+    },
+    "login status": {
+      "classified_as": "chatgpt",
+      "exit_code": 0,
+      "output": "(raw status line deliberately not retained)"
+    },
+    "mcp --help": {
+      "exit_code": 0,
+      "output": "Manage external MCP servers for Codex\n\nUsage: codex mcp [OPTIONS] <COMMAND>\n\nCommands:\n  list    \n  get     \n  add     \n  remove  \n  login   \n  logout  \n  help    Print this message or the help of the given subcommand(s)\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n  -h, --help\n          Print help (see a summary with '-h')\n"
+    },
+    "mcp list --help": {
+      "exit_code": 0,
+      "output": "Usage: codex mcp list [OPTIONS]\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n      --json\n          Output the configured servers as JSON\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n  -h, --help\n          Print help (see a summary with '-h')\n"
+    },
+    "sandbox --help": {
+      "exit_code": 0,
+      "output": "Run commands within a Codex-provided sandbox\n\nUsage: codex sandbox [OPTIONS] [COMMAND]... [COMMAND]\n\nCommands:\n  uninstall  Remove the legacy Windows sandbox's machine-wide accounts and network rules\n  help       Print this message or the help of the given subcommand(s)\n\nArguments:\n  [COMMAND]...\n          Full command args to run under Windows restricted token sandbox\n\nOptions:\n  -c, --config <key=value>\n          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.\n          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed\n          as TOML. If it fails to parse as TOML, the raw string is used as a literal.\n          \n          Examples: - `-c model=\"o3\"` - `-c 'sandbox_permissions=[\"disk-full-read-access\"]'` - `-c\n          shell_environment_policy.inherit=all`\n\n      --sandbox-state-json <JSON>\n          JSON value from `codex/sandbox-state-meta` to apply directly\n\n      --enable <FEATURE>\n          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`\n\n      --sandbox-state-readable-root <SANDBOX_STATE_READABLE_ROOT>\n          Add a readable root to the supplied sandbox state. Repeat for multiple roots\n\n      --disable <FEATURE>\n          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`\n\n      --sandbox-state-disable-network\n          Disable direct network access in the supplied sandbox state\n\n  -P, --permission-profile <NAME>\n          Named permissions profile to apply from the active configuration stack\n\n  -p, --profile <CONFIG_PROFILE>\n          Layer $CODEX_HOME/<name>.config.toml on top of the base user config\n\n  -C, --cd <DIR>\n          Working directory used for profile resolution and command execution\n\n      --include-managed-config\n          Include managed requirements while resolving an explicit permissions profile\n\n  -h, --help\n          Print help (see a summary with '-h')\n"
+    }
+  },
+  "environment": {
+    "codex_cli_version": "0.162.1",
+    "codex_launcher": "node-script",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.7",
+    "recorded_at": "2026-10-13T07:50:42Z",
+    "sandbox_backend": "elevated",
+    "sandbox_provisioning_at_record_time": "failed"
+  },
+  "evidence_class": "implementer_executed",
+  "kind": "model_free_cli_observation",
+  "mcp_deny_all_probe": {
+    "any_server_enabled_with_override": true,
+    "baseline_exit": 0,
+    "baseline_servers": [
+      {
+        "enabled": false,
+        "name": "code-review"
+      },
+      {
+        "enabled": false,
+        "name": "codex_app"
+      },
+      {
+        "enabled": true,
+        "name": "cua_repl"
+      },
+      {
+        "enabled": true,
+        "name": "idea"
+      },
+      {
+        "enabled": true,
+        "name": "node_repl"
+      }
+    ],
+    "claim": "-c mcp_servers={} has no effect on the effective server list (no supported deny-all)",
+    "compared": "sorted (name, enabled) pairs parsed from `codex mcp list --json`; transports, commands and environments are deliberately not retained",
+    "ignore_user_config_on_mcp_list": {
+      "claim": "`--ignore-user-config` (an `exec` flag) cannot be observed through `mcp list`",
+      "exit": 2,
+      "rejected_as_unexpected_argument": true
+    },
+    "override_exit": 0,
+    "override_servers": [
+      {
+        "enabled": false,
+        "name": "code-review"
+      },
+      {
+        "enabled": false,
+        "name": "codex_app"
+      },
+      {
+        "enabled": true,
+        "name": "cua_repl"
+      },
+      {
+        "enabled": true,
+        "name": "idea"
+      },
+      {
+        "enabled": true,
+        "name": "node_repl"
+      }
+    ],
+    "same_effective_view": true
+  },
+  "rollout_structure": {
+    "claim": "Codex persists no separate nested apply_patch record (only the exec wrapper call)",
+    "note": "historical rollout of an earlier live attack run; structure only, no content",
+    "payload_types": {
+      "None": 14,
+      "custom_tool_call": 8,
+      "custom_tool_call_output": 8,
+      "item_completed": 7,
+      "message": 10,
+      "reasoning": 1,
+      "task_complete": 2,
+      "task_started": 2,
+      "thread_settings_applied": 2,
+      "token_count": 10
+    },
+    "records_named_apply_patch": 0,
+    "rows": 64,
+    "tool_call_names": {
+      "exec": 8
+    }
+  },
+  "source_combined_sha256": "2551d85fa0e89333ffb12903133ac1091928dc1924b70504f98b8e0569987dba",
+  "what": "model-free CLI help/schema outputs the README relies on (commands were EXECUTED; no inference, no sandbox preflight)"
+}

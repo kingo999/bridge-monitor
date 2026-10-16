@@ -1,0 +1,15 @@
+base snapshot .baseline_post_remediation6 combined sha256: 8d90b24f2f5c1c97dccdff462938fe336734e98a2074bd88abc237a81ccfcc71
+files changed/added/removed: 12
+
+README.md                                            modified  +35    -10
+bridge/admin.py                                      modified  +37    -11
+bridge/errors.py                                     modified  +5     -0
+bridge/runner.py                                     modified  +15    -1
+bridge/service.py                                    modified  +41    -9
+bridge/state.py                                      modified  +16    -2
+docs/POST_ROUND6_DELTA.md                            added     +157   -0
+tests/test_review5.py                                modified  +7     -3
+tests/test_review7.py                                added     +457   -0
+tools/apply_patch_attack_test.py                     modified  +4     -0
+tools/live_smoke_test.py                             modified  +29    -22
+tools/smoke_oracles.py                               modified  +151   -43

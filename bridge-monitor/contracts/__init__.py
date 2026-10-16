@@ -1,0 +1,1 @@
+"""Versioned bridge-monitor contracts."""

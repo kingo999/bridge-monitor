@@ -1,0 +1,40 @@
+{
+  "candidate_origin": "supervisor_correction",
+  "worker_accepted": false,
+  "compiler": "Python 3.13 py_compile",
+  "compile_passed": true,
+  "behaviour_cases": [
+    {
+      "input": null,
+      "expected": [],
+      "actual": []
+    },
+    {
+      "input": [],
+      "expected": [],
+      "actual": []
+    },
+    {
+      "input": [
+        2,
+        1,
+        2,
+        0,
+        1
+      ],
+      "expected": [
+        2,
+        1,
+        0
+      ],
+      "actual": [
+        2,
+        1,
+        0
+      ]
+    }
+  ],
+  "behaviour_passed": true,
+  "measured_agent_validation_s": 0.002007999999477761,
+  "human_active_s": null
+}

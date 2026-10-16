@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agent observability (OBS-01)</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Agent observability <span class="tag">read-only</span></h1>
+    <div class="controls">
+      <button id="refresh" type="button">Refresh now</button>
+      <label><input id="auto" type="checkbox" checked> Auto-refresh</label>
+      <select id="interval" aria-label="Refresh interval">
+        <option value="5">5 s</option>
+        <option value="15" selected>15 s</option>
+        <option value="60">60 s</option>
+      </select>
+      <span id="updated" class="muted">not loaded</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="banner" class="banner hidden" role="alert"></div>
+    <section id="notices" aria-label="Source notices"></section>
+
+    <section aria-labelledby="h-summary">
+      <h2 id="h-summary">Summary</h2>
+      <div id="summary" class="cards"></div>
+    </section>
+
+    <section aria-labelledby="h-inflight">
+      <h2 id="h-inflight">In flight (observed markers)</h2>
+      <p class="muted">A marker is an observed state, not proof of a live process or of what the agent is doing.</p>
+      <div id="inflight"></div>
+    </section>
+
+    <section aria-labelledby="h-calls">
+      <h2 id="h-calls">Call history</h2>
+      <div class="filters">
+        <label>Model <select id="f-model"></select></label>
+        <label>Tool <select id="f-tool"></select></label>
+        <label>Session <select id="f-session"></select></label>
+        <label>Outcome <select id="f-outcome"></select></label>
+        <span id="filter-count" class="muted"></span>
+      </div>
+      <div id="calls" class="table-wrap"></div>
+    </section>
+
+    <section aria-labelledby="h-sessions">
+      <h2 id="h-sessions">Sessions (latest observed counters)</h2>
+      <div id="sessions" class="table-wrap"></div>
+    </section>
+
+    <section aria-labelledby="h-limits">
+      <h2 id="h-limits">How to read this</h2>
+      <ul id="limitations"></ul>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+test_cancelled_post_has_no_replay_and_reaps (tests.test_local_worker_transport.Transport.test_cancelled_post_has_no_replay_and_reaps) ... ok
+test_http_peer_no_redirect_and_bounded_body (tests.test_local_worker_transport.Transport.test_http_peer_no_redirect_and_bounded_body) ... ok
+test_slow_header_timeout_kills_helper (tests.test_local_worker_transport.Transport.test_slow_header_timeout_kills_helper) ... ok
+test_stalled_helper_dns_and_malformed_protocol (tests.test_local_worker_transport.Transport.test_stalled_helper_dns_and_malformed_protocol) ... ok
+test_unapproved_path_never_spawns (tests.test_local_worker_transport.Transport.test_unapproved_path_never_spawns) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 2.450s
+
+OK

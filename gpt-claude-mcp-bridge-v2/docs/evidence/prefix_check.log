@@ -1,0 +1,68 @@
+RESULT_JSON:{"tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_a_directory_in_its_place_is_refused": "fail", "tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_an_invalid_file_refuses_instead_of_being_ignored": "fail", "tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_no_file_and_no_variable_leaves_the_users_codex_config_in_charge": "pass", "tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_environment_variable_wins_over_the_file": "error", "tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_file_supplies_the_backend_when_the_environment_does_not": "fail", "tests.test_review10.S2_ServicePathUsesIt.test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from": "fail", "tests.test_review10.S2_ServicePathUsesIt.test_an_invalid_file_stops_the_call_before_any_process_runs": "fail", "tests.test_review10.S2_ServicePathUsesIt.test_the_environment_override_banner_is_unchanged": "pass"}
+test_a_directory_in_its_place_is_refused (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_a_directory_in_its_place_is_refused) ... FAIL
+test_an_invalid_file_refuses_instead_of_being_ignored (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_an_invalid_file_refuses_instead_of_being_ignored) ... FAIL
+test_no_file_and_no_variable_leaves_the_users_codex_config_in_charge (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_no_file_and_no_variable_leaves_the_users_codex_config_in_charge) ... ok
+test_the_environment_variable_wins_over_the_file (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_environment_variable_wins_over_the_file) ... ERROR
+test_the_file_supplies_the_backend_when_the_environment_does_not (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_file_supplies_the_backend_when_the_environment_does_not) ... FAIL
+test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from (tests.test_review10.S2_ServicePathUsesIt.test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from) ... FAIL
+test_an_invalid_file_stops_the_call_before_any_process_runs (tests.test_review10.S2_ServicePathUsesIt.test_an_invalid_file_stops_the_call_before_any_process_runs) ... FAIL
+test_the_environment_override_banner_is_unchanged (tests.test_review10.S2_ServicePathUsesIt.test_the_environment_override_banner_is_unchanged) ... ok
+
+======================================================================
+ERROR: test_the_environment_variable_wins_over_the_file (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_environment_variable_wins_over_the_file)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_q3cx1fp0\tests\test_review10.py", line 41, in test_the_environment_variable_wins_over_the_file
+    self.assertEqual((s.windows_sandbox, s.windows_sandbox_source), ("unelevated", "environment"))
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'Settings' object has no attribute 'windows_sandbox_source'
+
+======================================================================
+FAIL: test_a_directory_in_its_place_is_refused (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_a_directory_in_its_place_is_refused)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_q3cx1fp0\tests\test_review10.py", line 61, in test_a_directory_in_its_place_is_refused
+    with self.assertRaises(errors.BridgeError) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised
+
+======================================================================
+FAIL: test_an_invalid_file_refuses_instead_of_being_ignored (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_an_invalid_file_refuses_instead_of_being_ignored)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_q3cx1fp0\tests\test_review10.py", line 53, in test_an_invalid_file_refuses_instead_of_being_ignored
+    with self.assertRaises(errors.BridgeError, msg=repr(text)[:60]) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised : '{"windows_sandbox": "root"}'
+
+======================================================================
+FAIL: test_the_file_supplies_the_backend_when_the_environment_does_not (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_file_supplies_the_backend_when_the_environment_does_not)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_q3cx1fp0\tests\test_review10.py", line 35, in test_the_file_supplies_the_backend_when_the_environment_does_not
+    self.assertEqual(s.windows_sandbox, "unelevated")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != 'unelevated'
+
+======================================================================
+FAIL: test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from (tests.test_review10.S2_ServicePathUsesIt.test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_q3cx1fp0\tests\test_review10.py", line 72, in test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from
+    self.assertIn('windows.sandbox="unelevated"', " ".join(first["argv"]))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'windows.sandbox="unelevated"' not found in 'sandbox -c sandbox_mode="read-only" --disable hooks --disable plugins --disable apps --disable browser_use --disable in_app_browser --disable computer_use --disable multi_agent --disable image_generation --disable browser_use_external --disable browser_use_full_cdp_access --disable multi_agent_v2 -c web_search="disabled" -- cmd /c cd'
+
+======================================================================
+FAIL: test_an_invalid_file_stops_the_call_before_any_process_runs (tests.test_review10.S2_ServicePathUsesIt.test_an_invalid_file_stops_the_call_before_any_process_runs)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_q3cx1fp0\tests\test_review10.py", line 80, in test_an_invalid_file_stops_the_call_before_any_process_runs
+    with self.assertRaises(errors.BridgeError) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised
+
+----------------------------------------------------------------------
+Ran 8 tests in 8.194s
+
+FAILED (failures=5, errors=1)

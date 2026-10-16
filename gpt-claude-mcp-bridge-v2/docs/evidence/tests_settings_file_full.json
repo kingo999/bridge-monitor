@@ -1,0 +1,35 @@
+{
+  "command": "python -B -m unittest discover -s tests -t . -v   (cwd = a staged copy of the source set, venv python)",
+  "environment": {
+    "codex_cli_version": "0.162.1",
+    "codex_launcher": "node-script",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.7",
+    "recorded_at": "2026-10-14T07:32:39Z",
+    "sandbox_backend": "elevated",
+    "sandbox_provisioning_at_record_time": "failed"
+  },
+  "evidence_class": "implementer_executed",
+  "executed_from": "staged_copy",
+  "exit_code": 0,
+  "failing": [],
+  "limits": [
+    "fake CLI: event/tool shapes are fixtures, not captured live output",
+    "no live model call; no live sandbox behaviour is tested here",
+    "real-process tests (job object, tree kill, locks) run on this Windows machine only"
+  ],
+  "outcome": "OK",
+  "problems": [],
+  "raw_log": "tests_settings_file_full.log",
+  "raw_log_bytes": 86689,
+  "raw_log_sha256": "53d2dbfba7db37ac486eb932b278341f4bf057418761501cbb3af18eead5237e",
+  "seconds": 529.559,
+  "skipped": 0,
+  "source_combined_sha256": "f984445ae1f0960efdab4e0064c512e278bfc1c95a35f00fde11798132811f4e",
+  "source_sha256_after_run": "f984445ae1f0960efdab4e0064c512e278bfc1c95a35f00fde11798132811f4e",
+  "source_sha256_staged_copy": "f984445ae1f0960efdab4e0064c512e278bfc1c95a35f00fde11798132811f4e",
+  "source_sha256_staged_copy_after_run": "f984445ae1f0960efdab4e0064c512e278bfc1c95a35f00fde11798132811f4e",
+  "staged_copy_read_only": true,
+  "tests_run": 483,
+  "what": "automated suite against the scripted fake Codex CLI (no model call, no subscription use)"
+}

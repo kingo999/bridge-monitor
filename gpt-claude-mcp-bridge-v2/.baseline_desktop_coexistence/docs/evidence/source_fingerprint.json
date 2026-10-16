@@ -1,0 +1,304 @@
+{
+  "combined_sha256": "4ba8cdad6b732e15fd10518759cdc453156af08b639bd9595a63a41fe312d140",
+  "environment": {
+    "codex_cli_version": "0.162.1",
+    "codex_launcher": "node-script",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.7",
+    "recorded_at": "2026-10-13T16:10:02Z",
+    "sandbox_backend": "elevated",
+    "sandbox_provisioning_at_record_time": "failed"
+  },
+  "environment_evidence_class": "implementer_executed",
+  "environment_note": "`environment` was produced by EXECUTING model-free CLI commands (--version, doctor)",
+  "evidence_class": "source_observation",
+  "evidence_class_scope": "files / combined_sha256: read from the source tree (nothing executed)",
+  "file_count": 57,
+  "files": [
+    {
+      "bytes": 50999,
+      "path": "README.md",
+      "sha256": "c3b63e1f3ccef153684482e4ba76ed59f30ceec8f0b94aa0acbb1605de4f7e27"
+    },
+    {
+      "bytes": 631,
+      "path": "architect_bridge.py",
+      "sha256": "1c96f21e8060ffc56376b36350334b0e2347fb9c9145a759e00c7eb171a106c8"
+    },
+    {
+      "bytes": 98,
+      "path": "bridge/__init__.py",
+      "sha256": "9fd4de9f72e0afe11028c6ade1883faed6aaad3d24ecc666c01319df7030daad"
+    },
+    {
+      "bytes": 35123,
+      "path": "bridge/admin.py",
+      "sha256": "3acccd4ae0d041c58e7bc2e699f6e17082d79b837de0c5ff101f953da317a6ec"
+    },
+    {
+      "bytes": 49372,
+      "path": "bridge/codexcli.py",
+      "sha256": "894c4434e0cb199b4209da4ec456e28890005b8796e9b7b1e863ac96b404a3b6"
+    },
+    {
+      "bytes": 7611,
+      "path": "bridge/config.py",
+      "sha256": "bba7969789e0a922a950aedb19ffb30fb7900d7a7f69d53f4bd4462198aa7bee"
+    },
+    {
+      "bytes": 3156,
+      "path": "bridge/errors.py",
+      "sha256": "0f061077b76c0a9e44904d3b3c650e25de632b445d8db98b2344e3f2159b8077"
+    },
+    {
+      "bytes": 7422,
+      "path": "bridge/execpath.py",
+      "sha256": "6bbbe47dc2cbc472ab54555f2f13bdbdbf335b92261423c69b5173e9cd60ed1c"
+    },
+    {
+      "bytes": 8230,
+      "path": "bridge/fingerprint.py",
+      "sha256": "cf08b9070fdeb965c285ee101f4ebc133c36bac5b2b424487478a6a7443cca63"
+    },
+    {
+      "bytes": 4465,
+      "path": "bridge/gitsafe.py",
+      "sha256": "d57d1e0fd3ff7720a8b775e82dd6a0f1c00e99ccb541988040337658605dec5e"
+    },
+    {
+      "bytes": 596,
+      "path": "bridge/ids.py",
+      "sha256": "0250a796c8f8bc7749702ca5c6cf57460155d2f88d9dc458e5313a3948628ebf"
+    },
+    {
+      "bytes": 8850,
+      "path": "bridge/jobobject.py",
+      "sha256": "bd06f34d8668e659c0a24db3e34bb97969dda0f4173044114cef14ad52e4cf00"
+    },
+    {
+      "bytes": 456,
+      "path": "bridge/redact.py",
+      "sha256": "a67a964840010ebfd21d0d9cebaf8bc30cdeaf32c040b923ffdbb34b85a27b6f"
+    },
+    {
+      "bytes": 35547,
+      "path": "bridge/runner.py",
+      "sha256": "1c7555bc7c01bdf941494af3ea809acc36c0dddaead723f1329083e52db3d1b7"
+    },
+    {
+      "bytes": 2328,
+      "path": "bridge/server.py",
+      "sha256": "30f513f8f8c484d3e07da396ae73ed092cc51e6a42382d12f9c4df704ee633dc"
+    },
+    {
+      "bytes": 66849,
+      "path": "bridge/service.py",
+      "sha256": "a8abd4c9a30a0ffd00cf65763cafc753547a2bdc4f2039140cec930987206579"
+    },
+    {
+      "bytes": 47771,
+      "path": "bridge/state.py",
+      "sha256": "ffa228bbcb03510946eaeded8d2bb749b19a1d48f7329d9e671c810f96735d8c"
+    },
+    {
+      "bytes": 6992,
+      "path": "bridge/telemetry.py",
+      "sha256": "88e7494d70650964fa72e4b9fcb3d0450636613df5ac0d886d8fd1c0bf543247"
+    },
+    {
+      "bytes": 385,
+      "path": "bridge_admin.py",
+      "sha256": "2f1338751465367a9cb144912145d257a865e204588b73a057678c8184e8ac44"
+    },
+    {
+      "bytes": 12,
+      "path": "requirements.in",
+      "sha256": "4fe75062c5d424bbc86a8cd58c63ab19aeffe4f0a0e100022252c8032e12ee5b"
+    },
+    {
+      "bytes": 3558,
+      "path": "requirements.lock.txt",
+      "sha256": "fd08725f61a27af8d0e021da9b94a68b02f96ad6d979ca954d3900c544fc991c"
+    },
+    {
+      "bytes": 0,
+      "path": "tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 9518,
+      "path": "tests/fake_codex.py",
+      "sha256": "abaf1f818738fea963ac87b5aae8d3d10bff2c0e7bcab6bd840cab77c44b1165"
+    },
+    {
+      "bytes": 3880,
+      "path": "tests/fixtures/v1_subprocess_behavior.json",
+      "sha256": "7261b55c79040ca19293f22924a3e7c93e1843691ceceb44d6cfd467827c6842"
+    },
+    {
+      "bytes": 1643,
+      "path": "tests/fixtures/v1_tool_schemas.json",
+      "sha256": "8e33cbc6123b1d5ab008f0ed806f2d2889e68e9c9603063251957440385a0b21"
+    },
+    {
+      "bytes": 691,
+      "path": "tests/hard_kill_helper.py",
+      "sha256": "fb1f90d06760b48a3279449e8448f63b3cd6b6b728ded6780ad30920c4efb15c"
+    },
+    {
+      "bytes": 8069,
+      "path": "tests/helpers.py",
+      "sha256": "b97fe0c04a1a7940517186b609b5b606e8762131121e8fe6e34d7a29701ffcfa"
+    },
+    {
+      "bytes": 21769,
+      "path": "tests/test_apply_patch_attack.py",
+      "sha256": "4f1c2afa2e9f3a86e6b15ac9a7ce0490ec7a2f607df3447c697b5b7b9a393da7"
+    },
+    {
+      "bytes": 10056,
+      "path": "tests/test_config_argv_auth.py",
+      "sha256": "ab1320a94c85291b72b394590c39e376a453086f3efc7ce379e3fd6159b3ecab"
+    },
+    {
+      "bytes": 38789,
+      "path": "tests/test_remediation.py",
+      "sha256": "df4804d29398c890d232e157da67db3f1f471a753b8064f394372880d0e3b8f6"
+    },
+    {
+      "bytes": 54471,
+      "path": "tests/test_review2.py",
+      "sha256": "ddf9de98304c4d58712530b07bcf1390a3544f286abe5248ca5b2e67ed93ebf5"
+    },
+    {
+      "bytes": 42374,
+      "path": "tests/test_review3.py",
+      "sha256": "069b397c76710ffafb36ea5445d5a699f6f56fb85ac02736bc92e5326180ba36"
+    },
+    {
+      "bytes": 37720,
+      "path": "tests/test_review4.py",
+      "sha256": "84064ed9d0e86366f13315b3d7412ba2a412bb1424f074dd34c096b53e661ac6"
+    },
+    {
+      "bytes": 44371,
+      "path": "tests/test_review5.py",
+      "sha256": "67ae4afc2c5ecede6b0cdc94eb2f510f728b595df75752f9518e096dee1d0d85"
+    },
+    {
+      "bytes": 31408,
+      "path": "tests/test_review6.py",
+      "sha256": "d4cf1bd9b82c399a3ee747f5c20580d88a4967e0e6fd03312f4dafbb62f07c6f"
+    },
+    {
+      "bytes": 23203,
+      "path": "tests/test_review7.py",
+      "sha256": "e8b1035a40c90adcccd4a14b61f79ae70bbb38e408b5d0a0b3e0a26c6cc62cd9"
+    },
+    {
+      "bytes": 10270,
+      "path": "tests/test_review8.py",
+      "sha256": "417391db6d4d2e786c4b2c25088d9824e03f8e8848f771502716b4b5f8abaf66"
+    },
+    {
+      "bytes": 12414,
+      "path": "tests/test_server_admin.py",
+      "sha256": "70f2a2c8e6360aa15e4733ade40f5269fce142df4bdd27e2cfd4e1e5290c7fed"
+    },
+    {
+      "bytes": 34600,
+      "path": "tests/test_service.py",
+      "sha256": "2f93c3b7d254400e23675fa41417b641934843d0b6e50322854d5f2ae2d697e3"
+    },
+    {
+      "bytes": 11361,
+      "path": "tests/test_state.py",
+      "sha256": "8133e44bf21f6282d4838da7d0daf5b75bf4d1568e971031bf550f8283b41029"
+    },
+    {
+      "bytes": 0,
+      "path": "tools/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 48150,
+      "path": "tools/apply_patch_attack_test.py",
+      "sha256": "ebc017e3ba777bd79b55726038c0b45bd277dafa95855368c999cdc4c9f79b05"
+    },
+    {
+      "bytes": 5504,
+      "path": "tools/capture_v1_fixtures.py",
+      "sha256": "cfd5c4e820283934fd3f6286baa37b1eea644115e7f7f9525aa4ceafa7db88f8"
+    },
+    {
+      "bytes": 12595,
+      "path": "tools/live_smoke_test.py",
+      "sha256": "55f5edf931b6526e64c119afe4bb97cdc14d9b74373bdf8852bf54e4cafd3540"
+    },
+    {
+      "bytes": 3018,
+      "path": "tools/make_lock.py",
+      "sha256": "ad7504b76444308e0d3847f72860cf5655dde45ed676795374f685f008ee7ffb"
+    },
+    {
+      "bytes": 3766,
+      "path": "tools/make_remediation_diff.py",
+      "sha256": "14ec02971a969b2fdcbe0a7860dec6d3e9f201cc1b6e6b5c77546774a719c3f9"
+    },
+    {
+      "bytes": 8173,
+      "path": "tools/make_telemetry_examples.py",
+      "sha256": "5e6855533be9953f95bd3848c7f3747ee88d52cf0b17917f6ae8c98f7569c575"
+    },
+    {
+      "bytes": 1825,
+      "path": "tools/make_v1_diff.py",
+      "sha256": "b4b07b1bf96c6c73aa647669b403852312fb47832346d52b05c5cea8193f3f11"
+    },
+    {
+      "bytes": 39682,
+      "path": "tools/make_verification_prompt.py",
+      "sha256": "35e85afe7bbb1bc23accf152813233fd2b5dcf6e567f078d0df7ff4b117a29c3"
+    },
+    {
+      "bytes": 9402,
+      "path": "tools/prefix_check.py",
+      "sha256": "8723e7abc7e21d2d99a0e8832729997bf54c1da6cb91211f62ff57120d990ed6"
+    },
+    {
+      "bytes": 3605,
+      "path": "tools/prefix_logic.py",
+      "sha256": "0398523ee9c4b87c3a08781e31f9026244e4963355c0388152f5a13ff7a46a6d"
+    },
+    {
+      "bytes": 1355,
+      "path": "tools/privacy.py",
+      "sha256": "c76c934089b7222cbb4a1d9b7c926bbdca6a955941417beeeaee9b3dfd392aad"
+    },
+    {
+      "bytes": 21329,
+      "path": "tools/record_evidence.py",
+      "sha256": "861c9761c710b8dbb6a3b1c4564a711de5e5a236a612227a8130f7c10c32df28"
+    },
+    {
+      "bytes": 8726,
+      "path": "tools/send_verification.py",
+      "sha256": "9d78ad3412c8cf1556d3f4c64c192767d6a2a21d9ba1f8a4d2a83ed74b1248c7"
+    },
+    {
+      "bytes": 24129,
+      "path": "tools/smoke_oracles.py",
+      "sha256": "fe21e7564718888d720e5f3adcd063d6afe95d56f7c810db1003d937877e085e"
+    },
+    {
+      "bytes": 3670,
+      "path": "tools/v1_manifest.py",
+      "sha256": "fc8d1a8916f2d56d54871a026816879c20f457dd79c31c2020f545a212671058"
+    },
+    {
+      "bytes": 1660,
+      "path": "tools/verify_lock.py",
+      "sha256": "20ccb4187adc60935e9f10f4f76b33243632925b81e5bf1530a60a32873c17cf"
+    }
+  ]
+}

@@ -1,0 +1,821 @@
+--- baseline/bridge/local_worker/__init__.py
++++ bridge/local_worker/__init__.py
+@@ -0,0 +1 @@
++"""Optional supervised LOCAL-00 worker. Importing this package performs no I/O."""
+--- baseline/bridge/local_worker/models.py
++++ bridge/local_worker/models.py
+@@ -0,0 +1,279 @@
++"""Strict wire contracts and durable records, independent of Codex sessions."""
++from __future__ import annotations
++
++import hashlib
++import json
++import math
++from typing import Annotated, Literal
++from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
++
++
++class WorkerError(Exception):
++    def __init__(self, code: str):
++        self.code = code
++        super().__init__(code)
++
++
++class StrictModel(BaseModel):
++    model_config = ConfigDict(extra='forbid', strict=True, validate_assignment=True)
++
++
++ID = Annotated[str, Field(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$')]
++Text = Annotated[str, Field(min_length=1, max_length=8192)]
++Context = Annotated[str, Field(max_length=49152)]
++Hash = Annotated[str, Field(pattern=r'^[0-9a-f]{64}$')]
++
++
++class Versioned(StrictModel):
++    schema_version: Literal[1] = 1
++
++    @field_validator('schema_version', mode='before')
++    @classmethod
++    def integer_version(cls, value):
++        if type(value) is not int:
++            raise ValueError('schema version must be integer')
++        return value
++
++
++class Endpoint(StrictModel):
++    host: str
++    base_url: str
++
++
++class SourceApproval(StrictModel):
++    classification: Literal['synthetic', 'approved_repository']
++    approval_ref: Text
++    audit_content_approved: bool
++
++    @field_validator('audit_content_approved')
++    @classmethod
++    def approved(cls, value):
++        if not value:
++            raise ValueError('explicit content audit approval required')
++        return value
++
++
++class AcceptanceCheck(StrictModel):
++    check_id: ID
++    kind: Literal['compile', 'behaviour', 'source']
++    contract: Text
++    method: Text
++
++
++class TaskPacket(Versioned):
++    task_id: ID
++    category: Literal['isolated_repair', 'mechanical_transformation', 'supplied_code_explanation']
++    objective: Text
++    constraints: Text
++    source: Annotated[str, Field(min_length=1, max_length=49152)]
++    context: Context
++    diagnostic: Context = ''
++    versions: dict[ID, Text]
++    references: Annotated[list[Text], Field(max_length=32)] = Field(default_factory=list)
++    output_form: Text
++    context_id: ID
++    approval: SourceApproval
++    checks: Annotated[list[AcceptanceCheck], Field(min_length=1, max_length=32)]
++
++    @model_validator(mode='after')
++    def sufficient(self):
++        if not self.context.strip() or not self.source.strip():
++            raise ValueError('focused source and caller context required')
++        if len(self.versions) > 32 or len({c.check_id for c in self.checks}) != len(self.checks):
++            raise ValueError('bounded versions and unique checks required')
++        kinds = {c.kind for c in self.checks}
++        if self.category == 'supplied_code_explanation':
++            if 'source' not in kinds:
++                raise ValueError('independent source checks required')
++        elif not {'compile', 'behaviour'} <= kinds:
++            raise ValueError('independent compiler and behaviour checks required')
++        if len(self.model_dump_json().encode()) > 131072:
++            raise ValueError('packet too large')
++        return self
++
++
++class MeasuredEffort(StrictModel):
++    preparation_s: float | None = None
++    validation_s: float | None = None
++    review_s: float | None = None
++    human_active_s: float | None = None
++    human_measurement_ref: Text | None = None
++    premium_tokens: Annotated[int, Field(ge=0)] | None = None
++    receipt_ref: Text | None = None
++
++    @model_validator(mode='after')
++    def measured(self):
++        for name in ('preparation_s', 'validation_s', 'review_s', 'human_active_s'):
++            value = getattr(self, name)
++            if value is not None and (not math.isfinite(value) or value < 0):
++                raise ValueError('invalid interval')
++        if self.human_active_s is not None and not self.human_measurement_ref:
++            raise ValueError('human measurement reference required')
++        if self.premium_tokens is not None and not self.receipt_ref:
++            raise ValueError('receipt required')
++        return self
++
++
++class CheckObservation(StrictModel):
++    check_id: ID
++    passed: bool
++    evidence_ref: Text
++    observed: Text
++
++
++class ValidationReport(Versioned):
++    task_id: ID
++    attempt: Annotated[int, Field(ge=1, le=2)]
++    packet_hash: Hash
++    result_digest: Hash
++    verdict: Literal['accepted', 'failed', 'unverifiable']
++    observations: Annotated[list[CheckObservation], Field(max_length=32)]
++    diagnostics: Context = ''
++    toolchain_ref: Text | None = None
++    supervisor_edits: Context = ''
++    effort: MeasuredEffort = Field(default_factory=MeasuredEffort)
++
++
++class StatusRequest(Versioned):
++    action: Literal['status']
++
++
++class ReconnectRequest(Versioned):
++    action: Literal['reconnect']
++    address: Annotated[str, Field(max_length=253)] | None = None
++
++
++class ContinueWithoutRequest(Versioned):
++    action: Literal['continue_without']
++
++
++class GenerateRequest(Versioned):
++    action: Literal['generate']
++    packet: TaskPacket
++    attempt: Annotated[int, Field(ge=1, le=2)]
++    feedback_ref: Hash | None = None
++    effort: MeasuredEffort = Field(default_factory=MeasuredEffort)
++
++
++class RecordValidationRequest(Versioned):
++    action: Literal['record_validation']
++    report: ValidationReport
++
++
++LocalWorkerRequest = Annotated[StatusRequest | ReconnectRequest | ContinueWithoutRequest | GenerateRequest | RecordValidationRequest, Field(discriminator='action')]
++REQUEST_ADAPTER = TypeAdapter(LocalWorkerRequest)
++
++
++class LocalWorkerResult(Versioned):
++    action: str
++    worker_id: Literal['LOCAL-00'] = 'LOCAL-00'
++    state: Literal['status_returned', 'draft_returned', 'unavailable', 'busy', 'incomplete_error']
++    code: str
++    explanation: str = ''
++    availability: Literal['discovering', 'available', 'unavailable', 'disabled'] = 'unavailable'
++    coordination: Literal['idle', 'busy', 'uncertain'] = 'idle'
++    validation: Literal['pending', 'accepted', 'failed', 'unverifiable'] = 'pending'
++    next_actions: list[str] = Field(default_factory=list)
++    task_id: str | None = None
++    packet_hash: str | None = None
++    request_id: str | None = None
++    attempt: int | None = None
++    endpoint: str | None = None
++    peer_ip: str | None = None
++    model: str | None = None
++    digest: str | None = None
++    result_digest: str | None = None
++    response: str | None = None
++    done: bool | None = None
++    done_reason: str | None = None
++    metrics: dict[str, int | float | None] = Field(default_factory=dict)
++    timings: dict[str, float | None] = Field(default_factory=dict)
++    audit_refs: list[str] = Field(default_factory=list)
++    replayed_from_ledger: bool = False
++    needs_context: bool = False
++    evidence_origin: Literal['supervisor_reported'] | None = None
++
++
++class WorkerSnapshot(Versioned):
++    availability: Literal['discovering', 'available', 'unavailable'] = 'unavailable'
++    coordination: Literal['idle', 'busy', 'uncertain'] = 'idle'
++    endpoint: Endpoint | None = None
++    peer_ip: str | None = None
++    budget_block: str | None = None
++    connection_revision: int = 0
++    candidate_results: list[dict] = Field(default_factory=list)
++
++
++class AttemptRecord(Versioned):
++    request_id: str
++    attempt: int
++    result: LocalWorkerResult | None = None
++    retired: bool = False
++
++
++class TaskRecord(Versioned):
++    packet: TaskPacket
++    packet_hash: Hash
++    attempts: dict[str, AttemptRecord] = Field(default_factory=dict)
++    validations: list[ValidationReport] = Field(default_factory=list)
++
++
++class ActiveRequest(Versioned):
++    request_id: str
++    task_id: ID
++    attempt: int
++    code: str = 'active'
++
++
++class BudgetProof(Versioned):
++    model_digest: str
++    template_hash: Hash
++    metadata_hash: Hash
++    server_version: str
++    rendered_prefix: str
++    rendered_suffix: str
++    token_allowance: int
++    method: Literal['verified_utf8_bpe'] = 'verified_utf8_bpe'
++    provenance: str
++
++
++class PreparedPrompt(StrictModel):
++    text: str
++    prompt_hash: Hash
++    proof_hash: Hash
++    upper_bound: int
++    template_version: str = 'local00-v1'
++
++
++class TransportRequest(StrictModel):
++    endpoint: Endpoint
++    method: Literal['GET', 'POST']
++    path: str
++    body: dict | None = None
++    timeout_s: float = 5.0
++    max_bytes: int = 1048576
++
++
++class TransportOutcome(StrictModel):
++    phase: Literal['not_sent', 'may_have_started', 'terminal_received'] = 'not_sent'
++    code: str = 'ok'
++    status: int | None = None
++    peer_ip: str | None = None
++    body_b64: str = ''
++    data: dict | None = None
++    elapsed_s: float = 0.0
++    truncated: bool = False
++
++
++def canonical_json(value) -> str:
++    if isinstance(value, BaseModel):
++        value = value.model_dump(mode='json')
++    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
++
++
++def content_hash(value) -> str:
++    return hashlib.sha256(canonical_json(value).encode('utf-8')).hexdigest()
++
++
++def canonical_packet_hash(packet: TaskPacket) -> str:
++    return content_hash(packet)
+--- baseline/bridge/local_worker/settings.py
++++ bridge/local_worker/settings.py
+@@ -0,0 +1,103 @@
++"""Pilot constants and bounded independent configuration."""
++from __future__ import annotations
++import ipaddress
++import json
++import math
++import re
++from pathlib import Path
++from typing import Mapping
++from pydantic import Field, field_validator
++from .models import Endpoint, Versioned, WorkerError
++
++MODEL = 'qwen2.5-coder:14b-instruct-q4_K_M'
++DIGEST = '9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849'
++HOSTNAME = 'skynet.local'
++INITIAL_IP = '192.168.0.78'
++PORT = 11434
++PROFILE = dict(model=MODEL, stream=False, keep_alive='10m', options=dict(num_ctx=4096, num_predict=1024, temperature=0))
++RECOVERY = "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker."
++CONTINUE = 'Continuing with GPT/Claude; LOCAL-00 is unavailable for this session. You can reconnect later.'
++CHOICES = ['Enter address', 'Retry discovery', 'Continue without LOCAL-00']
++
++
++def valid_peer(host: str) -> bool:
++    try:
++        ip = ipaddress.ip_address(host)
++        if getattr(ip, 'ipv4_mapped', None):
++            ip = ip.ipv4_mapped
++        return not (ip.is_loopback or ip.is_multicast or ip.is_unspecified or ip.is_link_local)
++    except ValueError:
++        return False
++
++
++def parse_address(value: str) -> Endpoint:
++    value = value.strip()
++    if value.startswith('[') and value.endswith(']'):
++        value = value[1:-1]
++        if ':' not in value:
++            raise WorkerError('invalid_address')
++    try:
++        address = ipaddress.ip_address(value)
++    except ValueError:
++        if not value or len(value)>253 or any(ch in value for ch in '/:@?#%[]') or re.fullmatch(r'[0-9.]+',value):
++            raise WorkerError('invalid_address') from None
++        labels = value.split('.')
++        if any(not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?', part) for part in labels):
++            raise WorkerError('invalid_address')
++        if value.lower() == 'localhost':
++            raise WorkerError('invalid_address')
++        host = value.lower()
++    else:
++        if not valid_peer(str(address)):
++            raise WorkerError('invalid_address')
++        host = str(address)
++    return Endpoint(host=host, base_url=f'http://[{host}]:{PORT}' if ':' in host else f'http://{host}:{PORT}')
++
++
++class WorkerSettings(Versioned):
++    preferred_hostname: str = HOSTNAME
++    initial_ip: str | None = INITIAL_IP
++    last_validated_ip: str | None = None
++    validated_at: str | None = None
++    provenance: str = 'supplied_candidate'
++    discovery_timeout_s: float = Field(default=5.0, ge=1, le=15)
++    generation_timeout_s: float = Field(default=180.0, ge=30, le=900)
++
++    @field_validator('discovery_timeout_s','generation_timeout_s', mode='before')
++    @classmethod
++    def finite(cls,value):
++        if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value):
++            raise ValueError('finite timeout required')
++        return float(value)
++
++    @field_validator('preferred_hostname')
++    @classmethod
++    def fixed_name(cls,value):
++        if value != HOSTNAME:
++            raise ValueError('preferred hostname is fixed')
++        return value
++
++    @field_validator('initial_ip','last_validated_ip')
++    @classmethod
++    def ip(cls,value):
++        if value is not None:
++            endpoint=parse_address(value)
++            ipaddress.ip_address(endpoint.host)
++            return endpoint.host
++        return value
++
++
++def worker_root(env: Mapping[str,str]) -> Path:
++    return Path(env.get('USERPROFILE') or str(Path.home())) / '.gpt-architect-bridge-local00'
++
++
++def load_worker_settings(root: Path) -> WorkerSettings:
++    path=root/'config.json'
++    try:
++        if not path.exists():
++            return WorkerSettings()
++        if path.is_symlink() or not path.is_file() or path.stat().st_size>16384:
++            raise ValueError('invalid config file')
++        return WorkerSettings.model_validate_json(path.read_bytes())
++    except (ValueError,OSError) as exc:
++        raise WorkerError('worker_config_invalid') from exc
+--- baseline/bridge/local_worker/storage.py
++++ bridge/local_worker/storage.py
+@@ -0,0 +1,204 @@
++"""Shared worker transactions. A durable active marker outlives the OS lock."""
++from __future__ import annotations
++from contextlib import contextmanager
++import hashlib
++import json
++import os
++from pathlib import Path
++import stat
++import threading
++from ..state import FileLock, LockTimeout, atomic_write_text, utc_now
++from .models import (WorkerError, WorkerSnapshot, TaskRecord, AttemptRecord,
++                     ActiveRequest, LocalWorkerResult, canonical_json, canonical_packet_hash)
++
++
++def overlaps(a: Path, b: Path) -> bool:
++    a,b = a.resolve(), b.resolve()
++    return a == b or a in b.parents or b in a.parents
++
++
++class WorkerStore:
++    def __init__(self, root: Path, repo_roots: tuple[Path,...], home: Path):
++        self.root=Path(root)
++        self.repo_roots=repo_roots
++        self.home=Path(home)
++        self._owner=None
++
++    def validate(self, path: Path | None = None):
++        target=path or self.root
++        for part in (target,*target.parents):
++            try:
++                info=part.lstat()
++            except FileNotFoundError:
++                continue
++            if stat.S_ISLNK(info.st_mode) or getattr(info,'st_file_attributes',0)&0x400:
++                raise WorkerError('worker_path_reparse')
++        if overlaps(self.root,self.home/'.gpt-architect-bridge') or any(overlaps(self.root,p) for p in self.repo_roots):
++            raise WorkerError('worker_path_overlap')
++        if target != self.root and self.root.resolve() not in target.resolve().parents:
++            raise WorkerError('worker_path_escape')
++
++    def path(self, relative: str) -> Path:
++        path=self.root/relative
++        self.validate(path)
++        return path
++
++    def read(self, relative: str, limit: int=33554432):
++        p=self.path(relative)
++        try:
++            if not p.is_file() or p.stat().st_size>limit:
++                raise ValueError('invalid bounded record')
++            return json.loads(p.read_text(encoding='utf-8'))
++        except (ValueError,OSError) as exc:
++            raise WorkerError('worker_state_invalid') from exc
++
++    def write(self, relative: str, data):
++        self.require_lease()
++        p=self.path(relative)
++        p.parent.mkdir(parents=True,exist_ok=True)
++        text=canonical_json(data)
++        if len(text.encode())>33554432:
++            raise WorkerError('worker_record_too_large')
++        atomic_write_text(p,text)
++
++    def require_lease(self):
++        if self._owner != threading.get_ident():
++            raise WorkerError('worker_lease_required')
++
++    def _establish(self):
++        witness=self.path('instance.json')
++        if not witness.exists():
++            # A partially initialized directory is never silently recycled.
++            if any(p.name!='worker.lock' for p in self.root.iterdir()):
++                raise WorkerError('worker_initialization_incomplete')
++            self.write('index.json',{'schema_version':1,'tasks':{}})
++            self.write('snapshot.json',WorkerSnapshot())
++            self.write('instance.json',{'schema_version':1,'established_at':utc_now()})
++        if self.read('instance.json',16384).get('schema_version')!=1:
++            raise WorkerError('worker_state_invalid')
++        self._index()
++
++    def _index(self):
++        data=self.read('index.json',1048576)
++        if not isinstance(data,dict) or set(data)!={'schema_version','tasks'} or data['schema_version']!=1 or not isinstance(data['tasks'],dict):
++            raise WorkerError('worker_state_invalid')
++        for key,name in data['tasks'].items():
++            if not isinstance(key,str) or len(key)!=64 or name!=f'tasks/{key}.json' or not self.path(name).is_file():
++                raise WorkerError('worker_ledger_missing')
++        return data
++
++    @contextmanager
++    def try_lock(self):
++        self.validate()
++        self.root.mkdir(parents=True,exist_ok=True)
++        lock=FileLock(self.path('worker.lock'))
++        try:
++            lock.acquire(0)
++        except LockTimeout:
++            raise WorkerError('worker_busy') from None
++        previous=self._owner
++        self._owner=threading.get_ident()
++        try:
++            self._establish()
++            yield self
++        finally:
++            self._owner=previous
++            lock.release()
++
++    def read_snapshot(self):
++        self.validate()
++        if not self.root.exists():
++            return WorkerSnapshot()
++        if not self.path('instance.json').exists():
++            raise WorkerError('worker_initialization_incomplete')
++        self._index()
++        try:
++            snapshot=WorkerSnapshot.model_validate(self.read('snapshot.json',262144))
++        except ValueError as exc:raise WorkerError('worker_state_invalid') from exc
++        if self.path('active.json').exists():
++            probe=FileLock(self.path('worker.lock'))
++            try:
++                probe.acquire(0)
++            except LockTimeout:
++                snapshot.coordination='busy'
++            else:
++                probe.release()
++                snapshot.coordination='uncertain'
++        return snapshot
++
++    def read_task(self,task_id):
++        if not self.root.exists():return None
++        key=hashlib.sha256(task_id.encode()).hexdigest()
++        index=self._index()
++        if key not in index['tasks']:return None
++        try:return TaskRecord.model_validate(self.read(index['tasks'][key]))
++        except ValueError as exc:raise WorkerError('worker_ledger_invalid') from exc
++
++    def save_task(self,task):
++        self.require_lease()
++        key=hashlib.sha256(task.packet.task_id.encode()).hexdigest()
++        relative=f'tasks/{key}.json'
++        index=self._index()
++        self.write(relative,task)
++        if key not in index['tasks']:
++            index['tasks'][key]=relative
++            self.write('index.json',index)
++
++    def active(self):
++        if not self.path('active.json').exists():return None
++        try:return ActiveRequest.model_validate(self.read('active.json',16384))
++        except ValueError as exc:raise WorkerError('worker_active_invalid') from exc
++
++    def begin_attempt(self,request,prepared,request_id):
++        self.require_lease()
++        if self.active():raise WorkerError('worker_uncertain')
++        task=self.read_task(request.packet.task_id)
++        packet_hash=canonical_packet_hash(request.packet)
++        if task and task.packet_hash!=packet_hash:raise WorkerError('task_conflict')
++        task=task or TaskRecord(packet=request.packet,packet_hash=packet_hash)
++        if str(request.attempt) in task.attempts:raise WorkerError('attempt_exists')
++        attempt=AttemptRecord(request_id=request_id,attempt=request.attempt)
++        task.attempts[str(request.attempt)]=attempt
++        self.save_task(task)
++        self.write('active.json',ActiveRequest(request_id=request_id,task_id=request.packet.task_id,attempt=request.attempt))
++        return attempt
++
++    def finish_attempt(self,request_id,result):
++        self.require_lease()
++        active=self.active()
++        if not active or active.request_id!=request_id:raise WorkerError('request_conflict')
++        task=self.read_task(active.task_id)
++        task.attempts[str(active.attempt)].result=result
++        self.save_task(task)
++        self.path('active.json').unlink()
++        snapshot=self.read_snapshot();snapshot.coordination='idle'
++        self.write('snapshot.json',snapshot)
++
++    def mark_uncertain(self,request_id,code):
++        active=self.active()
++        if not active or active.request_id!=request_id:raise WorkerError('request_conflict')
++        active.code=code
++        self.write('active.json',active)
++
++    def append_validation(self,report):
++        self.require_lease()
++        task=self.read_task(report.task_id)
++        if task is None:raise WorkerError('task_missing')
++        if report not in task.validations:
++            task.validations.append(report)
++            self.save_task(task)
++        return task
++
++    def resolve_uncertain(self,request_id,confirmed_idle,reason,evidence_ref):
++        self.require_lease()
++        if not confirmed_idle or not reason.strip() or not evidence_ref.strip():raise WorkerError('operator_confirmation_required')
++        active=self.active()
++        if not active or active.request_id!=request_id:raise WorkerError('request_conflict')
++        task=self.read_task(active.task_id)
++        attempt=task.attempts[str(active.attempt)]
++        attempt.retired=True
++        if attempt.result is None:
++            attempt.result=LocalWorkerResult(action='generate',state='incomplete_error',code='operator_retired',request_id=request_id,task_id=active.task_id,attempt=active.attempt)
++        self.save_task(task)
++        self.write(f'resolutions/{request_id}.json',{'request_id':request_id,'reason':reason,'evidence_ref':evidence_ref,'confirmed_at':utc_now()})
++        self.path('active.json').unlink()
+--- baseline/tests/local_worker_helpers.py
++++ tests/local_worker_helpers.py
+@@ -0,0 +1,24 @@
++from pathlib import Path
++import tempfile
++
++
++def packet_data(task_id='sample'):
++    return dict(task_id=task_id, category='isolated_repair', objective='Stable unique values',
++                constraints='None becomes empty; preserve order and input; return fresh list',
++                source='def stable_unique(items): return sorted(set(items))',
++                context='Standalone Python function', diagnostic='None raises TypeError',
++                versions={'Python': '3.13'}, references=[], output_form='one replacement function',
++                context_id='synthetic-v1', approval=dict(classification='synthetic',
++                    approval_ref='user-approved-local00-pilot', audit_content_approved=True),
++                checks=[dict(check_id='compile', kind='compile', contract='py_compile succeeds', method='independent py_compile'),
++                        dict(check_id='behaviour', kind='behaviour', contract='None, empty, stable order, no mutation, fresh list', method='independent executable assertions')])
++
++
++class TempWorld:
++    def __init__(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.home = Path(self.temp.name) / 'home'
++        self.home.mkdir()
++        self.root = self.home / '.gpt-architect-bridge-local00'
++    def close(self):
++        self.temp.cleanup()
+--- baseline/tests/test_local_worker_models.py
++++ tests/test_local_worker_models.py
+@@ -0,0 +1,42 @@
++import unittest
++from pydantic import ValidationError
++from tests.local_worker_helpers import packet_data
++
++
++class Contracts(unittest.TestCase):
++    def api(self):
++        try:
++            from bridge.local_worker import models, settings
++        except ImportError:
++            self.fail('local worker contracts are missing')
++        return models, settings
++
++    def test_addresses_and_fixed_settings(self):
++        m, s = self.api()
++        self.assertEqual(s.parse_address(' skynet.local ').base_url, 'http://skynet.local:11434')
++        self.assertEqual(s.parse_address('[2001:db8::78]').base_url, 'http://[2001:db8::78]:11434')
++        for value in ['http://x', 'x:11434', '0.0.0.0', '127.0.0.1', '::1', '::', '224.0.0.1', 'a/b', 'a@b', 'a?b', 'fe80::1%1', '123.456.0.1']:
++            with self.subTest(value=value), self.assertRaises(m.WorkerError): s.parse_address(value)
++        self.assertEqual(s.PROFILE['options'], dict(num_ctx=4096, num_predict=1024, temperature=0))
++
++    def test_strict_packets_and_action_union(self):
++        m, s = self.api()
++        p = m.TaskPacket(**packet_data())
++        for extra in [dict(attempt=True), dict(attempt=3), dict(attempt=1, raw=True),dict(attempt=1,schema_version=True)]:
++            with self.assertRaises(ValidationError):
++                m.REQUEST_ADAPTER.validate_python(dict(action='generate',packet=p,**extra))
++        self.assertEqual(m.REQUEST_ADAPTER.validate_python(dict(action='status')).action, 'status')
++        with self.assertRaises(ValidationError):m.REQUEST_ADAPTER.validate_python(dict(action='status', address='x'))
++        for change in [dict(category='architecture'),dict(checks=[]),dict(source=''),dict(task_id='../escape'),dict(objective='x'*9000),dict(approval={'classification':'synthetic','approval_ref':'x','audit_content_approved':False})]:
++            with self.subTest(change=list(change)),self.assertRaises(ValidationError):m.TaskPacket(**(packet_data()|change))
++        self.assertNotEqual(m.canonical_packet_hash(p),m.canonical_packet_hash(m.TaskPacket(**(packet_data()|{'source':'different'}))))
++
++    def test_settings_timeouts_and_shared_root(self):
++        m, s = self.api()
++        from tests.local_worker_helpers import TempWorld
++        import json
++        w=TempWorld(); self.addCleanup(w.close);w.root.mkdir()
++        for value in [True, float('nan'), 0, 16]:
++            (w.root/'config.json').write_text(json.dumps({'schema_version':1,'discovery_timeout_s':value}))
++            with self.assertRaises(m.WorkerError): s.load_worker_settings(w.root)
++        self.assertEqual(s.worker_root({'USERPROFILE':str(w.home),'GPT_ARCHITECT_V2_STATE_DIR':'a'}),s.worker_root({'USERPROFILE':str(w.home),'GPT_ARCHITECT_V2_STATE_DIR':'b'}))
+--- baseline/tests/test_local_worker_provenance.py
++++ tests/test_local_worker_provenance.py
+@@ -0,0 +1,24 @@
++import tempfile
++import unittest
++from pathlib import Path
++from tools.record_evidence import source_files, fingerprint
++from tools.make_verification_prompt import expand_full, _source_diff
++
++
++class Provenance(unittest.TestCase):
++    def test_nested_code_and_fixtures_are_hashed_and_reviewed(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            root = Path(tmp)
++            code = root / 'bridge/local_worker/transport.py'
++            fixture = root / 'tests/fixtures/local_worker/tags.json'
++            for p, text in ((code, 'VALUE = 1\n'), (fixture, '{}')):
++                p.parent.mkdir(parents=True, exist_ok=True)
++                p.write_text(text)
++            names = [p.relative_to(root).as_posix() for p in source_files(root)]
++            self.assertIn('bridge/local_worker/transport.py', names)
++            self.assertIn('tests/fixtures/local_worker/tags.json', names)
++            before = fingerprint(root)['combined_sha256']
++            code.write_text('VALUE = 2\n')
++            self.assertNotEqual(before, fingerprint(root)['combined_sha256'])
++            self.assertIn('bridge/local_worker/transport.py', expand_full(root))
++            self.assertIn('VALUE = 2', _source_diff(root, root / 'empty'))
+--- baseline/tests/test_local_worker_storage.py
++++ tests/test_local_worker_storage.py
+@@ -0,0 +1,79 @@
++import json
++import os
++from pathlib import Path
++import subprocess
++import sys
++import unittest
++from tests.local_worker_helpers import TempWorld, packet_data
++from bridge.local_worker.models import WorkerError, TaskPacket, GenerateRequest, PreparedPrompt, LocalWorkerResult
++
++
++class Storage(unittest.TestCase):
++    def setUp(self):
++        self.w=TempWorld();self.addCleanup(self.w.close)
++
++    def store(self):
++        try:
++            from bridge.local_worker.storage import WorkerStore
++        except ImportError:self.fail('shared worker store missing')
++        return WorkerStore(self.w.root,(),self.w.home)
++
++    def begin(self,store):
++        req=GenerateRequest(action='generate',packet=TaskPacket(**packet_data()),attempt=1)
++        prepared=PreparedPrompt(text='prompt',prompt_hash='0'*64,proof_hash='1'*64,upper_bound=20)
++        return store.begin_attempt(req,prepared,'a'*32)
++
++    def test_shared_lock_and_crash_marker_survive_restart(self):
++        store=self.store()
++        with store.try_lock():
++            with self.assertRaises(WorkerError) as caught:
++                with self.store().try_lock():pass
++            self.assertEqual(caught.exception.code,'worker_busy')
++            self.begin(store)
++        other=self.store()
++        self.assertEqual(other.read_snapshot().coordination,'uncertain')
++        with other.try_lock(),self.assertRaises(WorkerError):self.begin(other)
++
++    def test_cross_process_lock_is_released_on_hard_kill(self):
++        store=self.store()
++        with store.try_lock():
++            code='''from pathlib import Path
++from bridge.local_worker.storage import WorkerStore
++from bridge.local_worker.models import WorkerError
++import sys
++s=WorkerStore(Path(sys.argv[1]),(),Path(sys.argv[2]))
++try:
++ with s.try_lock(): print('WRONGLY_ENTERED')
++except WorkerError as e: print(e.code)
++'''
++            r=subprocess.run([sys.executable,'-B','-c',code,str(self.w.root),str(self.w.home)],capture_output=True,text=True,timeout=8)
++            self.assertEqual(r.stdout.strip(),'worker_busy',r.stderr)
++
++    def test_terminal_ledger_before_marker_retirement_and_replay(self):
++        store=self.store()
++        with store.try_lock():
++            self.begin(store)
++            store.finish_attempt('a'*32,LocalWorkerResult(action='generate',state='draft_returned',code='ok',response='answer'))
++        self.assertEqual(store.read_snapshot().coordination,'idle')
++        self.assertEqual(store.read_task('sample').attempts['1'].result.response,'answer')
++        taskpath=next((self.w.root/'tasks').glob('*.json'));taskpath.unlink()
++        with self.assertRaises(WorkerError):store.read_task('sample')
++
++    def test_corruption_and_repository_overlap_refuse(self):
++        store=self.store()
++        with store.try_lock():pass
++        (self.w.root/'snapshot.json').write_text('{')
++        with self.assertRaises(WorkerError):store.read_snapshot()
++        from bridge.local_worker.storage import WorkerStore
++        with self.assertRaises(WorkerError):
++            with WorkerStore(self.w.root,(self.w.home,),self.w.home).try_lock():pass
++
++    def test_operator_resolution_requires_matching_confirmation(self):
++        store=self.store()
++        with store.try_lock():
++            self.begin(store)
++            for request,ack in [('a'*32,False),('b'*32,True)]:
++                with self.assertRaises(WorkerError):store.resolve_uncertain(request,ack,'checked','operator-ref')
++            store.resolve_uncertain('a'*32,True,'server confirmed idle','operator-ref')
++        self.assertEqual(store.read_snapshot().coordination,'idle')
++        self.assertTrue(store.read_task('sample').attempts['1'].retired)
+--- baseline/tools/make_verification_prompt.py
++++ tools/make_verification_prompt.py
+@@ -105,7 +105,8 @@
+ ]
+ # Embedded in full, matched by pattern (the set varies by run).  Review / request files: newest only.
+ GLOB_FULL = (
+-    "tests/fixtures/*.json",
++    "tests/fixtures/**/*.json",
++    "bridge/local_worker/**/*.py",
+     "docs/evidence/source_fingerprint.json",
+     "docs/evidence/capability_policy_real_cli.json",
+     "docs/evidence/tests_*.json",
+@@ -573,7 +574,7 @@
+         for prefix in SRC_DIFF_PREFIXES:
+             d = base / prefix.rstrip("/")
+             if d.is_dir():
+-                names.update(p.relative_to(base).as_posix() for p in d.glob("*.py"))
++                names.update(p.relative_to(base).as_posix() for p in d.rglob("*.py"))
+     chunks: list[str] = []
+     for rel in sorted(names):
+         new_p, old_p = root / rel, snap / rel
+--- baseline/tools/record_evidence.py
++++ tools/record_evidence.py
+@@ -51,7 +51,7 @@
+ sys.path.insert(0, str(ROOT))
+ 
+ EVIDENCE = ROOT / "docs" / "evidence"
+-SOURCE_GLOBS = ("bridge/*.py", "tools/*.py", "tests/*.py", "tests/fixtures/*.json", "*.py",
++SOURCE_GLOBS = ("bridge/**/*.py", "tools/*.py", "tests/**/*.py", "tests/fixtures/**/*.json", "*.py",
+                 "requirements.in", "requirements.lock.txt", "README.md")
+ 
+ 
+@@ -236,7 +236,7 @@
+     (evidence / log_name).write_bytes(log_bytes)
+     payload = {
+         "evidence_class": "implementer_executed",
+-        "what": "automated suite against the scripted fake Codex CLI (no model call, no subscription use)",
++        "what": "model-free suite: fake Codex CLI and local HTTP/process fixtures (no model call)",
+         "command": "python -B -m unittest discover -s tests -t . -v   (cwd = a staged copy of the source "
+                    "set, venv python)",
+         "executed_from": "staged_copy",

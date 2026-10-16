@@ -1,0 +1,38 @@
+test_exact_surface_and_real_roundtrip_all_five_actions (tests.test_local_worker_mcp.Mcp.test_exact_surface_and_real_roundtrip_all_five_actions) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43136 running stdin=<_ProactorWritePipeTransport fd=648 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=652 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+<_WindowsSubprocessTransport pid=43136 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_initialization_ping_and_status_during_delayed_discovery (tests.test_local_worker_mcp.Mcp.test_initialization_ping_and_status_during_delayed_discovery) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=40060 running stdin=<_ProactorWritePipeTransport fd=696 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=700 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+<_WindowsSubprocessTransport pid=40060 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_new_then_first_call_uses_named_session (tests.test_server_admin.AdminCli.test_new_then_first_call_uses_named_session) ... ok
+test_quarantine_recovers_from_corrupt_registry_explicitly (tests.test_server_admin.AdminCli.test_quarantine_recovers_from_corrupt_registry_explicitly) ... ok
+test_reset_refuses_while_a_call_is_running (tests.test_server_admin.AdminCli.test_reset_refuses_while_a_call_is_running) ... ok
+test_reset_requires_yes_retires_pointer_keeps_audit_and_next_call_is_fresh (tests.test_server_admin.AdminCli.test_reset_requires_yes_retires_pointer_keeps_audit_and_next_call_is_fresh) ... ok
+test_status_flags_problems_with_nonzero_exit (tests.test_server_admin.AdminCli.test_status_flags_problems_with_nonzero_exit) ... ok
+test_status_reports_routes_auth_audit_and_registry_without_inference (tests.test_server_admin.AdminCli.test_status_reports_routes_auth_audit_and_registry_without_inference) ... ok
+test_signatures_are_single_required_string (tests.test_server_admin.McpSurface.test_signatures_are_single_required_string) ... ok
+test_three_tools_with_original_v1_schemas (tests.test_server_admin.McpSurface.test_three_tools_with_original_v1_schemas) ... ok
+test_client_session_end_to_end_with_one_argument_callers (tests.test_server_admin.StdioRoundTrip.test_client_session_end_to_end_with_one_argument_callers) ... Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+ok
+test_mcp_cancellation_notification_kills_tree_and_writes_terminal_record (tests.test_server_admin.StdioRoundTrip.test_mcp_cancellation_notification_kills_tree_and_writes_terminal_record) ... ok
+test_stdout_carries_only_json_rpc (tests.test_server_admin.StdioRoundTrip.test_stdout_carries_only_json_rpc) ... ok
+test_windows_sandbox_override_is_opt_in_and_validated (tests.test_config_argv_auth.ReadOnlyArgv.test_windows_sandbox_override_is_opt_in_and_validated) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 29.891s
+
+OK

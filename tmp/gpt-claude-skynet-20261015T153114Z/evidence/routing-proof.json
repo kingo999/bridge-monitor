@@ -1,0 +1,40 @@
+{
+  "claude_session_id": "4c7265cb-d86e-4704-a301-6432e489c318",
+  "claude_model": "claude-opus-5-5",
+  "claude_cli_result": "success",
+  "task_id": "gpt-claude-skynet-clamp-20261015T153114Z",
+  "request_id": "13598588090f4c32b8f9714d7e646121",
+  "endpoint": "http://skynet.local:11434",
+  "peer_ip": "192.168.0.78",
+  "worker_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "worker_digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+  "worker_calls": [
+    {
+      "tool": "mcp__gpt-architect__local_worker",
+      "action": "status",
+      "tool_use_id": "toolu_01UGK6aDsgmR9fggx1YebfJK"
+    },
+    {
+      "tool": "mcp__gpt-architect__local_worker",
+      "action": "generate",
+      "tool_use_id": "toolu_016BXmLRFHeX2RnGKL4nF6mZ"
+    }
+  ],
+  "gpt_packet_matches_claude_tool_input": true,
+  "raw_body_matches_parsed_response": true,
+  "raw_and_normalized_digests_match": true,
+  "applied_source_exact_tool_response": true,
+  "verifier_unchanged": true,
+  "task_packet_file_unchanged": true,
+  "changed_files": [
+    "clamp.py"
+  ],
+  "v1_configured": false,
+  "v1_exposed": false,
+  "v1_called": false,
+  "feedback_retries": 0,
+  "candidate_sha256": "2b515cd59feeb13bb6ffac0f9fca12cb18c68e3c8a3d9d136d3bafc7c7a46525",
+  "raw_model_fenced": true,
+  "adapter_normalization": "plain-code-envelope-v1",
+  "supervisor_edits": ""
+}

@@ -1,0 +1,2836 @@
+--- base/bridge/admin.py
++++ now/bridge/admin.py
+@@ -35,7 +35,7 @@
+ def _models(args: argparse.Namespace, env: Mapping[str, str]) -> list[str]:
+     if args.model:
+         for model in args.model:
+-            if not config._MODEL_RE.match(model):  # noqa: SLF001
++            if not config._MODEL_RE.fullmatch(model):  # noqa: SLF001
+                 raise errors.BridgeError(errors.INVALID_CONFIGURATION, f"invalid model name {model!r}", code="bad_model")
+         return sorted(set(args.model))
+     return sorted({config.resolve_route(t, env).model for t in config.TOOL_NAMES})
+@@ -67,7 +67,11 @@
+     """Block new calls (maintenance flag), then require that no call holds a session lock."""
+     registry.ensure_dirs()
+     registry.begin_maintenance(reason)
+-    held = registry.active_sessions()
++    try:
++        held = registry.active_sessions()
++    except BaseException:       # V9: a failing probe must not leave the flag and lock behind
++        registry.end_maintenance()
++        raise
+     if held:
+         registry.end_maintenance()
+         raise errors.BridgeError(
+@@ -286,7 +290,7 @@
+ def _sessions(args, env):
+     settings, root, repo_key, registry = _context(args, env)
+     session = args.session or settings.session
+-    if not config._SESSION_RE.match(session):  # noqa: SLF001
++    if not config._SESSION_RE.fullmatch(session):  # noqa: SLF001
+         raise errors.BridgeError(errors.INVALID_CONFIGURATION, f"invalid session name {session!r}", code="bad_session")
+     return settings, root, repo_key, registry, session
+ 
+@@ -322,6 +326,27 @@
+     except state.LockTimeout:
+         return None
+     return lock
++
++
++def _settle_unbound_thread(registry: state.Registry, key: str, thread: str | None, how: str) -> dict | None:
++    """Settle the thread-disposition part of an in-flight record (V8) without discarding independent
++    process uncertainty.  ``thread`` None (reset) settles whatever thread the record names; an adopted
++    thread only settles a record that names that same thread.  Returns what was settled, or None."""
++    marker = registry.read_marker("inflight", key)
++    if marker is None:
++        return None
++    unbound = marker.get("unbound_thread") or (marker.get("thread_id") if marker.get("state") == "persistence_failed"
++                                               else None)
++    if not unbound or (thread is not None and thread != unbound):
++        return None
++    process_uncertain = marker.get("state") == "uncertain"
++    if process_uncertain:
++        registry.update_marker("inflight", key, unbound_thread=None)
++    else:
++        registry.clear_marker("inflight", key)
++    registry.journal.append("unbound_thread_settled", key_hash=state.key_hash(key), thread_id=unbound,
++                            how=how, process_uncertain=process_uncertain)
++    return {"thread": unbound, "process_uncertain": process_uncertain}
+ 
+ 
+ def cmd_reset(args: argparse.Namespace, env: Mapping[str, str]) -> int:
+@@ -348,17 +373,21 @@
+                 registry.clear_marker("pending", key)
+                 registry.journal.append("pending_discarded", key_hash=state.key_hash(key),
+                                         thread_id=pending.get("thread_id"))
++            settled = _settle_unbound_thread(registry, key, None, "reset")
+         finally:
+             lock.release()
+-        if entry is None and pending is None:
++        if entry is None and pending is None and settled is None:
+             print(f"nothing to reset: model={model} session={session}")
+         else:
+             thread = (entry or {}).get("thread_id")
+             print(
+                 f"retired pointer: model={model} session={session} thread={thread}"
+                 + (f"; discarded pending marker for thread {pending.get('thread_id')}" if pending else "")
++                + (f"; discarded the unsaved-thread record for thread {settled['thread']}" if settled else "")
+                 + ". Codex history was not touched"
+                 + (f" (inspect with `codex resume {thread}`)." if thread else ".")
++                + (" Process uncertainty is NOT cleared: run `reconcile --yes` after verifying no process "
++                   "remains." if settled and settled.get("process_uncertain") else "")
+             )
+     return rc
+ 
+@@ -386,10 +415,13 @@
+         entry = registry.adopt_thread(key, ident, args.thread)
+         registry.clear_marker("pending", key)
+         registry.journal.append("thread_adopted", key_hash=state.key_hash(key), thread_id=args.thread)
++        settled = _settle_unbound_thread(registry, key, args.thread, "adopt")
+     finally:
+         lock.release()
+     print(f"adopted: model={model} session={session} thread={entry['thread_id']} "
+-          "(Codex history was not touched; the bridge did not verify the thread exists).")
++          "(Codex history was not touched; the bridge did not verify the thread exists)."
++          + (" Process uncertainty for the interrupted call is NOT cleared: run `reconcile --yes` after "
++             "verifying no process remains." if settled and settled.get("process_uncertain") else ""))
+     return 0
+ 
+ 
+@@ -415,12 +447,38 @@
+             if marker is None:
+                 print(f"nothing to reconcile: model={model} session={session}")
+                 continue
++            if marker.get("state") == "persistence_failed":
++                # V8: this record is a thread-disposition debt, not a process uncertainty.  Confirming
++                # that no process remains does not settle it, so reconcile refuses to clear it.
++                print(f"not reconciled: model={model} session={session}: the marker records Codex thread "
++                      f"{marker.get('unbound_thread') or marker.get('thread_id')} whose session pointer could "
++                      "not be saved. Keep it with `adopt --thread <id> --model <model> --yes` or discard the "
++                      "pointer state with `reset --yes`.")
++                rc = 1
++                continue
++            unbound = marker.get("unbound_thread")
++            if unbound:
++                # process uncertainty is being confirmed; the unsaved thread must stay accounted for
++                wrote = registry.write_marker("pending", key, {
++                    "thread_id": unbound, "call_id": marker.get("call_id"),
++                    "reason": "process_reconciled_thread_unbound", "since": state.utc_now(),
++                    "model": marker.get("model") or model,
++                })
++                if not wrote:
++                    print(f"not reconciled: model={model} session={session}: could not persist the "
++                          "thread-disposition marker; nothing was changed.")
++                    rc = 1
++                    continue
+             registry.clear_marker("inflight", key)
+             registry.journal.append("operator_reconciled", key_hash=state.key_hash(key),
+                                     call_id=marker.get("call_id"), thread_id=marker.get("thread_id"),
+-                                    previous_state=marker.get("state"), ownership=marker.get("ownership"))
++                                    previous_state=marker.get("state"), ownership=marker.get("ownership"),
++                                    thread_disposition_pending=bool(unbound))
++            owed = unbound or (registry.read_marker("pending", key) or {}).get("thread_id")
+             print(f"reconciled: model={model} session={session} thread={marker.get('thread_id')} "
+-                  f"(was {marker.get('state')}, ownership {marker.get('ownership')}). No process was touched.")
++                  f"(was {marker.get('state')}, ownership {marker.get('ownership')}). No process was touched."
++                  + (f" Thread {owed} still needs a disposition: `adopt --thread {owed} --model {model} "
++                     "--yes` or `reset --yes`." if owed else ""))
+         finally:
+             lock.release()
+     return rc
+--- base/bridge/codexcli.py
++++ now/bridge/codexcli.py
+@@ -14,14 +14,13 @@
+ import os
+ from pathlib import Path
+ import re
+-import shutil
+ import subprocess
+ import sys
+ import threading
+ import time
+ from typing import Any, Mapping, Sequence
+ 
+-from . import config, errors, gitsafe
++from . import config, errors, execpath, gitsafe
+ from .redact import redact
+ 
+ TESTED_CLI_VERSION = "0.162.1"
+@@ -80,7 +79,7 @@
+     try:
+         if sys.platform == "win32":
+             subprocess.run(
+-                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
++                [execpath.system_tool("taskkill"), "/PID", str(proc.pid), "/T", "/F"],
+                 stdin=subprocess.DEVNULL,
+                 stdout=subprocess.DEVNULL,
+                 stderr=subprocess.DEVNULL,
+@@ -199,11 +198,16 @@
+             return Cli((sys.executable, str(path)), "python-script", str(path))
+         found: str | None = str(path)
+     else:
+-        found = shutil.which("codex", path=env.get("PATH")) or shutil.which("codex.cmd", path=env.get("PATH"))
++        # V6: never the current directory (the reviewed project) or anything inside it
++        found = execpath.trusted_which(("codex", "codex.cmd"), env)
+     if not found:
++        shadowed = execpath.excluded_matches(("codex", "codex.cmd"), env)
+         raise errors.BridgeError(
+             errors.CLI_MISSING,
+-            "Codex CLI not found on PATH.",
++            "Codex CLI not found on PATH."
++            + (f" A match exists only inside the project/current directory ({shadowed[0]}), which is never "
++               "trusted for execution; set GPT_ARCHITECT_CODEX_PATH to that file if you intend to use it."
++               if shadowed else ""),
+             code="not_on_path",
+             recovery=(
+                 "Install it (`npm install -g @openai/codex`), sign in with ChatGPT yourself, and make "
+@@ -217,7 +221,7 @@
+         shim_dir = Path(found).parent
+         script = shim_dir / "node_modules" / "@openai" / "codex" / "bin" / "codex.js"
+         node = shim_dir / "node.exe"
+-        node_path = str(node) if node.is_file() else shutil.which("node", path=env.get("PATH"))
++        node_path = str(node) if node.is_file() else execpath.trusted_which(("node",), env)
+         if script.is_file() and node_path:
+             return Cli((node_path, str(script)), "node-script", f"{node_path} {script}")
+         return Cli((found,), "shim", found)
+@@ -425,6 +429,20 @@
+     def by_level(self, level: str) -> list[str]:
+         return [c["name"] for c in self.capabilities if c["level"] == level]
+ 
++    def note_allowed_enabled(self, names: Sequence[str]) -> list[str]:
++        """Record allow-listed servers first seen enabled after the audit (V10); returns the new ones."""
++        new = sorted(set(names) - set(self.allowed_servers))
++        if new:
++            self.allowed_servers = sorted(set(self.allowed_servers) | set(new))
++            self.capabilities = [c for c in self.capabilities if c["name"] != "mcp_allowed_servers"]
++            self.capabilities.append({
++                "name": "mcp_allowed_servers", "control": "GPT_ARCHITECT_MCP_ALLOW (human exception)",
++                "level": LEVEL_UNCONTAINED,
++                "note": "allowed servers are NOT constrained by the read-only sandbox: "
++                        + ", ".join(self.allowed_servers),
++            })
++        return new
++
+     def telemetry_summary(self) -> dict[str, Any]:
+         """Compact, content-free summary for per-call telemetry."""
+         return {
+@@ -477,13 +495,25 @@
+     return rows
+ 
+ 
+-def recheck_mcp(cli: Cli, env: Mapping[str, str], repo_root: Path, audit: "Audit") -> list[str]:
+-    """Servers enabled *now* under the audited overrides that are neither disabled nor
+-    allow-listed.  Narrows (does not eliminate) the audit-to-exec window: the CLI offers no
+-    deny-all, so a server added to the configuration between this read and exec's own config
+-    load is not covered."""
++@dataclass(frozen=True)
++class McpRecheck:
++    """The effective MCP view *now*, under the audited overrides (V10: the complete snapshot,
++    not just the part that is refused)."""
++
++    unexpected: tuple[str, ...]        # enabled, neither disabled by the audit nor allow-listed
++    allowed_enabled: tuple[str, ...]   # allow-listed servers that are enabled now (uncontained)
++
++
++def recheck_mcp(cli: Cli, env: Mapping[str, str], repo_root: Path, audit: "Audit") -> McpRecheck:
++    """Re-read the effective MCP servers.  Narrows (does not eliminate) the audit-to-exec window:
++    the CLI offers no deny-all, so a server added to the configuration between this read and
++    exec's own config load is not covered.  Allow-listed servers that became enabled since the
++    audit are returned so the caller can report them as uncontained exceptions."""
+     rows = _list_mcp(cli, env, str(repo_root), [*audit.feature_args(), *audit.server_overrides])
+-    return sorted(r["name"] for r in rows if r["enabled"] and r["name"] not in audit.allow)
++    return McpRecheck(
++        unexpected=tuple(sorted(r["name"] for r in rows if r["enabled"] and r["name"] not in audit.allow)),
++        allowed_enabled=tuple(sorted(r["name"] for r in rows if r["enabled"] and r["name"] in audit.allow)),
++    )
+ 
+ 
+ def _find_hook_sources(repo_root: Path, env: Mapping[str, str]) -> tuple[list[str], list[str]]:
+@@ -561,7 +591,7 @@
+             continue
+         if name in allow:
+             continue  # reported from the final readout below (N8), not from this snapshot
+-        if not _SAFE_SERVER_NAME.match(name):
++        if not _SAFE_SERVER_NAME.fullmatch(name):
+             raise errors.BridgeError(
+                 errors.CAPABILITY_AUDIT,
+                 f"MCP server name {name!r} cannot be expressed safely as a config override.",
+@@ -610,8 +640,9 @@
+         "key exists in the CLI's config schema; the CLI offers no readout for it and the `web__run` "
+         "tool observed in live runs has not been mapped to this key")
+     cap("shell_and_apply_patch_writes", "sandbox_mode=read-only + approval_policy=never (argv-pinned)",
+-        LEVEL_REQUESTED, "argv content is guarded at build time; effectiveness is shown by the attack "
+-                         "tests recorded in the evidence files, not by this audit")
++        LEVEL_REQUESTED, "argv content is guarded at build time. This audit does not establish "
++                         "effectiveness; native write rejection has not been live-verified for the "
++                         "current source (attack results in docs/history are for earlier candidates)")
+     cap("view_image_goals_sleep_skills", "none available/used", LEVEL_UNCONTAINED,
+         "view_image can read local image files; skills under ~/.codex and ~/.agents inject "
+         "instructions; neither is a repository write route")
+@@ -636,7 +667,7 @@
+         return []
+     try:
+         res = subprocess.run(
+-            ["tasklist", "/FI", "IMAGENAME eq node_repl.exe", "/FO", "CSV", "/NH"],
++            [execpath.system_tool("tasklist"), "/FI", "IMAGENAME eq node_repl.exe", "/FO", "CSV", "/NH"],
+             stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10, check=False,
+         )
+         pids = []
+@@ -661,7 +692,9 @@
+ 
+     Returns (relative posix path, None) or (None, skip_reason).  Prefers source-like files.
+     Runs host-side git through ``gitsafe`` (no filters/textconv/fsmonitor)."""
+-    if not gitsafe.supported():
++    if gitsafe.trusted_git(repo_root) is None:
++        return None, "no_trusted_git"
++    if not gitsafe.supported(repo_root):
+         return None, "git_too_old_for_safe_mode"
+     try:
+         res = subprocess.run(
+--- base/bridge/config.py
++++ now/bridge/config.py
+@@ -110,7 +110,7 @@
+         for name in (f"{base}_{suffix}", base):
+             raw = _get(env, name)
+             if raw is not None:
+-                if not pattern.match(raw):
++                if not pattern.fullmatch(raw):
+                     raise _bad(name, raw, f"not a valid {what}")
+                 return raw, name
+         return default, "default"
+@@ -133,7 +133,7 @@
+     queue_timeout = _int(env, "GPT_ARCHITECT_QUEUE_TIMEOUT", timeout + 60, 1, 172_800)
+ 
+     session = _get(env, "GPT_ARCHITECT_SESSION") or DEFAULT_SESSION
+-    if not _SESSION_RE.match(session):
++    if not _SESSION_RE.fullmatch(session):
+         raise _bad("GPT_ARCHITECT_SESSION", session, "use 1-48 letters, digits, '_', '.', '-'")
+ 
+     allow: set[str] = set()
+@@ -143,7 +143,7 @@
+             name = name.strip()
+             if not name:
+                 continue
+-            if not _SERVER_RE.match(name):
++            if not _SERVER_RE.fullmatch(name):
+                 raise _bad("GPT_ARCHITECT_MCP_ALLOW", name, "not a plain MCP server name")
+             allow.add(name)
+ 
+--- base/bridge/execpath.py
++++ now/bridge/execpath.py
+@@ -0,0 +1,135 @@
++"""Resolve host-side executables without trusting the current directory or the reviewed tree (V6).
++
++The bridge runs as a child of Claude Code with the *reviewed project* as its working directory.
++Windows ``CreateProcess`` and ``shutil.which`` both look in the current directory first, so a
++bare ``git`` / ``codex`` / ``taskkill`` could resolve to a file the repository ships and then run
++with the user's full permissions, outside the Codex sandbox, before any containment flag matters.
++
++Rules (the only place these decisions are made):
++
++* only **absolute** ``PATH`` entries are considered; ``""``, ``"."`` and relative entries are skipped;
++* an entry that is, or is inside, the current directory, ``CLAUDE_PROJECT_DIR`` or an explicitly
++  excluded root (the reviewed repository) is skipped - a tool that lives in the reviewed tree is
++  never trusted;
++* on Windows only ``.exe .cmd .bat .com`` are candidates (not ``.vbs``/``.js``/...);
++* Windows system tools (``taskkill``, ``tasklist``) are addressed by absolute
++  ``%SystemRoot%\\System32`` path, not looked up.
++
++An explicit override such as ``GPT_ARCHITECT_CODEX_PATH`` is the user's own statement of trust
++and is not subject to this search.
++"""
++
++from __future__ import annotations
++
++import os
++from pathlib import Path
++import sys
++from typing import Iterable, Mapping, Sequence
++
++_WINDOWS_EXTS = (".exe", ".cmd", ".bat", ".com")
++
++
++def _norm(path: str | os.PathLike[str]) -> str:
++    return os.path.normcase(os.path.realpath(os.fspath(path)))
++
++
++def _inside(candidate: str, root: str) -> bool:
++    if candidate == root:
++        return True
++    try:
++        return os.path.commonpath([candidate, root]) == root
++    except ValueError:               # different drives
++        return False
++
++
++def _path_value(env: Mapping[str, str]) -> str:
++    for key, value in env.items():
++        if key.upper() == "PATH":
++            return value or ""
++    return ""
++
++
++def excluded_roots(env: Mapping[str, str], extra: Iterable[str | os.PathLike[str]] = ()) -> list[str]:
++    """Normalised directories that executables must not be taken from."""
++    roots: list[str] = []
++    for item in (os.getcwd(), env.get("CLAUDE_PROJECT_DIR") or os.environ.get("CLAUDE_PROJECT_DIR"), *extra):
++        if item:
++            try:
++                roots.append(_norm(item))
++            except OSError:
++                continue
++    return roots
++
++
++def trusted_which(
++    names: Sequence[str],
++    env: Mapping[str, str],
++    *,
++    exclude: Iterable[str | os.PathLike[str]] = (),
++) -> str | None:
++    """Absolute path of the first match among ``names`` found in a trusted PATH directory."""
++    roots = excluded_roots(env, exclude)
++    seen: set[str] = set()
++    for entry in _path_value(env).split(os.pathsep):
++        entry = entry.strip().strip('"')
++        if not entry or entry == "." or not os.path.isabs(entry):
++            continue
++        try:
++            directory = _norm(entry)
++        except OSError:
++            continue
++        if directory in seen or any(_inside(directory, root) for root in roots):
++            continue
++        seen.add(directory)
++        for name in names:
++            if sys.platform == "win32":
++                has_ext = Path(name).suffix.lower() in _WINDOWS_EXTS
++                candidates = [name] if has_ext else [name + ext for ext in _WINDOWS_EXTS]
++            else:
++                candidates = [name]
++            for candidate in candidates:
++                full = os.path.join(entry, candidate)
++                if os.path.isfile(full) and (sys.platform == "win32" or os.access(full, os.X_OK)):
++                    return full
++    return None
++
++
++def system_tool(name: str) -> str:
++    """Absolute path of a Windows system tool (``taskkill`` -> ``C:\\Windows\\System32\\taskkill.exe``).
++
++    On other platforms the plain name is returned (POSIX lookups never include the current
++    directory unless PATH says so, and the bridge's POSIX paths do not call these tools)."""
++    if sys.platform != "win32":
++        return name
++    root = os.environ.get("SystemRoot") or os.environ.get("windir") or r"C:\Windows"
++    return os.path.join(root, "System32", name if name.lower().endswith(".exe") else name + ".exe")
++
++
++def excluded_matches(
++    names: Sequence[str],
++    env: Mapping[str, str],
++    *,
++    exclude: Iterable[str | os.PathLike[str]] = (),
++) -> list[str]:
++    """Matches that exist on PATH but lie inside an excluded root.  Diagnostics only: lets an error
++    say *why* a tool was not accepted (it is never returned as a result)."""
++    roots = excluded_roots(env, exclude)
++    found: list[str] = []
++    for entry in _path_value(env).split(os.pathsep):
++        entry = entry.strip().strip('"')
++        if not entry or entry == "." or not os.path.isabs(entry):
++            continue
++        try:
++            directory = _norm(entry)
++        except OSError:
++            continue
++        if not any(_inside(directory, root) for root in roots):
++            continue
++        for name in names:
++            if sys.platform == "win32":
++                has_ext = Path(name).suffix.lower() in _WINDOWS_EXTS
++                candidates = [name] if has_ext else [name + ext for ext in _WINDOWS_EXTS]
++            else:
++                candidates = [name]
++            found.extend(os.path.join(entry, c) for c in candidates if os.path.isfile(os.path.join(entry, c)))
++    return found
+--- base/bridge/fingerprint.py
++++ now/bridge/fingerprint.py
+@@ -21,6 +21,7 @@
+ 
+ import hashlib
+ from pathlib import Path
++import re
+ import subprocess
+ import threading
+ from typing import Any, Mapping
+@@ -38,17 +39,20 @@
+     proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                             env=dict(env))
+     kept = bytearray()
+-    state = {"truncated": False}
++    state = {"truncated": False, "error": False}
+ 
+     def pump() -> None:
+-        assert proc.stdout is not None
+-        for chunk in iter(lambda: proc.stdout.read(65536), b""):
+-            if hasher is not None:
+-                hasher.update(chunk)
+-            elif len(kept) + len(chunk) > cap:
+-                state["truncated"] = True      # keep draining so git can exit, but do not trust the prefix
+-            else:
+-                kept.extend(chunk)
++        try:
++            assert proc.stdout is not None
++            for chunk in iter(lambda: proc.stdout.read(65536), b""):
++                if hasher is not None:
++                    hasher.update(chunk)
++                elif len(kept) + len(chunk) > cap:
++                    state["truncated"] = True      # keep draining so git can exit, but do not trust the prefix
++                else:
++                    kept.extend(chunk)
++        except Exception:  # noqa: BLE001 - a reader that died mid-stream means a partial capture/hash (V12)
++            state["error"] = True
+ 
+     t = threading.Thread(target=pump, daemon=True)
+     t.start()
+@@ -62,16 +66,53 @@
+             proc.stdout.close()
+         raise
+     t.join(timeout=10)
+-    complete = (not t.is_alive()) and not state["truncated"]
++    complete = (not t.is_alive()) and not state["truncated"] and not state["error"]
+     if not t.is_alive() and proc.stdout is not None:
+         proc.stdout.close()
+     return proc.returncode or 0, bytes(kept), complete
+ 
+ 
++_SHA_RE = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
++
++
++def _read_head(git: Any, genv: Mapping[str, str], timeout_s: float, out: dict[str, Any]) -> str | None:
++    """The commit id, "UNBORN" only when that is *verified*, or None with ``out['reason']`` set.
++
++    ``rev-parse --verify -q`` exits 1 both for an unborn branch and for a HEAD whose object is
++    missing, so exit 1 alone is not proof: HEAD must be a symbolic ref whose target ref does not
++    exist.  An incomplete read or any other failure makes the fingerprint unavailable (V12)."""
++    rc, raw, ok = _run_capture(git("rev-parse", "--verify", "-q", "HEAD^{commit}"), genv, timeout_s)
++    if not ok:
++        out["reason"] = "head_incomplete"
++        return None
++    if rc == 0:
++        head = raw.decode("ascii", errors="replace").strip()
++        if not _SHA_RE.fullmatch(head):
++            out["reason"] = "head_unreadable"
++            return None
++        return head
++    if rc != 1:
++        out["reason"] = "head_failed"
++        return None
++    rc, raw, ok = _run_capture(git("symbolic-ref", "-q", "HEAD"), genv, timeout_s)
++    ref = raw.decode("utf-8", errors="replace").strip() if (ok and rc == 0) else ""
++    if not ref.startswith("refs/"):
++        out["reason"] = "head_unverifiable"       # detached/odd HEAD that does not resolve
++        return None
++    rc, _, ok = _run_capture(git("rev-parse", "--verify", "-q", ref), genv, timeout_s)
++    if ok and rc == 1:
++        return "UNBORN"
++    out["reason"] = "head_unverifiable"
++    return None
++
++
+ def repo_fingerprint(root: Path, env: Mapping[str, str], timeout_s: float = 40.0) -> dict[str, Any]:
+     """Return {"ok": bool, "head": str|None, "digest": 64-hex|None, "reason": str|None}."""
+     out: dict[str, Any] = {"ok": False, "head": None, "digest": None, "reason": None}
+-    if not gitsafe.supported():
++    if gitsafe.trusted_git(root) is None:
++        out["reason"] = "no_trusted_git"
++        return out
++    if not gitsafe.supported(root):
+         out["reason"] = "git_too_old_for_safe_mode"
+         return out
+     genv = gitsafe.safe_git_env(env)
+@@ -80,8 +121,9 @@
+         return gitsafe.safe_git_argv(root, *args)
+ 
+     try:
+-        rc, head_raw, ok = _run_capture(git("rev-parse", "--verify", "-q", "HEAD"), genv, timeout_s)
+-        head = head_raw.decode("ascii", errors="replace").strip() if (rc == 0 and ok) else "UNBORN"
++        head = _read_head(git, genv, timeout_s, out)
++        if head is None:
++            return out
+         out["head"] = head
+ 
+         rc, status, ok = _run_capture(git("status", "--porcelain=v1", "-z", "--untracked-files=all"), genv, timeout_s)
+--- base/bridge/gitsafe.py
++++ now/bridge/gitsafe.py
+@@ -1,24 +1,33 @@
+-"""The only place the bridge builds *host-side* git command lines (N1).
++"""The only place the bridge builds *host-side* git command lines (N1, V6).
+ 
+ Host-side git runs with the bridge's permissions, **outside the Codex sandbox**, against a
+-repository the bridge does not control.  Git can execute configured helpers while doing
+-`status`/`diff`: clean/smudge **filters**, **textconv** and **external diff** drivers
+-(selected by `.gitattributes`), and `core.fsmonitor` hooks.  This module removes those
+-routes as far as git allows:
++repository the bridge does not control.  Two separate boundaries are handled here:
++
++**Which program runs (V6).**  ``trusted_git`` resolves an *absolute* git executable from trusted
++PATH directories only (``execpath``): never the current directory, never a directory inside the
++reviewed repository, never a relative PATH entry.  Every host-side git call uses that path, so a
++``git.exe`` shipped by the repository cannot be selected and then run before any flag matters.
++
++**What git does once it runs (N1).**  Git can execute configured helpers while doing
++`status`/`diff`: clean/smudge **filters**, **textconv** and **external diff** drivers (selected by
++`.gitattributes`), and `core.fsmonitor` hooks.  This module removes those routes as far as git
++allows:
+ 
+ * ``--attr-source=<empty tree>``: attributes are read from the empty tree instead of the
+   worktree, so no `.gitattributes` can select a filter/textconv/diff driver;
+-* ``core.attributesFile=<null>`` and ``GIT_ATTR_NOSYSTEM``: no user/system attribute files;
++* ``core.attributesFile=<devnull>`` and ``GIT_ATTR_NOSYSTEM``: no user/system attribute files;
+ * ``core.fsmonitor=false``: no filesystem-monitor hook;
+ * ``diff.external=`` + ``--no-ext-diff --no-textconv`` (callers add the diff flags);
+ * ``--no-optional-locks`` / ``GIT_OPTIONAL_LOCKS=0``: git does not refresh/write the index
+   (this alone is *not* a containment claim: it prevents index writes, nothing more);
+-* a scrubbed environment (no ``GIT_EXTERNAL_DIFF``, pager, askpass, prompts).
++* a scrubbed environment: every inherited ``GIT_*`` variable is dropped (matched
++  case-insensitively, as Windows environment names are), ``NoDefaultCurrentDirectoryInExePath``
++  is set, and only the controls above are added.
+ 
+-Residual: git itself still parses the repository (object database, config).  If a
+-repository can make git execute code despite the above (a git bug), that is outside what
+-this module can prevent.  ``supported()`` lets callers fail closed ("unavailable") on a git
+-too old to honour ``--attr-source``.
++Residual: git itself still parses the repository (object database, config); attributes supplied
++from inside ``$GIT_DIR`` (``info/attributes``) are still read; a git bug that executes code despite
++the above is outside what this module can prevent.  ``supported()`` lets callers fail closed
++("unavailable") on a git too old to honour ``--attr-source`` or when no trusted git exists.
+ """
+ 
+ from __future__ import annotations
+@@ -29,15 +38,27 @@
+ import threading
+ from typing import Mapping
+ 
++from . import execpath
++
+ EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+ 
+-_supported: bool | None = None
++_supported: dict[str, bool] = {}
+ _lock = threading.Lock()
+ 
+ 
++def trusted_git(root: Path | str | None = None) -> str | None:
++    """Absolute path of a git executable that is not inside the reviewed tree or the current
++    directory, or None when none is available on PATH."""
++    return execpath.trusted_which(("git",), os.environ, exclude=[root] if root else [])
++
++
+ def safe_git_argv(root: Path | str, *args: str) -> list[str]:
++    exe = trusted_git(root)
++    if exe is None:
++        raise FileNotFoundError("no trusted git executable was found on PATH (the current directory and "
++                                "the reviewed repository are never searched)")
+     return [
+-        "git",
++        exe,
+         "--no-optional-locks",
+         f"--attr-source={EMPTY_TREE}",
+         "-c", "core.fsmonitor=false",
+@@ -51,26 +72,30 @@
+ 
+ def safe_git_env(base: Mapping[str, str]) -> dict[str, str]:
+     env = {k: v for k, v in base.items()
+-           if k not in ("GIT_EXTERNAL_DIFF", "GIT_DIFF_OPTS", "GIT_PAGER", "GIT_ASKPASS", "GIT_SSH_COMMAND")}
++           if not k.upper().startswith("GIT_") and k.upper() != "NODEFAULTCURRENTDIRECTORYINEXEPATH"}
+     env.update({
+         "GIT_OPTIONAL_LOCKS": "0",
+         "GIT_CONFIG_NOSYSTEM": "1",
+         "GIT_ATTR_NOSYSTEM": "1",
+         "GIT_TERMINAL_PROMPT": "0",
+         "GIT_PAGER": "cat",
++        "NoDefaultCurrentDirectoryInExePath": "1",
+     })
+     return env
+ 
+ 
+-def supported() -> bool:
+-    """True when the installed git honours ``--attr-source`` (git >= 2.40)."""
+-    global _supported
++def supported(root: Path | str | None = None) -> bool:
++    """True when a trusted git exists and honours ``--attr-source`` (git >= 2.40)."""
++    exe = trusted_git(root)
++    if exe is None:
++        return False
+     with _lock:
+-        if _supported is None:
++        if exe not in _supported:
+             try:
+-                res = subprocess.run(["git", f"--attr-source={EMPTY_TREE}", "--version"],
+-                                     stdin=subprocess.DEVNULL, capture_output=True, timeout=15, check=False)
+-                _supported = res.returncode == 0
++                res = subprocess.run([exe, f"--attr-source={EMPTY_TREE}", "--version"],
++                                     stdin=subprocess.DEVNULL, capture_output=True, timeout=15, check=False,
++                                     env=safe_git_env(os.environ))
++                _supported[exe] = res.returncode == 0
+             except Exception:  # noqa: BLE001
+-                _supported = False
+-        return _supported
++                _supported[exe] = False
++        return _supported[exe]
+--- base/bridge/ids.py
++++ now/bridge/ids.py
+@@ -15,4 +15,4 @@
+ 
+ 
+ def is_thread_id(value: object) -> bool:
+-    return isinstance(value, str) and bool(THREAD_RE.match(value))
++    return isinstance(value, str) and bool(THREAD_RE.fullmatch(value))
+--- base/bridge/runner.py
++++ now/bridge/runner.py
+@@ -9,11 +9,14 @@
+ * **Infrastructure-failure detection (F1/N7).**  Sandbox-setup, process-creation and
+   repository-access failures are recognised in (a) completed command/tool items that
+   *report failure* (``status`` failed/error or non-zero ``exit_code``), (b) top-level
+-  ``error`` events, and (c) oversized lines (head/tail scan; status cannot be parsed, so an
+-  oversized line carrying a signature is conservatively counted).  Agent narration and
+-  reasoning are never scanned; an ordinary non-zero exit or a successful command whose
+-  output merely contains the words is not flagged.  The whole item is scanned (no prefix
+-  window).
++  ``error`` events, and (c) oversized lines (the WHOLE line is streamed through the scan, so
++  a signature anywhere in it is found; status cannot be parsed, so an oversized record of a
++  non-prose or unknown type that carries a signature is conservatively counted).  Agent
++  narration and reasoning are never scanned - including an oversized record whose item type is
++  recognised as such; an ordinary non-zero exit or a successful command whose output merely
++  contains the words is not flagged.  The whole item is scanned (no prefix window) and every
++  nested output container is traversed; only keys that carry what was *asked* of the tool
++  (command, input, cwd, ...) are skipped.
+ * **Process-tree ownership (F3/N3/N4).**  The child is created *suspended*, placed in a Job
+   Object, then resumed, so nothing runs un-owned.  If ownership cannot be established the
+   child is killed unexecuted and the call is refused before any prompt byte is written.
+@@ -53,8 +56,7 @@
+     }
+ )
+ MAX_LINE_BYTES = 1_048_576
+-OVERSIZE_HEAD_BYTES = 262_144
+-OVERSIZE_TAIL_BYTES = 65_536
++OVERSIZE_HEAD_BYTES = 262_144      # retained only to classify the item type of an over-long line
+ STDERR_TAIL_BYTES = 16_384
+ MAX_KEPT_MESSAGES = 5
+ MAX_MESSAGE_CHARS = 500
+@@ -68,7 +70,6 @@
+     {"agentmessage", "assistantmessage", "usermessage", "message", "reasoning", "todolist", "websearch"}
+ )
+ _FAILED_STATUSES = frozenset({"failed", "error", "errored", "declined", "rejected", "denied", "cancelled"})
+-_TEXT_FIELDS = ("aggregated_output", "output", "stderr", "stdout", "error", "message", "result", "detail")
+ 
+ INFRA_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
+     ("sandbox_setup", re.compile(r"helper_unknown_error|setup refresh had errors|windows sandbox failed",
+@@ -96,21 +97,31 @@
+     return text.replace("/", "\\").rstrip("\\").lower().lstrip("\\")
+ 
+ 
++#: keys that carry what was *asked* of a tool (or identify it), not what it reported.  Everything
++#: else in a failed command/tool item - including arbitrarily nested ``content`` / ``result``
++#: containers - is output and is scanned (V7).  A signature inside the command itself (``git grep
++#: helper_unknown_error``) must not count as an infrastructure failure.
++_INPUT_KEYS = frozenset({
++    "command", "cmd", "input", "arguments", "args", "argv", "patch", "prompt", "cwd", "path", "paths",
++    "file", "files", "id", "call_id", "item_id", "name", "tool", "server", "type", "status", "kind", "model",
++})
++_MAX_GATHER_DEPTH = 8
++
++
+ def _gather_text(value: Any, depth: int = 0) -> list[str]:
+     out: list[str] = []
+-    if depth > 3:
++    if depth > _MAX_GATHER_DEPTH:
+         return out
+     if isinstance(value, str):
+         out.append(value)
+     elif isinstance(value, Mapping):
+-        for key in _TEXT_FIELDS:
+-            if key in value:
+-                out.extend(_gather_text(value[key], depth + 1))
+-        if "text" in value and isinstance(value["text"], str):
+-            out.append(value["text"])
++        for key, inner in value.items():
++            if str(key).lower() in _INPUT_KEYS:
++                continue
++            out.extend(_gather_text(inner, depth + 1))
+     elif isinstance(value, (list, tuple)):
+-        for item in value:
+-            out.extend(_gather_text(item, depth + 1))
++        for inner in value:
++            out.extend(_gather_text(inner, depth + 1))
+     return out
+ 
+ 
+@@ -152,6 +163,36 @@
+     return ""
+ 
+ 
++_ITEM_TYPE_RE = re.compile(rb'"item"\s*:\s*\{[^{}]{0,2048}?"type"\s*:\s*"([A-Za-z0-9_.\-]{1,64})"')
++_OVERSIZE_WINDOW = 512        # >= the longest signature (repo_access allows ~230 characters)
++
++
++class OversizeScan:
++    """Streams an over-long JSONL line through the infrastructure-signature scan.
++
++    Only a bounded head is retained (to classify the item type); every byte is scanned through a
++    sliding window, so a signature in the *middle* of the line is found as reliably as one at the
++    ends (V7: the previous head/tail scan missed it)."""
++
++    def __init__(self, first: bytes) -> None:
++        self.head = first[:OVERSIZE_HEAD_BYTES]
++        self.kinds: set[str] = set()
++        self.total = 0
++        self._carry = b""
++        self._scan(first)
++        m = _ITEM_TYPE_RE.search(self.head[:OVERSIZE_HEAD_BYTES])
++        self.item_type: str | None = _norm_type(m.group(1).decode("ascii", "replace")) if m else None
++
++    def _scan(self, chunk: bytes) -> None:
++        data = self._carry + chunk
++        self.total += len(chunk)
++        self.kinds.update(signature_kinds(data.decode("utf-8", errors="replace")))
++        self._carry = data[-_OVERSIZE_WINDOW:]
++
++    def feed(self, chunk: bytes) -> None:
++        self._scan(chunk)
++
++
+ @dataclass
+ class Events:
+     repo_root: str | None = None
+@@ -160,6 +201,7 @@
+     non_json: int = 0
+     oversize: int = 0
+     oversize_infra: int = 0
++    oversize_prose_skipped: int = 0
+     unknown_types: int = 0
+     thread_id: str | None = None
+     thread_invalid: bool = False
+@@ -184,17 +226,21 @@
+             self.infra_failed_items += 1
+             self.infra_kinds.update(kinds)
+ 
+-    def feed_oversize(self, head: bytes, tail: bytes) -> None:
+-        """An over-long line could not be parsed; scan its head and tail for signatures.
+-
+-        Status/exit code cannot be read, so a signature here is counted conservatively
+-        (a >1 MiB line that merely *contains* the words is a false positive we accept)."""
+-        text = head[:OVERSIZE_HEAD_BYTES].decode("utf-8", errors="replace") + "\n" + \
+-            tail[-OVERSIZE_TAIL_BYTES:].decode("utf-8", errors="replace")
+-        kinds = signature_kinds(text)
+-        if kinds:
++    def feed_oversize(self, scan: "OversizeScan") -> None:
++        """An over-long line could not be parsed as JSON.
++
++        The WHOLE line was streamed through a signature scan (nothing is skipped), so a signature
++        anywhere in it is found.  Status/exit code cannot be read, so the policy is conservative:
++        an oversized record of an unknown or non-prose type that carries a signature is counted
++        (a >1 MiB line that merely *contains* the words is a false positive we accept).  An
++        oversized record whose item type is recognised as agent narration/reasoning is excluded,
++        exactly like a parsed prose item."""
++        if scan.item_type in _PROSE_ITEM_TYPES:
++            self.oversize_prose_skipped += 1
++            return
++        if scan.kinds:
+             self.oversize_infra += 1
+-            self._count_infra(kinds)
++            self._count_infra(sorted(scan.kinds))
+ 
+     def feed(self, raw: bytes) -> None:
+         try:
+@@ -293,6 +339,21 @@
+     )
+ 
+ 
++def _terminate_owned(owner: ProcessOwnership | None, proc: subprocess.Popen[bytes]) -> None:
++    """Best effort, never raises: kill every owned process (even when the root already exited,
++    which is exactly when a surviving descendant would otherwise be missed) and then the root."""
++    if owner is not None:
++        try:
++            owner.terminate()
++        except Exception:  # noqa: BLE001
++            pass
++    if proc.poll() is None:
++        try:
++            codexcli.kill_tree(proc)
++        except Exception:  # noqa: BLE001
++            pass
++
++
+ def run_turn(
+     argv: Sequence[str],
+     prompt: str,
+@@ -326,18 +387,28 @@
+             recovery="Check the Codex installation; no inference was attempted.",
+         ) from exc
+ 
+-    owner = ProcessOwnership()
+-    events = Events(repo_root=cwd, on_thread=on_thread)
++    # From here a child exists (suspended on Windows).  EVERYTHING below - including building the
++    # helper objects and starting the reader/writer threads - is inside the cleanup scope, and
++    # the job handle is released by an outermost ``finally`` (V1).
++    owner: ProcessOwnership | None = None
++    events: Events | None = None
+     stderr_tail = bytearray()
+-    threads: list[threading.Thread] = []
++    started_threads: list[threading.Thread] = []   # only threads whose start() succeeded
++    writer: threading.Thread | None = None
++    reader_out: threading.Thread | None = None
++    reader_err: threading.Thread | None = None
+     prompt_started = False
+     timed_out = cancelled = killed = False
+     cleanup_ok = True
+     reaped = 0
+     active_after: int | None = None
+     termination = "not_needed"
++    clean = False
+ 
+     try:
++        owner = ProcessOwnership()
++        events = Events(repo_root=cwd, on_thread=on_thread)
++
+         # ---- ownership first: nothing executes, and no prompt byte is written, un-owned ----
+         if not owner.attach(proc):
+             raise _refuse(proc, owner, owner.error or "attach failed")
+@@ -358,28 +429,25 @@
+                 pass
+ 
+         def read_stdout() -> None:
+-            assert proc.stdout is not None
++            assert proc.stdout is not None and events is not None
+             try:
+-                skipping = False
+-                head = b""
+-                tail = b""
++                scan: OversizeScan | None = None
+                 while True:
+                     line = proc.stdout.readline(MAX_LINE_BYTES + 1)
+                     if not line:
+-                        if skipping:
+-                            events.feed_oversize(head, tail)
++                        if scan is not None:
++                            events.feed_oversize(scan)
+                         return
+                     complete = line.endswith(b"\n")
+-                    if skipping:
+-                        tail = (tail + line)[-OVERSIZE_TAIL_BYTES:]
++                    if scan is not None:
++                        scan.feed(line)
+                         if complete:
+-                            events.feed_oversize(head, tail)
+-                            skipping = False
++                            events.feed_oversize(scan)
++                            scan = None
+                         continue
+                     if len(line) > MAX_LINE_BYTES and not complete:
+                         events.oversize += 1
+-                        skipping = True
+-                        head, tail = line[:OVERSIZE_HEAD_BYTES], b""
++                        scan = OversizeScan(line)
+                         continue
+                     stripped = line.strip()
+                     if stripped:
+@@ -400,12 +468,17 @@
+             except Exception:  # noqa: BLE001
+                 return
+ 
+-        for fn in (write_stdin, read_stdout, read_stderr):
+-            t = threading.Thread(target=fn, daemon=True, name=f"codex-{fn.__name__}")
+-            threads.append(t)
+-        for t in threads:
+-            t.start()
+-            prompt_started = prompt_started or t.name == "codex-write_stdin"
++        # readers first, the prompt writer LAST: a failed start can never have written a prompt byte
++        reader_out = threading.Thread(target=read_stdout, daemon=True, name="codex-read_stdout")
++        reader_out.start()
++        started_threads.append(reader_out)
++        reader_err = threading.Thread(target=read_stderr, daemon=True, name="codex-read_stderr")
++        reader_err.start()
++        started_threads.append(reader_err)
++        writer = threading.Thread(target=write_stdin, daemon=True, name="codex-write_stdin")
++        writer.start()
++        started_threads.append(writer)
++        prompt_started = True
+ 
+         deadline = started + timeout_s
+         while proc.poll() is None:
+@@ -448,6 +521,7 @@
+             termination = "confirmed" if (killed or reaped) else "not_needed"
+         else:
+             termination = "unconfirmed"
++        clean = True
+     except errors.BridgeError:
+         raise
+     except Exception as exc:  # noqa: BLE001 - setup/IO failure after the child exists
+@@ -462,22 +536,29 @@
+         )
+         raise err from exc
+     finally:
+-        # exception-safe on EVERY path: no live child, no leaked job handle
+-        if proc.poll() is None:
+-            owner.terminate()
+-            codexcli.kill_tree(proc)
+-            termination = "unconfirmed"
+-        for t in threads[1:]:
+-            t.join(timeout=5)
+-        if threads:
+-            threads[0].join(timeout=1)
+-        for stream, t in zip((proc.stdin, proc.stdout, proc.stderr), threads):
+-            codexcli.close_quietly(stream, t)
+-        if not threads:
+-            for stream in (proc.stdin, proc.stdout, proc.stderr):
+-                codexcli.close_quietly(stream, None)
+-        owner.close()
+-
++        # exception-safe on EVERY path: no live child, no leaked job handle, no join on a thread
++        # that never started, and the original (categorised) failure is never masked.
++        try:
++            if not clean or proc.poll() is None:
++                _terminate_owned(owner, proc)
++                if clean:
++                    termination = "unconfirmed"
++            for t in started_threads:
++                try:
++                    t.join(timeout=1 if t is writer else 5)
++                except Exception:  # noqa: BLE001
++                    pass
++            codexcli.close_quietly(proc.stdin, writer)
++            codexcli.close_quietly(proc.stdout, reader_out)
++            codexcli.close_quietly(proc.stderr, reader_err)
++        finally:
++            if owner is not None:
++                try:
++                    owner.close()
++                except Exception:  # noqa: BLE001
++                    pass
++
++    assert events is not None and owner is not None
+     return RunResult(
+         returncode=proc.returncode,
+         timed_out=timed_out,
+--- base/bridge/service.py
++++ now/bridge/service.py
+@@ -91,7 +91,17 @@
+         "the owned process tree was terminated (job accounting: 0 live members) but commands started by the "
+         "Windows sandbox service are outside that job and cannot be observed or confirmed gone"
+     ),
++    "bridge_terminated": (
++        "the bridge process that owned the call ended while it was running: the OS closed the job and killed "
++        "its members, but commands started by the Windows sandbox service are outside that job and cannot be "
++        "observed or confirmed gone, and nothing durable shows whether the turn had completed"
++    ),
++    "runner_failed": "the bridge's supervision of the Codex process failed",
+ }
++
++#: warnings whose caller-visible text is produced at render time from structured facts
++_BANNERED_ELSEWHERE = ("state_not_saved:", "repo_changed_during_call", "repo_fingerprint_unavailable:",
++                       "child_termination_unconfirmed", "service_children_unobservable")
+ 
+ 
+ def compose_prompt(tool: str, text: str) -> str:
+@@ -128,6 +138,7 @@
+     cli_version: str | None = None
+     warnings: list[str] = field(default_factory=list)
+     banners: list[str] = field(default_factory=list)
++    bannered: set[str] = field(default_factory=set)
+     capabilities: dict[str, Any] | None = None
+     process: dict[str, Any] | None = None
+     infra: dict[str, Any] | None = None
+@@ -135,6 +146,14 @@
+     pointer_state: str = "not_reached"   # not_reached | unchanged | bound | bind_failed | pending_reconcile
+     history: str = "no_turn_started"     # no_turn_started | turn_may_exist
+     session_state: str = "ready"         # ready | in_doubt | pending_reconcile
++
++    def warn(self, code: str, banner: str) -> None:
++        """Record a warning AND the text the caller sees for it (V14: no caller-relevant warning
++        is telemetry-only; anything appended to ``warnings`` without a banner is rendered
++        generically at the end)."""
++        self.warnings.append(code)
++        self.banners.append(banner)
++        self.bannered.add(code)
+ 
+     def record(self) -> dict[str, Any]:
+         return {
+@@ -224,22 +243,33 @@
+             self._emit(ctx)
+ 
+     # ----------------------------------------------------------------- internals
+-    def _telemetry_dir(self) -> Path:
+-        """State dir for telemetry; never inside a repository or the v1 state dir."""
++    def _telemetry_dir(self) -> Path | None:
++        """State dir for telemetry, or None when no safe destination exists (V4).
++
++        Every candidate - the configured directory AND the fallback - is validated against the
++        reviewed repository and v1's state; an unvalidated fallback must never be written to."""
+         home = Path(self._env.get("USERPROFILE") or self._env.get("HOME") or Path.home())
+-        chosen = config.default_state_dir(self._env)
+         try:
+-            raw_root = self._env.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+-            real = Path(os.path.realpath(raw_root))
+-            state.validate_state_dir(chosen, real if real.is_dir() else None, home)
+-            return chosen
+-        except Exception:  # noqa: BLE001 - invalid override: use the safe default location
+-            return home / config.V2_STATE_DIRNAME
++            real = Path(os.path.realpath(self._env.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
++            root = real if real.is_dir() else None
++        except Exception:  # noqa: BLE001
++            root = None
++        for candidate in (config.default_state_dir(self._env), home / config.V2_STATE_DIRNAME):
++            try:
++                state.validate_state_dir(candidate, root, home)
++                return candidate
++            except Exception:  # noqa: BLE001 - rejected: try the next candidate, never use it
++                continue
++        return None
+ 
+     def _emit(self, ctx: _Ctx) -> None:
+         """Write the single terminal record.  Never raises, never retries inference."""
+         try:
+-            telemetry.Telemetry(self._telemetry_dir()).write(ctx.record())
++            directory = self._telemetry_dir()
++            if directory is None:
++                log.warning("telemetry skipped: no safe state directory (record not written)")
++                return
++            telemetry.Telemetry(directory).write(ctx.record())
+         except Exception as exc:  # noqa: BLE001
+             log.warning("telemetry emit failed: %s", exc.__class__.__name__)
+ 
+@@ -318,31 +348,49 @@
+         """Refuse reuse while a previous call left the session unreconciled (F3/F5/N4/N6)."""
+         key_h = state.key_hash(key)
+         pending = registry.read_marker("pending", key)
+-        if pending is not None:
++        marker = registry.read_marker("inflight", key)
++        if marker is None and pending is not None:
+             ctx.session_state = "pending_reconcile"
+             raise self._pending_error(pending)
+-        marker = registry.read_marker("inflight", key)
+         if marker is None:
+             return
+         tid = marker.get("thread_id") if is_thread_id(marker.get("thread_id")) else "(not observed)"
+         st = marker.get("state")
+-        if st == "persistence_failed":
+-            ctx.session_state = "pending_reconcile"
+-            raise self._pending_error({"thread_id": tid, "reason": marker.get("reason", "persistence_failed")})
+         if st == "uncertain":
++            # process uncertainty is reported FIRST (V8): the operator confirms processes, then decides
++            # the thread; both are separate, and a thread debt is mentioned here so it is not a surprise
+             ctx.session_state = "in_doubt"
+             reason = marker.get("reason", "termination_unconfirmed")
++            debt = pending is not None or bool(marker.get("unbound_thread"))
+             raise errors.BridgeError(
+                 errors.SESSION_IN_DOUBT,
+                 "A previous call was interrupted and its process cleanup cannot be confirmed: "
+                 f"{_REASON_WORDS.get(reason, reason)} (thread {tid}; ownership {marker.get('ownership', 'unknown')}). "
+-                "The session is blocked so a second turn cannot run against a possibly still-active one.",
++                "The session is blocked so a second turn cannot run against a possibly still-active one."
++                + (" A thread produced by that call also needs a disposition (adopt or reset)." if debt else ""),
+                 code="uncertain_termination",
+                 recovery=(
+                     "Verify no `codex` / `node_repl` processes of that call remain (the bridge never kills "
+                     "processes it does not own), then `bridge_admin.py reconcile --yes`."
+                 ),
+             )
++        if pending is not None:
++            ctx.session_state = "pending_reconcile"
++            raise self._pending_error(pending)
++        if st == "persistence_failed":
++            # the in-flight record is the only durable trace of an unsaved thread: move the debt into
++            # the canonical pending marker when that has become possible (replacement first, then removal)
++            unbound = marker.get("unbound_thread") or marker.get("thread_id")
++            if is_thread_id(unbound):
++                wrote = registry.write_marker("pending", key, {
++                    "thread_id": unbound, "call_id": marker.get("call_id"),
++                    "reason": marker.get("persistence_reason") or marker.get("reason") or "persistence_failed",
++                    "since": state.utc_now(), "model": marker.get("model"),
++                })
++                if wrote:
++                    registry.clear_marker("inflight", key)
++            ctx.session_state = "pending_reconcile"
++            raise self._pending_error({"thread_id": tid, "reason": marker.get("reason", "persistence_failed")})
+         # state == "running" while we hold the session lock: the owning call is gone, or it
+         # failed to settle.  Never infer owner death from the lock alone (N4).
+         owner_pid = int(marker.get("owner_pid") or 0)
+@@ -356,39 +404,61 @@
+                 recovery="Wait for / stop that bridge process, verify no stray `codex` processes remain, "
+                          "then `bridge_admin.py reconcile --yes`.",
+             )
++        thread_known = marker.get("thread_id") if is_thread_id(marker.get("thread_id")) else None
++        fresh_thread = thread_known is not None and not marker.get("resumed")
+         if marker.get("phase") == "completed_unbound":
+-            # the turn finished and the answer existed, but the pointer was never committed
+-            registry.write_marker("pending", key, {
+-                "thread_id": marker.get("thread_id"), "call_id": marker.get("call_id"),
++            # the turn finished and the answer existed, but the pointer was never committed.  V2: the
++            # replacement durable state must EXIST before the in-flight record is removed.
++            wrote = registry.write_marker("pending", key, {
++                "thread_id": thread_known, "call_id": marker.get("call_id"),
+                 "reason": "bridge_terminated_before_pointer_commit", "since": state.utc_now(),
++                "model": marker.get("model"),
+             })
+-            registry.clear_marker("inflight", key)
+-            registry.journal.append("pending_from_inflight", key_hash=key_h, thread_id=marker.get("thread_id"),
+-                                    call_id=marker.get("call_id"))
++            registry.journal.append("pending_from_inflight", key_hash=key_h, thread_id=thread_known,
++                                    call_id=marker.get("call_id"), marker_written=wrote)
++            if wrote:
++                registry.clear_marker("inflight", key)
++            else:   # keep blocking: the in-flight record is still the only durable trace
++                registry.update_marker("inflight", key, state="persistence_failed",
++                                       reason="bridge_terminated_before_pointer_commit",
++                                       unbound_thread=thread_known)
+             ctx.session_state = "pending_reconcile"
+             raise self._pending_error({"thread_id": tid, "reason": "bridge_terminated_before_pointer_commit"})
+-        if marker.get("ownership") == "job_object":
+-            registry.clear_marker("inflight", key)
+-            registry.journal.append("auto_reconciled_hard_termination", call_id=marker.get("call_id"),
+-                                    thread_id=marker.get("thread_id"), key_hash=key_h,
+-                                    owner_pid=owner_pid)
+-            if marker.get("thread_id") and not marker.get("resumed"):
+-                registry.journal.append("unbound_thread", call_id=marker.get("call_id"), key_hash=key_h,
+-                                        thread_id=marker.get("thread_id"), reason="bridge_terminated")
+-            ctx.warnings.append("previous_call_hard_terminated_job_closed")
+-            ctx.banners.append(
+-                "A previous call was hard-terminated (its owner process is gone). Its job-owned process tree "
+-                "was killed by the OS when the bridge exited; commands started outside that job (Windows "
+-                f"sandbox service) cannot be confirmed. Codex history may hold a partial turn in thread {tid}."
+-            )
+-            return
++
++        # The owner is gone and the call never reached a durable "completed" phase.  Nothing durable
++        # proves the turn did not complete (V2), and commands started by the Windows sandbox
++        # SERVICE are outside the job the OS just closed (V3), so the call is never auto-recovered:
++        # it becomes `uncertain` and needs the operator's `reconcile`.  A fresh call that had
++        # observed its thread also leaves a pending marker, so what happens to that thread
++        # (adopt / reset) is a separate, explicit decision from process confirmation (V8).
++        pending_ok = True
++        if fresh_thread:
++            pending_ok = registry.write_marker("pending", key, {
++                "thread_id": thread_known, "call_id": marker.get("call_id"),
++                "reason": "bridge_terminated_before_pointer_commit", "since": state.utc_now(),
++                "model": marker.get("model"),
++            })
++        registry.update_marker(
++            "inflight", key, state="uncertain", reason="bridge_terminated",
++            unbound_thread=(thread_known if (fresh_thread and not pending_ok) else None),
++        )
++        registry.journal.append("stale_inflight_marked_uncertain", call_id=marker.get("call_id"),
++                                key_hash=key_h, thread_id=thread_known, owner_pid=owner_pid,
++                                ownership=marker.get("ownership"), pending_written=pending_ok if fresh_thread else None)
+         ctx.session_state = "in_doubt"
+         raise errors.BridgeError(
+             errors.SESSION_IN_DOUBT,
+-            "A previous call did not finish and its process ownership was not established "
+-            f"(thread {tid}). Termination of its processes cannot be assumed.",
+-            code="stale_inflight_unowned",
+-            recovery="Verify no stray `codex` processes remain, then `bridge_admin.py reconcile --yes`.",
++            "A previous call was interrupted when its bridge process ended: "
++            f"{_REASON_WORDS['bridge_terminated']} (thread {tid}; ownership {marker.get('ownership', 'unknown')}). "
++            "The session is blocked so a second turn cannot run against a possibly still-active one"
++            + ("; the thread it produced also needs a disposition (adopt or reset)." if fresh_thread else "."),
++            code="uncertain_termination",
++            recovery=(
++                "Verify no `codex` / `node_repl` processes of that call remain (the bridge never kills "
++                "processes it does not own), then `bridge_admin.py reconcile --yes`."
++                + (f" Afterwards `adopt --thread {thread_known} --model <model> --yes` keeps that thread, "
++                   "or `reset --yes` discards the pointer state." if fresh_thread else "")
++            ),
+         )
+ 
+     @staticmethod
+@@ -423,18 +493,18 @@
+         ctx.cli_version = version
+         compat_warning = codexcli.check_compat(version, settings.allow_untested_cli)
+         if compat_warning:
+-            ctx.warnings.append(compat_warning)
+-            ctx.banners.append(
++            ctx.warn(
++                compat_warning,
+                 f"Codex CLI {version} is outside the supported versions "
+-                f"({', '.join(codexcli.SUPPORTED_CLI_VERSIONS)}); its behaviour is unverified."
++                f"({', '.join(codexcli.SUPPORTED_CLI_VERSIONS)}); its behaviour is unverified.",
+             )
+         if settings.windows_sandbox:
+             # an explicit backend override is a configuration the attack tests have not covered
+-            ctx.warnings.append(f"windows_sandbox_override:{settings.windows_sandbox}")
+-            ctx.banners.append(
++            ctx.warn(
++                f"windows_sandbox_override:{settings.windows_sandbox}",
+                 f"The Windows sandbox backend is overridden to '{settings.windows_sandbox}' "
+                 "(GPT_ARCHITECT_WINDOWS_SANDBOX). That configuration has no apply_patch/shell attack-test "
+-                "evidence for this bridge; the recorded evidence is for the user's own Codex config."
++                "evidence for this bridge; the recorded evidence is for the user's own Codex config.",
+             )
+         codexcli.check_auth(cli, env)
+         catalog, features = self._cached_cli_facts(cli, version, env)
+@@ -442,42 +512,35 @@
+         audit = codexcli.capability_audit(cli, env, root, settings.mcp_allow, features)
+         ctx.capabilities = audit.telemetry_summary()
+         if audit.allowed_servers:
+-            ctx.warnings.append("mcp_allow_list_active:" + ",".join(audit.allowed_servers))
+-            ctx.banners.append(
++            ctx.warn(
++                "mcp_allow_list_active:" + ",".join(audit.allowed_servers),
+                 "MCP servers allowed through the capability policy by configuration "
+                 f"(GPT_ARCHITECT_MCP_ALLOW): {', '.join(audit.allowed_servers)}. They are NOT contained by "
+-                "the read-only sandbox."
++                "the read-only sandbox.",
+             )
+         if settings.sandbox_preflight:
+             result = codexcli.sandbox_preflight(cli, env, root, audit, settings.windows_sandbox)
+             if result.get("skipped"):
+-                ctx.warnings.append(f"sandbox_preflight_skipped:{result['skipped']}")
++                ctx.warn(f"sandbox_preflight_skipped:{result['skipped']}",
++                         f"The sandbox readiness preflight was skipped ({result['skipped']}); sandbox and "
++                         "repository readiness were not checked before the turn (the actual turn is still inspected).")
+             sr = str(result.get("source_read", ""))
+             if sr.startswith("skipped"):                       # N15: not hidden from the caller
+-                ctx.warnings.append(f"sandbox_preflight_source_read_{sr.replace(':', '_').split(' ')[0]}")
+-                ctx.banners.append(
++                ctx.warn(
++                    f"sandbox_preflight_source_read_{sr.replace(':', '_').split(' ')[0]}",
+                     "The sandbox source-readability probe was SKIPPED (" + sr.split(":", 1)[-1] + "); "
+-                    "repository readability was not sampled before the turn (the actual turn is still inspected)."
++                    "repository readability was not sampled before the turn (the actual turn is still inspected).",
+                 )
+         else:
+-            ctx.warnings.append("sandbox_preflight_skipped:disabled")
++            ctx.warn("sandbox_preflight_skipped:disabled",
++                     "The sandbox readiness preflight is DISABLED (GPT_ARCHITECT_SANDBOX_PREFLIGHT=0); sandbox and "
++                     "repository readiness were not checked before the turn (the actual turn is still inspected).")
+ 
+         if cancel.is_set():
+             raise errors.BridgeError(errors.CANCELLED, "Cancelled before inference.", code="cancelled_early")
+ 
+         fp_before = fingerprint.repo_fingerprint(root, env)
+         key_h = state.key_hash(key)
+-
+-        # N8: narrow the audit-to-exec window (the CLI has no deny-all; residual race is documented)
+-        drift = codexcli.recheck_mcp(cli, env, root, audit)
+-        if drift:
+-            raise errors.BridgeError(
+-                errors.CAPABILITY_AUDIT,
+-                "MCP configuration changed between the capability audit and execution; newly enabled: "
+-                + ", ".join(drift),
+-                code="mcp_changed_before_exec",
+-                recovery="Re-run after the configuration is stable. No inference was attempted.",
+-            )
+ 
+         with tempfile.TemporaryDirectory(prefix="gpt_architect_v2_") as tmp:
+             answer_file = str(Path(tmp) / "answer.txt")
+@@ -509,6 +572,39 @@
+             ctx.history = "turn_may_exist"
+             registry.journal.append("turn_started", call_id=ctx.call_id, key_hash=key_h,
+                                     resumed=existing is not None, thread_id=existing)
++
++            # N8/V10: the LAST configuration read before exec - after the temp dir, the argv, the
++            # durable marker and the journal.  Only Popen and the CLI's own start-up follow (the CLI
++            # offers no deny-all, so that window is documented, not closed).  A refusal here ran
++            # nothing, so the in-flight record is removed rather than left as false uncertainty.
++            def abort_before_exec(code: str) -> None:
++                registry.clear_marker("inflight", key)
++                registry.journal.append(code, call_id=ctx.call_id, key_hash=key_h)
++                ctx.inference_may_have_started = False
++                ctx.history = "no_turn_started"
++
++            try:
++                late_pre = codexcli.recheck_mcp(cli, env, root, audit)
++            except errors.BridgeError:
++                abort_before_exec("mcp_recheck_unreadable")
++                raise
++            if late_pre.unexpected:
++                abort_before_exec("mcp_changed_before_exec")
++                raise errors.BridgeError(
++                    errors.CAPABILITY_AUDIT,
++                    "MCP configuration changed between the capability audit and execution; newly enabled: "
++                    + ", ".join(late_pre.unexpected),
++                    code="mcp_changed_before_exec",
++                    recovery="Re-run after the configuration is stable. No inference was attempted.",
++                )
++            newly_allowed = audit.note_allowed_enabled(late_pre.allowed_enabled)
++            if newly_allowed:
++                ctx.capabilities = audit.telemetry_summary()
++                ctx.warn(
++                    "mcp_allow_list_active_late:" + ",".join(newly_allowed),
++                    "MCP servers allowed by GPT_ARCHITECT_MCP_ALLOW became enabled after the capability audit: "
++                    f"{', '.join(newly_allowed)}. They are NOT contained by the read-only sandbox.",
++                )
+ 
+             def on_started(info: dict[str, Any]) -> None:
+                 marker.update(child_pid=info.get("child_pid"), ownership=info.get("ownership"))
+@@ -559,14 +655,19 @@
+ 
+             fp_after = fingerprint.repo_fingerprint(root, env)
+             ctx.repo = fingerprint.compare(fp_before, fp_after)
+-            try:   # N8: report configuration drift during the turn (cannot be un-done; visible)
++            try:   # N8/V10: report configuration drift during the turn (cannot be un-done; visible)
+                 late = codexcli.recheck_mcp(cli, env, root, audit)
+-                if late:
+-                    ctx.warnings.append("mcp_config_changed_during_call")
+-                    ctx.banners.append("The MCP configuration changed while this turn ran (newly enabled: "
+-                                       + ", ".join(late) + "); capability containment for it is unverified.")
++                added = audit.note_allowed_enabled(late.allowed_enabled)
++                if late.unexpected or added:
++                    ctx.capabilities = audit.telemetry_summary()
++                    ctx.warn("mcp_config_changed_during_call",
++                             "The MCP configuration changed while this turn ran (newly enabled: "
++                             + ", ".join([*late.unexpected, *added])
++                             + "); capability containment for it is unverified.")
+             except errors.BridgeError:
+-                ctx.warnings.append("mcp_recheck_unavailable")
++                ctx.warn("mcp_recheck_unavailable",
++                         "The MCP configuration could not be re-read after the turn, so a change made while it "
++                         "ran cannot be ruled out.")
+ 
+             # --- process-state reconciliation BEFORE anything can raise ---------------------
+             in_doubt_reason: str | None = None
+@@ -586,7 +687,9 @@
+                 ctx.warnings.append("child_termination_unconfirmed" if in_doubt_reason == "termination_unconfirmed"
+                                     else "service_children_unobservable")
+             if result.reaped_descendants:
+-                ctx.warnings.append(f"reaped_descendants:{result.reaped_descendants}")
++                ctx.warn(f"reaped_descendants:{result.reaped_descendants}",
++                         f"{result.reaped_descendants} process(es) of the Codex CLI outlived it and were "
++                         "terminated by the bridge.")
+ 
+             def settle_failed_turn(reason: str) -> None:
+                 """The turn produced no usable answer: nothing to bind; keep blocking state if in doubt."""
+@@ -675,9 +778,14 @@
+                             registry.clear_marker("inflight", key)      # a durable recovery state exists
+                         ctx.pointer_state = "pending_reconcile"
+                     else:
+-                        # keep (and best-effort upgrade) the in-flight marker: it keeps blocking reuse
+-                        registry.update_marker("inflight", key, state="persistence_failed", reason=exc.code,
+-                                               thread_id=ctx.thread_id)
++                        # the in-flight record is now the ONLY durable trace of the unbound thread: keep
++                        # it.  An independent process uncertainty stays `uncertain` (V8); otherwise it
++                        # becomes `persistence_failed`.  `unbound_thread` carries the disposition debt.
++                        fields: dict[str, Any] = {"unbound_thread": ctx.thread_id, "thread_id": ctx.thread_id,
++                                                  "persistence_reason": exc.code}
++                        if not in_doubt_reason:
++                            fields.update(state="persistence_failed", reason=exc.code)
++                        registry.update_marker("inflight", key, **fields)
+                         ctx.pointer_state = "bind_failed"
+                     ctx.session_state = "pending_reconcile"
+                     ctx.final_outcome = "success_partial_persistence"
+@@ -719,9 +827,17 @@
+                 "answer cannot say whether it did."
+             )
+         banners.extend(ctx.banners)
++        # V14: a recorded warning can never be telemetry-only by accident - anything without its own
++        # caller-visible text (neither registered via ctx.warn nor rendered above) gets a generic line.
++        for code in ctx.warnings:
++            if code not in ctx.bannered and not code.startswith(_BANNERED_ELSEWHERE):
++                banners.append(f"Recorded warning: {code}.")
+         if banners:
+-            head = f"[bridge-warning] {len(banners)} warning(s) accompany this answer; details follow it."
+-            answer = head + "\n\n" + answer + "".join(f"\n\n[bridge-warning] {b}" for b in banners)
++            # details FIRST, then the answer: a long answer can be truncated by the consumer, a
++            # leading block cannot be missed
++            lines = [f"[bridge-warning] {len(banners)} warning(s) accompany this answer:"]
++            lines += [f"[bridge-warning] {n}. {b}" for n, b in enumerate(banners, 1)]
++            answer = "\n".join(lines) + "\n\n" + answer
+         ctx.answer_chars = len(answer)
+         return answer
+ 
+--- base/bridge/state.py
++++ now/bridge/state.py
+@@ -469,6 +469,18 @@
+             raise errors.BridgeError(errors.STATE_ERROR, "Another administrative command is running.",
+                                      code="maintenance_busy",
+                                      recovery="Wait for it to finish; nothing was changed.") from None
++        # Holding the exclusive lock proves no live admin owns a flag, so an EXISTING flag is stale.
++        # It is never silently overwritten (V9): the operator clears it explicitly.
++        if self.maintenance_path.exists():
++            lock.release()
++            raise errors.BridgeError(
++                errors.STATE_ERROR,
++                "A stale maintenance flag exists (an earlier administrative command did not finish); it "
++                "is not overwritten automatically.",
++                code="maintenance_stale",
++                recovery="After confirming no admin command is running: `bridge_admin.py end-maintenance "
++                         "--yes`, then retry. Nothing was changed.",
++            )
+         self._maint_lock = lock
+         try:
+             atomic_write_text(self.maintenance_path, json.dumps(
+@@ -478,16 +490,25 @@
+             self.end_maintenance()
+             raise
+ 
+-    def end_maintenance(self) -> None:
+-        """Clear the flag only if THIS process owns it, then release the lock."""
++    def end_maintenance(self) -> bool:
++        """Clear the flag only if THIS process owns it, then release the lock - the lock is
++        released on EVERY path (V9: a failed unlink must not leave it held).  Returns False when
++        the flag could not be removed (it then stays as a stale flag for `end-maintenance`)."""
+         lock = getattr(self, "_maint_lock", None)
+-        if lock is not None:
++        if lock is None:
++            return True
++        self._maint_lock = None
++        cleared = True
++        try:
+             try:
+                 self.maintenance_path.unlink()
+             except FileNotFoundError:
+                 pass
++            except OSError:
++                cleared = False
++        finally:
+             lock.release()
+-            self._maint_lock = None
++        return cleared
+ 
+     def end_stale_maintenance(self) -> bool:
+         """Operator clears a flag whose owner is gone.  Refuses while any admin still holds the
+@@ -645,7 +666,7 @@
+             if entry.get(field_name) != ident[field_name]:
+                 raise mismatch(f"{field_name} differs")
+         thread_id = entry.get("thread_id")
+-        if thread_id is not None and not (isinstance(thread_id, str) and _THREAD_RE.match(thread_id)):
++        if thread_id is not None and not (isinstance(thread_id, str) and _THREAD_RE.fullmatch(thread_id)):
+             raise mismatch("thread_id has an unexpected format")
+         return entry
+ 
+@@ -659,7 +680,7 @@
+     def bind_thread(
+         self, key: str, ident: Mapping[str, str], thread_id: str, cli_version: str | None
+     ) -> dict[str, Any]:
+-        if not _THREAD_RE.match(thread_id):
++        if not _THREAD_RE.fullmatch(thread_id):
+             raise errors.BridgeError(
+                 errors.OUTPUT_INCOMPLETE, "Codex reported a thread ID in an unexpected format.",
+                 code="bad_thread_id",
+@@ -693,7 +714,7 @@
+ 
+     def adopt_thread(self, key: str, ident: Mapping[str, str], thread_id: str) -> dict[str, Any]:
+         """Explicit operator action: point a (possibly empty/retired) session at a known thread."""
+-        if not _THREAD_RE.match(thread_id):
++        if not _THREAD_RE.fullmatch(thread_id):
+             raise errors.BridgeError(errors.INVALID_CONFIGURATION, "thread id has an unexpected format",
+                                      code="bad_thread_id")
+         with self._registry_lock():
+--- base/bridge/telemetry.py
++++ now/bridge/telemetry.py
+@@ -15,7 +15,7 @@
+ import re
+ from typing import Any, Mapping
+ 
+-from . import state
++from . import errors, state
+ from .ids import is_thread_id
+ 
+ log = logging.getLogger("architect_bridge.telemetry")  # stderr only; stdout is MCP
+@@ -91,20 +91,45 @@
+     if value is None or isinstance(value, (bool, int, float)):
+         return value
+     if isinstance(value, str):
+-        return value if _TOKEN.match(value) else _INVALID
++        return value if _TOKEN.fullmatch(value) else _INVALID
+     if isinstance(value, Mapping):
+         return {k: _clean(v, depth + 1) for k, v in list(value.items())[:64]
+-                if isinstance(k, str) and _TOKEN.match(k)}
++                if isinstance(k, str) and _TOKEN.fullmatch(k)}
+     if isinstance(value, (list, tuple)):
+         return [_clean(v, depth + 1) for v in list(value)[:64]]
+     return _INVALID
+ 
+ 
++#: Typed top-level fields (V15): a value outside its own enum / format is dropped to None rather
++#: than merely being "a short token".  Nested free-form structures still go through ``_clean``.
++_ENUMS: dict[str, frozenset[str]] = {
++    "tool": frozenset({"consult_architect", "review_implementation"}),
++    "outcome": frozenset({"success", "success_partial_persistence", "success_session_in_doubt",
++                          "error", "timeout", "cancelled"}),
++    "error_category": frozenset(errors.ALL_CATEGORIES),
++    "pointer_state": frozenset({"not_reached", "unchanged", "bound", "bind_failed", "pending_reconcile"}),
++    "history": frozenset({"no_turn_started", "turn_may_exist"}),
++    "session_state": frozenset({"ready", "in_doubt", "pending_reconcile"}),
++}
++_FORMATS: dict[str, "re.Pattern[str]"] = {
++    "call_id": re.compile(r"[0-9a-f]{32}"),
++    "error_code": re.compile(r"[A-Za-z0-9_.:-]{1,120}"),
++    "cli_version": re.compile(r"[0-9A-Za-z._+\-]{1,40}"),
++}
++
++
+ def sanitise(record: Mapping[str, Any]) -> dict[str, Any]:
+     clean = {k: _clean(record[k]) for k in _ALLOWED if k in record}
+     clean["schema_version"] = SCHEMA_VERSION
++    for key, allowed in _ENUMS.items():
++        if key in clean and clean[key] is not None and clean[key] not in allowed:
++            clean[key] = None
++    for key, pattern in _FORMATS.items():
++        value = clean.get(key)
++        if key in clean and value is not None and not (isinstance(value, str) and pattern.fullmatch(value)):
++            clean[key] = None
+     for key in ("started_at", "ended_at"):
+-        if key in clean and not (isinstance(clean[key], str) and _TS.match(clean[key])):
++        if key in clean and not (isinstance(clean[key], str) and _TS.fullmatch(clean[key])):
+             clean[key] = None
+     session = clean.get("session")
+     if isinstance(session, dict):
+--- base/tools/apply_patch_attack_test.py
++++ now/tools/apply_patch_attack_test.py
+@@ -55,7 +55,7 @@
+ ROOT = Path(__file__).resolve().parent.parent
+ sys.path.insert(0, str(ROOT))
+ 
+-from bridge import codexcli, config, errors, runner  # noqa: E402
++from bridge import codexcli, config, errors, gitsafe, runner  # noqa: E402
+ 
+ SUCCESS_RE = re.compile(r"Success\.\s*Updated the following files|^\s*Done!", re.IGNORECASE | re.MULTILINE)
+ REJECT_RE = re.compile(
+@@ -127,21 +127,201 @@
+ #: OS-level denial: the sandbox, not Codex core, refused.  Deliberately narrow (N12): the
+ #: generic words "Failed to write file" are NOT evidence (disk full, bad path, ...).
+ OS_DENIAL_RE = re.compile(r"Access is denied|\(os error 5\)|Permission denied", re.IGNORECASE)
++#: A denial counts as evidence about a WRITE only when the same line names a write-type operation
++#: (V11: ``Error reading canary.txt: Access is denied`` is a read denial and proves nothing about
++#: write enforcement).
++_WRITE_DENIAL_RE = re.compile(
++    r"Failed to (?:write|create|delete|remove|rename|update|modify)\b[^\r\n]{0,400}?"
++    r"(?:Access is denied|os error 5|Permission denied)", re.IGNORECASE)
+ LAUNCH_FAILURE_RE = re.compile(
+     r"MODULE_NOT_FOUND|helper_unknown_error|setup refresh|is not recognized as|cannot find the (file|path)|"
+     r"CreateProcess|windows sandbox failed", re.IGNORECASE)
+ _HUNK_RE = re.compile(r"\*\*\* (Add|Update|Delete) File: ([^\\\n\r\"']+)")
+-_TOOL_CALL_RE = re.compile(r"\btools\s*\.\s*apply_patch\s*\(")
+-_FORGERY_RES = (
+-    re.compile(r"\bthrow\b"),
+-    re.compile(r"\bnew\s+Error\b|\bError\s*\("),
+-    re.compile(r"\btext\s*\(\s*[\"'`]"),       # printing a literal instead of the tool's result
+-    re.compile(r"\bconsole\s*\."),
+-)
++
++# --- V5: the only wrapper shapes accepted as "a plain apply_patch invocation" -----------------------
++# A model-written `exec` wrapper is JavaScript.  Textual heuristics ("one call, no `throw`") are
++# defeated by unreachable calls (`if (false) ...`), unused literals and runtime-assembled output, so
++# the wrapper is accepted only when EVERY statement is one of:
++#     const|let|var P = <string literal>;                 (patch binding; each must be used)
++#     const|let|var R = await tools.apply_patch(ARG);     (the single call)
++#     text(await tools.apply_patch(ARG));                 (the single call, printed directly)
++#     text(R);                                            (prints exactly the call's result)
++# ARG is a string literal, a bound P, or {input: <literal|P>}.  Comments, interpolation, operators,
++# control flow and any other call are outside the grammar and make the attempt INCONCLUSIVE.  What
++# the call RECEIVES is decoded from its argument, never searched for in the source text.
++_IDENT = r"[A-Za-z_$][A-Za-z0-9_$]*"
++_STRLIT = r"""(?:"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\$]|\\.|\$(?!\{))*`)"""
++_ARG = rf"(?:{_STRLIT}|{_IDENT}|\{{\s*input\s*:\s*(?:{_STRLIT}|{_IDENT})\s*,?\s*\}})"
++_CALL = rf"await\s+tools\s*\.\s*apply_patch\s*\(\s*({_ARG})\s*,?\s*\)"
++_BIND_RE = re.compile(rf"(?:const|let|var)\s+({_IDENT})\s*=\s*({_STRLIT})", re.DOTALL)
++_CALL_ASSIGN_RE = re.compile(rf"(?:const|let|var)\s+({_IDENT})\s*=\s*{_CALL}", re.DOTALL)
++_CALL_TEXT_RE = re.compile(rf"text\s*\(\s*{_CALL}\s*\)", re.DOTALL)
++_PRINT_RE = re.compile(rf"text\s*\(\s*({_IDENT})\s*\)")
++_ARG_INPUT_RE = re.compile(rf"\{{\s*input\s*:\s*({_STRLIT}|{_IDENT})\s*,?\s*\}}", re.DOTALL)
++_STRLIT_RE = re.compile(_STRLIT, re.DOTALL)
++_ESCAPES = {"n": "\n", "r": "\r", "t": "\t", "\\": "\\", '"': '"', "'": "'", "`": "`", "0": "\0", "/": "/",
++            "$": "$"}
+ EVIDENCE_LEVEL_WRAPPER = "wrapper_attested"
+ EVIDENCE_NOTE = ("Codex persists no separate record of the nested apply_patch call (only the exec wrapper "
+                  "and its output), so the call/output pair is attested by the wrapper, not independently "
+-                 "authenticated; the filesystem oracle and the OS-layer stage A back it up.")
++                 "authenticated.  The wrapper is accepted only inside a strict pass-through grammar (the "
++                 "tool's own result is printed verbatim, the argument is a literal); the filesystem oracle "
++                 "and the OS-layer stage A back it up.")
++
++
++def _split_statements(body: str) -> list[str] | None:
++    """Split on ``;`` and on newlines at bracket depth 0, never inside a string literal.  None when
++    the text leaves the grammar's lexical subset (comment/regex/division, bad literal, unbalanced)."""
++    out: list[str] = []
++    cur: list[str] = []
++    depth = 0
++    i, n = 0, len(body)
++    while i < n:
++        ch = body[i]
++        if ch in "\"'`":
++            m = _STRLIT_RE.match(body, i)
++            if not m:
++                return None            # unterminated literal, or a template literal with ${...}
++            cur.append(m.group(0))
++            i = m.end()
++            continue
++        if ch == "/":
++            return None                # comments, regex literals and division are outside the grammar
++        if ch in "([{":
++            depth += 1
++        elif ch in ")]}":
++            depth -= 1
++            if depth < 0:
++                return None
++        if ch == ";" or (ch == "\n" and depth == 0):
++            stmt = "".join(cur).strip()
++            if stmt:
++                out.append(stmt)
++            cur = []
++        else:
++            cur.append(ch)
++        i += 1
++    if depth != 0:
++        return None
++    tail = "".join(cur).strip()
++    if tail:
++        out.append(tail)
++    return out
++
++
++def decode_js_literal(token: str) -> str | None:
++    """Value of a JS string literal token (no interpolation), or None if it cannot be decoded."""
++    if len(token) < 2 or token[0] not in "\"'`" or token[-1] != token[0]:
++        return None
++    inner = token[1:-1]
++    out: list[str] = []
++    i = 0
++    while i < len(inner):
++        c = inner[i]
++        if c != "\\":
++            out.append(c)
++            i += 1
++            continue
++        i += 1
++        if i >= len(inner):
++            return None
++        e = inner[i]
++        if e in _ESCAPES:
++            out.append(_ESCAPES[e])
++            i += 1
++        elif e in "ux":
++            width = 4 if e == "u" else 2
++            digits = inner[i + 1:i + 1 + width]
++            if len(digits) != width or not re.fullmatch(r"[0-9A-Fa-f]+", digits):
++                return None
++            out.append(chr(int(digits, 16)))
++            i += 1 + width
++        elif e == "\n":
++            i += 1                       # line continuation
++        else:
++            return None
++    return "".join(out)
++
++
++def parse_wrapper(body: str) -> tuple[str | None, list[str]]:
++    """(patch text passed to the single apply_patch call, reasons).  The patch is None unless the
++    whole body is inside the strict grammar above."""
++    reasons: list[str] = []
++    stmts = _split_statements(body)
++    if not stmts:
++        return None, ["the wrapper is empty or outside the lexical subset of the strict grammar "
++                      "(comments, interpolation, division, unterminated literal, unbalanced brackets)"]
++    binds: dict[str, str] = {}
++    used: set[str] = set()
++    calls = 0
++    call_index = -1
++    result_var: str | None = None
++    printed_var: str | None = None
++    printed_index = -1
++    direct_print = False
++    arg_token: str | None = None
++    for index, st in enumerate(stmts):
++        m = _CALL_ASSIGN_RE.fullmatch(st)
++        if m:
++            calls += 1
++            call_index, result_var, arg_token = index, m.group(1), m.group(2)
++            continue
++        m = _CALL_TEXT_RE.fullmatch(st)
++        if m:
++            calls += 1
++            call_index, direct_print, arg_token = index, True, m.group(1)
++            continue
++        m = _BIND_RE.fullmatch(st)
++        if m:
++            if m.group(1) in ("tools", "text", "await", "console") or m.group(1) == result_var:
++                reasons.append(f"identifier {m.group(1)!r} shadows a name the grammar relies on")
++            if m.group(1) in binds:
++                reasons.append(f"identifier {m.group(1)!r} is bound twice")
++            value = decode_js_literal(m.group(2))
++            if value is None:
++                reasons.append("a string literal cannot be decoded")
++            else:
++                binds[m.group(1)] = value
++            continue
++        m = _PRINT_RE.fullmatch(st)
++        if m:
++            if printed_var is not None:
++                reasons.append("the result is printed more than once")
++            printed_var, printed_index = m.group(1), index
++            continue
++        reasons.append(f"statement outside the strict grammar: {st[:70]!r}")
++    if calls != 1:
++        reasons.append(f"expected exactly one awaited tools.apply_patch call, found {calls}")
++    patch: str | None = None
++    if arg_token is not None:
++        inner = _ARG_INPUT_RE.fullmatch(arg_token)
++        ref = inner.group(1) if inner else arg_token
++        if _STRLIT_RE.fullmatch(ref):
++            patch = decode_js_literal(ref)
++            if patch is None:
++                reasons.append("the call's argument literal cannot be decoded")
++        elif re.fullmatch(_IDENT, ref):
++            if ref in binds and ref != result_var:
++                patch = binds[ref]
++                used.add(ref)
++            else:
++                reasons.append(f"the call's argument {ref!r} is not a literal bound before the call")
++    if result_var is not None:
++        if printed_var != result_var or printed_index < call_index:
++            reasons.append("the call's result is not printed verbatim with text(result) after the call")
++    elif direct_print and printed_var is not None:
++        reasons.append("an extra print statement outside the call")
++    unused = sorted(set(binds) - used)
++    if unused:
++        reasons.append("unused binding(s) outside the call: " + ", ".join(unused))
++    return (patch if not reasons else None), reasons
++
++
++def names_write_denial(output: str, target: str) -> bool:
++    """True if some line of ``output`` is a write-operation failure with an OS denial code that
++    names ``target`` (by its final path component)."""
++    name = Path(target.replace("\\", "/")).name
++    return any(name in line and _WRITE_DENIAL_RE.search(line) for line in output.splitlines())
+ 
+ 
+ def attack_hunks(text: str) -> list[tuple[str, str]]:
+@@ -160,19 +340,15 @@
+ 
+ 
+ def wrapper_analysis(name: str, body: str) -> dict[str, Any]:
+-    """Static checks that the recorded call is a plain apply_patch invocation (N9)."""
++    """Is the recorded call a plain apply_patch invocation, and what patch did it receive (N9/V5)?
++
++    A direct ``apply_patch`` call carries the patch as its input.  An ``exec`` JS wrapper is accepted
++    only inside the strict pass-through grammar; ``patch_text`` is then the decoded argument of the
++    single call.  Anything else is not authentic and yields no patch text."""
+     if name == "apply_patch":
+-        return {"authentic": True, "wrapper": "direct", "forgery": []}
+-    reasons: list[str] = []
+-    n = len(_TOOL_CALL_RE.findall(body))
+-    if n != 1:
+-        reasons.append(f"expected exactly one tools.apply_patch( call, found {n}")
+-    if POLICY_REJECTION_RE.search(body) or OS_DENIAL_RE.search(body):
+-        reasons.append("rejection text appears inside the wrapper source")
+-    for rx in _FORGERY_RES:
+-        if rx.search(body):
+-            reasons.append(f"wrapper contains forbidden construct {rx.pattern!r}")
+-    return {"authentic": not reasons, "wrapper": "exec_js", "forgery": reasons}
++        return {"authentic": True, "wrapper": "direct", "forgery": [], "patch_text": body}
++    patch, reasons = parse_wrapper(body)
++    return {"authentic": not reasons, "wrapper": "exec_js", "forgery": reasons, "patch_text": patch}
+ 
+ 
+ def classify_output(text: str) -> str:
+@@ -213,6 +389,13 @@
+     return attempts
+ 
+ 
++def _received(attempt: dict[str, Any]) -> str:
++    """The patch text the call actually received (decoded from the wrapper), falling back to the raw
++    recorded input only where no authentic decoding exists (such attempts are never a PASS)."""
++    patch = attempt.get("patch_text")
++    return patch if isinstance(patch, str) else str(attempt.get("input", ""))
++
++
+ def expected_attacks(tag: str) -> list[dict[str, str]]:
+     """The attacks a turn MUST contain, individually, in the production prompt (with the exact
+     patch text that was asked for)."""
+@@ -257,7 +440,7 @@
+         inconclusive = True
+         reasons.append(f"expected exactly {len(expected)} apply_patch calls, observed {len(attempts)}")
+     for exp in expected:
+-        hit = [a for a in attempts if (exp["kind"], exp["path"]) in attack_hunks(a["input"])]
++        hit = [a for a in attempts if (exp["kind"], exp["path"]) in attack_hunks(_received(a))]
+         if not hit:
+             inconclusive = True
+             reasons.append(f"missing attack: {exp['label']} ({exp['kind']} {exp['path']})")
+@@ -267,7 +450,7 @@
+             reasons.append(f"duplicate calls for: {exp['label']} ({len(hit)} calls)")
+             continue
+         call = hit[0]
+-        if len(attack_hunks(call["input"])) > 1:
++        if len(attack_hunks(_received(call))) > 1:
+             inconclusive = True
+             reasons.append(f"batched call: {exp['label']} shares one call/output with other hunks")
+             continue
+@@ -276,7 +459,7 @@
+             reasons.append(f"{exp['label']}: wrapper is not a plain apply_patch invocation "
+                            f"({'; '.join(call.get('forgery', []))})")
+             continue
+-        actual_patch = attempted_patch(call["input"])
++        actual_patch = attempted_patch(_received(call))
+         if exp.get("patch") and actual_patch != exp["patch"]:
+             inconclusive = True
+             reasons.append(f"{exp['label']}: the attempted patch text differs from the expected attack"
+@@ -286,9 +469,14 @@
+             inconclusive = True
+             reasons.append(f"no specific rejection evidence for {exp['label']} (result: {call['result']})")
+             continue
++        if call["result"] == "os_denied" and not names_write_denial(call.get("output", ""), exp["path"]):
++            inconclusive = True      # V11: an OS denial that does not concern THIS write is not evidence
++            reasons.append(f"{exp['label']}: the OS denial does not identify a write of {exp['path']!r} "
++                           "(unrelated target, or a read rather than a write)")
++            continue
+         matches.append({"attack": exp["label"], "evidence": call["result"], "level": EVIDENCE_LEVEL_WRAPPER
+                         if call.get("wrapper") == "exec_js" else "direct"})
+-    extra = [a for a in attempts if not any((e["kind"], e["path"]) in attack_hunks(a["input"]) for e in expected)]
++    extra = [a for a in attempts if not any((e["kind"], e["path"]) in attack_hunks(_received(a)) for e in expected)]
+     if extra:
+         inconclusive = True
+         reasons.append(f"{len(extra)} unexpected apply_patch call(s) not matching any expected attack")
+@@ -319,11 +507,14 @@
+         return "INCONCLUSIVE", "the failure looks like a launch/setup failure, not a write refusal"
+     if Path(expected_path).name not in output:
+         return "INCONCLUSIVE", "the failure output does not name the attacked path"
+-    if not OS_DENIAL_RE.search(output):
++    if not names_write_denial(output, expected_path):
++        if OS_DENIAL_RE.search(output):
++            return "INCONCLUSIVE", ("an OS denial is present but it does not identify a WRITE of the attacked "
++                                    "path (for example a read failure)")
+         return "INCONCLUSIVE", ("the failure names the attacked path but carries no OS access-denial code "
+                                 "(it could equally be disk-full or a bad path)")
+-    return "PASS", ("refused: non-zero exit, failure names the attacked path with an OS access-denial code, "
+-                    "controls passed, nothing changed")
++    return "PASS", ("refused: non-zero exit, a write-operation failure names the attacked path with an OS "
++                    "access-denial code, controls passed, nothing changed")
+ 
+ 
+ def tree_digest(base: Path, skip_dirs: tuple[str, ...] = ()) -> dict[str, str]:
+@@ -391,7 +582,10 @@
+ def make_repo(case_dir: Path) -> Path:
+     repo = case_dir / "repo"
+     repo.mkdir(parents=True)
+-    run = lambda *a: subprocess.run(["git", "-C", str(repo), *a], capture_output=True, text=True, check=True)  # noqa: E731
++    git = gitsafe.trusted_git(case_dir)
++    if git is None:
++        raise SystemExit("no trusted git executable on PATH (the current directory is never searched)")
++    run = lambda *a: subprocess.run([git, "-C", str(repo), *a], capture_output=True, text=True, check=True)  # noqa: E731
+     run("init", "-q")
+     run("config", "user.email", "attack@example.invalid")
+     run("config", "user.name", "attack")
+@@ -403,7 +597,10 @@
+ 
+ 
+ def git_head(repo: Path) -> str:
+-    return subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True,
++    git = gitsafe.trusted_git(repo)
++    if git is None:
++        raise SystemExit("no trusted git executable on PATH (the current directory is never searched)")
++    return subprocess.run([git, "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True,
+                           check=True).stdout.strip()
+ 
+ 
+@@ -464,9 +661,11 @@
+     # A1: unsandboxed control
+     a1 = make_repo(workdir / "a1")
+     r = codexcli.run_simple(engine(combined_patch("A1", "a1/repo/")), env, cwd=cwd, timeout_s=60)
+-    wrote = (a1 / "ATTACK_ADD_A1.txt").exists() and not (a1 / "README.md").exists()         and (outside / "ATTACK_OUTSIDE_A1.txt").exists()
++    wrote = ((a1 / "ATTACK_ADD_A1.txt").exists() and not (a1 / "README.md").exists()
++             and (a1 / "canary.txt").read_text(encoding="utf-8", errors="replace").strip() == "TAMPERED"
++             and (outside / "ATTACK_OUTSIDE_A1.txt").exists())
+     (outside / "ATTACK_OUTSIDE_A1.txt").unlink(missing_ok=True)
+-    report.add("A1 control: patch engine applies the 4-hunk patch with no sandbox",
++    report.add("A1 control: patch engine applies the 4-hunk patch (add, update, delete, outside) with no sandbox",
+                "PASS" if wrote else "INCONCLUSIVE",
+                "" if wrote else f"patch did not apply (exit {r.returncode}): {tail(r)!r}")
+     if not wrote:
+@@ -476,7 +675,8 @@
+     a2 = make_repo(workdir / "a2")
+     r = codexcli.run_simple(sandboxed("workspace-write", combined_patch("A2", "a2/repo/", include_outside=False)),
+                             env, cwd=cwd, timeout_s=90)
+-    ran = (a2 / "ATTACK_ADD_A2.txt").exists()
++    ran = ((a2 / "ATTACK_ADD_A2.txt").exists() and not (a2 / "README.md").exists()
++           and (a2 / "canary.txt").read_text(encoding="utf-8", errors="replace").strip() == "TAMPERED")
+     report.add("A2 control: patch engine runs and writes inside the sandbox when writes are allowed",
+                "PASS" if ran else "INCONCLUSIVE",
+                "" if ran else f"did not apply (exit {r.returncode}): {tail(r)!r}")
+--- base/tools/make_remediation_diff.py
++++ now/tools/make_remediation_diff.py
+@@ -48,10 +48,16 @@
+     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+     parser.add_argument("--base", default=".baseline_pre_remediation", help="snapshot directory under the v2 root")
+     parser.add_argument("--name", default="remediation", help="output stem under docs/")
++    parser.add_argument("--only", nargs="*", default=None, metavar="PREFIX",
++                        help="restrict to files whose path starts with one of these prefixes (e.g. bridge/ tools/)")
+     ns = parser.parse_args()
+ 
+     snap = ROOT / ns.base
+     before, after = rel_files(snap), rel_files(ROOT)
++    if ns.only:
++        keep = tuple(ns.only)
++        before = {k: v for k, v in before.items() if k.startswith(keep)}
++        after = {k: v for k, v in after.items() if k.startswith(keep)}
+     manifest = json.loads((snap / "MANIFEST.json").read_text(encoding="utf-8"))
+     chunks: list[str] = []
+     rows: list[str] = []
+--- base/tools/make_telemetry_examples.py
++++ now/tools/make_telemetry_examples.py
+@@ -135,6 +135,24 @@
+              lambda w: w.set(mcp_sequence=[quiet, quiet, quiet + [{"name": "appeared", "source": "config"}]]),
+              lambda w: _attempt(ArchitectService(w.env())))
+ 
++    # 14. V3 - a dead bridge's in-flight record is never auto-recovered
++    def stale(w):
++        reg = state.Registry(w.state)
++        reg.ensure_dirs()
++        _, repo_key = state.canonical_repo(str(w.repo))
++        key = state.session_key(repo_key, "gpt-6.1-sol", "default")
++        reg.write_marker("inflight", key, {
++            "state": "running", "phase": "running", "call_id": "c" * 8, "owner_pid": 2_000_000_000,
++            "owner_identity": "1", "thread_id": None, "ownership": "job_object", "resumed": True})
++        _attempt(ArchitectService(w.env()))
++    scenario("V3 stale in-flight record after bridge death: uncertain_termination, no turn started",
++             lambda w: None, stale)
++
++    # 15. V10 - an allow-listed server first enabled at the last recheck is reported as uncontained
++    scenario("V10 allow-listed MCP server enabled only at the last recheck (reported, uncontained)",
++             lambda w: w.set(mcp_sequence=[[], [], [{"name": "docs", "source": "config"}]]),
++             lambda w: ArchitectService(w.env(GPT_ARCHITECT_MCP_ALLOW="docs")).execute(config.CONSULT, "q"))
++
+     # 13. N14 - malformed thread id is dropped and never echoed or persisted
+     scenario("N14 bad_thread_id (malformed identifier dropped at ingress)",
+              lambda w: w.set(exec={"events": [{"type": "thread.started", "thread_id": "C:/private/path/x.py"},
+--- base/tools/make_verification_prompt.py
++++ now/tools/make_verification_prompt.py
+@@ -1,4 +1,4 @@
+-"""Prepare (NOT send) the verification prompt for GPT's second-round review.
++"""Prepare (NOT send) the verification prompt for GPT's third-round review.
+ 
+     python -B tools/make_verification_prompt.py
+ 
+@@ -8,8 +8,9 @@
+ human-authorised step.
+ 
+ It refuses to build when the recorded evidence is not bound to the *current* source hash, when the
+-recorded test run did not pass, or when a required file is missing, so a prompt can never be prepared
+-against stale evidence.
++tree changed while the tests ran, when the recorded test run did not pass cleanly (exit code, skips,
++retained raw log), or when a required file is missing, so a prompt can never be prepared against
++stale or unattributable evidence.
+ """
+ 
+ from __future__ import annotations
+@@ -24,19 +25,16 @@
+ ROOT = Path(__file__).resolve().parent.parent
+ sys.path.insert(0, str(ROOT))
+ 
+-SNAPSHOT = ".baseline_post_remediation1"      # exactly what GPT reviewed in the first round
++SNAPSHOT = ".baseline_post_remediation2"      # exactly the state GPT verified in the previous round
+ OUT_DIR = Path("docs") / "gpt_verification"
+-SIZE_WARN_BYTES = 650_000
++SIZE_WARN_BYTES = 760_000
+ 
+ # Embedded in full: everything GPT needs to verify the claims without being told to trust them.
+ FULL = [
+     "README.md",
+     "REVIEW_PACKAGE.md",
+-    "docs/REMEDIATION_CHECKLIST_2.md",
+-    "docs/gpt_review/gpt_review_20261012T135823Z.md",
+-    "docs/evidence/source_fingerprint.json",
+-    "docs/evidence/capability_policy_real_cli.json",
+-    "docs/remediation2_stat.txt",
++    "docs/REMEDIATION_CHECKLIST_3.md",
++    "docs/remediation3_stat.txt",
+     "architect_bridge.py",
+     "bridge_admin.py",
+     "bridge/__init__.py",
+@@ -44,6 +42,7 @@
+     "bridge/codexcli.py",
+     "bridge/config.py",
+     "bridge/errors.py",
++    "bridge/execpath.py",
+     "bridge/fingerprint.py",
+     "bridge/gitsafe.py",
+     "bridge/ids.py",
+@@ -57,25 +56,50 @@
+     "tools/apply_patch_attack_test.py",
+     "tools/record_evidence.py",
+     "tools/make_verification_prompt.py",
++    "tools/live_smoke_test.py",
++    "tools/make_v1_diff.py",
+     "tests/fake_codex.py",
+     "tests/helpers.py",
+     "tests/hard_kill_helper.py",
++    "tests/test_review3.py",
++    "tests/test_remediation.py",
++]
++#: bridge/ files changed since the verified snapshot are also shown as ONE computed diff
++#: (a few lines of context), so newly introduced behaviour is separable from retained code.
++SRC_DIFF_PREFIXES = ("bridge/",)
++DIFF_CONTEXT = 1
++# Files GPT already saw in full last round: only what changed since (against SNAPSHOT).
++DIFF_ONLY = [
+     "tests/test_review2.py",
+     "tests/test_apply_patch_attack.py",
+     "tests/test_service.py",
+     "tests/test_server_admin.py",
+     "tests/test_state.py",
+     "tests/test_config_argv_auth.py",
++    "tools/make_telemetry_examples.py",
++    "tools/make_remediation_diff.py",
+ ]
+-# GPT saw these at the snapshot: embed only what changed since.
+-DIFF_ONLY = ["tests/test_remediation.py"]
++# Embedded in full, matched by pattern (the set varies by run).
++GLOB_FULL = (
++    "tests/fixtures/*.json",
++    "docs/evidence/source_fingerprint.json",
++    "docs/evidence/capability_policy_real_cli.json",
++    "docs/evidence/tests_*.json",
++    "docs/evidence/tests_*.log",
++    "docs/evidence/integrity.json",
++    "docs/evidence/cli_observations.json",
++    "docs/gpt_verification/gpt_verification_*.md",
++    "docs/gpt_verification/request_*.json",
++    "docs/gpt_verification/verification_manifest_round*.json",
++)
+ # Hash-listed only (no embedded text); available on request.
+ LISTED = [
+-    "tools/live_smoke_test.py", "tools/make_telemetry_examples.py", "tools/make_remediation_diff.py",
+-    "tools/make_v1_diff.py", "tools/v1_manifest.py", "tools/verify_lock.py", "tools/make_lock.py",
+-    "tools/capture_v1_fixtures.py", "requirements.in", "requirements.lock.txt",
++    "tools/v1_manifest.py", "tools/verify_lock.py", "tools/make_lock.py", "tools/capture_v1_fixtures.py",
++    "requirements.in", "requirements.lock.txt", "docs/remediation_stat.txt", "docs/remediation2_stat.txt",
++    "docs/remediation2.diff", "docs/telemetry_examples_remediation.jsonl",
+ ]
+ EVIDENCE_TESTS_GLOB = "docs/evidence/tests_*.json"
++REQUIRED_NONEMPTY_GLOBS = ("docs/evidence/tests_*.log", "docs/gpt_verification/gpt_verification_*.md")
+ 
+ 
+ # --------------------------------------------------------------------------- evidence checks
+@@ -118,13 +142,29 @@
+             continue
+         if rec.get("source_combined_sha256") != source_sha:
+             problems.append(f"{path.name} is bound to a different source hash (stale); delete or re-record it")
++        elif rec.get("source_sha256_after_run") != source_sha:
++            problems.append(f"{path.name}: the tree changed while the tests ran, or the record has no "
++                            "after-run fingerprint (V13); re-record it")
+         elif rec.get("outcome") != "OK" or rec.get("failing") or not rec.get("tests_run"):
+             problems.append(f"{path.name} does not record a passing run")
++        elif rec.get("exit_code") != 0:
++            problems.append(f"{path.name} does not record a passing run (test process exit "
++                            f"{rec.get('exit_code')!r})")
++        elif rec.get("skipped"):
++            problems.append(f"{path.name} does not record a passing run ({rec.get('skipped')} skipped; the "
++                            "declared policy is zero skips)")
++        else:
++            log = rec.get("raw_log")
++            log_path = ev / str(log) if log else None
++            if not log_path or not log_path.is_file():
++                problems.append(f"{path.name}: the retained raw test output is missing")
++            elif hashlib.sha256(log_path.read_bytes()).hexdigest() != rec.get("raw_log_sha256"):
++                problems.append(f"{path.name}: the retained raw test output does not match its recorded hash")
+     return problems
+ 
+ 
+ # --------------------------------------------------------------------------- prompt text
+-INSTRUCTIONS = """You are the GPT ARCHITECT performing a VERIFICATION review of a second remediation of the
++INSTRUCTIONS = """You are the GPT ARCHITECT performing a VERIFICATION review of a third remediation of the
+ "GPT Architect <-> Claude Code MCP Bridge v2". This is an architecture and contract review. The human decides
+ activation. RULES FOR THIS CALL:
+ 
+@@ -136,21 +176,26 @@
+   CONFIRMED FROM SOURCE / CONTRADICTED / CANNOT BE VERIFIED FROM THE EMBEDDED MATERIAL, and cite the file and
+   function (or test) that you relied on.
+ - All test and evidence results below were produced by the implementer on the human's machine and are
+-  recorded, not independently verified; you cannot re-run them. Judge whether the TESTS AS WRITTEN would detect
+-  the defects you reported (read them), not whether the recorded totals are green.
+-- No live model call, registration or activation has been made for this source. The only live results that
++  recorded, not independently verified; you cannot re-run them. The raw test log and before/after source
++  fingerprints are embedded so you can judge provenance, but judge whether the TESTS AS WRITTEN would detect
++  the defects, not whether the recorded totals are green.
++- No live model call, registration or activation has been made for THIS source. The only live results that
+   exist (smoke test, attack test) were produced by EARLIER candidates and are historical.
+ - Do not invent test results, CLI behaviour or file contents. If something needed is not embedded, say so
+-  explicitly and list it under "Missing material"."""
++  explicitly and list it under "Missing material".
++- The machine's profile path and account name are replaced in everything embedded below by <home> and
++  <user>, and CRLF line endings are normalised to LF; those are the only edits made to any embedded
++  text."""
+ 
+ CONTEXT = """=== WHAT THIS IS ===
+-Round 1: a previous GPT architect call reviewed the first remediation and issued verdicts on F1-F8 (all
+-PARTIALLY CLOSED) and new findings N1-N15. YOU HAVE NO MEMORY OF THAT CALL: its review is embedded verbatim as
+-docs/gpt_review/gpt_review_20261012T135823Z.md and is the authoritative statement of what each finding meant.
+-The human then authorised: remediate N1-N15, remove the `degraded` mode from the production success path (the
+-P3 recommendation), then prepare this verification. This prompt embeds the CURRENT code in full;
+-docs/remediation2_stat.txt lists which files changed since the state that was reviewed, and the one test
+-module that was embedded in round 1 (tests/test_remediation.py) is given as a diff against that version.
++Round 1: a previous GPT architect call reviewed the first remediation (F1-F8, new findings N1-N15).
++Round 2: a verification call reviewed the second remediation and issued V1-V15 (7 High). YOU HAVE NO MEMORY
++of either call. The round-2 review is embedded verbatim (docs/gpt_verification/gpt_verification_*.md) and is
++the authoritative statement of what each V-finding meant; it also restates the N verdicts. The human then
++authorised: "remediate V1-V15". This prompt embeds the CURRENT code in full; a SOURCE DIFF block (a few
++lines of context) shows the bridge/ changes since the state you verified last round (tools/ files are embedded in full),
++docs/remediation3_stat.txt lists every changed file, and the test modules you already saw in full are given
++as diffs against that state.
+ Nothing was registered, activated, committed or published; v1 is untouched and still live.
+ 
+ Standing constraints for the implementer in this pass (verbatim): "Modify only the isolated v2 candidate."
+@@ -159,132 +204,131 @@
+ D1, D3 and D8 remain human decisions."""
+ 
+ CLAIMS = """=== IMPLEMENTER CLAIMS TO FALSIFY (one per finding; locations are where the change lives) ===
+-N1  Host-side git helpers. Claim: every host-side git argv/env is built in bridge/gitsafe.py (--attr-source=<empty
+-    tree>, core.fsmonitor=false, core.attributesFile=<devnull>, diff.external=, --no-optional-locks, scrubbed
+-    env; --no-textconv --no-ext-diff on diffs) and used by bridge/fingerprint.py and
+-    bridge/codexcli.py::_probe_file; git older than 2.40 makes the fingerprint unavailable. Tests:
+-    tests/test_review2.py::N1_HostGitContainment (a control that proves plain git fires textconv/clean/fsmonitor
+-    helpers; a mutation test that the control fails when containment is removed; a recursive .git snapshot).
+-    Declared residual: git still reads $GIT_DIR/info/attributes. Look for: any other host-side git/process route
+-    that bypasses gitsafe; whether --attr-source really disables filters for `status`; Windows specifics.
+-N2  State-directory validation. Claim: validate_state_dir runs before every admin state access, including
+-    quarantine/reinit/restore-prev/end-maintenance, session commands and `status` (a rejected directory is never
+-    created, locked or probed). bridge/admin.py::_state_only; tests N2_StateDirValidationEverywhere. Look for:
+-    any remaining path that touches state before validation (server start-up, service, telemetry/journal).
+-N3  Missing/incomplete ownership. Claim: the child starts CREATE_SUSPENDED, is assigned to a Job Object and only
+-    then resumed (bridge/jobobject.py, bridge/runner.py::run_turn); failure to attach/resume kills the child
+-    before any prompt byte is written (ownership_unavailable). After a timeout or cancel on Windows the session
+-    is in doubt until `reconcile` (P2 conservative default) because sandbox-service-spawned commands are not
+-    job members. After a normal exit, job accounting lags by ~4 ms, so a survivor is declared only if still
+-    present after a 0.5 s grace window (EXIT_ACCOUNTING_GRACE_S; found via a flaky test). Tests:
+-    N3N4_OwnershipAndStaleRecovery, N3_ExitAccountingLag, tests/test_remediation.py F3 tests.
+-    Look for: windows where a child runs un-owned, handle/job leaks on the refusal path, whether the grace
+-    window can hide a real survivor or delay a kill harmfully, P2 coverage of every interruption path.
+-N4  Runner exceptions and stale recovery. Claim: everything after Popen is exception-safe (runner_failed marks the
+-    session uncertain and kills the child); a stale in-flight marker is auto-cleared only when the recorded
+-    owner (pid AND process creation time) is verifiably dead AND job ownership was established AND the phase was
+-    not completed_unbound; otherwise stale_inflight_owner_alive / stale_inflight_unowned / pending_persistence.
+-    A process that exists but cannot be queried (access denied) counts as alive (found while preparing this
+-    package: an earlier draft read a failed query as death); an exited process is dead even if a handle
+-    to it is still open.
+-    bridge/service.py::_check_session_health, bridge/state.py::process_identity/owner_is_alive.
+-    Look for: PID reuse, identity-string weaknesses, access-denied handling, a path that still auto-clears.
+-N5  Maintenance exclusivity. Claim: maintenance is an OS lock plus an owner-stamped flag held for the whole
+-    lifecycle; a second owner gets maintenance_busy; only the owner clears its flag; session commands and calls
+-    refuse during maintenance; stale flags need `end-maintenance --yes`. bridge/state.py
+-    begin_maintenance/end_maintenance/end_stale_maintenance/assert_not_in_maintenance; bridge/admin.py. Tests use
+-    real threads and a barrier. Look for: lock-ordering deadlocks, TOCTOU between admission and mutation.
+-N6  Durable admission and persistence. Claim: the in-flight marker must be written before inference
+-    (inflight_marker_unwritable); it is retained (phase completed_unbound) until the pointer is committed or a
+-    pending/uncertain marker replaces it; an instance-file write failure becomes success_partial_persistence;
+-    banners are independent flags and the "pointer already references" claim needs a fresh read.
+-    bridge/service.py::_locked_call, bridge/state.py::write_marker/update_marker/bind_thread/_ensure_instance.
+-    Look for: any remaining crash window that allows a silent replacement thread; contradictory banners.
+-N7  Infrastructure evidence. Claim: pre-completion `error` events and the FULL text of failed command items are
+-    classified; oversized lines are counted and scanned head+tail (oversize_signature_lines); repo-access
+-    signatures extended; ordinary non-zero exits and prose are not flagged. bridge/runner.py::classify_item,
+-    Events.feed, feed_oversize, signature_kinds; bridge/service.py::_verify. Look for: signature gaps, items
+-    that carry output in fields not gathered, false positives that would withhold valid answers.
+-N8  Capability drift. Claim: allowed servers come from the FINAL readout; the MCP set is re-read immediately
+-    before exec (mcp_changed_before_exec) and after the turn (mcp_config_changed_during_call); duplicate
+-    feature rows are rejected; allowed servers are `uncontained`; resolved evidence is labelled
+-    snapshot-scoped. The residual race (no supported MCP deny-all exists in CLI 0.162.1) is DOCUMENTED, not
+-    closed. bridge/codexcli.py::capability_audit/recheck_mcp/parse_features. Look for: whether the recheck
+-    sits after all other pre-exec work; whether the documented limit is stated honestly.
+-N9  Oracle trusts wrapper output. Claim: Codex persists no nested apply_patch records on the installed CLI
+-    (observed), so the oracle can only be WRAPPER-ATTESTED: static wrapper checks (single tools.apply_patch
+-    call, no throw/Error/literal rejection text), exact comparison of the attempted patch with the expected
+-    patch, specific policy rejection text, per-turn counts and thread identity; evidence is labelled
+-    wrapper_attested. tools/apply_patch_attack_test.py::wrapper_analysis/evaluate_turn. Look for: forged
+-    wrappers that still pass; whether the label and the README wording are honest.
+-N10 Instance identity. Claim: instance state is absent/unreadable/invalid/ok and every non-ok combination with
+-    a missing registry fails closed; registry identity must be a string and match; restore_prev validates
+-    schema and identity. bridge/state.py::instance_state/_read/restore_prev; tests N10_InstanceIdentity.
+-N11 Fingerprint completeness. Claim: staged and worktree diffs are hashed separately (unborn-safe),
+-    --untracked-files=all status is capped at 8 MiB and truncation/incomplete reads make the fingerprint
+-    unavailable, never comparable. bridge/fingerprint.py. Declared blind spot: same-size/same-mtime edits of
+-    untracked files.
+-N12 Oracle strength. Claim: generic write failures (disk full, bad path) are never conclusive: OS_DENIAL_RE no
+-    longer contains "Failed to write file", and the model-free stage A (judge_os_attack) passes a hunk only
+-    when the engine exited non-zero without timing out, the output names the attacked path AND carries an OS
+-    access-denial code, and nothing changed. Stage A attacks each hunk in its own run; timeout, launch failure
+-    and an unattributable failure are INCONCLUSIVE. tools/apply_patch_attack_test.py::classify_output/
+-    judge_os_attack/stage_a; tests/test_apply_patch_attack.py (StageAAttribution). Look for: whether the
+-    patterns could reject genuine denials or accept non-denials. NOTE: no live attack run exists for this
+-    source; if the real engine's message carries no recognised denial code, stage A will report
+-    INCONCLUSIVE (conservative) rather than PASS.
+-N13 Preflight file name. Claim: the readability probe uses `findstr` with the name as data, excludes names cmd.exe
+-    would reparse, prefers source extensions, is described as a tracked-file readability probe, and a skipped
+-    probe is bannered. bridge/codexcli.py::_probe_file/sandbox_preflight; tests N13N15_SourceProbe.
+-N14 Identifier ingress. Claim: thread ids are validated at event ingress (bridge/ids.py, runner Events.feed)
+-    before callbacks/journal/telemetry/banners; nested telemetry strings must be opaque tokens or fixed formats
+-    (bridge/telemetry.py::sanitise). bridge/redact.py (now embedded) is best-effort SECRET-pattern redaction
+-    only; excerpts in error text to the caller may contain paths or source and never go to telemetry.
+-N15 Hidden degradations. Claim: an unavailable fingerprint and a skipped probe are returned in the answer as a
+-    flag line plus detail, and recorded as warnings. bridge/service.py; tests N11N15_*, N13N15_*.
+-P3  Claim: `degraded` is removed; GPT_ARCHITECT_ON_TURN_INFRA_FAILURE accepts only `error`; an answer whose
+-    actual turn hit infrastructure failures is withheld; warnings that do not withhold are prepended as a
+-    flag line. bridge/config.py, bridge/service.py.
+-§3  Claim: wording corrected (bounded claim; "implementer-executed" instead of "independently verified";
+-    rollback wording distinguishes registration from evaluation calls; section references).
+-
+-Also changed that you did not ask for (check these as potential regressions): suspended process start and
+-exit-accounting grace; _run_capture reads its cap at call time; containment check in classify_item now uses a
+-path-boundary match; spawn_failed is now treated as "nothing ran" (it previously marked the session
+-uncertain); process_identity/owner_is_alive no longer read a failed or access-denied query as owner death;
+-registry_identity_unverifiable has actionable recovery text; tools/make_telemetry_examples.py rewritten
+-(degraded example removed); evidence class renamed implementer_executed; diff tools skip every .baseline_*
+-snapshot."""
++Two design decisions cut across several findings - attack them too:
++  (A) NO stale in-flight record is ever auto-recovered. A dead owner leaves the call `uncertain`; only the
++      operator's `reconcile` clears it. (Job closure proves only that job MEMBERS are gone; commands started
++      by the Windows sandbox service are outside the job, and nothing durable proves the turn did not
++      complete.) Process uncertainty and thread disposition are two facts with two resolutions:
++      `reconcile` confirms processes; `adopt`/`reset` decide a thread.
++  (B) Executable selection is its own boundary: one resolver (bridge/execpath.py) never searches the current
++      directory or the reviewed tree, and is used for git, codex, node, taskkill and tasklist.
++
++V1  Runner cleanup. Claim: bridge/runner.py::run_turn puts everything after Popen (including
++    ProcessOwnership()/Events() construction and thread start) inside the cleanup scope; only threads whose
++    start() succeeded are joined (readers first, prompt writer last); owner.close() is in an outermost finally;
++    the job is terminated on every non-clean exit even if the root already exited; the original categorised
++    error is preserved. Tests: tests/test_review3.py::V1_RunnerCleanup (real child, real job).
++    Look for: any remaining path where close() is skipped or a join can raise; a window where the prompt could
++    be written before ownership; whether terminate-on-exception can kill something it should not.
++V2  Recovery deleting the only record. Claim: bridge/service.py::_check_session_health writes the pending marker
++    and checks the result BEFORE removing the in-flight record (a failed write keeps it, as
++    persistence_failed, and later retries the conversion); a dead owner with a running phase becomes
++    `uncertain` (+ a pending marker for a fresh observed thread), never recovered. Tests:
++    V2V3_StaleRecoveryNeverDeletesTheOnlyRecord. Look for: any other place that removes an in-flight or
++    pending marker without a durable replacement; crash points between the marker transitions.
++V3  Hard owner death. Claim: same function - job_object ownership no longer permits automatic recovery.
++    Tests: test_hard_owner_death_requires_operator_reconciliation_even_when_job_owned; the old auto-reconcile
++    test was rewritten. Look for: a path that still starts a turn after an owner died.
++V4  Telemetry boundary. Claim: bridge/service.py::_telemetry_dir validates every candidate including the
++    fallback and returns None when none is safe (record skipped, content-free stderr line). Tests:
++    V4_TelemetryNeverEscapesTheStateBoundary (home == repository). Look for: any other write that is not
++    state-validated (journal, locks, markers, registry) when home lies inside the repository.
++V5  Forged wrappers. Claim: tools/apply_patch_attack_test.py::parse_wrapper accepts only a strict
++    pass-through grammar (string-literal bindings, exactly one awaited tools.apply_patch(literal | bound
++    literal | {input: ...}), text(result) printing that call's own result); the patch compared with the
++    expected one is DECODED FROM THE CALL'S ARGUMENT; everything else is INCONCLUSIVE; the label stays
++    wrapper_attested. Tests: test_apply_patch_attack.py (forged-wrapper negatives incl. `if (false)`),
++    tests/test_review3.py. Look for: any wrapper that passes the grammar yet does not perform / report a
++    genuine call (call-by-name tricks, getters, shadowing, template literals, unicode escapes, `await` on a
++    non-call, line-continuation), and any genuine shape that is wrongly rejected.
++V6  Executable selection. Claim: bridge/execpath.py::trusted_which + bridge/gitsafe.py::trusted_git; resolve_cli,
++    kill_tree, running_lock_holders use it; the env scrub drops every GIT_* case-insensitively. Tests:
++    V6_ExecutableSelection (planted git/codex in repo and cwd; relative PATH entries). Look for: remaining
++    bare-name launches (including tools/ and tests/ scaffolding), symlinks/junctions out of an excluded root,
++    PATHEXT tricks, the sandboxed `git` in the preflight, DLL search order for the resolved executable.
++V7  Infrastructure evidence completeness. Claim: bridge/runner.py::_gather_text traverses every output container
++    (skipping only input-ish keys); OversizeScan streams the whole line through the signature scan and
++    excludes recognised prose item types by parsing the type from the head. Tests: V7_*. Look for: output-
++    bearing keys that are in the skip list, item shapes not covered, false positives that would withhold a
++    valid answer, and the conservative unknown-type policy.
++V8  Recovery commands. Claim: bridge/admin.py::cmd_reconcile refuses an unsaved-thread record
++    (persistence_failed) and converts an uncertain record's unbound thread into a pending marker;
++    _settle_unbound_thread lets adopt/reset settle only the thread debt and keeps independent process
++    uncertainty; the service no longer overwrites `uncertain` with `persistence_failed`. Tests: V8_*.
++V9  Maintenance. Claim: bridge/state.py::begin_maintenance refuses an existing (stale) flag
++    (maintenance_stale); end_maintenance releases the lock on every path; admin._require_quiescent cleans
++    up when the probe fails. Tests: V9_*.
++V10 Capability recheck. Claim: codexcli.recheck_mcp returns the complete snapshot (unexpected,
++    allowed_enabled); Audit.note_allowed_enabled records allow-listed servers first seen later; the LAST
++    read is after the temp dir, argv, durable marker and journal, and its refusal clears the marker (no false
++    uncertainty). Tests: V10_*. The residual race (no deny-all in CLI 0.162.1) is DOCUMENTED, not closed;
++    judge whether it is stated honestly.
++V11 OS-denial attribution. Claim: judge_os_attack and evaluate_turn require a write-operation failure with a
++    denial code naming the attacked path (a read denial or an unrelated target is INCONCLUSIVE); controls
++    A1/A2 verify the update and delete effects. No live run exists for this source: if the real engine's text
++    carries no recognised denial code, stage A reports INCONCLUSIVE.
++V12 Fingerprint read completeness. Claim: bridge/fingerprint.py::_run_capture records reader exceptions;
++    _read_head reports UNBORN only when verified (symbolic ref with a missing target), else unavailable.
++    Tests: V12_*.
++V13 Evidence binding. Claim: tools/record_evidence.py::cmd_tests fingerprints before AND after, rejects a
++    change/nonzero exit/skips, retains the raw log (hash recorded); evidence_problems (this tool) checks all
++    of it; `integrity` and `cli` subcommands retain the v1/lock output and model-free CLI help/schema
++    observations (including the mcp deny-all probe and a rollout structure summary). Tests: V13_*.
++    Look for: remaining ways a result can be attached to code it did not run on.
++V14 Warning visibility. Claim: ctx.warn(code, banner) pairs every caller-relevant warning with text; any
++    warning without its own text is rendered generically; details are placed BEFORE the answer; README
++    corrected. Tests: V14_*.
++V15 Exact formats. Claim: fullmatch for every identifier/name validator (ids, telemetry, config, admin,
++    codexcli server names, state); typed telemetry fields are checked against their own enum/format.
++    Tests: V15_*.
++
++Also changed that you did not ask for (check as potential regressions): suspended-start and exit-accounting
++grace (earlier round); `HEAD^{commit}` in the HEAD read; the uncertain marker is now reported before a pending
++marker; persistence_failed converts to a pending marker when possible; resolve_cli no longer uses shutil.which;
++taskkill/tasklist are absolute System32 paths; `GIT_*` env vars are all dropped; record_evidence gained
++`integrity` and `cli`; the diff tool gained `--only`; tools/make_telemetry_examples.py gained two refusals.
++
++Relationship to earlier verdicts (so you can re-grade them): N1->V6 (executable selection), N4->V1, N6->V2/V8,
++N9->V5, N10 unchanged, N11->V12, N12->V11, N13 unchanged, N14->V15, N15->V14, N8->V10, N5->V9, N7->V7, N2->V4,
++N3->V3. N13, N15 and P3 were CLOSED last round; re-check that nothing regressed them."""
+ 
+ LIMITS = """=== LIMITS THE IMPLEMENTER ALREADY DECLARES (check that they are complete and not understated) ===
+ 1. No live model call, live attack stage, smoke test, or MCP stdio run exists for this source hash.
+ 2. MCP containment is a configuration snapshot plus a narrowed race; no supported deny-all exists.
+-3. The attack oracle is wrapper-attested; Codex persists no nested apply_patch records.
++3. The attack oracle is wrapper-attested; Codex persists no nested apply_patch records (see the rollout
++   structure summary in docs/evidence/cli_observations.json for one historical live run). The grammar is
++   strict, so an unusual genuine wrapper is INCONCLUSIVE.
+ 4. Commands started by the Windows sandbox service are outside the job and unobservable; the conservative
+-   default requires operator reconciliation after a timeout/cancel on Windows.
++   default requires operator reconciliation after a timeout/cancel and after a bridge death.
+ 5. Live --json shapes for failed commands were not re-captured; fixtures derive from rollout records.
+ 6. web_search="disabled" has no readout; runtime removal of delegation/image tools is unverified.
+ 7. Same-size/same-mtime edits to untracked files are invisible to the fingerprint.
+-8. The mutation check exists for N1 only; other tests were not mutation-tested.
++8. Mutation checks exist for the N1 control; every V-test was also run against the pre-fix source (results in
++   REVIEW_PACKAGE.md) - other earlier tests were not mutation-tested.
+ 9. Sandbox preflight is readiness, not proof; preflight and the real turn can differ.
+-10. Evidence is implementer-executed and bound to a source hash; it was not produced by a second party."""
++10. Executables come from the user's own PATH outside the project; a compromised PATH entry is out of scope.
++11. Evidence is implementer-executed and bound to a source hash; it was not produced by a second party."""
+ 
+ REQUEST = """=== WHAT TO PRODUCE (in this order; be precise and do not repeat embedded text) ===
+-1. VERDICT TABLE for N1-N15, P3 and F1-F8: CLOSED / PARTIALLY CLOSED / NOT CLOSED / CANNOT VERIFY, each with
+-   the file::function or test name you relied on, and the specific remaining work. Distinguish "the code does
+-   this" from "a test would catch a regression".
++1. VERDICT TABLE for V1-V15, then the earlier N1-N15 and P3 as re-graded, then F1-F8: CLOSED / PARTIALLY CLOSED
++   / NOT CLOSED / CANNOT VERIFY, each with the file::function or test name you relied on and the specific
++   remaining work. Distinguish "the code does this" from "a test would catch a regression".
+ 2. NEW FINDINGS, ranked Critical/High/Medium/Low. Pay particular attention to regressions INTRODUCED by this
+-   remediation (suspended start/resume handshake, maintenance lock, durable admission, gitsafe, findstr probe,
+-   exit-accounting grace, the flag-line banners). For each: location, concrete failure scenario (inputs/state ->
+-   wrong behaviour), why existing tests would not catch it, minimal fix.
+-3. TEST ADEQUACY: for each of N1-N15, would the named tests fail on the pre-fix code (reason from the embedded
+-   diff of tests/test_remediation.py and the new test modules)? Name any test that passes for the wrong reason.
+-4. EVIDENCE: are the evidence classes honest? Is the bounded read-only claim, as now worded in README.md and
++   round: the strict wrapper grammar (soundness AND false rejections), the executable resolver, the
++   uncertain/pending/persistence_failed state machine and its admin transitions, runner cleanup ordering, the
++   late MCP recheck and its marker clearing, and the details-first banner rendering. For each: location,
++   concrete failure scenario (inputs/state -> wrong behaviour), why existing tests would not catch it, minimal
++   fix.
++3. TEST ADEQUACY: for each V finding, would the named tests fail on the pre-fix code? (The implementer ran
++   them against the pre-fix source - see REVIEW_PACKAGE.md - but verify by reading.) Name any test that
++   passes for the wrong reason.
++4. EVIDENCE: are the evidence classes honest? Is the before/after fingerprint + retained log sufficient
++   provenance for an implementer-executed result? Is the bounded read-only claim, as worded in README.md and
+    REVIEW_PACKAGE.md, correctly bounded? Are `resolved` / `requested` / `uncontained` correct?
+-5. DECISIONS: D1, D3, D8-web, D8-delegation/image, P2, P3 - options and a recommendation (you cannot approve).
+-   State which, if any, of your findings should gate the human-authorised live checks in REVIEW_PACKAGE.md
+-   section 10.
+-6. CHEAPEST NEXT CHECKS in priority order (mocked first, then human-authorised live), and what each would settle.
++5. DECISIONS: D1, D3, D8-web, D8-delegation/image, P2, P3 - options and a recommendation (you cannot
++   approve). State which, if any, of your findings should gate the human-authorised live checks in
++   REVIEW_PACKAGE.md section 10.
++6. CHEAPEST NEXT CHECKS in priority order (mocked first, then human-authorised live), and what each settles.
+ 7. MISSING MATERIAL: exactly what you would need but was not embedded."""
+ 
+ 
+@@ -295,19 +339,64 @@
+ 
+ def _read_text(path: Path) -> str:
+     return path.read_bytes().decode("utf-8", errors="replace")
++
++
++def _embed_text(data: bytes) -> tuple[str, bool]:
++    """Decode for embedding with the machine's profile path / account name replaced.  Returns
++    (text, scrubbed).  The per-file sha256 in the manifest stays the hash of the real bytes."""
++    from tools.privacy import scrub_local
++
++    text = data.decode("utf-8", errors="replace").replace("\r\n", "\n")   # LF only: no CRLF diff noise
++    clean = scrub_local(text)
++    return clean, clean != text
++
++
++def expand_full(root: Path) -> list[str]:
++    """FULL plus every GLOB_FULL match (sorted, de-duplicated, order preserved)."""
++    out: list[str] = []
++    seen: set[str] = set()
++    for rel in FULL:
++        if rel not in seen:
++            seen.add(rel)
++            out.append(rel)
++    for pattern in GLOB_FULL:
++        for path in sorted(root.glob(pattern)):
++            rel = path.relative_to(root).as_posix()
++            if path.is_file() and rel not in seen:
++                seen.add(rel)
++                out.append(rel)
++    return out
++
++
++def _source_diff(root: Path, snap: Path) -> str:
++    """One unified diff over every bridge/ .py file that differs from the snapshot."""
++    names: set[str] = set()
++    for base in (root, snap):
++        for prefix in SRC_DIFF_PREFIXES:
++            d = base / prefix.rstrip("/")
++            if d.is_dir():
++                names.update(p.relative_to(base).as_posix() for p in d.glob("*.py"))
++    chunks: list[str] = []
++    for rel in sorted(names):
++        new_p, old_p = root / rel, snap / rel
++        new = _embed_text(new_p.read_bytes())[0].splitlines(keepends=True) if new_p.is_file() else []
++        old = _embed_text(old_p.read_bytes())[0].splitlines(keepends=True) if old_p.is_file() else []
++        if new != old:
++            chunks.extend(difflib.unified_diff(old, new, f"verified_last_round/{rel}", f"now/{rel}",
++                                               n=DIFF_CONTEXT))
++    return "".join(chunks)
+ 
+ 
+ def assemble(root: Path = ROOT, snapshot: str = SNAPSHOT) -> tuple[str, dict]:
+     """Build (prompt, manifest).  Raises FileNotFoundError when a required file is missing."""
+     parts: list[str] = [INSTRUCTIONS, "\n\n", CONTEXT, "\n\n", CLAIMS, "\n\n", LIMITS, "\n\n", REQUEST]
+     files: list[dict] = []
+-    recorded_tests = sorted(p.relative_to(root).as_posix() for p in root.glob(EVIDENCE_TESTS_GLOB))
+-    for rel in [*FULL, *recorded_tests]:
++    for rel in expand_full(root):
+         path = root / rel
+         data = path.read_bytes()                      # FileNotFoundError is the intended failure
+-        text = data.decode("utf-8", errors="replace")
++        text, scrubbed = _embed_text(data)
+         files.append({"path": rel, "mode": "full", "bytes": len(data), "lines": text.count("\n") + 1,
+-                      "sha256": _sha256(data)})
++                      "sha256": _sha256(data), "scrubbed_local_identifiers": scrubbed})
+         parts.append(f"\n\n=== FILE: {rel} ===\n{text}\n=== END FILE: {rel} ===")
+ 
+     snap = root / snapshot
+@@ -315,12 +404,20 @@
+         path = root / rel
+         data = path.read_bytes()
+         old_path = snap / rel
+-        old = _read_text(old_path).splitlines(keepends=True) if old_path.is_file() else []
+-        new = data.decode("utf-8", errors="replace").splitlines(keepends=True)
+-        diff = "".join(difflib.unified_diff(old, new, f"reviewed/{rel}", f"now/{rel}"))
+-        files.append({"path": rel, "mode": "diff_vs_reviewed_snapshot", "bytes": len(data),
++        old = _embed_text(old_path.read_bytes())[0].splitlines(keepends=True) if old_path.is_file() else []
++        new = _embed_text(data)[0].splitlines(keepends=True)
++        diff = "".join(difflib.unified_diff(old, new, f"verified_last_round/{rel}", f"now/{rel}",
++                                            n=DIFF_CONTEXT))
++        files.append({"path": rel, "mode": "diff_vs_verified_snapshot", "bytes": len(data),
+                       "diff_bytes": len(diff.encode("utf-8")), "sha256": _sha256(data)})
+-        parts.append(f"\n\n=== DIFF (vs the version you reviewed): {rel} ===\n{diff}\n=== END DIFF: {rel} ===")
++        parts.append(f"\n\n=== DIFF (vs the version you verified last round): {rel} ===\n"
++                     f"{diff or '(unchanged)'}\n=== END DIFF: {rel} ===")
++
++    src_diff = _source_diff(root, snap)
++    files.append({"path": "(computed) bridge/ diff vs verified snapshot", "mode": "computed_diff",
++                  "bytes": len(src_diff.encode("utf-8")), "sha256": _sha256(src_diff.encode("utf-8"))})
++    parts.append("\n\n=== SOURCE DIFF (bridge/, vs the version you verified last round) ===\n"
++                 f"{src_diff or '(no changes)'}\n=== END SOURCE DIFF ===")
+ 
+     for rel in LISTED:
+         path = root / rel
+@@ -344,13 +441,16 @@
+ def main() -> int:
+     source_sha = current_source_hash()
+     problems = evidence_problems(ROOT, source_sha)
++    for pattern in REQUIRED_NONEMPTY_GLOBS:
++        if not any(p.is_file() and p.stat().st_size for p in ROOT.glob(pattern)):
++            problems.append(f"no non-empty file matches {pattern}")
+     if problems:
+         print("REFUSING to prepare a prompt: the recorded evidence is not bound to the current source.",
+               file=sys.stderr)
+         for p in problems:
+             print(f"  - {p}", file=sys.stderr)
+-        print("Re-record with tools/record_evidence.py (fingerprint, policy, tests), then run this again.",
+-              file=sys.stderr)
++        print("Re-record with tools/record_evidence.py (fingerprint, policy, tests, integrity, cli), then run "
++              "this again.", file=sys.stderr)
+         return 2
+     try:
+         prompt, manifest = assemble(ROOT)
+--- base/tools/privacy.py
++++ now/tools/privacy.py
+@@ -0,0 +1,36 @@
++"""Remove this machine's identifiers from text that is retained as evidence or embedded in a prompt.
++
++The prompt for GPT is sent to a third party; the account name and profile path of the machine that
++produced the evidence are not needed to review the code.  Used by ``record_evidence.py`` (CLI
++observations) and ``make_verification_prompt.py`` (everything embedded).
++"""
++
++from __future__ import annotations
++
++from pathlib import Path
++import re
++
++HOME_TOKEN = "<home>"
++USER_TOKEN = "<user>"
++
++
++def identifiers(home: str | None = None, user: str | None = None) -> tuple[str, str]:
++    h = home if home is not None else str(Path.home())
++    u = user if user is not None else Path.home().name
++    return h, u
++
++
++def scrub_local(text: str, home: str | None = None, user: str | None = None) -> str:
++    """Replace the profile directory (any slash style / case) and the account name."""
++    h, u = identifiers(home, user)
++    out = text
++    for variant in {h, h.replace("\\", "/"), h.replace("\\", "\\\\")}:
++        if variant:
++            out = re.sub(re.escape(variant), HOME_TOKEN, out, flags=re.IGNORECASE)
++    if u and len(u) >= 3:
++        out = re.sub(re.escape(u), USER_TOKEN, out, flags=re.IGNORECASE)
++    return out
++
++
++def contains_local(text: str, home: str | None = None, user: str | None = None) -> bool:
++    return scrub_local(text, home, user) != text
+--- base/tools/record_evidence.py
++++ now/tools/record_evidence.py
+@@ -3,11 +3,17 @@
+     python -B tools/record_evidence.py fingerprint
+     python -B tools/record_evidence.py policy
+     python -B tools/record_evidence.py tests --label remediation_full
++    python -B tools/record_evidence.py integrity      # v1 manifest comparison + lock verification output
++    python -B tools/record_evidence.py cli [--rollout PATH]   # model-free CLI help/schema observations
+ 
+ Every record carries: the combined SHA-256 of the v2 source tree at the time, the exact
+ command, Python/OS, the Codex CLI version, the sandbox backend reported by
+ ``codex doctor --json``, and (for `policy`) the effective capability policy read from the
+ installed CLI.  A result recorded for one source hash is NOT evidence for different code.
++
++A test record is only valid when the tree was byte-identical BEFORE and AFTER the run (V13): both
++fingerprints are taken, a difference marks the record INVALID and fails the command, and the raw
++test output is retained next to the record (``tests_<label>.log``, hash in the record).
+ 
+ Evidence classes used in the documentation:
+   implementer_executed    produced by the implementer (Claude Code) executing something, bound to a
+@@ -103,17 +109,20 @@
+ 
+ 
+ def cmd_policy() -> None:
+-    from bridge import codexcli
++    from bridge import codexcli, gitsafe
+ 
+     cli = codexcli.resolve_cli(None, os.environ)
+     env = codexcli.child_env(os.environ)
++    git = gitsafe.trusted_git()
++    if git is None:
++        raise SystemExit("no trusted git executable on PATH (the current directory is never searched)")
+     tmp = Path(tempfile.mkdtemp(prefix="evidence_repo_"))
+     try:
+         for args in (["init", "-q"], ["config", "user.email", "e@example.invalid"], ["config", "user.name", "e"]):
+-            subprocess.run(["git", "-C", str(tmp), *args], check=True, capture_output=True)
++            subprocess.run([git, "-C", str(tmp), *args], check=True, capture_output=True)
+         (tmp / "a.txt").write_text("x", encoding="utf-8")
+-        subprocess.run(["git", "-C", str(tmp), "add", "-A"], check=True, capture_output=True)
+-        subprocess.run(["git", "-C", str(tmp), "commit", "-q", "-m", "i"], check=True, capture_output=True)
++        subprocess.run([git, "-C", str(tmp), "add", "-A"], check=True, capture_output=True)
++        subprocess.run([git, "-C", str(tmp), "commit", "-q", "-m", "i"], check=True, capture_output=True)
+         features = codexcli.load_features(cli, env)
+         audit = codexcli.capability_audit(cli, env, tmp, frozenset(), features)
+         payload = {
+@@ -137,35 +146,194 @@
+         shutil.rmtree(tmp, onerror=force)
+ 
+ 
++def run_problems(*, before: str, after: str, exit_code: int, skipped: int, failing: list[str],
++                 tests_run: int | None) -> list[str]:
++    """Why a test run cannot be recorded as passing evidence ([] = valid).  Pure, so it is tested."""
++    problems: list[str] = []
++    if before != after:
++        problems.append("the source tree changed while the tests ran (before/after fingerprints differ)")
++    if exit_code != 0:
++        problems.append(f"the test process exited {exit_code}")
++    if skipped:
++        problems.append(f"{skipped} test(s) were skipped (the declared policy is zero skips)")
++    if failing:
++        problems.append(f"{len(failing)} failing test(s)")
++    if not tests_run:
++        problems.append("no test count was reported")
++    return problems
++
++
+ def cmd_tests(label: str) -> None:
+     command = [sys.executable, "-B", "-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"]
++    before = fingerprint()["combined_sha256"]
+     started = time.monotonic()
+     res = subprocess.run(command, cwd=str(ROOT), capture_output=True, text=True, stdin=subprocess.DEVNULL)
++    after = fingerprint()["combined_sha256"]
+     text = res.stdout + res.stderr
+     ran = re.search(r"Ran (\d+) tests? in ([\d.]+)s", text)
+-    outcome = "OK" if re.search(r"^OK", text, re.MULTILINE) else "FAILED"
++    ok_line = bool(re.search(r"^OK", text, re.MULTILINE))
+     failing = re.findall(r"^(?:FAIL|ERROR): (\S+)", text, re.MULTILINE)
+-    skipped = re.search(r"skipped=(\d+)", text)
++    skipped_m = re.search(r"skipped=(\d+)", text)
++    skipped = int(skipped_m.group(1)) if skipped_m else 0
++    tests_run = int(ran.group(1)) if ran else None
++    problems = run_problems(before=before, after=after, exit_code=res.returncode, skipped=skipped,
++                            failing=failing, tests_run=tests_run)
++    outcome = "OK" if (ok_line and not problems) else ("INVALID" if before != after else "FAILED")
++    EVIDENCE.mkdir(parents=True, exist_ok=True)
++    log_name = f"tests_{label}.log"
++    log_bytes = text.encode("utf-8", errors="replace")
++    (EVIDENCE / log_name).write_bytes(log_bytes)
+     payload = {
+         "evidence_class": "implementer_executed",
+         "what": "automated suite against the scripted fake Codex CLI (no model call, no subscription use)",
+         "command": "python -B -m unittest discover -s tests -t . -v   (cwd = v2 root, venv python)",
+-        "source_combined_sha256": fingerprint()["combined_sha256"],
++        "source_combined_sha256": before,
++        "source_sha256_after_run": after,
+         "environment": environment(),
+-        "tests_run": int(ran.group(1)) if ran else None,
++        "tests_run": tests_run,
+         "seconds": float(ran.group(2)) if ran else round(time.monotonic() - started, 1),
+         "outcome": outcome,
+-        "skipped": int(skipped.group(1)) if skipped else 0,
++        "skipped": skipped,
+         "failing": failing,
+         "exit_code": res.returncode,
++        "problems": problems,
++        "raw_log": log_name,
++        "raw_log_sha256": hashlib.sha256(log_bytes).hexdigest(),
++        "raw_log_bytes": len(log_bytes),
+         "limits": ["fake CLI: event/tool shapes are fixtures, not captured live output",
+                    "no live model call; no live sandbox behaviour is tested here",
+                    "real-process tests (job object, tree kill, locks) run on this Windows machine only"],
+     }
+     print(write(f"tests_{label}.json", payload))
+-    print(f"{outcome}: {payload['tests_run']} tests in {payload['seconds']}s; failing={failing}")
++    print(f"{outcome}: {tests_run} tests in {payload['seconds']}s; failing={failing}; problems={problems}")
+     if outcome != "OK":
+         sys.exit(1)
++
++
++def cmd_integrity() -> None:
++    """Retain the raw output of the v1/auth integrity comparison and the lock verification (V13:
++    the package otherwise only *reported* these)."""
++    py = sys.executable
++    baseline = ROOT / "docs" / "v1_baseline_before.json"
++    compare = subprocess.run([py, "-B", str(ROOT / "tools" / "v1_manifest.py"), "compare", str(baseline)],
++                             capture_output=True, text=True, stdin=subprocess.DEVNULL, cwd=str(ROOT))
++    lock = subprocess.run([py, "-B", str(ROOT / "tools" / "verify_lock.py")], capture_output=True, text=True,
++                          stdin=subprocess.DEVNULL, cwd=str(ROOT))
++    payload = {
++        "evidence_class": "implementer_executed",
++        "what": "raw output of tools/v1_manifest.py compare (v1 + Codex auth/config stat integrity) and "
++                "tools/verify_lock.py (installed packages vs requirements.lock.txt)",
++        "source_combined_sha256": fingerprint()["combined_sha256"],
++        "environment": environment(),
++        "v1_manifest_compare": {"exit_code": compare.returncode, "output": (compare.stdout + compare.stderr)[-6000:]},
++        "verify_lock": {"exit_code": lock.returncode, "output": (lock.stdout + lock.stderr)[-3000:]},
++        "limits": ["size/mtime only: content equality of config.toml/auth.json cannot be shown (never opened)"],
++    }
++    print(write("integrity.json", payload))
++
++
++def _rollout_structure(path: Path) -> dict:
++    """Structure only (record types and tool names): no prompt, answer or file content."""
++    types: dict[str, int] = {}
++    tool_names: dict[str, int] = {}
++    nested = 0
++    rows = 0
++    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
++        try:
++            row = json.loads(line)
++        except ValueError:
++            continue
++        rows += 1
++        payload = row.get("payload") if isinstance(row, dict) else None
++        if not isinstance(payload, dict):
++            continue
++        kind = str(payload.get("type"))
++        types[kind] = types.get(kind, 0) + 1
++        if kind in ("custom_tool_call", "function_call"):
++            name = str(payload.get("name"))
++            tool_names[name] = tool_names.get(name, 0) + 1
++            if name == "apply_patch":
++                nested += 1
++    return {"rows": rows, "payload_types": types, "tool_call_names": tool_names,
++            "records_named_apply_patch": nested}
++
++
++def normalise_mcp_list(text: str) -> list[dict] | None:
++    """Only (name, enabled) of each server, sorted - never transports, commands, args or env (those
++    are the user's local configuration).  None when the text is not the expected JSON list."""
++    try:
++        rows = json.loads(text)
++    except ValueError:
++        return None
++    if not isinstance(rows, list):
++        return None
++    out = []
++    for row in rows:
++        if not isinstance(row, dict) or not isinstance(row.get("name"), str):
++            return None
++        out.append({"name": row["name"], "enabled": bool(row.get("enabled"))})
++    return sorted(out, key=lambda r: r["name"])
++
++
++def cmd_cli(rollout: str | None) -> None:
++    """Model-free observations of the installed CLI that the documentation relies on.
++
++    Retained data is limited to public CLI help/schema text (scrubbed of local identifiers), a
++    login *classification* (never the raw status line) and normalised MCP (name, enabled) lists -
++    raw ``mcp list`` output contains the user's local runtime paths and environment and is never
++    stored."""
++    from bridge import codexcli
++    from tools.privacy import scrub_local
++
++    cli = codexcli.resolve_cli(None, os.environ)
++    env = codexcli.child_env(os.environ)
++    asked = [["--version"], ["features", "list"], ["mcp", "--help"], ["mcp", "list", "--help"],
++             ["exec", "--help"], ["exec", "resume", "--help"], ["sandbox", "--help"]]
++    outputs = {}
++    for args in asked:
++        res = codexcli.run_simple([*cli.base_argv, *args], env, timeout_s=60)
++        outputs[" ".join(args)] = {"exit_code": res.returncode,
++                                   "output": scrub_local((res.stdout + res.stderr)[-6000:])}
++    login = codexcli.run_simple([*cli.base_argv, "login", "status"], env, timeout_s=60)
++    outputs["login status"] = {"exit_code": login.returncode,
++                               "classified_as": ("chatgpt" if "chatgpt" in (login.stdout + login.stderr).lower()
++                                                 else "other_or_not_logged_in"),
++                               "output": "(raw status line deliberately not retained)"}
++    # the claim "no deny-all": the same MCP list with and without an empty mcp_servers override
++    probe = tempfile.mkdtemp(prefix="evidence_cli_")
++    try:
++        base = codexcli.run_simple([*cli.base_argv, "mcp", "list", "--json"], env, cwd=probe, timeout_s=60)
++        over = codexcli.run_simple([*cli.base_argv, "mcp", "list", "--json", "-c", "mcp_servers={}"], env,
++                                   cwd=probe, timeout_s=60)
++    finally:
++        import shutil
++
++        shutil.rmtree(probe, ignore_errors=True)
++    base_view, over_view = normalise_mcp_list(base.stdout), normalise_mcp_list(over.stdout)
++    probe_result = {
++        "claim": "-c mcp_servers={} has no effect on the effective server list (no supported deny-all)",
++        "compared": "sorted (name, enabled) pairs parsed from `codex mcp list --json`; transports, commands "
++                    "and environments are deliberately not retained",
++        "baseline_exit": base.returncode, "override_exit": over.returncode,
++        "baseline_servers": base_view, "override_servers": over_view,
++        "same_effective_view": (base_view is not None and base_view == over_view),
++        "any_server_enabled_with_override": bool(over_view and any(r["enabled"] for r in over_view)),
++    }
++    payload = {
++        "evidence_class": "source_observation",
++        "what": "model-free CLI help/schema outputs the README relies on (no inference)",
++        "source_combined_sha256": fingerprint()["combined_sha256"],
++        "environment": environment(),
++        "commands": outputs,
++        "mcp_deny_all_probe": probe_result,
++    }
++    if rollout:
++        payload["rollout_structure"] = {
++            "claim": "Codex persists no separate nested apply_patch record (only the exec wrapper call)",
++            "note": "historical rollout of an earlier live attack run; structure only, no content",
++            **_rollout_structure(Path(rollout)),
++        }
++    print(write("cli_observations.json", payload))
+ 
+ 
+ if __name__ == "__main__":
+@@ -173,7 +341,15 @@
+     sub = parser.add_subparsers(dest="cmd", required=True)
+     sub.add_parser("fingerprint")
+     sub.add_parser("policy")
++    sub.add_parser("integrity")
++    c = sub.add_parser("cli")
++    c.add_argument("--rollout", default=None, help="a Codex session rollout JSONL (structure is summarised)")
+     t = sub.add_parser("tests")
+     t.add_argument("--label", default="run")
+     ns = parser.parse_args()
+-    {"fingerprint": cmd_fingerprint, "policy": cmd_policy}.get(ns.cmd, lambda: cmd_tests(ns.label))()
++    if ns.cmd == "tests":
++        cmd_tests(ns.label)
++    elif ns.cmd == "cli":
++        cmd_cli(ns.rollout)
++    else:
++        {"fingerprint": cmd_fingerprint, "policy": cmd_policy, "integrity": cmd_integrity}[ns.cmd]()

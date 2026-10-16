@@ -1,0 +1,77 @@
+Requires --confirmed-idle plus operator reason/evidence that the earlier server request ended.
+Uncertain request retired using operator confirmation; no inference replayed.
+{
+  "schema_version": 1,
+  "action": "status",
+  "worker_id": "LOCAL-00",
+  "state": "status_returned",
+  "code": "worker_status",
+  "explanation": "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker.",
+  "availability": "unavailable",
+  "coordination": "idle",
+  "validation": "pending",
+  "next_actions": [
+    "Enter address",
+    "Retry discovery",
+    "Continue without LOCAL-00"
+  ],
+  "task_id": null,
+  "packet_hash": null,
+  "request_id": null,
+  "attempt": null,
+  "endpoint": null,
+  "peer_ip": null,
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": null,
+  "result_digest": null,
+  "response": null,
+  "done": null,
+  "done_reason": null,
+  "metrics": {},
+  "timings": {},
+  "audit_refs": [],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": null
+}
+{
+  "schema_version": 1,
+  "action": "status",
+  "worker_id": "LOCAL-00",
+  "state": "status_returned",
+  "code": "worker_status",
+  "explanation": "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker.",
+  "availability": "unavailable",
+  "coordination": "idle",
+  "validation": "pending",
+  "next_actions": [
+    "Enter address",
+    "Retry discovery",
+    "Continue without LOCAL-00"
+  ],
+  "task_id": null,
+  "packet_hash": null,
+  "request_id": null,
+  "attempt": null,
+  "endpoint": null,
+  "peer_ip": null,
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": null,
+  "result_digest": null,
+  "response": null,
+  "done": null,
+  "done_reason": null,
+  "metrics": {},
+  "timings": {},
+  "audit_refs": [],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": null
+}
+test_group_exists_and_confirmation_is_required (tests.test_local_worker_admin.Administration.test_group_exists_and_confirmation_is_required) ... ok
+test_status_does_not_require_codex_auth_or_repository (tests.test_local_worker_admin.Administration.test_status_does_not_require_codex_auth_or_repository) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.209s
+
+OK

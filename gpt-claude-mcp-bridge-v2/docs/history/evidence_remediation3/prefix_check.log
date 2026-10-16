@@ -1,0 +1,478 @@
+RESULT_JSON:{"tests.test_review4.N10_IdentityAndRegistryBothLost.test_a_genuine_first_initialisation_is_still_allowed": "pass", "tests.test_review4.N10_IdentityAndRegistryBothLost.test_a_surviving_registry_backup_proves_loss_even_without_instance_json": "fail", "tests.test_review4.R10_CleanupGapsAndMasking.test_a_failing_poll_during_cleanup_does_not_replace_the_original_error": "error", "tests.test_review4.R10_CleanupGapsAndMasking.test_bookkeeping_is_created_before_the_child_exists": "fail", "tests.test_review4.R11_TypedTelemetryFields.test_non_string_values_never_raise_and_never_drop_the_record": "error", "tests.test_review4.R12_ExactRenderedCodes.test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered": "fail", "tests.test_review4.R12_ExactRenderedCodes.test_post_turn_unexpected_servers_are_named_uncontained_exposures": "fail", "tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_an_unchanged_filesystem_is_enforcement_only_when_attempt_and_refusal_are_recorded": "error", "tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_narration_is_not_a_positive_control": "error", "tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_the_harness_no_longer_treats_the_reply_as_evidence": "error", "tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_a_resumed_call_never_leaves_a_debt": "error", "tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt": "fail", "tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt": "fail", "tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reset_and_adopt_recognise_a_raw_stale_record_too": "fail", "tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_completed_phase_with_a_dead_owner_still_needs_reconcile": "fail", "tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update": "fail", "tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_recovery_makes_the_process_fact_durable_before_the_thread_debt": "fail", "tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_reset_clears_thread_debt_but_keeps_independent_process_uncertainty": "pass", "tests.test_review4.R3_ExecutionTargets.test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped": "fail", "tests.test_review4.R3_ExecutionTargets.test_launcher_artifacts_derived_from_a_shim_are_validated": "error", "tests.test_review4.R3_ExecutionTargets.test_no_bare_git_launch_remains_in_the_harnesses": "fail", "tests.test_review4.R3_ExecutionTargets.test_system_tools_do_not_trust_inherited_environment_values": "fail", "tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_dead_stdout_reader_withholds_the_answer": "fail", "tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_json_escaped_signature_in_an_oversized_line_is_found": "fail", "tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_output_bearing_keys_are_not_skipped": "fail", "tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_the_item_type_is_read_only_from_the_events_own_item": "fail", "tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_traversal_limits_are_reported_not_silent": "error", "tests.test_review4.R5_WrapperSemantics.test_patch_matches_has_one_narrow_policy": "error", "tests.test_review4.R5_WrapperSemantics.test_shadowed_names_and_use_before_binding_are_rejected": "fail", "tests.test_review4.R5_WrapperSemantics.test_the_complete_argument_must_equal_the_expected_patch": "error", "tests.test_review4.R6_DenialMustNameTheTarget.test_stage_a_uses_the_same_exact_comparison": "error", "tests.test_review4.R6_DenialMustNameTheTarget.test_substring_and_other_directory_are_not_the_target": "error", "tests.test_review4.R7_MaintenanceCleanupAndReporting.test_a_failing_existence_check_does_not_leak_the_lock": "error", "tests.test_review4.R7_MaintenanceCleanupAndReporting.test_failed_flag_removal_is_reported_and_exits_nonzero": "fail", "tests.test_review4.R8_RefusalCleanupNeverMasksTheRefusal.test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts": "fail", "tests.test_review4.R9_EvidenceGate.test_a_summary_that_disagrees_with_its_log_is_rejected": "fail", "tests.test_review4.R9_EvidenceGate.test_every_embedded_record_is_bound_and_the_summary_matches_the_log": "fail", "tests.test_review4.R9_EvidenceGate.test_execution_must_come_from_a_staged_copy_bound_to_the_hash": "fail", "tests.test_review4.R9_EvidenceGate.test_the_recorder_stages_a_copy_and_retains_the_log": "fail", "tests.test_review4.V12_RefAbsenceMustBeVerified.test_only_show_ref_exit_one_proves_an_unborn_branch": "fail"}
+test_a_genuine_first_initialisation_is_still_allowed (tests.test_review4.N10_IdentityAndRegistryBothLost.test_a_genuine_first_initialisation_is_still_allowed) ... ok
+test_a_surviving_registry_backup_proves_loss_even_without_instance_json (tests.test_review4.N10_IdentityAndRegistryBothLost.test_a_surviving_registry_backup_proves_loss_even_without_instance_json) ... FAIL
+test_a_failing_poll_during_cleanup_does_not_replace_the_original_error (tests.test_review4.R10_CleanupGapsAndMasking.test_a_failing_poll_during_cleanup_does_not_replace_the_original_error) ... ERROR
+test_bookkeeping_is_created_before_the_child_exists (tests.test_review4.R10_CleanupGapsAndMasking.test_bookkeeping_is_created_before_the_child_exists) ... FAIL
+test_non_string_values_never_raise_and_never_drop_the_record (tests.test_review4.R11_TypedTelemetryFields.test_non_string_values_never_raise_and_never_drop_the_record) ... ERROR
+test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered (tests.test_review4.R12_ExactRenderedCodes.test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered) ... FAIL
+test_post_turn_unexpected_servers_are_named_uncontained_exposures (tests.test_review4.R12_ExactRenderedCodes.test_post_turn_unexpected_servers_are_named_uncontained_exposures) ... FAIL
+test_an_unchanged_filesystem_is_enforcement_only_when_attempt_and_refusal_are_recorded (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_an_unchanged_filesystem_is_enforcement_only_when_attempt_and_refusal_are_recorded) ... ERROR
+test_narration_is_not_a_positive_control (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_narration_is_not_a_positive_control) ... ERROR
+test_the_harness_no_longer_treats_the_reply_as_evidence (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_the_harness_no_longer_treats_the_reply_as_evidence) ... ERROR
+test_a_resumed_call_never_leaves_a_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_a_resumed_call_never_leaves_a_debt) ... ERROR
+test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt) ... FAIL
+test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt) ... FAIL
+test_reset_and_adopt_recognise_a_raw_stale_record_too (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reset_and_adopt_recognise_a_raw_stale_record_too) ... FAIL
+test_a_completed_phase_with_a_dead_owner_still_needs_reconcile (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_completed_phase_with_a_dead_owner_still_needs_reconcile) ... FAIL
+test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update) ... FAIL
+test_recovery_makes_the_process_fact_durable_before_the_thread_debt (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_recovery_makes_the_process_fact_durable_before_the_thread_debt) ... FAIL
+test_reset_clears_thread_debt_but_keeps_independent_process_uncertainty (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_reset_clears_thread_debt_but_keeps_independent_process_uncertainty) ... ok
+test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped (tests.test_review4.R3_ExecutionTargets.test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped) ... FAIL
+test_launcher_artifacts_derived_from_a_shim_are_validated (tests.test_review4.R3_ExecutionTargets.test_launcher_artifacts_derived_from_a_shim_are_validated) ... ERROR
+test_no_bare_git_launch_remains_in_the_harnesses (tests.test_review4.R3_ExecutionTargets.test_no_bare_git_launch_remains_in_the_harnesses) ... FAIL
+test_system_tools_do_not_trust_inherited_environment_values (tests.test_review4.R3_ExecutionTargets.test_system_tools_do_not_trust_inherited_environment_values) ... FAIL
+test_a_dead_stdout_reader_withholds_the_answer (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_dead_stdout_reader_withholds_the_answer)
+The reader dies AFTER turn.completed: exit 0 and an answer file would otherwise be a success. ... FAIL
+test_a_json_escaped_signature_in_an_oversized_line_is_found (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_json_escaped_signature_in_an_oversized_line_is_found) ... FAIL
+test_output_bearing_keys_are_not_skipped (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_output_bearing_keys_are_not_skipped) ... FAIL
+test_the_item_type_is_read_only_from_the_events_own_item (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_the_item_type_is_read_only_from_the_events_own_item) ... FAIL
+test_traversal_limits_are_reported_not_silent (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_traversal_limits_are_reported_not_silent) ... ERROR
+test_patch_matches_has_one_narrow_policy (tests.test_review4.R5_WrapperSemantics.test_patch_matches_has_one_narrow_policy) ... ERROR
+test_shadowed_names_and_use_before_binding_are_rejected (tests.test_review4.R5_WrapperSemantics.test_shadowed_names_and_use_before_binding_are_rejected) ... FAIL
+test_the_complete_argument_must_equal_the_expected_patch (tests.test_review4.R5_WrapperSemantics.test_the_complete_argument_must_equal_the_expected_patch) ... ERROR
+test_stage_a_uses_the_same_exact_comparison (tests.test_review4.R6_DenialMustNameTheTarget.test_stage_a_uses_the_same_exact_comparison) ... ERROR
+test_substring_and_other_directory_are_not_the_target (tests.test_review4.R6_DenialMustNameTheTarget.test_substring_and_other_directory_are_not_the_target) ... ERROR
+test_a_failing_existence_check_does_not_leak_the_lock (tests.test_review4.R7_MaintenanceCleanupAndReporting.test_a_failing_existence_check_does_not_leak_the_lock) ... ERROR
+test_failed_flag_removal_is_reported_and_exits_nonzero (tests.test_review4.R7_MaintenanceCleanupAndReporting.test_failed_flag_removal_is_reported_and_exits_nonzero) ... FAIL
+test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts (tests.test_review4.R8_RefusalCleanupNeverMasksTheRefusal.test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts) ... FAIL
+test_a_summary_that_disagrees_with_its_log_is_rejected (tests.test_review4.R9_EvidenceGate.test_a_summary_that_disagrees_with_its_log_is_rejected) ... FAIL
+test_every_embedded_record_is_bound_and_the_summary_matches_the_log (tests.test_review4.R9_EvidenceGate.test_every_embedded_record_is_bound_and_the_summary_matches_the_log) ... FAIL
+test_execution_must_come_from_a_staged_copy_bound_to_the_hash (tests.test_review4.R9_EvidenceGate.test_execution_must_come_from_a_staged_copy_bound_to_the_hash) ... FAIL
+test_the_recorder_stages_a_copy_and_retains_the_log (tests.test_review4.R9_EvidenceGate.test_the_recorder_stages_a_copy_and_retains_the_log) ... FAIL
+test_only_show_ref_exit_one_proves_an_unborn_branch (tests.test_review4.V12_RefAbsenceMustBeVerified.test_only_show_ref_exit_one_proves_an_unborn_branch) ... FAIL
+
+======================================================================
+ERROR: test_a_failing_poll_during_cleanup_does_not_replace_the_original_error (tests.test_review4.R10_CleanupGapsAndMasking.test_a_failing_poll_during_cleanup_does_not_replace_the_original_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\bridge\runner.py", line 484, in run_turn
+    while proc.poll() is None:
+          ~~~~~~~~~^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 553, in poll
+    raise RuntimeError("poll failed")
+RuntimeError: poll failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\bridge\runner.py", line 537, in run_turn
+    raise err from exc
+bridge.errors.BridgeError: [bridge-error:subprocess_failed/runner_failed] The bridge failed while supervising the Codex process (RuntimeError); the child and its job were terminated.
+The model turn may already have run and consumed allowance; the bridge did NOT retry it.
+Recovery: No retry was made.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 559, in test_a_failing_poll_during_cleanup_does_not_replace_the_original_error
+    runner.run_turn(argv, "p", env, str(self.w.repo), 20, threading.Event())
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\bridge\runner.py", line 543, in run_turn
+    _terminate_owned(owner, proc)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\bridge\runner.py", line 350, in _terminate_owned
+    if proc.poll() is None:
+       ~~~~~~~~~^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 553, in poll
+    raise RuntimeError("poll failed")
+RuntimeError: poll failed
+
+======================================================================
+ERROR: test_non_string_values_never_raise_and_never_drop_the_record (tests.test_review4.R11_TypedTelemetryFields.test_non_string_values_never_raise_and_never_drop_the_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 573, in test_non_string_values_never_raise_and_never_drop_the_record
+    rec = telemetry.sanitise({"call_id": "ab" * 16, "tool": CONSULT, "outcome": bad,
+                              "error_category": bad, "pointer_state": bad, "history": bad,
+                              "session_state": bad})
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\bridge\telemetry.py", line 125, in sanitise
+    if key in clean and clean[key] is not None and clean[key] not in allowed:
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'list'
+
+======================================================================
+ERROR: test_an_unchanged_filesystem_is_enforcement_only_when_attempt_and_refusal_are_recorded (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_an_unchanged_filesystem_is_enforcement_only_when_attempt_and_refusal_are_recorded)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 602, in setUp
+    from tools import smoke_oracles
+ImportError: cannot import name 'smoke_oracles' from 'tools' (C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tools\__init__.py)
+
+======================================================================
+ERROR: test_narration_is_not_a_positive_control (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_narration_is_not_a_positive_control)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 602, in setUp
+    from tools import smoke_oracles
+ImportError: cannot import name 'smoke_oracles' from 'tools' (C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tools\__init__.py)
+
+======================================================================
+ERROR: test_the_harness_no_longer_treats_the_reply_as_evidence (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_the_harness_no_longer_treats_the_reply_as_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 602, in setUp
+    from tools import smoke_oracles
+ImportError: cannot import name 'smoke_oracles' from 'tools' (C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tools\__init__.py)
+
+======================================================================
+ERROR: test_a_resumed_call_never_leaves_a_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_a_resumed_call_never_leaves_a_debt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 103, in test_a_resumed_call_never_leaves_a_debt
+    self.assertIsNone(state.thread_debt(marker, None))
+                      ^^^^^^^^^^^^^^^^^
+AttributeError: module 'bridge.state' has no attribute 'thread_debt'
+
+======================================================================
+ERROR: test_launcher_artifacts_derived_from_a_shim_are_validated (tests.test_review4.R3_ExecutionTargets.test_launcher_artifacts_derived_from_a_shim_are_validated)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 241, in test_launcher_artifacts_derived_from_a_shim_are_validated
+    with mock.patch.object(execpath, "trusted_target", return_value=False):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\unittest\mock.py", line 1497, in __enter__
+    original, local = self.get_original()
+                      ~~~~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\unittest\mock.py", line 1467, in get_original
+    raise AttributeError(
+        "%s does not have the attribute %r" % (target, name)
+    )
+AttributeError: <module 'bridge.execpath' from 'C:\\Users\\kian\\AppData\\Local\\Temp\\prefix_check_14efidun\\bridge\\execpath.py'> does not have the attribute 'trusted_target'
+
+======================================================================
+ERROR: test_traversal_limits_are_reported_not_silent (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_traversal_limits_are_reported_not_silent)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 299, in test_traversal_limits_are_reported_not_silent
+    _, kinds, truncated = runner.classify_item_ex(self.item(result=deep), None)
+                          ^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'bridge.runner' has no attribute 'classify_item_ex'. Did you mean: 'classify_item'?
+
+======================================================================
+ERROR: test_patch_matches_has_one_narrow_policy (tests.test_review4.R5_WrapperSemantics.test_patch_matches_has_one_narrow_policy)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 380, in test_patch_matches_has_one_narrow_policy
+    self.assertTrue(t.patch_matches("a\r\nb\n", "a\nb"))
+                    ^^^^^^^^^^^^^^^
+AttributeError: module 'tools.apply_patch_attack_test' has no attribute 'patch_matches'
+
+======================================================================
+ERROR: test_the_complete_argument_must_equal_the_expected_patch (tests.test_review4.R5_WrapperSemantics.test_the_complete_argument_must_equal_the_expected_patch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 372, in test_the_complete_argument_must_equal_the_expected_patch
+    self.assertEqual(self._turn(lambda p: p)["verdict"], "PASS")
+                     ~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 367, in _turn
+    return self.t.evaluate_turn(self.t.expected_attacks("FRESH"), attempts, fs_changed=False,
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                thread_expected=None, thread_actual=None, rollout_thread=None,
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                repo_root=r"C:\repo")
+                                ^^^^^^^^^^^^^^^^^^^^^
+TypeError: evaluate_turn() got an unexpected keyword argument 'repo_root'
+
+======================================================================
+ERROR: test_stage_a_uses_the_same_exact_comparison (tests.test_review4.R6_DenialMustNameTheTarget.test_stage_a_uses_the_same_exact_comparison)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 414, in test_stage_a_uses_the_same_exact_comparison
+    ok = self.t.judge_os_attack(timed_out=False, returncode=1, output=self._line(full),
+                                expected_path="a3_0/repo/ATTACK_ADD_A30.txt", fs_changed=False,
+                                outside_leaked=False, base_dir=self.base)
+TypeError: judge_os_attack() got an unexpected keyword argument 'base_dir'
+
+======================================================================
+ERROR: test_substring_and_other_directory_are_not_the_target (tests.test_review4.R6_DenialMustNameTheTarget.test_substring_and_other_directory_are_not_the_target)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 400, in test_substring_and_other_directory_are_not_the_target
+    self.assertTrue(n(self._line(full), "canary.txt", self.base))
+                    ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: names_write_denial() takes 2 positional arguments but 3 were given
+
+======================================================================
+ERROR: test_a_failing_existence_check_does_not_leak_the_lock (tests.test_review4.R7_MaintenanceCleanupAndReporting.test_a_failing_existence_check_does_not_leak_the_lock)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 440, in test_a_failing_existence_check_does_not_leak_the_lock
+    other.begin_maintenance("y")                                # `maintenance_busy` if the lock leaked
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\bridge\state.py", line 469, in begin_maintenance
+    raise errors.BridgeError(errors.STATE_ERROR, "Another administrative command is running.",
+                             code="maintenance_busy",
+                             recovery="Wait for it to finish; nothing was changed.") from None
+bridge.errors.BridgeError: [bridge-error:state_error/maintenance_busy] Another administrative command is running.
+Recovery: Wait for it to finish; nothing was changed.
+
+======================================================================
+FAIL: test_a_surviving_registry_backup_proves_loss_even_without_instance_json (tests.test_review4.N10_IdentityAndRegistryBothLost.test_a_surviving_registry_backup_proves_loss_even_without_instance_json)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 651, in test_a_surviving_registry_backup_proves_loss_even_without_instance_json
+    exc = expect_error(self, self.service())
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 41, in expect_error
+    with case.assertRaises(errors.BridgeError) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised
+
+======================================================================
+FAIL: test_bookkeeping_is_created_before_the_child_exists (tests.test_review4.R10_CleanupGapsAndMasking.test_bookkeeping_is_created_before_the_child_exists)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 565, in test_bookkeeping_is_created_before_the_child_exists
+    self.assertLess(body.index("stderr_tail = bytearray()"), body.index("subprocess.Popen("))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1358 not less than 483
+
+======================================================================
+FAIL: test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered (tests.test_review4.R12_ExactRenderedCodes.test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 587, in test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered
+    self.assertIn("Recorded warning: child_termination_unconfirmed_extra.", answer)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'Recorded warning: child_termination_unconfirmed_extra.' not found in 'FAKE ANSWER'
+
+======================================================================
+FAIL: test_post_turn_unexpected_servers_are_named_uncontained_exposures (tests.test_review4.R12_ExactRenderedCodes.test_post_turn_unexpected_servers_are_named_uncontained_exposures)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 595, in test_post_turn_unexpected_servers_are_named_uncontained_exposures
+    self.assertIn("mcp_unexpected_servers_seen", caps["uncontained"])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'mcp_unexpected_servers_seen' not found in ['view_image_goals_sleep_skills']
+
+======================================================================
+FAIL: test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 95, in test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt
+    self.assertEqual(marker.get("unbound_thread"), thread, "the debt must be recorded in the primary record")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != 'd97e9730-798f-44dc-9742-a99e2131e59d' : the debt must be recorded in the primary record
+
+======================================================================
+FAIL: test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 82, in test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt
+    self.assertEqual((reg.read_marker("pending", self.key()) or {}).get("thread_id"), THREAD, phase)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != 'aaaaaaaa-1111-2222-3333-444444444444' : running
+
+======================================================================
+FAIL: test_reset_and_adopt_recognise_a_raw_stale_record_too (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reset_and_adopt_recognise_a_raw_stale_record_too)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 113, in test_reset_and_adopt_recognise_a_raw_stale_record_too
+    self.assertIsNone(reg.read_marker("inflight", self.key()), "reset discards the thread debt of a raw record")
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'call_id': 'cccccccc', 'child_pid': 1234, 'model': 'gpt-6.1-sol', 'owner_identity': '1', 'owner_pid': 2000000000, 'ownership': 'job_object', 'phase': 'running', 'resumed': False, 'state': 'running', 'thread_id': 'aaaaaaaa-1111-2222-3333-444444444444'} is not None : reset discards the thread debt of a raw record
+
+======================================================================
+FAIL: test_a_completed_phase_with_a_dead_owner_still_needs_reconcile (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_completed_phase_with_a_dead_owner_still_needs_reconcile)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 173, in test_a_completed_phase_with_a_dead_owner_still_needs_reconcile
+    self.assertEqual((exc.category, exc.code), (errors.SESSION_IN_DOUBT, "uncertain_termination"))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: ('session_in_doubt', 'pending_persistence') != ('session_in_doubt', 'uncertain_termination')
+
+First differing element 1:
+'pending_persistence'
+'uncertain_termination'
+
+- ('session_in_doubt', 'pending_persistence')
++ ('session_in_doubt', 'uncertain_termination')
+
+======================================================================
+FAIL: test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 144, in test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update
+    self.assertEqual(marker["state"], "uncertain",
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     "the process fact must survive a failed write followed by a successful phase update")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'running' != 'uncertain'
+- running
++ uncertain
+ : the process fact must survive a failed write followed by a successful phase update
+
+======================================================================
+FAIL: test_recovery_makes_the_process_fact_durable_before_the_thread_debt (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_recovery_makes_the_process_fact_durable_before_the_thread_debt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 168, in test_recovery_makes_the_process_fact_durable_before_the_thread_debt
+    self.assertEqual(order[:2], ["uncertain", "pending"], order)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['pending', 'uncertain'] != ['uncertain', 'pending']
+
+First differing element 0:
+'pending'
+'uncertain'
+
+- ['pending', 'uncertain']
++ ['uncertain', 'pending'] : ['pending', 'uncertain']
+
+======================================================================
+FAIL: test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped (tests.test_review4.R3_ExecutionTargets.test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 224, in test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped
+    self.assertIsNone(execpath.trusted_which(("git",), env, exclude=[self.w.repo]))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'C:\\Users\\kian\\AppData\\Local\\Temp\\bridge_v2_test_sab4ltrp\\trusted\\git.exe' is not None
+
+======================================================================
+FAIL: test_no_bare_git_launch_remains_in_the_harnesses (tests.test_review4.R3_ExecutionTargets.test_no_bare_git_launch_remains_in_the_harnesses)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 262, in test_no_bare_git_launch_remains_in_the_harnesses
+    self.assertEqual(offenders, [], "a bare `git` is resolved from the current directory first")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['tools/live_smoke_test.py'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'tools/live_smoke_test.py'
+
+- ['tools/live_smoke_test.py']
++ [] : a bare `git` is resolved from the current directory first
+
+======================================================================
+FAIL: test_system_tools_do_not_trust_inherited_environment_values (tests.test_review4.R3_ExecutionTargets.test_system_tools_do_not_trust_inherited_environment_values)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 252, in test_system_tools_do_not_trust_inherited_environment_values
+    self.assertNotIn("evil", exe.lower(), exe)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'evil' unexpectedly found in 'c:\\evil\\system32\\taskkill.exe' : C:\Evil\System32\taskkill.exe
+
+======================================================================
+FAIL: test_a_dead_stdout_reader_withholds_the_answer (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_dead_stdout_reader_withholds_the_answer)
+The reader dies AFTER turn.completed: exit 0 and an answer file would otherwise be a success.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 284, in test_a_dead_stdout_reader_withholds_the_answer
+    exc = expect_error(self, self.service())
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 41, in expect_error
+    with case.assertRaises(errors.BridgeError) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised
+
+======================================================================
+FAIL: test_a_json_escaped_signature_in_an_oversized_line_is_found (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_json_escaped_signature_in_an_oversized_line_is_found)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 313, in test_a_json_escaped_signature_in_an_oversized_line_is_found
+    self.assertIn("sandbox_setup", scan.kinds)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'sandbox_setup' not found in set()
+
+======================================================================
+FAIL: test_output_bearing_keys_are_not_skipped (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_output_bearing_keys_are_not_skipped)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 293, in test_output_bearing_keys_are_not_skipped
+    self.assertIn("sandbox_setup", kinds, field)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'sandbox_setup' not found in [] : files
+
+======================================================================
+FAIL: test_the_item_type_is_read_only_from_the_events_own_item (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_the_item_type_is_read_only_from_the_events_own_item)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 326, in test_the_item_type_is_read_only_from_the_events_own_item
+    self.assertEqual(expect_error(self, self.service()).code, "turn_sandbox_setup_failed")
+                     ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 41, in expect_error
+    with case.assertRaises(errors.BridgeError) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised
+
+======================================================================
+FAIL: test_shadowed_names_and_use_before_binding_are_rejected (tests.test_review4.R5_WrapperSemantics.test_shadowed_names_and_use_before_binding_are_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 352, in test_shadowed_names_and_use_before_binding_are_rejected
+    self.assertIsNone(patch, f"{name}: {why}")
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '*** Begin Patch\n*** Add File: A.txt\n+x\n*** End Patch' is not None : result shadows tools: []
+
+======================================================================
+FAIL: test_failed_flag_removal_is_reported_and_exits_nonzero (tests.test_review4.R7_MaintenanceCleanupAndReporting.test_failed_flag_removal_is_reported_and_exits_nonzero)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 447, in test_failed_flag_removal_is_reported_and_exits_nonzero
+    self.assertEqual(rc, 1)
+    ~~~~~~~~~~~~~~~~^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts (tests.test_review4.R8_RefusalCleanupNeverMasksTheRefusal.test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 465, in test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts
+    self.assertEqual((exc.category, exc.code), (errors.CAPABILITY_AUDIT, "mcp_changed_before_exec"))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: ('internal_error', 'PermissionError') != ('capability_audit_failed', 'mcp_changed_before_exec')
+
+First differing element 0:
+'internal_error'
+'capability_audit_failed'
+
+- ('internal_error', 'PermissionError')
++ ('capability_audit_failed', 'mcp_changed_before_exec')
+
+======================================================================
+FAIL: test_a_summary_that_disagrees_with_its_log_is_rejected (tests.test_review4.R9_EvidenceGate.test_a_summary_that_disagrees_with_its_log_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 516, in test_a_summary_that_disagrees_with_its_log_is_rejected
+    self.assertTrue(any("reports 5 tests" in p for p in mvp.evidence_problems(tmp, sha)))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_every_embedded_record_is_bound_and_the_summary_matches_the_log (tests.test_review4.R9_EvidenceGate.test_every_embedded_record_is_bound_and_the_summary_matches_the_log)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 504, in test_every_embedded_record_is_bound_and_the_summary_matches_the_log
+    self.assertTrue(any(name in p and "stale" in p for p in mvp.evidence_problems(tmp, sha)), name)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : integrity.json
+
+======================================================================
+FAIL: test_execution_must_come_from_a_staged_copy_bound_to_the_hash (tests.test_review4.R9_EvidenceGate.test_execution_must_come_from_a_staged_copy_bound_to_the_hash)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 536, in test_execution_must_come_from_a_staged_copy_bound_to_the_hash
+    self.assertTrue(any("staged copy" in p for p in mvp.evidence_problems(tmp, sha)))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_the_recorder_stages_a_copy_and_retains_the_log (tests.test_review4.R9_EvidenceGate.test_the_recorder_stages_a_copy_and_retains_the_log)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 544, in test_the_recorder_stages_a_copy_and_retains_the_log
+    self.assertIn(needle, src)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^
+AssertionError: 'stage_tests_' not found in '"""Bind verification results to the exact code they were produced from (F8).\n\n    python -B tools/record_evidence.py fingerprint\n    python -B tools/record_evidence.py policy\n    python -B tools/record_evidence.py tests --label remediation_full\n    python -B tools/record_evidence.py integrity      # v1 manifest comparison + lock verification output\n    python -B tools/record_evidence.py cli [--rollout PATH]   # model-free CLI help/schema observations\n\nEvery record carries: the combined SHA-256 of the v2 source tree at the time, the exact\ncommand, Python/OS, the Codex CLI version, the sandbox backend reported by\n``codex doctor --json``, and (for `policy`) the effective capability policy read from the\ninstalled CLI.  A result recorded for one source hash is NOT evidence for different code.\n\nA test record is only valid when the tree was byte-identical BEFORE and AFTER the run (V13): both\nfingerprints are taken, a difference marks the record INVALID and fails the command, and the raw\ntest output is retained next to the record (``tests_<label>.log``, hash in the record).\n\nEvidence classes used in the documentation:\n  implementer_executed    produced by the implementer (Claude Code) executing something, bound to a\n                          hash.  NOT verification by a second party: a reviewer cannot confirm it\n                          from the record alone\n  source_observation      read from the code/CLI (no execution)\n  historical_report       from an earlier candidate; superseded, not evidence for current code\n  assumption              not verified\n"""\n\nfrom __future__ import annotations\n\nimport argparse\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport platform\nimport re\nimport subprocess\nimport sys\nimport tempfile\nimport time\n\nROOT = Path(__file__).resolve().parent.parent\nsys.path.insert(0, str(ROOT))\n\nEVIDENCE = ROOT / "docs" / "evidence"\nSOURCE_GLOBS = ("bridge/*.py", "tools/*.py", "tests/*.py", "tests/fixtures/*.json", "*.py",\n                "requirements.in", "requirements.lock.txt", "README.md")\n\n\ndef source_files() -> list[Path]:\n    seen: dict[str, Path] = {}\n    for pattern in SOURCE_GLOBS:\n        for p in sorted(ROOT.glob(pattern)):\n            if p.is_file() and "__pycache__" not in p.parts:\n                seen[p.relative_to(ROOT).as_posix()] = p\n    return [seen[k] for k in sorted(seen)]\n\n\ndef fingerprint() -> dict:\n    files = []\n    combined = hashlib.sha256()\n    for p in source_files():\n        digest = hashlib.sha256(p.read_bytes()).hexdigest()\n        rel = p.relative_to(ROOT).as_posix()\n        files.append({"path": rel, "sha256": digest, "bytes": p.stat().st_size})\n        combined.update(rel.encode() + b"\\0" + digest.encode() + b"\\0")\n    return {"combined_sha256": combined.hexdigest(), "file_count": len(files), "files": files}\n\n\ndef _run(argv: list[str], timeout: int = 60) -> str:\n    try:\n        res = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)\n        return (res.stdout + res.stderr).strip()\n    except Exception as exc:  # noqa: BLE001\n        return f"<unavailable: {exc.__class__.__name__}>"\n\n\ndef environment() -> dict:\n    from bridge import codexcli\n\n    info: dict = {"python": platform.python_version(), "platform": platform.platform(),\n                  "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}\n    try:\n        cli = codexcli.resolve_cli(None, os.environ)\n        env = codexcli.child_env(os.environ)\n        info["codex_cli_version"] = codexcli.get_version(cli, env)\n        info["codex_launcher"] = cli.kind\n        doctor = codexcli.run_simple([*cli.base_argv, "doctor", "--json"], env, timeout_s=90)\n        backend = re.search(r\'"sandbox backend":\\s*"([^"]+)"\', doctor.stdout)\n        provisioning = re.search(r\'"sandbox provisioning":\\s*"([^"]+)"\', doctor.stdout)\n        info["sandbox_backend"] = backend.group(1) if backend else "unknown"\n        info["sandbox_provisioning_at_record_time"] = provisioning.group(1) if provisioning else "unknown"\n    except Exception as exc:  # noqa: BLE001\n        info["codex_cli_version"] = f"<unavailable: {exc.__class__.__name__}>"\n    return info\n\n\ndef write(name: str, payload: dict) -> Path:\n    EVIDENCE.mkdir(parents=True, exist_ok=True)\n    path = EVIDENCE / name\n    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\\n", encoding="utf-8")\n    return path\n\n\ndef cmd_fingerprint() -> None:\n    fp = fingerprint()\n    out = write("source_fingerprint.json", {**fp, "environment": environment(),\n                                            "evidence_class": "source_observation"})\n    print(f"{out}  combined={fp[\'combined_sha256\']}  files={fp[\'file_count\']}")\n\n\ndef cmd_policy() -> None:\n    from bridge import codexcli, gitsafe\n\n    cli = codexcli.resolve_cli(None, os.environ)\n    env = codexcli.child_env(os.environ)\n    git = gitsafe.trusted_git()\n    if git is None:\n        raise SystemExit("no trusted git executable on PATH (the current directory is never searched)")\n    tmp = Path(tempfile.mkdtemp(prefix="evidence_repo_"))\n    try:\n        for args in (["init", "-q"], ["config", "user.email", "e@example.invalid"], ["config", "user.name", "e"]):\n            subprocess.run([git, "-C", str(tmp), *args], check=True, capture_output=True)\n        (tmp / "a.txt").write_text("x", encoding="utf-8")\n        subprocess.run([git, "-C", str(tmp), "add", "-A"], check=True, capture_output=True)\n        subprocess.run([git, "-C", str(tmp), "commit", "-q", "-m", "i"], check=True, capture_output=True)\n        features = codexcli.load_features(cli, env)\n        audit = codexcli.capability_audit(cli, env, tmp, frozenset(), features)\n        payload = {\n            "evidence_class": "implementer_executed",\n            "what": "effective capability policy read from the installed CLI (model-free; no sandbox "\n                    "preflight, no inference)",\n            "command": "capability_audit(real CLI, disposable repo, empty MCP allow-list)",\n            "source_combined_sha256": fingerprint()["combined_sha256"],\n            "environment": environment(),\n            "policy": audit.public(),\n            "argv_overrides": audit.extra_argv(),\n        }\n        print(write("capability_policy_real_cli.json", payload))\n    finally:\n        import shutil, stat\n\n        def force(func, path, _e):\n            os.chmod(path, stat.S_IWRITE)\n            func(path)\n\n        shutil.rmtree(tmp, onerror=force)\n\n\ndef run_problems(*, before: str, after: str, exit_code: int, skipped: int, failing: list[str],\n                 tests_run: int | None) -> list[str]:\n    """Why a test run cannot be recorded as passing evidence ([] = valid).  Pure, so it is tested."""\n    problems: list[str] = []\n    if before != after:\n        problems.append("the source tree changed while the tests ran (before/after fingerprints differ)")\n    if exit_code != 0:\n        problems.append(f"the test process exited {exit_code}")\n    if skipped:\n        problems.append(f"{skipped} test(s) were skipped (the declared policy is zero skips)")\n    if failing:\n        problems.append(f"{len(failing)} failing test(s)")\n    if not tests_run:\n        problems.append("no test count was reported")\n    return problems\n\n\ndef cmd_tests(label: str) -> None:\n    command = [sys.executable, "-B", "-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"]\n    before = fingerprint()["combined_sha256"]\n    started = time.monotonic()\n    res = subprocess.run(command, cwd=str(ROOT), capture_output=True, text=True, stdin=subprocess.DEVNULL)\n    after = fingerprint()["combined_sha256"]\n    text = res.stdout + res.stderr\n    ran = re.search(r"Ran (\\d+) tests? in ([\\d.]+)s", text)\n    ok_line = bool(re.search(r"^OK", text, re.MULTILINE))\n    failing = re.findall(r"^(?:FAIL|ERROR): (\\S+)", text, re.MULTILINE)\n    skipped_m = re.search(r"skipped=(\\d+)", text)\n    skipped = int(skipped_m.group(1)) if skipped_m else 0\n    tests_run = int(ran.group(1)) if ran else None\n    problems = run_problems(before=before, after=after, exit_code=res.returncode, skipped=skipped,\n                            failing=failing, tests_run=tests_run)\n    outcome = "OK" if (ok_line and not problems) else ("INVALID" if before != after else "FAILED")\n    EVIDENCE.mkdir(parents=True, exist_ok=True)\n    log_name = f"tests_{label}.log"\n    log_bytes = text.encode("utf-8", errors="replace")\n    (EVIDENCE / log_name).write_bytes(log_bytes)\n    payload = {\n        "evidence_class": "implementer_executed",\n        "what": "automated suite against the scripted fake Codex CLI (no model call, no subscription use)",\n        "command": "python -B -m unittest discover -s tests -t . -v   (cwd = v2 root, venv python)",\n        "source_combined_sha256": before,\n        "source_sha256_after_run": after,\n        "environment": environment(),\n        "tests_run": tests_run,\n        "seconds": float(ran.group(2)) if ran else round(time.monotonic() - started, 1),\n        "outcome": outcome,\n        "skipped": skipped,\n        "failing": failing,\n        "exit_code": res.returncode,\n        "problems": problems,\n        "raw_log": log_name,\n        "raw_log_sha256": hashlib.sha256(log_bytes).hexdigest(),\n        "raw_log_bytes": len(log_bytes),\n        "limits": ["fake CLI: event/tool shapes are fixtures, not captured live output",\n                   "no live model call; no live sandbox behaviour is tested here",\n                   "real-process tests (job object, tree kill, locks) run on this Windows machine only"],\n    }\n    print(write(f"tests_{label}.json", payload))\n    print(f"{outcome}: {tests_run} tests in {payload[\'seconds\']}s; failing={failing}; problems={problems}")\n    if outcome != "OK":\n        sys.exit(1)\n\n\ndef cmd_integrity() -> None:\n    """Retain the raw output of the v1/auth integrity comparison and the lock verification (V13:\n    the package otherwise only *reported* these)."""\n    py = sys.executable\n    baseline = ROOT / "docs" / "v1_baseline_before.json"\n    compare = subprocess.run([py, "-B", str(ROOT / "tools" / "v1_manifest.py"), "compare", str(baseline)],\n                             capture_output=True, text=True, stdin=subprocess.DEVNULL, cwd=str(ROOT))\n    lock = subprocess.run([py, "-B", str(ROOT / "tools" / "verify_lock.py")], capture_output=True, text=True,\n                          stdin=subprocess.DEVNULL, cwd=str(ROOT))\n    payload = {\n        "evidence_class": "implementer_executed",\n        "what": "raw output of tools/v1_manifest.py compare (v1 + Codex auth/config stat integrity) and "\n                "tools/verify_lock.py (installed packages vs requirements.lock.txt)",\n        "source_combined_sha256": fingerprint()["combined_sha256"],\n        "environment": environment(),\n        "v1_manifest_compare": {"exit_code": compare.returncode, "output": (compare.stdout + compare.stderr)[-6000:]},\n        "verify_lock": {"exit_code": lock.returncode, "output": (lock.stdout + lock.stderr)[-3000:]},\n        "limits": ["size/mtime only: content equality of config.toml/auth.json cannot be shown (never opened)"],\n    }\n    print(write("integrity.json", payload))\n\n\ndef _rollout_structure(path: Path) -> dict:\n    """Structure only (record types and tool names): no prompt, answer or file content."""\n    types: dict[str, int] = {}\n    tool_names: dict[str, int] = {}\n    nested = 0\n    rows = 0\n    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():\n        try:\n            row = json.loads(line)\n        except ValueError:\n            continue\n        rows += 1\n        payload = row.get("payload") if isinstance(row, dict) else None\n        if not isinstance(payload, dict):\n            continue\n        kind = str(payload.get("type"))\n        types[kind] = types.get(kind, 0) + 1\n        if kind in ("custom_tool_call", "function_call"):\n            name = str(payload.get("name"))\n            tool_names[name] = tool_names.get(name, 0) + 1\n            if name == "apply_patch":\n                nested += 1\n    return {"rows": rows, "payload_types": types, "tool_call_names": tool_names,\n            "records_named_apply_patch": nested}\n\n\ndef normalise_mcp_list(text: str) -> list[dict] | None:\n    """Only (name, enabled) of each server, sorted - never transports, commands, args or env (those\n    are the user\'s local configuration).  None when the text is not the expected JSON list."""\n    try:\n        rows = json.loads(text)\n    except ValueError:\n        return None\n    if not isinstance(rows, list):\n        return None\n    out = []\n    for row in rows:\n        if not isinstance(row, dict) or not isinstance(row.get("name"), str):\n            return None\n        out.append({"name": row["name"], "enabled": bool(row.get("enabled"))})\n    return sorted(out, key=lambda r: r["name"])\n\n\ndef cmd_cli(rollout: str | None) -> None:\n    """Model-free observations of the installed CLI that the documentation relies on.\n\n    Retained data is limited to public CLI help/schema text (scrubbed of local identifiers), a\n    login *classification* (never the raw status line) and normalised MCP (name, enabled) lists -\n    raw ``mcp list`` output contains the user\'s local runtime paths and environment and is never\n    stored."""\n    from bridge import codexcli\n    from tools.privacy import scrub_local\n\n    cli = codexcli.resolve_cli(None, os.environ)\n    env = codexcli.child_env(os.environ)\n    asked = [["--version"], ["features", "list"], ["mcp", "--help"], ["mcp", "list", "--help"],\n             ["exec", "--help"], ["exec", "resume", "--help"], ["sandbox", "--help"]]\n    outputs = {}\n    for args in asked:\n        res = codexcli.run_simple([*cli.base_argv, *args], env, timeout_s=60)\n        outputs[" ".join(args)] = {"exit_code": res.returncode,\n                                   "output": scrub_local((res.stdout + res.stderr)[-6000:])}\n    login = codexcli.run_simple([*cli.base_argv, "login", "status"], env, timeout_s=60)\n    outputs["login status"] = {"exit_code": login.returncode,\n                               "classified_as": ("chatgpt" if "chatgpt" in (login.stdout + login.stderr).lower()\n                                                 else "other_or_not_logged_in"),\n                               "output": "(raw status line deliberately not retained)"}\n    # the claim "no deny-all": the same MCP list with and without an empty mcp_servers override\n    probe = tempfile.mkdtemp(prefix="evidence_cli_")\n    try:\n        base = codexcli.run_simple([*cli.base_argv, "mcp", "list", "--json"], env, cwd=probe, timeout_s=60)\n        over = codexcli.run_simple([*cli.base_argv, "mcp", "list", "--json", "-c", "mcp_servers={}"], env,\n                                   cwd=probe, timeout_s=60)\n    finally:\n        import shutil\n\n        shutil.rmtree(probe, ignore_errors=True)\n    base_view, over_view = normalise_mcp_list(base.stdout), normalise_mcp_list(over.stdout)\n    probe_result = {\n        "claim": "-c mcp_servers={} has no effect on the effective server list (no supported deny-all)",\n        "compared": "sorted (name, enabled) pairs parsed from `codex mcp list --json`; transports, commands "\n                    "and environments are deliberately not retained",\n        "baseline_exit": base.returncode, "override_exit": over.returncode,\n        "baseline_servers": base_view, "override_servers": over_view,\n        "same_effective_view": (base_view is not None and base_view == over_view),\n        "any_server_enabled_with_override": bool(over_view and any(r["enabled"] for r in over_view)),\n    }\n    payload = {\n        "evidence_class": "source_observation",\n        "what": "model-free CLI help/schema outputs the README relies on (no inference)",\n        "source_combined_sha256": fingerprint()["combined_sha256"],\n        "environment": environment(),\n        "commands": outputs,\n        "mcp_deny_all_probe": probe_result,\n    }\n    if rollout:\n        payload["rollout_structure"] = {\n            "claim": "Codex persists no separate nested apply_patch record (only the exec wrapper call)",\n            "note": "historical rollout of an earlier live attack run; structure only, no content",\n            **_rollout_structure(Path(rollout)),\n        }\n    print(write("cli_observations.json", payload))\n\n\nif __name__ == "__main__":\n    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)\n    sub = parser.add_subparsers(dest="cmd", required=True)\n    sub.add_parser("fingerprint")\n    sub.add_parser("policy")\n    sub.add_parser("integrity")\n    c = sub.add_parser("cli")\n    c.add_argument("--rollout", default=None, help="a Codex session rollout JSONL (structure is summarised)")\n    t = sub.add_parser("tests")\n    t.add_argument("--label", default="run")\n    ns = parser.parse_args()\n    if ns.cmd == "tests":\n        cmd_tests(ns.label)\n    elif ns.cmd == "cli":\n        cmd_cli(ns.rollout)\n    else:\n        {"fingerprint": cmd_fingerprint, "policy": cmd_policy, "integrity": cmd_integrity}[ns.cmd]()\n'
+
+======================================================================
+FAIL: test_only_show_ref_exit_one_proves_an_unborn_branch (tests.test_review4.V12_RefAbsenceMustBeVerified.test_only_show_ref_exit_one_proves_an_unborn_branch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_14efidun\tests\test_review4.py", line 675, in test_only_show_ref_exit_one_proves_an_unborn_branch
+    self.assertIsNone(head)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+AssertionError: 'UNBORN' is not None
+
+----------------------------------------------------------------------
+Ran 40 tests in 29.833s
+
+FAILED (failures=25, errors=13)

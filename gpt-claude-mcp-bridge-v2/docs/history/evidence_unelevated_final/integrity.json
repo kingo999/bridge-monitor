@@ -1,0 +1,25 @@
+{
+  "environment": {
+    "codex_cli_version": "0.162.1",
+    "codex_launcher": "node-script",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.7",
+    "recorded_at": "2026-10-14T06:21:31Z",
+    "sandbox_backend": "elevated",
+    "sandbox_provisioning_at_record_time": "failed"
+  },
+  "evidence_class": "implementer_executed",
+  "limits": [
+    "size/mtime only: content equality of config.toml/auth.json cannot be shown (never opened)"
+  ],
+  "source_combined_sha256": "bb21f493d3057d53ac692acf526027eb6664d2951ed4c01bffa0c1a1e97f942d",
+  "v1_manifest_compare": {
+    "exit_code": 1,
+    "output": "CHANGED: codex_stat\n  codex_stat.config.toml: before={'mtime_ns': 1791803592968031000, 'size': 3348} after={'size': 3402, 'mtime_ns': 1791906715250038600}\nUNCHANGED: v1_files, v1_listing, v1_state, v1_venv\n"
+  },
+  "verify_lock": {
+    "exit_code": 0,
+    "output": "environment matches requirements.lock.txt (30 packages)\n"
+  },
+  "what": "raw output of tools/v1_manifest.py compare (v1 + Codex auth/config stat integrity) and tools/verify_lock.py (installed packages vs requirements.lock.txt)"
+}

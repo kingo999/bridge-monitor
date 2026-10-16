@@ -1,0 +1,37 @@
+{
+  "attempt": 1,
+  "code": "draft_returned",
+  "effort": {
+    "human_active_s": null,
+    "human_measurement_ref": null,
+    "premium_tokens": null,
+    "preparation_s": null,
+    "receipt_ref": null,
+    "review_s": null,
+    "validation_s": null
+  },
+  "escalation_reason": null,
+  "evidence_origin": "supervisor_reported",
+  "first_pass_acceptance": true,
+  "material_errors": null,
+  "recorded_at": "2026-10-15T15:09:31Z",
+  "retry_outcome": null,
+  "schema_version": 1,
+  "state": "draft_returned",
+  "supervisor_edits": "",
+  "task_id": "registered-clamp-plaincode-20261015",
+  "timings": {
+    "checks_s": 0.6027745999999752,
+    "client_elapsed_s": 1.5979242000030354,
+    "inference_s": 0.9851801999975578
+  },
+  "validation_effort": {
+    "human_active_s": null,
+    "human_measurement_ref": null,
+    "premium_tokens": null,
+    "preparation_s": null,
+    "receipt_ref": null,
+    "review_s": null,
+    "validation_s": null
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "action": "record_validation",
+  "worker_id": "LOCAL-00",
+  "state": "draft_returned",
+  "code": "supervisor_corrected",
+  "explanation": "",
+  "availability": "available",
+  "coordination": "idle",
+  "validation": "accepted",
+  "next_actions": [],
+  "task_id": "registered-clamp-20261015T145755Z",
+  "packet_hash": "d91b76fe5118caa55947f0f1b5b0bb592ab1d388ae89a51727663e10b017d22d",
+  "request_id": "b8e8ffbb98b14ac29fa886ce8f2680fa",
+  "attempt": 2,
+  "endpoint": "http://skynet.local:11434",
+  "peer_ip": "192.168.0.78",
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+  "result_digest": "17bd1fe4c731ed7bd8ede7ced98388a252ae5a727342c801b91f003538b15d95",
+  "response": "```python\ndef clamp(value, lower, upper):\n    if lower > upper:\n        raise ValueError(\"lower should not be greater than upper\")\n    return max(lower, min(value, upper))\n```",
+  "done": true,
+  "done_reason": "stop",
+  "metrics": {
+    "eval_count": 41,
+    "eval_duration": 593200000,
+    "eval_duration_s": 0.5932,
+    "load_duration": 135421620,
+    "load_duration_s": 0.13542162,
+    "prompt_eval_cached_count": null,
+    "prompt_eval_count": 449,
+    "prompt_eval_duration": 52086000,
+    "prompt_eval_duration_s": 0.052086,
+    "total_duration": 783657499,
+    "total_duration_s": 0.783657499
+  },
+  "timings": {
+    "checks_s": 0.5847863999988476,
+    "client_elapsed_s": 1.5044483999990916,
+    "inference_s": 0.9137136000026658
+  },
+  "audit_refs": [
+    "audit/b8e8ffbb98b14ac29fa886ce8f2680fa/request.json",
+    "audit/b8e8ffbb98b14ac29fa886ce8f2680fa/response.json"
+  ],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": "supervisor_reported"
+}

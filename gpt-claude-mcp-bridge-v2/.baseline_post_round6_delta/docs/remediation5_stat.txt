@@ -1,0 +1,28 @@
+base snapshot .baseline_post_remediation4 combined sha256: bffeffd9d9b922903be0d8b56b78f13f8e21c4c70daf0fe1b63577230af76499
+files changed/added/removed: 25
+
+README.md                                            modified  +78    -26
+REVIEW_PACKAGE.md                                    modified  +139   -173
+bridge/admin.py                                      modified  +66    -31
+bridge/codexcli.py                                   modified  +36    -11
+bridge/execpath.py                                   modified  +14    -6
+bridge/runner.py                                     modified  +101   -12
+bridge/service.py                                    modified  +81    -15
+bridge/state.py                                      modified  +33    -9
+docs/REMEDIATION_CHECKLIST_5.md                      added     +56    -0
+docs/gpt_verification/send_verification_source.py.txt removed   +0     -130
+docs/gpt_verification/verification_manifest.json     removed   +0     -562
+docs/gpt_verification/verification_manifest_round3.json removed   +0     -477
+docs/gpt_verification/verification_manifest_round4.json added     +562   -0
+docs/gpt_verification/verification_prompt.md         removed   +0     -16242
+tests/helpers.py                                     modified  +39    -0
+tests/test_review2.py                                modified  +27    -13
+tests/test_review3.py                                modified  +5     -4
+tests/test_review4.py                                modified  +28    -14
+tests/test_review5.py                                added     +793   -0
+tools/apply_patch_attack_test.py                     modified  +18    -1
+tools/make_verification_prompt.py                    modified  +227   -121
+tools/prefix_check.py                                modified  +88    -8
+tools/record_evidence.py                             modified  +55    -21
+tools/send_verification.py                           added     +167   -0
+tools/smoke_oracles.py                               modified  +228   -22

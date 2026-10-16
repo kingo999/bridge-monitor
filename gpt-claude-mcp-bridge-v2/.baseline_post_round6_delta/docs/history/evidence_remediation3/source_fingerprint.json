@@ -1,0 +1,256 @@
+{
+  "combined_sha256": "c58537c24582c347cb4323d4c713d998dff8fafad50ff5ed4968a38dfc65ee49",
+  "environment": {
+    "codex_cli_version": "0.162.1",
+    "codex_launcher": "node-script",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.7",
+    "recorded_at": "2026-10-13T06:36:03Z",
+    "sandbox_backend": "elevated",
+    "sandbox_provisioning_at_record_time": "failed"
+  },
+  "evidence_class": "source_observation",
+  "file_count": 48,
+  "files": [
+    {
+      "bytes": 35031,
+      "path": "README.md",
+      "sha256": "0f03e1c538b03b8151a3c8c19760f58f73f0f2dc1eb7679be2bf9ca597723bc3"
+    },
+    {
+      "bytes": 631,
+      "path": "architect_bridge.py",
+      "sha256": "1c96f21e8060ffc56376b36350334b0e2347fb9c9145a759e00c7eb171a106c8"
+    },
+    {
+      "bytes": 98,
+      "path": "bridge/__init__.py",
+      "sha256": "9fd4de9f72e0afe11028c6ade1883faed6aaad3d24ecc666c01319df7030daad"
+    },
+    {
+      "bytes": 30552,
+      "path": "bridge/admin.py",
+      "sha256": "c5de586da5ef22a6a62d6c5e3c08ea28177cbb211ab1f230d5eb133abdeaca33"
+    },
+    {
+      "bytes": 39301,
+      "path": "bridge/codexcli.py",
+      "sha256": "f1365642e12e6ee1c6adf1adbd5167213853ea1d65d8361b27f1f2daf880cd68"
+    },
+    {
+      "bytes": 7611,
+      "path": "bridge/config.py",
+      "sha256": "bba7969789e0a922a950aedb19ffb30fb7900d7a7f69d53f4bd4462198aa7bee"
+    },
+    {
+      "bytes": 2859,
+      "path": "bridge/errors.py",
+      "sha256": "c461cf6f02b7d9ea4ae4090ad2ea4f1a0a12212041b3a41ad0947f36a253833c"
+    },
+    {
+      "bytes": 5331,
+      "path": "bridge/execpath.py",
+      "sha256": "456539ffc249ad4f595a7f038f564ed435a19d62be326bd0fd74ac4082b328be"
+    },
+    {
+      "bytes": 8027,
+      "path": "bridge/fingerprint.py",
+      "sha256": "f21e20a9c792f45d0529e1b61ba67cbc8e42e17b60fd1fe1369e2520d969eb32"
+    },
+    {
+      "bytes": 4465,
+      "path": "bridge/gitsafe.py",
+      "sha256": "d57d1e0fd3ff7720a8b775e82dd6a0f1c00e99ccb541988040337658605dec5e"
+    },
+    {
+      "bytes": 596,
+      "path": "bridge/ids.py",
+      "sha256": "0250a796c8f8bc7749702ca5c6cf57460155d2f88d9dc458e5313a3948628ebf"
+    },
+    {
+      "bytes": 8850,
+      "path": "bridge/jobobject.py",
+      "sha256": "bd06f34d8668e659c0a24db3e34bb97969dda0f4173044114cef14ad52e4cf00"
+    },
+    {
+      "bytes": 456,
+      "path": "bridge/redact.py",
+      "sha256": "a67a964840010ebfd21d0d9cebaf8bc30cdeaf32c040b923ffdbb34b85a27b6f"
+    },
+    {
+      "bytes": 24760,
+      "path": "bridge/runner.py",
+      "sha256": "b23d260296448b0ba5fd5ed5e9ce829ef93de63c042d929d4ee3a76ef326c987"
+    },
+    {
+      "bytes": 2328,
+      "path": "bridge/server.py",
+      "sha256": "30f513f8f8c484d3e07da396ae73ed092cc51e6a42382d12f9c4df704ee633dc"
+    },
+    {
+      "bytes": 54801,
+      "path": "bridge/service.py",
+      "sha256": "c77b069eef6f7b9e5bfdac355f4376dcb8a9029e091335b4c5446887f518cbbb"
+    },
+    {
+      "bytes": 38600,
+      "path": "bridge/state.py",
+      "sha256": "6efd769c0659f90db9de00b517193642e9ca1ab146633c43dff2449e1d88ee8d"
+    },
+    {
+      "bytes": 6568,
+      "path": "bridge/telemetry.py",
+      "sha256": "b99955ac50928ad288b13e6ba5dd6cc9a8cd69751f3e1211daf78c8d057d4df0"
+    },
+    {
+      "bytes": 385,
+      "path": "bridge_admin.py",
+      "sha256": "2f1338751465367a9cb144912145d257a865e204588b73a057678c8184e8ac44"
+    },
+    {
+      "bytes": 12,
+      "path": "requirements.in",
+      "sha256": "4fe75062c5d424bbc86a8cd58c63ab19aeffe4f0a0e100022252c8032e12ee5b"
+    },
+    {
+      "bytes": 3558,
+      "path": "requirements.lock.txt",
+      "sha256": "fd08725f61a27af8d0e021da9b94a68b02f96ad6d979ca954d3900c544fc991c"
+    },
+    {
+      "bytes": 0,
+      "path": "tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 9417,
+      "path": "tests/fake_codex.py",
+      "sha256": "efda45a4a3019e68b269a10e1815fb762ae2b4787a5526414fae266a17fad44a"
+    },
+    {
+      "bytes": 3880,
+      "path": "tests/fixtures/v1_subprocess_behavior.json",
+      "sha256": "7261b55c79040ca19293f22924a3e7c93e1843691ceceb44d6cfd467827c6842"
+    },
+    {
+      "bytes": 1643,
+      "path": "tests/fixtures/v1_tool_schemas.json",
+      "sha256": "8e33cbc6123b1d5ab008f0ed806f2d2889e68e9c9603063251957440385a0b21"
+    },
+    {
+      "bytes": 691,
+      "path": "tests/hard_kill_helper.py",
+      "sha256": "fb1f90d06760b48a3279449e8448f63b3cd6b6b728ded6780ad30920c4efb15c"
+    },
+    {
+      "bytes": 5155,
+      "path": "tests/helpers.py",
+      "sha256": "46e9f456a937f2567a6f503dbd9bdab0d48296791ebecf71acaf55955c5ed34e"
+    },
+    {
+      "bytes": 21623,
+      "path": "tests/test_apply_patch_attack.py",
+      "sha256": "7a0df29ab03b90bccc0be9317d2ee8aff2aa302f7f674f53b7297cc5b7f883ac"
+    },
+    {
+      "bytes": 10056,
+      "path": "tests/test_config_argv_auth.py",
+      "sha256": "ab1320a94c85291b72b394590c39e376a453086f3efc7ce379e3fd6159b3ecab"
+    },
+    {
+      "bytes": 39369,
+      "path": "tests/test_remediation.py",
+      "sha256": "ddd13fc9f589f0aa34c813ed7da797ddeaf7598bd25c3297abbaa4c92444acab"
+    },
+    {
+      "bytes": 53932,
+      "path": "tests/test_review2.py",
+      "sha256": "d0d7a3739566f61844e630ea632801098d00d1027caa21dd9c1b60cc4a432ff1"
+    },
+    {
+      "bytes": 41687,
+      "path": "tests/test_review3.py",
+      "sha256": "db053535f8f689a560df24111272e0c4b87efb8acde1a4503f742dfe674aea25"
+    },
+    {
+      "bytes": 12414,
+      "path": "tests/test_server_admin.py",
+      "sha256": "70f2a2c8e6360aa15e4733ade40f5269fce142df4bdd27e2cfd4e1e5290c7fed"
+    },
+    {
+      "bytes": 34600,
+      "path": "tests/test_service.py",
+      "sha256": "2f93c3b7d254400e23675fa41417b641934843d0b6e50322854d5f2ae2d697e3"
+    },
+    {
+      "bytes": 11361,
+      "path": "tests/test_state.py",
+      "sha256": "8133e44bf21f6282d4838da7d0daf5b75bf4d1568e971031bf550f8283b41029"
+    },
+    {
+      "bytes": 0,
+      "path": "tools/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 43607,
+      "path": "tools/apply_patch_attack_test.py",
+      "sha256": "327aa1d637143f006639b000340f89c35830bb560fe4edcb98e4cce9aaed0ad1"
+    },
+    {
+      "bytes": 5504,
+      "path": "tools/capture_v1_fixtures.py",
+      "sha256": "cfd5c4e820283934fd3f6286baa37b1eea644115e7f7f9525aa4ceafa7db88f8"
+    },
+    {
+      "bytes": 9431,
+      "path": "tools/live_smoke_test.py",
+      "sha256": "cd896c821b932c38c4c2dbe5c6212a37fb272c928fa7ccb14172615c7aca10ec"
+    },
+    {
+      "bytes": 3018,
+      "path": "tools/make_lock.py",
+      "sha256": "ad7504b76444308e0d3847f72860cf5655dde45ed676795374f685f008ee7ffb"
+    },
+    {
+      "bytes": 3766,
+      "path": "tools/make_remediation_diff.py",
+      "sha256": "14ec02971a969b2fdcbe0a7860dec6d3e9f201cc1b6e6b5c77546774a719c3f9"
+    },
+    {
+      "bytes": 8173,
+      "path": "tools/make_telemetry_examples.py",
+      "sha256": "5e6855533be9953f95bd3848c7f3747ee88d52cf0b17917f6ae8c98f7569c575"
+    },
+    {
+      "bytes": 1825,
+      "path": "tools/make_v1_diff.py",
+      "sha256": "b4b07b1bf96c6c73aa647669b403852312fb47832346d52b05c5cea8193f3f11"
+    },
+    {
+      "bytes": 28311,
+      "path": "tools/make_verification_prompt.py",
+      "sha256": "53ee334e22b6fd43d4c94750a30c7fd8436672165ad0626c7ede323beb2c672b"
+    },
+    {
+      "bytes": 1355,
+      "path": "tools/privacy.py",
+      "sha256": "c76c934089b7222cbb4a1d9b7c926bbdca6a955941417beeeaee9b3dfd392aad"
+    },
+    {
+      "bytes": 17362,
+      "path": "tools/record_evidence.py",
+      "sha256": "9a06a8a38af9a5a3d3ee0db24f0feaf8d429405d84e914ec5fcb9aeec165b666"
+    },
+    {
+      "bytes": 3670,
+      "path": "tools/v1_manifest.py",
+      "sha256": "fc8d1a8916f2d56d54871a026816879c20f457dd79c31c2020f545a212671058"
+    },
+    {
+      "bytes": 1660,
+      "path": "tools/verify_lock.py",
+      "sha256": "20ccb4187adc60935e9f10f4f76b33243632925b81e5bf1530a60a32873c17cf"
+    }
+  ]
+}

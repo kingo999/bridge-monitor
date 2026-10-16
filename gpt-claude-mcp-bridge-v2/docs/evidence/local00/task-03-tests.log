@@ -1,0 +1,10 @@
+test_corruption_and_repository_overlap_refuse (tests.test_local_worker_storage.Storage.test_corruption_and_repository_overlap_refuse) ... ok
+test_cross_process_lock_is_released_on_hard_kill (tests.test_local_worker_storage.Storage.test_cross_process_lock_is_released_on_hard_kill) ... ok
+test_operator_resolution_requires_matching_confirmation (tests.test_local_worker_storage.Storage.test_operator_resolution_requires_matching_confirmation) ... ok
+test_shared_lock_and_crash_marker_survive_restart (tests.test_local_worker_storage.Storage.test_shared_lock_and_crash_marker_survive_restart) ... ok
+test_terminal_ledger_before_marker_retirement_and_replay (tests.test_local_worker_storage.Storage.test_terminal_ledger_before_marker_retirement_and_replay) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.498s
+
+OK

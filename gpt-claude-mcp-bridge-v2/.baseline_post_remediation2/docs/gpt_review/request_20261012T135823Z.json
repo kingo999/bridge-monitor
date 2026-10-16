@@ -1,0 +1,154 @@
+{
+  "capability_policy": {
+    "mcp_allowed": [],
+    "mcp_disabled": 2,
+    "requested": [
+      "web_search",
+      "shell_and_apply_patch_writes"
+    ],
+    "resolved": [
+      "mcp_servers",
+      "hooks",
+      "plugins_and_apps",
+      "browser_and_computer_use",
+      "delegation",
+      "image_generation"
+    ],
+    "uncontained": [
+      "view_image_goals_sleep_skills"
+    ]
+  },
+  "codex_cli": "0.162.1",
+  "command_or_tool_items": 0,
+  "events_total": 6,
+  "exit_code": 0,
+  "files": [
+    {
+      "bytes": 17824,
+      "lines": 192,
+      "path": "REVIEW_PACKAGE.md",
+      "sha256": "1e1f5e7d4d2ca52d25ef50bbc2daf68d98a2b40815211231e57a1cecf3ac642e"
+    },
+    {
+      "bytes": 18041,
+      "lines": 285,
+      "path": "README.md",
+      "sha256": "f65637d256d31f289ec36f06baf1567ff043cfb489ef7cd77b6d8114af81eadc"
+    },
+    {
+      "bytes": 5051,
+      "lines": 37,
+      "path": "docs/REMEDIATION_CHECKLIST.md",
+      "sha256": "f50bf8f7f81ac10f130f1f110f9e028bfabb57be6845f9871b6fb4b38c6d2cfe"
+    },
+    {
+      "bytes": 37704,
+      "lines": 715,
+      "path": "bridge/service.py",
+      "sha256": "9a3e220ae67a301fcbc984d721dc150b14697905458f4e047f3e6ae9397cc8f1"
+    },
+    {
+      "bytes": 34168,
+      "lines": 785,
+      "path": "bridge/codexcli.py",
+      "sha256": "f8b87ad9cdc7d16dab57f36f8ee838d66a387d3514794b88adad23a52c204d77"
+    },
+    {
+      "bytes": 30210,
+      "lines": 703,
+      "path": "bridge/state.py",
+      "sha256": "706a73379f722d49a56727f0a78f982006e4fa98289e9c6a066d90bb42d4373f"
+    },
+    {
+      "bytes": 14691,
+      "lines": 402,
+      "path": "bridge/runner.py",
+      "sha256": "64d39d9413c43f4fe8af712ba84a1ff2fedc8eb405d1b8eab2ab8889f9aa39bc"
+    },
+    {
+      "bytes": 7780,
+      "lines": 183,
+      "path": "bridge/jobobject.py",
+      "sha256": "d768e6b5dadae4a4a266656f345d0db2edc784c5cf422fa9e56d27bc905c4d13"
+    },
+    {
+      "bytes": 4536,
+      "lines": 109,
+      "path": "bridge/fingerprint.py",
+      "sha256": "e043c5fb3b5c717ffba9fe84d820081718044889dd071b84883015d9f72cbe36"
+    },
+    {
+      "bytes": 23955,
+      "lines": 528,
+      "path": "bridge/admin.py",
+      "sha256": "3a118c7c4453797b74d4e48b5f1a67a990c83e44442049a42ef58bdb5ec7759e"
+    },
+    {
+      "bytes": 7740,
+      "lines": 206,
+      "path": "bridge/config.py",
+      "sha256": "612a80e242886f771e50035c65fd0e03662ab928f2a317a516f25aa9c4a614aa"
+    },
+    {
+      "bytes": 2859,
+      "lines": 91,
+      "path": "bridge/errors.py",
+      "sha256": "c461cf6f02b7d9ea4ae4090ad2ea4f1a0a12212041b3a41ad0947f36a253833c"
+    },
+    {
+      "bytes": 3834,
+      "lines": 123,
+      "path": "bridge/telemetry.py",
+      "sha256": "7e80c46f91f9d3c9bd6f2a7a5393e8bc057f68691543a5baaa12ae9c765a3dfc"
+    },
+    {
+      "bytes": 2328,
+      "lines": 76,
+      "path": "bridge/server.py",
+      "sha256": "30f513f8f8c484d3e07da396ae73ed092cc51e6a42382d12f9c4df704ee633dc"
+    },
+    {
+      "bytes": 28001,
+      "lines": 557,
+      "path": "tools/apply_patch_attack_test.py",
+      "sha256": "0c2af38cfc5e536c234aae7b257fa851944832db94f105f3b65a8bdc4925f66e"
+    },
+    {
+      "bytes": 36733,
+      "lines": 641,
+      "path": "tests/test_remediation.py",
+      "sha256": "bea19ed6711ca38f9d4ec34989bdf2805e110985fbea2656b8782cc104f0b9f0"
+    },
+    {
+      "bytes": 14125,
+      "lines": 280,
+      "path": "tests/test_apply_patch_attack.py",
+      "sha256": "058b5b70db59cf61fb55439f0181e53365c6167a070384ae6e108c64423d836e"
+    }
+  ],
+  "infra_failed_items": 0,
+  "process": {
+    "ownership": "job_object",
+    "termination": "not_needed"
+  },
+  "prompt_chars": 297272,
+  "route": {
+    "effort": "high",
+    "effort_source": "default",
+    "model": "gpt-6.1-sol",
+    "model_source": "default"
+  },
+  "seconds": 598.2,
+  "sent_at": "20261012T135823Z",
+  "source_combined_sha256": "e2273c3d98b4f8fd2904138f02743bf3feeefc23b30b736250a27dd078fbde0e",
+  "thread_id": "01a13068-5167-7360-a842-2c6f954f7161",
+  "timed_out": false,
+  "turn_completed": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 81113,
+    "output_tokens": 15988,
+    "reasoning_output_tokens": 9633,
+    "total_tokens": null
+  }
+}

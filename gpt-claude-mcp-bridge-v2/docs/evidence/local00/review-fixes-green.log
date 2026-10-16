@@ -1,0 +1,10 @@
+test_queued_reconnect_cannot_undo_newer_continue_without (tests.test_local_worker_service.Discovery.test_queued_reconnect_cannot_undo_newer_continue_without) ... ok
+test_continue_before_startup_stays_disabled (tests.test_local_worker_service.Discovery.test_continue_before_startup_stays_disabled) ... ok
+test_corrupt_witness_shapes_do_not_escape_startup (tests.test_local_worker_service.Discovery.test_corrupt_witness_shapes_do_not_escape_startup) ... ok
+test_stale_endpoint_selection_prevents_any_post (tests.test_local_worker_generation.Generation.test_stale_endpoint_selection_prevents_any_post) ... ok
+test_replayed_old_report_cannot_reverse_newer_correction (tests.test_local_worker_validation.Validation.test_replayed_old_report_cannot_reverse_newer_correction) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 2.305s
+
+OK

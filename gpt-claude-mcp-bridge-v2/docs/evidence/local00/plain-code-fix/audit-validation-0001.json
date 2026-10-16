@@ -1,0 +1,34 @@
+{
+  "attempt": 1,
+  "diagnostics": "",
+  "effort": {
+    "human_active_s": null,
+    "human_measurement_ref": null,
+    "premium_tokens": null,
+    "preparation_s": null,
+    "receipt_ref": null,
+    "review_s": null,
+    "validation_s": null
+  },
+  "observations": [
+    {
+      "check_id": "compile",
+      "evidence_ref": "C:/AI/gpt-claude-mcp-bridge-v2/docs/evidence/local00/plain-code-fix/validation.json",
+      "observed": "Python 3.13.7 py_compile passed for the exact 162 UTF-8 bytes in candidate.py; SHA-256 2b515cd59feeb13bb6ffac0f9fca12cb18c68e3c8a3d9d136d3bafc7c7a46525.",
+      "passed": true
+    },
+    {
+      "check_id": "behaviour",
+      "evidence_ref": "C:/AI/gpt-claude-mcp-bridge-v2/docs/evidence/local00/plain-code-fix/validation.json",
+      "observed": "Unchanged prewritten independent comparison-based verifier passed all 2547 cases, including reversed/equal bounds and 100-digit integers; failure_count 0. Exact tool response saved without corrections.",
+      "passed": true
+    }
+  ],
+  "packet_hash": "48005a2d5eb8b996d0d2a308055ec61e111452d9ce169b6ec0d58fea9b8dcb72",
+  "result_digest": "ad6b883b8fb721b6fa88582871e8474c2cd3ab9cf56de714a97232dfacbe6468",
+  "schema_version": 1,
+  "supervisor_edits": "",
+  "task_id": "registered-clamp-plaincode-20261015",
+  "toolchain_ref": "Python 3.13.7; C:/AI/gpt-claude-mcp-bridge-v2/.venv/Scripts/python.exe -B; unchanged docs/evidence/local00/registered-e2e-20261015T145755Z/verify.py",
+  "verdict": "accepted"
+}

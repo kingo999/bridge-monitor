@@ -1,0 +1,8 @@
+test_addresses_and_fixed_settings (tests.test_local_worker_models.Contracts.test_addresses_and_fixed_settings) ... ok
+test_settings_timeouts_and_shared_root (tests.test_local_worker_models.Contracts.test_settings_timeouts_and_shared_root) ... ok
+test_strict_packets_and_action_union (tests.test_local_worker_models.Contracts.test_strict_packets_and_action_union) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.096s
+
+OK

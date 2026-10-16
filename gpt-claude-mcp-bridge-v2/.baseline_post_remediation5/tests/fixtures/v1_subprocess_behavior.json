@@ -1,0 +1,148 @@
+{
+  "note": "Captured from v1 with subprocess.run mocked; no Codex or model call.",
+  "scenarios": [
+    {
+      "calls": [
+        {
+          "argv": [
+            "C:\\fake\\npm\\codex.cmd",
+            "exec",
+            "--json",
+            "--sandbox",
+            "read-only",
+            "--model",
+            "gpt-6.1-sol",
+            "-c",
+            "model_reasoning_effort=\"high\"",
+            "--output-last-message",
+            "<TMP>\\gpt_architect_gqwlr6ce\\answer.txt",
+            "-"
+          ],
+          "kwargs": {
+            "capture_output": true,
+            "check": false,
+            "cwd": "<REPO>",
+            "encoding": "utf-8",
+            "errors": "replace",
+            "text": true,
+            "timeout": 900
+          },
+          "stdin_is_prompt": true,
+          "stdin_prefix_len": 947
+        }
+      ],
+      "label": "consult_fresh",
+      "result": "FIXTURE ANSWER"
+    },
+    {
+      "calls": [
+        {
+          "argv": [
+            "C:\\fake\\npm\\codex.cmd",
+            "exec",
+            "resume",
+            "11111111-2222-3333-4444-555555555555",
+            "--json",
+            "-c",
+            "sandbox_mode=\"read-only\"",
+            "-c",
+            "model_reasoning_effort=\"high\"",
+            "--output-last-message",
+            "<TMP>\\gpt_architect_fz3p1lc2\\answer.txt",
+            "-"
+          ],
+          "kwargs": {
+            "capture_output": true,
+            "check": false,
+            "cwd": "<REPO>",
+            "encoding": "utf-8",
+            "errors": "replace",
+            "text": true,
+            "timeout": 900
+          },
+          "stdin_is_prompt": true,
+          "stdin_prefix_len": 946
+        }
+      ],
+      "label": "consult_resume",
+      "result": "FIXTURE ANSWER"
+    },
+    {
+      "calls": [
+        {
+          "argv": [
+            "C:\\fake\\npm\\codex.cmd",
+            "exec",
+            "resume",
+            "11111111-2222-3333-4444-555555555555",
+            "--json",
+            "-c",
+            "sandbox_mode=\"read-only\"",
+            "-c",
+            "model_reasoning_effort=\"high\"",
+            "--output-last-message",
+            "<TMP>\\gpt_architect_36g7dqjq\\answer.txt",
+            "-"
+          ],
+          "kwargs": {
+            "capture_output": true,
+            "check": false,
+            "cwd": "<REPO>",
+            "encoding": "utf-8",
+            "errors": "replace",
+            "text": true,
+            "timeout": 900
+          },
+          "stdin_is_prompt": true,
+          "stdin_prefix_len": 1170
+        }
+      ],
+      "label": "review_resume",
+      "result": "FIXTURE ANSWER"
+    },
+    {
+      "calls": [
+        {
+          "argv": [
+            "C:\\fake\\npm\\codex.cmd",
+            "exec",
+            "--json",
+            "--sandbox",
+            "read-only",
+            "--model",
+            "other-model",
+            "-c",
+            "model_reasoning_effort=\"high\"",
+            "--output-last-message",
+            "<TMP>\\gpt_architect_p41240e8\\answer.txt",
+            "-"
+          ],
+          "kwargs": {
+            "capture_output": true,
+            "check": false,
+            "cwd": "<REPO>",
+            "encoding": "utf-8",
+            "errors": "replace",
+            "text": true,
+            "timeout": 900
+          },
+          "stdin_is_prompt": true,
+          "stdin_prefix_len": 927
+        }
+      ],
+      "label": "consult_after_model_change_fresh",
+      "result": "FIXTURE ANSWER"
+    }
+  ],
+  "session_file_count": 1,
+  "session_record_keys": [
+    "model",
+    "thread_id"
+  ],
+  "v1_constants": {
+    "EFFORT": "high",
+    "MAX_SECONDS": 900,
+    "MODEL": "gpt-6.1-sol",
+    "prompt_limit_chars": 60000
+  }
+}

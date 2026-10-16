@@ -1,0 +1,30 @@
+base snapshot .baseline_post_remediation1 combined sha256: 8c71495b8367ebe7541a3a06c85661df3dd8a16b0b6daccd6c0e9b478c336f62
+files changed/added/removed: 27
+
+README.md                                            modified  +235   -110
+REVIEW_PACKAGE.md                                    modified  +197   -112
+bridge/admin.py                                      modified  +91    -54
+bridge/codexcli.py                                   modified  +78    -22
+bridge/config.py                                     modified  +4     -4
+bridge/fingerprint.py                                modified  +52    -19
+bridge/gitsafe.py                                    added     +76    -0
+bridge/ids.py                                        added     +18    -0
+bridge/jobobject.py                                  modified  +21    -2
+bridge/runner.py                                     modified  +221   -126
+bridge/service.py                                    modified  +275   -135
+bridge/state.py                                      modified  +171   -29
+bridge/telemetry.py                                  modified  +34    -1
+docs/REMEDIATION_CHECKLIST_2.md                      added     +53    -0
+docs/v2_inventory.txt                                modified  +39    -26
+tests/fake_codex.py                                  modified  +7     -1
+tests/test_apply_patch_attack.py                     modified  +158   -44
+tests/test_remediation.py                            modified  +60    -32
+tests/test_review2.py                                added     +962   -0
+tests/test_server_admin.py                           modified  +4     -1
+tests/test_service.py                                modified  +17    -6
+tools/apply_patch_attack_test.py                     modified  +153   -61
+tools/make_remediation_diff.py                       modified  +33    -20
+tools/make_telemetry_examples.py                     modified  +79    -68
+tools/make_v1_diff.py                                modified  +3     -2
+tools/make_verification_prompt.py                    added     +375   -0
+tools/record_evidence.py                             modified  +5     -3

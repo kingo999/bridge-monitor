@@ -1,0 +1,62 @@
+RESULT_JSON:{"tests.test_review8.D1_LogConfirmedLock.test_diagnostics_are_sanitised": "pass", "tests.test_review8.D1_LogConfirmedLock.test_the_named_file_and_reason_come_from_the_log_not_from_process_presence": "fail", "tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_an_old_log_entry_is_not_attributed_to_this_call": "fail", "tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_node_repl_without_log_evidence_is_reported_as_unconfirmed": "fail", "tests.test_review8.D3_NothingFound.test_a_different_logged_failure_is_reported_as_itself": "fail", "tests.test_review8.D3_NothingFound.test_no_process_and_no_log_makes_no_lock_claim": "fail", "tests.test_review8.D4_OtherStagesAndTurnFailures.test_a_repository_read_failure_never_claims_a_lock": "pass", "tests.test_review8.D4_OtherStagesAndTurnFailures.test_an_actual_turn_failure_after_a_clean_preflight_names_no_lock": "pass", "tests.test_review8.D5_NoInferenceNoSessionAdvance.test_a_failed_fresh_call_runs_nothing_and_creates_no_session": "pass", "tests.test_review8.D5_NoInferenceNoSessionAdvance.test_a_failed_resumed_call_leaves_the_bound_session_alone": "pass", "tests.test_review8.D6_McpSchemasUnchanged.test_tool_names_and_single_string_inputs_are_unchanged": "pass"}
+test_diagnostics_are_sanitised (tests.test_review8.D1_LogConfirmedLock.test_diagnostics_are_sanitised) ... ok
+test_the_named_file_and_reason_come_from_the_log_not_from_process_presence (tests.test_review8.D1_LogConfirmedLock.test_the_named_file_and_reason_come_from_the_log_not_from_process_presence) ... FAIL
+test_an_old_log_entry_is_not_attributed_to_this_call (tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_an_old_log_entry_is_not_attributed_to_this_call) ... FAIL
+test_node_repl_without_log_evidence_is_reported_as_unconfirmed (tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_node_repl_without_log_evidence_is_reported_as_unconfirmed) ... FAIL
+test_a_different_logged_failure_is_reported_as_itself (tests.test_review8.D3_NothingFound.test_a_different_logged_failure_is_reported_as_itself) ... FAIL
+test_no_process_and_no_log_makes_no_lock_claim (tests.test_review8.D3_NothingFound.test_no_process_and_no_log_makes_no_lock_claim) ... FAIL
+test_a_repository_read_failure_never_claims_a_lock (tests.test_review8.D4_OtherStagesAndTurnFailures.test_a_repository_read_failure_never_claims_a_lock) ... ok
+test_an_actual_turn_failure_after_a_clean_preflight_names_no_lock (tests.test_review8.D4_OtherStagesAndTurnFailures.test_an_actual_turn_failure_after_a_clean_preflight_names_no_lock) ... ok
+test_a_failed_fresh_call_runs_nothing_and_creates_no_session (tests.test_review8.D5_NoInferenceNoSessionAdvance.test_a_failed_fresh_call_runs_nothing_and_creates_no_session) ... ok
+test_a_failed_resumed_call_leaves_the_bound_session_alone (tests.test_review8.D5_NoInferenceNoSessionAdvance.test_a_failed_resumed_call_leaves_the_bound_session_alone) ... ok
+test_tool_names_and_single_string_inputs_are_unchanged (tests.test_review8.D6_McpSchemasUnchanged.test_tool_names_and_single_string_inputs_are_unchanged) ... ok
+
+======================================================================
+FAIL: test_the_named_file_and_reason_come_from_the_log_not_from_process_presence (tests.test_review8.D1_LogConfirmedLock.test_the_named_file_and_reason_come_from_the_log_not_from_process_presence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_ov2t98du\tests\test_review8.py", line 86, in test_the_named_file_and_reason_come_from_the_log_not_from_process_presence
+    self.assertIn("in use by another process", text)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'in use by another process' not found in '[bridge-error:sandbox_unavailable/sandbox_setup_failed] The Codex sandbox could not start a process for this repository (exit 1): windows sandbox failed: helper_unknown_error: setup refresh had errors. node_repl.exe is running (PIDs 36004, 21896).\nRecovery: The Windows sandbox refresh runs for every new workspace and fails while a node_repl.exe (ChatGPT / Codex desktop app, or a Codex background daemon) holds its runtime file open. Quit those apps, run `codex app-server daemon stop`, confirm `Get-Process node_repl` is empty, then retry. Details: ~/.codex/.sandbox/sandbox.<date>.log. No model call was made.'
+
+======================================================================
+FAIL: test_an_old_log_entry_is_not_attributed_to_this_call (tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_an_old_log_entry_is_not_attributed_to_this_call)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_ov2t98du\tests\test_review8.py", line 121, in test_an_old_log_entry_is_not_attributed_to_this_call
+    self.assertIn("UNCONFIRMED", text)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'UNCONFIRMED' not found in '[bridge-error:sandbox_unavailable/sandbox_setup_failed] The Codex sandbox could not start a process for this repository (exit 1): windows sandbox failed: helper_unknown_error: setup refresh had errors. node_repl.exe is running (PIDs 36004, 21896).\nRecovery: The Windows sandbox refresh runs for every new workspace and fails while a node_repl.exe (ChatGPT / Codex desktop app, or a Codex background daemon) holds its runtime file open. Quit those apps, run `codex app-server daemon stop`, confirm `Get-Process node_repl` is empty, then retry. Details: ~/.codex/.sandbox/sandbox.<date>.log. No model call was made.'
+
+======================================================================
+FAIL: test_node_repl_without_log_evidence_is_reported_as_unconfirmed (tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_node_repl_without_log_evidence_is_reported_as_unconfirmed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_ov2t98du\tests\test_review8.py", line 109, in test_node_repl_without_log_evidence_is_reported_as_unconfirmed
+    self.assertIn("UNCONFIRMED", text)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'UNCONFIRMED' not found in '[bridge-error:sandbox_unavailable/sandbox_setup_failed] The Codex sandbox could not start a process for this repository (exit 1): windows sandbox failed: helper_unknown_error: setup refresh had errors. node_repl.exe is running (PIDs 36004, 21896).\nRecovery: The Windows sandbox refresh runs for every new workspace and fails while a node_repl.exe (ChatGPT / Codex desktop app, or a Codex background daemon) holds its runtime file open. Quit those apps, run `codex app-server daemon stop`, confirm `Get-Process node_repl` is empty, then retry. Details: ~/.codex/.sandbox/sandbox.<date>.log. No model call was made.'
+
+======================================================================
+FAIL: test_a_different_logged_failure_is_reported_as_itself (tests.test_review8.D3_NothingFound.test_a_different_logged_failure_is_reported_as_itself)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_ov2t98du\tests\test_review8.py", line 144, in test_a_different_logged_failure_is_reported_as_itself
+    self.assertIn("other.dll", text)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+AssertionError: 'other.dll' not found in '[bridge-error:sandbox_unavailable/sandbox_setup_failed] The Codex sandbox could not start a process for this repository (exit 1): windows sandbox failed: helper_unknown_error: setup refresh had errors. node_repl.exe is running (PIDs 36004, 21896).\nRecovery: The Windows sandbox refresh runs for every new workspace and fails while a node_repl.exe (ChatGPT / Codex desktop app, or a Codex background daemon) holds its runtime file open. Quit those apps, run `codex app-server daemon stop`, confirm `Get-Process node_repl` is empty, then retry. Details: ~/.codex/.sandbox/sandbox.<date>.log. No model call was made.'
+
+======================================================================
+FAIL: test_no_process_and_no_log_makes_no_lock_claim (tests.test_review8.D3_NothingFound.test_no_process_and_no_log_makes_no_lock_claim)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_ov2t98du\tests\test_review8.py", line 132, in test_no_process_and_no_log_makes_no_lock_claim
+    self.assertNotIn("holds its runtime file", text)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'holds its runtime file' unexpectedly found in '[bridge-error:sandbox_unavailable/sandbox_setup_failed] The Codex sandbox could not start a process for this repository (exit 1): windows sandbox failed: helper_unknown_error: setup refresh had errors.\nRecovery: The Windows sandbox refresh runs for every new workspace and fails while a node_repl.exe (ChatGPT / Codex desktop app, or a Codex background daemon) holds its runtime file open. Quit those apps, run `codex app-server daemon stop`, confirm `Get-Process node_repl` is empty, then retry. Details: ~/.codex/.sandbox/sandbox.<date>.log. No model call was made.'
+
+----------------------------------------------------------------------
+Ran 11 tests in 16.279s
+
+FAILED (failures=5)

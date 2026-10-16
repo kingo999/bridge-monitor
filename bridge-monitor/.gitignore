@@ -1,0 +1,11 @@
+.venv/
+var/
+**/__pycache__/
+.pytest_cache/
+*.pyc
+*.local.toml
+*.secret
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
+.superpowers/sdd/

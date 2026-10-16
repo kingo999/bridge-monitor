@@ -1,0 +1,29 @@
+{
+  "v1_files": {
+    "architect_bridge.py": "f5e0d5275daffbc212d618774a50634b0a1c9b7d4ab2b6989f052d16dffa38e4",
+    "README.md": "443fe4af12cb9465d4d5ebe049c4b83984d8db9626149d3099b7f06fd80d9e79"
+  },
+  "v1_listing": [
+    ".venv",
+    "README.md",
+    "__pycache__",
+    "architect_bridge.py"
+  ],
+  "v1_state": {
+    "92ab46b2d87958ea92fdf075.json": "219d59c2c74c4d9619e7c05c8c9ebd370d8455e16b7ccdd35817fd19a5906c36"
+  },
+  "codex_stat": {
+    "config.toml": {
+      "size": 3871,
+      "mtime_ns": 1792071658118853500
+    },
+    "auth.json": {
+      "size": 3934,
+      "mtime_ns": 1791627811156553000
+    }
+  },
+  "v1_venv": {
+    "files": 3867,
+    "bytes": 69633291
+  }
+}

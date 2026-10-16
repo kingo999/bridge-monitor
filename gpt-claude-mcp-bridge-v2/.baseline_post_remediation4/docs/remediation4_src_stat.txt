@@ -1,0 +1,17 @@
+base snapshot .baseline_post_remediation3 combined sha256: dee9a3ae15aa017b1fe80aed2363d8c0cd1ad7370efbea7e52ed2d6abcbd33d7
+files changed/added/removed: 14
+
+bridge/admin.py                                      modified  +37    -10
+bridge/codexcli.py                                   modified  +31    -0
+bridge/execpath.py                                   modified  +33    -3
+bridge/fingerprint.py                                modified  +3     -1
+bridge/runner.py                                     modified  +97    -44
+bridge/service.py                                    modified  +123   -108
+bridge/state.py                                      modified  +57    -16
+bridge/telemetry.py                                  modified  +4     -1
+tools/apply_patch_attack_test.py                     modified  +95    -52
+tools/live_smoke_test.py                             modified  +55    -13
+tools/make_verification_prompt.py                    modified  +194   -152
+tools/prefix_check.py                                added     +123   -0
+tools/record_evidence.py                             modified  +48    -20
+tools/smoke_oracles.py                               added     +85    -0

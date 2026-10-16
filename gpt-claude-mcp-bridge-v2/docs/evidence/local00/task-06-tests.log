@@ -1,0 +1,9 @@
+test_complete_3072_3073_boundary (tests.test_local_worker_budget.Budget.test_complete_3072_3073_boundary) ... ok
+test_prompt_preserves_contract_and_bounds_utf8 (tests.test_local_worker_budget.Budget.test_prompt_preserves_contract_and_bounds_utf8) ... ok
+test_retry_includes_exact_failure_and_cannot_silently_truncate (tests.test_local_worker_budget.Budget.test_retry_includes_exact_failure_and_cannot_silently_truncate) ... ok
+test_verified_metadata_and_version_only (tests.test_local_worker_budget.Budget.test_verified_metadata_and_version_only) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.012s
+
+OK

@@ -1,0 +1,59 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"schema_version\": 1,\n  \"action\": \"record_validation\",\n  \"worker_id\": \"LOCAL-00\",\n  \"state\": \"draft_returned\",\n  \"code\": \"draft_returned\",\n  \"explanation\": \"Removed one outer Markdown code fence in plain_code mode; raw response retained in audit.\",\n  \"availability\": \"available\",\n  \"coordination\": \"idle\",\n  \"validation\": \"accepted\",\n  \"next_actions\": [],\n  \"task_id\": \"gpt-claude-skynet-clamp-20261015T153114Z\",\n  \"packet_hash\": \"0d1f52a14240b0a351613d04cfaed92d4552ab424825b5d8c8a607106d88e907\",\n  \"request_id\": \"13598588090f4c32b8f9714d7e646121\",\n  \"attempt\": 1,\n  \"endpoint\": \"http://skynet.local:11434\",\n  \"peer_ip\": \"192.168.0.78\",\n  \"model\": \"qwen2.5-coder:14b-instruct-q4_K_M\",\n  \"digest\": \"9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849\",\n  \"result_digest\": \"69b4538862dda55a0c93d405c5dc4fbe26d5f3b7672ba986e855eff7a62f11b0\",\n  \"response\": \"def clamp(value, lower, upper):\\n    if lower > upper:\\n        raise ValueError(\\\"lower should not be greater than upper\\\")\\n    return max(lower, min(value, upper))\\n\",\n  \"done\": true,\n  \"done_reason\": \"stop\",\n  \"metrics\": {\n    \"eval_count\": 41,\n    \"eval_duration\": 594582000,\n    \"eval_duration_s\": 0.594582,\n    \"load_duration\": 3115813813,\n    \"load_duration_s\": 3.115813813,\n    \"prompt_eval_cached_count\": null,\n    \"prompt_eval_count\": 331,\n    \"prompt_eval_duration\": 115278000,\n    \"prompt_eval_duration_s\": 0.115278,\n    \"total_duration\": 3828389269,\n    \"total_duration_s\": 3.828389269\n  },\n  \"timings\": {\n    \"checks_s\": 0.608164700002817,\n    \"client_elapsed_s\": 4.599090800002159,\n    \"inference_s\": 3.9804638999994495\n  },\n  \"audit_refs\": [\n    \"audit/13598588090f4c32b8f9714d7e646121/request.json\",\n    \"audit/13598588090f4c32b8f9714d7e646121/response.json\",\n    \"audit/13598588090f4c32b8f9714d7e646121/normalization.json\"\n  ],\n  \"replayed_from_ledger\": false,\n  \"needs_context\": false,\n  \"evidence_origin\": \"supervisor_reported\"\n}"
+    }
+  ],
+  "structuredContent": {
+    "schema_version": 1,
+    "action": "record_validation",
+    "worker_id": "LOCAL-00",
+    "state": "draft_returned",
+    "code": "draft_returned",
+    "explanation": "Removed one outer Markdown code fence in plain_code mode; raw response retained in audit.",
+    "availability": "available",
+    "coordination": "idle",
+    "validation": "accepted",
+    "next_actions": [],
+    "task_id": "gpt-claude-skynet-clamp-20261015T153114Z",
+    "packet_hash": "0d1f52a14240b0a351613d04cfaed92d4552ab424825b5d8c8a607106d88e907",
+    "request_id": "13598588090f4c32b8f9714d7e646121",
+    "attempt": 1,
+    "endpoint": "http://skynet.local:11434",
+    "peer_ip": "192.168.0.78",
+    "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+    "digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+    "result_digest": "69b4538862dda55a0c93d405c5dc4fbe26d5f3b7672ba986e855eff7a62f11b0",
+    "response": "def clamp(value, lower, upper):\n    if lower > upper:\n        raise ValueError(\"lower should not be greater than upper\")\n    return max(lower, min(value, upper))\n",
+    "done": true,
+    "done_reason": "stop",
+    "metrics": {
+      "eval_count": 41,
+      "eval_duration": 594582000,
+      "eval_duration_s": 0.594582,
+      "load_duration": 3115813813,
+      "load_duration_s": 3.115813813,
+      "prompt_eval_cached_count": null,
+      "prompt_eval_count": 331,
+      "prompt_eval_duration": 115278000,
+      "prompt_eval_duration_s": 0.115278,
+      "total_duration": 3828389269,
+      "total_duration_s": 3.828389269
+    },
+    "timings": {
+      "checks_s": 0.608164700002817,
+      "client_elapsed_s": 4.599090800002159,
+      "inference_s": 3.9804638999994495
+    },
+    "audit_refs": [
+      "audit/13598588090f4c32b8f9714d7e646121/request.json",
+      "audit/13598588090f4c32b8f9714d7e646121/response.json",
+      "audit/13598588090f4c32b8f9714d7e646121/normalization.json"
+    ],
+    "replayed_from_ledger": false,
+    "needs_context": false,
+    "evidence_origin": "supervisor_reported"
+  },
+  "isError": false
+}

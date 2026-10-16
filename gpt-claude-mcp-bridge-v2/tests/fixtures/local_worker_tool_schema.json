@@ -1,0 +1,886 @@
+{
+  "name": "local_worker",
+  "description": "Explicitly use optional LOCAL-00 for a bounded approved task or worker recovery.\nResponses are unvalidated drafts. The supervisor owns independent checks,\none feedback retry, acceptance and final changes. No automatic delegation.\n",
+  "inputSchema": {
+    "$defs": {
+      "AcceptanceCheck": {
+        "additionalProperties": false,
+        "properties": {
+          "check_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+            "title": "Check Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "compile",
+              "behaviour",
+              "source"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "contract": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Contract",
+            "type": "string"
+          },
+          "method": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Method",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check_id",
+          "kind",
+          "contract",
+          "method"
+        ],
+        "title": "AcceptanceCheck",
+        "type": "object"
+      },
+      "CheckObservation": {
+        "additionalProperties": false,
+        "properties": {
+          "check_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+            "title": "Check Id",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "evidence_ref": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Evidence Ref",
+            "type": "string"
+          },
+          "observed": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Observed",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check_id",
+          "passed",
+          "evidence_ref",
+          "observed"
+        ],
+        "title": "CheckObservation",
+        "type": "object"
+      },
+      "ContinueWithoutRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "action": {
+            "const": "continue_without",
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "ContinueWithoutRequest",
+        "type": "object"
+      },
+      "GenerateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "action": {
+            "const": "generate",
+            "title": "Action",
+            "type": "string"
+          },
+          "packet": {
+            "$ref": "#/$defs/TaskPacket"
+          },
+          "attempt": {
+            "maximum": 2,
+            "minimum": 1,
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "feedback_ref": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Feedback Ref"
+          },
+          "effort": {
+            "$ref": "#/$defs/MeasuredEffort"
+          }
+        },
+        "required": [
+          "action",
+          "packet",
+          "attempt"
+        ],
+        "title": "GenerateRequest",
+        "type": "object"
+      },
+      "MeasuredEffort": {
+        "additionalProperties": false,
+        "properties": {
+          "preparation_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preparation S"
+          },
+          "validation_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Validation S"
+          },
+          "review_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Review S"
+          },
+          "human_active_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Human Active S"
+          },
+          "human_measurement_ref": {
+            "anyOf": [
+              {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Human Measurement Ref"
+          },
+          "premium_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Premium Tokens"
+          },
+          "receipt_ref": {
+            "anyOf": [
+              {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Receipt Ref"
+          }
+        },
+        "title": "MeasuredEffort",
+        "type": "object"
+      },
+      "ReconnectRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "action": {
+            "const": "reconnect",
+            "title": "Action",
+            "type": "string"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "maxLength": 253,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Address"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "ReconnectRequest",
+        "type": "object"
+      },
+      "RecordValidationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "action": {
+            "const": "record_validation",
+            "title": "Action",
+            "type": "string"
+          },
+          "report": {
+            "$ref": "#/$defs/ValidationReport"
+          }
+        },
+        "required": [
+          "action",
+          "report"
+        ],
+        "title": "RecordValidationRequest",
+        "type": "object"
+      },
+      "SourceApproval": {
+        "additionalProperties": false,
+        "properties": {
+          "classification": {
+            "enum": [
+              "synthetic",
+              "approved_repository"
+            ],
+            "title": "Classification",
+            "type": "string"
+          },
+          "approval_ref": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Approval Ref",
+            "type": "string"
+          },
+          "audit_content_approved": {
+            "title": "Audit Content Approved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "classification",
+          "approval_ref",
+          "audit_content_approved"
+        ],
+        "title": "SourceApproval",
+        "type": "object"
+      },
+      "StatusRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "action": {
+            "const": "status",
+            "title": "Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "StatusRequest",
+        "type": "object"
+      },
+      "TaskPacket": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "task_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "isolated_repair",
+              "mechanical_transformation",
+              "supplied_code_explanation"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "objective": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Objective",
+            "type": "string"
+          },
+          "constraints": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Constraints",
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 49152,
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          },
+          "context": {
+            "maxLength": 49152,
+            "title": "Context",
+            "type": "string"
+          },
+          "diagnostic": {
+            "default": "",
+            "maxLength": 49152,
+            "title": "Diagnostic",
+            "type": "string"
+          },
+          "versions": {
+            "patternProperties": {
+              "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "title": "Versions",
+            "type": "object"
+          },
+          "references": {
+            "items": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "References",
+            "type": "array"
+          },
+          "output_form": {
+            "maxLength": 8192,
+            "minLength": 1,
+            "title": "Output Form",
+            "type": "string"
+          },
+          "context_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+            "title": "Context Id",
+            "type": "string"
+          },
+          "approval": {
+            "$ref": "#/$defs/SourceApproval"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/$defs/AcceptanceCheck"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Checks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "task_id",
+          "category",
+          "objective",
+          "constraints",
+          "source",
+          "context",
+          "versions",
+          "output_form",
+          "context_id",
+          "approval",
+          "checks"
+        ],
+        "title": "TaskPacket",
+        "type": "object"
+      },
+      "ValidationReport": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "task_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "attempt": {
+            "maximum": 2,
+            "minimum": 1,
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "packet_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Packet Hash",
+            "type": "string"
+          },
+          "result_digest": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Result Digest",
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "accepted",
+              "failed",
+              "unverifiable"
+            ],
+            "title": "Verdict",
+            "type": "string"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/$defs/CheckObservation"
+            },
+            "maxItems": 32,
+            "title": "Observations",
+            "type": "array"
+          },
+          "diagnostics": {
+            "default": "",
+            "maxLength": 49152,
+            "title": "Diagnostics",
+            "type": "string"
+          },
+          "toolchain_ref": {
+            "anyOf": [
+              {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Toolchain Ref"
+          },
+          "supervisor_edits": {
+            "default": "",
+            "maxLength": 49152,
+            "title": "Supervisor Edits",
+            "type": "string"
+          },
+          "effort": {
+            "$ref": "#/$defs/MeasuredEffort"
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt",
+          "packet_hash",
+          "result_digest",
+          "verdict",
+          "observations"
+        ],
+        "title": "ValidationReport",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "request": {
+        "discriminator": {
+          "mapping": {
+            "continue_without": "#/$defs/ContinueWithoutRequest",
+            "generate": "#/$defs/GenerateRequest",
+            "reconnect": "#/$defs/ReconnectRequest",
+            "record_validation": "#/$defs/RecordValidationRequest",
+            "status": "#/$defs/StatusRequest"
+          },
+          "propertyName": "action"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/StatusRequest"
+          },
+          {
+            "$ref": "#/$defs/ReconnectRequest"
+          },
+          {
+            "$ref": "#/$defs/ContinueWithoutRequest"
+          },
+          {
+            "$ref": "#/$defs/GenerateRequest"
+          },
+          {
+            "$ref": "#/$defs/RecordValidationRequest"
+          }
+        ],
+        "title": "Request"
+      }
+    },
+    "required": [
+      "request"
+    ],
+    "title": "local_workerArguments",
+    "type": "object"
+  },
+  "outputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "schema_version": {
+        "const": 1,
+        "default": 1,
+        "title": "Schema Version",
+        "type": "integer"
+      },
+      "action": {
+        "title": "Action",
+        "type": "string"
+      },
+      "worker_id": {
+        "const": "LOCAL-00",
+        "default": "LOCAL-00",
+        "title": "Worker Id",
+        "type": "string"
+      },
+      "state": {
+        "enum": [
+          "status_returned",
+          "draft_returned",
+          "unavailable",
+          "busy",
+          "incomplete_error"
+        ],
+        "title": "State",
+        "type": "string"
+      },
+      "code": {
+        "title": "Code",
+        "type": "string"
+      },
+      "explanation": {
+        "default": "",
+        "title": "Explanation",
+        "type": "string"
+      },
+      "availability": {
+        "default": "unavailable",
+        "enum": [
+          "discovering",
+          "available",
+          "unavailable",
+          "disabled"
+        ],
+        "title": "Availability",
+        "type": "string"
+      },
+      "coordination": {
+        "default": "idle",
+        "enum": [
+          "idle",
+          "busy",
+          "uncertain"
+        ],
+        "title": "Coordination",
+        "type": "string"
+      },
+      "validation": {
+        "default": "pending",
+        "enum": [
+          "pending",
+          "accepted",
+          "failed",
+          "unverifiable"
+        ],
+        "title": "Validation",
+        "type": "string"
+      },
+      "next_actions": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Next Actions",
+        "type": "array"
+      },
+      "task_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Task Id"
+      },
+      "packet_hash": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Packet Hash"
+      },
+      "request_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Request Id"
+      },
+      "attempt": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Attempt"
+      },
+      "endpoint": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Endpoint"
+      },
+      "peer_ip": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Peer Ip"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model"
+      },
+      "digest": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Digest"
+      },
+      "result_digest": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Result Digest"
+      },
+      "response": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Response"
+      },
+      "done": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Done"
+      },
+      "done_reason": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Done Reason"
+      },
+      "metrics": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": "Metrics",
+        "type": "object"
+      },
+      "timings": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": "Timings",
+        "type": "object"
+      },
+      "audit_refs": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Audit Refs",
+        "type": "array"
+      },
+      "replayed_from_ledger": {
+        "default": false,
+        "title": "Replayed From Ledger",
+        "type": "boolean"
+      },
+      "needs_context": {
+        "default": false,
+        "title": "Needs Context",
+        "type": "boolean"
+      },
+      "evidence_origin": {
+        "anyOf": [
+          {
+            "const": "supervisor_reported",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Evidence Origin"
+      }
+    },
+    "required": [
+      "action",
+      "state",
+      "code"
+    ],
+    "title": "LocalWorkerResult",
+    "type": "object"
+  }
+}

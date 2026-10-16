@@ -1,0 +1,775 @@
+Requires --confirmed-idle plus operator reason/evidence that the earlier server request ended.
+Uncertain request retired using operator confirmation; no inference replayed.
+{
+  "schema_version": 1,
+  "action": "status",
+  "worker_id": "LOCAL-00",
+  "state": "status_returned",
+  "code": "worker_status",
+  "explanation": "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker.",
+  "availability": "unavailable",
+  "coordination": "idle",
+  "validation": "pending",
+  "next_actions": [
+    "Enter address",
+    "Retry discovery",
+    "Continue without LOCAL-00"
+  ],
+  "task_id": null,
+  "packet_hash": null,
+  "request_id": null,
+  "attempt": null,
+  "endpoint": null,
+  "peer_ip": null,
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": null,
+  "result_digest": null,
+  "response": null,
+  "done": null,
+  "done_reason": null,
+  "metrics": {},
+  "timings": {},
+  "audit_refs": [],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": null
+}
+{
+  "schema_version": 1,
+  "action": "status",
+  "worker_id": "LOCAL-00",
+  "state": "status_returned",
+  "code": "worker_status",
+  "explanation": "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker.",
+  "availability": "unavailable",
+  "coordination": "idle",
+  "validation": "pending",
+  "next_actions": [
+    "Enter address",
+    "Retry discovery",
+    "Continue without LOCAL-00"
+  ],
+  "task_id": null,
+  "packet_hash": null,
+  "request_id": null,
+  "attempt": null,
+  "endpoint": null,
+  "peer_ip": null,
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": null,
+  "result_digest": null,
+  "response": null,
+  "done": null,
+  "done_reason": null,
+  "metrics": {},
+  "timings": {},
+  "audit_refs": [],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": null
+}
+C:\Users\kian\AppData\Local\Temp\tmpfrmxos0z\ev\tests_mutation.json
+INVALID: 1 tests in 0.001s; failing=[]; problems=['the staged copy was modified (or could not be re-fingerprinted) during the run (post-run staged fingerprint differs)']
+C:\Users\kian\AppData\Local\Temp\tmpw83ep734\ev\tests_clean.json
+OK: 1 tests in 0.0s; failing=[]; problems=[]
+C:\Users\kian\AppData\Local\Temp\tmpi53xrx53\ev\tests_failing.json
+FAILED: 1 tests in 0.0s; failing=['test_it']; problems=['the test process exited 1', '1 failing test(s)']
+C:\Users\kian\AppData\Local\Temp\tmpie7to2fd\ev\tests_mutation.json
+INVALID: 1 tests in 0.001s; failing=[]; problems=['the staged copy was modified (or could not be re-fingerprinted) during the run (post-run staged fingerprint differs)']
+test_generic_write_failures_are_not_enforcement_evidence (tests.test_apply_patch_attack.Classification.test_generic_write_failures_are_not_enforcement_evidence)
+N12: disk-full / bad-path failures must not be mistaken for a policy denial. ... ok
+test_specific_policy_rejection_vs_generic_failure (tests.test_apply_patch_attack.Classification.test_specific_policy_rejection_vs_generic_failure) ... ok
+test_expected_attacks_carry_the_exact_patch_the_prompt_asks_for (tests.test_apply_patch_attack.Fixtures.test_expected_attacks_carry_the_exact_patch_the_prompt_asks_for) ... ok
+test_hunk_parser_and_patch_recovery_read_js_embedded_patches (tests.test_apply_patch_attack.Fixtures.test_hunk_parser_and_patch_recovery_read_js_embedded_patches) ... ok
+test_patches_are_valid_codex_patch_format_and_cover_four_attacks (tests.test_apply_patch_attack.Fixtures.test_patches_are_valid_codex_patch_format_and_cover_four_attacks) ... ok
+test_an_unrelated_or_read_denial_is_not_write_enforcement_evidence (tests.test_apply_patch_attack.NegativeOracle.test_an_unrelated_or_read_denial_is_not_write_enforcement_evidence)
+V11: the same unrelated denial for every attack, and a READ denial of the right file. ... ok
+test_any_successful_patch_is_a_failure_even_if_others_were_rejected (tests.test_apply_patch_attack.NegativeOracle.test_any_successful_patch_is_a_failure_even_if_others_were_rejected) ... ok
+test_batched_call_sharing_one_output_is_inconclusive (tests.test_apply_patch_attack.NegativeOracle.test_batched_call_sharing_one_output_is_inconclusive) ... ok
+test_changed_files_beat_every_other_signal (tests.test_apply_patch_attack.NegativeOracle.test_changed_files_beat_every_other_signal) ... ok
+test_complete_correct_turn_passes_with_an_honest_evidence_label (tests.test_apply_patch_attack.NegativeOracle.test_complete_correct_turn_passes_with_an_honest_evidence_label) ... ok
+test_direct_apply_patch_calls_are_authentic_and_labelled_direct (tests.test_apply_patch_attack.NegativeOracle.test_direct_apply_patch_calls_are_authentic_and_labelled_direct) ... ok
+test_duplicate_calls_are_inconclusive (tests.test_apply_patch_attack.NegativeOracle.test_duplicate_calls_are_inconclusive) ... ok
+test_each_attack_type_is_required_individually (tests.test_apply_patch_attack.NegativeOracle.test_each_attack_type_is_required_individually) ... ok
+test_fresh_and_resumed_turns_are_judged_separately (tests.test_apply_patch_attack.NegativeOracle.test_fresh_and_resumed_turns_are_judged_separately) ... ok
+test_generic_failure_unknown_and_missing_output_are_inconclusive (tests.test_apply_patch_attack.NegativeOracle.test_generic_failure_unknown_and_missing_output_are_inconclusive) ... ok
+test_missing_attempts_are_inconclusive_never_a_pass (tests.test_apply_patch_attack.NegativeOracle.test_missing_attempts_are_inconclusive_never_a_pass) ... ok
+test_one_call_without_an_output_record_is_inconclusive (tests.test_apply_patch_attack.NegativeOracle.test_one_call_without_an_output_record_is_inconclusive) ... ok
+test_os_level_denial_is_accepted_when_it_names_each_write_target (tests.test_apply_patch_attack.NegativeOracle.test_os_level_denial_is_accepted_when_it_names_each_write_target) ... ok
+test_patch_with_the_right_header_but_a_different_body_is_not_the_expected_attack (tests.test_apply_patch_attack.NegativeOracle.test_patch_with_the_right_header_but_a_different_body_is_not_the_expected_attack) ... ok
+test_resumed_turn_on_the_same_thread_passes (tests.test_apply_patch_attack.NegativeOracle.test_resumed_turn_on_the_same_thread_passes) ... ok
+test_unexpected_extra_calls_are_inconclusive (tests.test_apply_patch_attack.NegativeOracle.test_unexpected_extra_calls_are_inconclusive) ... ok
+test_wrapper_printing_a_literal_instead_of_the_result_is_not_evidence (tests.test_apply_patch_attack.NegativeOracle.test_wrapper_printing_a_literal_instead_of_the_result_is_not_evidence) ... ok
+test_wrapper_that_prints_the_rejection_without_calling_the_tool_is_not_evidence (tests.test_apply_patch_attack.NegativeOracle.test_wrapper_that_prints_the_rejection_without_calling_the_tool_is_not_evidence) ... ok
+test_wrapper_that_throws_a_fake_rejection_is_not_evidence (tests.test_apply_patch_attack.NegativeOracle.test_wrapper_that_throws_a_fake_rejection_is_not_evidence) ... ok
+test_wrong_thread_is_a_failure (tests.test_apply_patch_attack.NegativeOracle.test_wrong_thread_is_a_failure) ... ok
+test_extract_links_outputs_and_ignores_other_tools (tests.test_apply_patch_attack.Plumbing.test_extract_links_outputs_and_ignores_other_tools) ... ok
+test_live_stage_gates_on_version_and_auth_before_any_inference (tests.test_apply_patch_attack.Plumbing.test_live_stage_gates_on_version_and_auth_before_any_inference) ... ok
+test_prefix_and_outside_hunk_options (tests.test_apply_patch_attack.Plumbing.test_prefix_and_outside_hunk_options) ... ok
+test_rollout_loader_skips_garbage_lines (tests.test_apply_patch_attack.Plumbing.test_rollout_loader_skips_garbage_lines) ... ok
+test_tool_text_shapes (tests.test_apply_patch_attack.Plumbing.test_tool_text_shapes) ... ok
+test_tree_digest_tolerates_files_unreadable_to_us_and_still_sees_changes (tests.test_apply_patch_attack.Plumbing.test_tree_digest_tolerates_files_unreadable_to_us_and_still_sees_changes) ... ok
+test_any_change_is_a_failure (tests.test_apply_patch_attack.StageAAttribution.test_any_change_is_a_failure) ... ok
+test_generic_write_failures_naming_the_path_are_not_conclusive (tests.test_apply_patch_attack.StageAAttribution.test_generic_write_failures_naming_the_path_are_not_conclusive) ... ok
+test_refusal_naming_the_attacked_path_with_an_os_denial_passes (tests.test_apply_patch_attack.StageAAttribution.test_refusal_naming_the_attacked_path_with_an_os_denial_passes) ... ok
+test_stage_a_attacks_each_hunk_separately_not_as_one_batch (tests.test_apply_patch_attack.StageAAttribution.test_stage_a_attacks_each_hunk_separately_not_as_one_batch) ... ok
+test_timeout_launch_failure_unnamed_path_and_exit_zero_are_inconclusive (tests.test_apply_patch_attack.StageAAttribution.test_timeout_launch_failure_unnamed_path_and_exit_zero_are_inconclusive) ... ok
+test_api_key_env_is_scrubbed_from_every_child (tests.test_config_argv_auth.Authentication.test_api_key_env_is_scrubbed_from_every_child) ... ok
+test_bridge_never_logs_in_or_out (tests.test_config_argv_auth.Authentication.test_bridge_never_logs_in_or_out) ... ok
+test_classification (tests.test_config_argv_auth.Authentication.test_classification) ... ok
+test_codex_home_is_preserved (tests.test_config_argv_auth.Authentication.test_codex_home_is_preserved) ... ok
+test_missing_api_key_and_unsupported_are_reported_without_inference (tests.test_config_argv_auth.Authentication.test_missing_api_key_and_unsupported_are_reported_without_inference) ... ok
+test_fresh_argv_exact (tests.test_config_argv_auth.ReadOnlyArgv.test_fresh_argv_exact) ... ok
+test_guard_rejects_bypass_and_missing_policy (tests.test_config_argv_auth.ReadOnlyArgv.test_guard_rejects_bypass_and_missing_policy) ... ok
+test_never_contains_bypass_flags (tests.test_config_argv_auth.ReadOnlyArgv.test_never_contains_bypass_flags) ... ok
+test_resume_argv_pins_read_only_model_and_effort (tests.test_config_argv_auth.ReadOnlyArgv.test_resume_argv_pins_read_only_model_and_effort) ... ok
+test_v1_fresh_flags_are_preserved_in_order (tests.test_config_argv_auth.ReadOnlyArgv.test_v1_fresh_flags_are_preserved_in_order) ... ok
+test_windows_sandbox_override_is_opt_in_and_validated (tests.test_config_argv_auth.ReadOnlyArgv.test_windows_sandbox_override_is_opt_in_and_validated) ... ok
+test_catalog_validation_rejects_unknown_model_and_unsupported_effort (tests.test_config_argv_auth.RoutePrecedence.test_catalog_validation_rejects_unknown_model_and_unsupported_effort) ... ok
+test_defaults (tests.test_config_argv_auth.RoutePrecedence.test_defaults) ... ok
+test_empty_value_counts_as_unset (tests.test_config_argv_auth.RoutePrecedence.test_empty_value_counts_as_unset) ... ok
+test_per_tool_override_wins_and_is_independent (tests.test_config_argv_auth.RoutePrecedence.test_per_tool_override_wins_and_is_independent) ... ok
+test_rejects_unsafe_model_and_effort_strings (tests.test_config_argv_auth.RoutePrecedence.test_rejects_unsafe_model_and_effort_strings) ... ok
+test_v1_env_vars_still_apply_to_both_tools (tests.test_config_argv_auth.RoutePrecedence.test_v1_env_vars_still_apply_to_both_tools) ... ok
+test_defaults_and_bounds (tests.test_config_argv_auth.SettingsValidation.test_defaults_and_bounds) ... ok
+test_group_exists_and_confirmation_is_required (tests.test_local_worker_admin.Administration.test_group_exists_and_confirmation_is_required) ... ok
+test_status_does_not_require_codex_auth_or_repository (tests.test_local_worker_admin.Administration.test_status_does_not_require_codex_auth_or_repository) ... ok
+test_complete_3072_3073_boundary (tests.test_local_worker_budget.Budget.test_complete_3072_3073_boundary) ... ok
+test_prompt_preserves_contract_and_bounds_utf8 (tests.test_local_worker_budget.Budget.test_prompt_preserves_contract_and_bounds_utf8) ... ok
+test_retry_includes_exact_failure_and_cannot_silently_truncate (tests.test_local_worker_budget.Budget.test_retry_includes_exact_failure_and_cannot_silently_truncate) ... ok
+test_verified_metadata_and_version_only (tests.test_local_worker_budget.Budget.test_verified_metadata_and_version_only) ... ok
+test_anyio_cancellation_releases_lock_but_retains_uncertainty (tests.test_local_worker_generation.Generation.test_anyio_cancellation_releases_lock_but_retains_uncertainty) ... ok
+test_busy_resident_model_or_metadata_drift_never_generates (tests.test_local_worker_generation.Generation.test_busy_resident_model_or_metadata_drift_never_generates) ... ok
+test_malformed_length_clarification_and_metric_failures (tests.test_local_worker_generation.Generation.test_malformed_length_clarification_and_metric_failures) ... ok
+test_one_post_with_full_audit_and_idempotent_replay (tests.test_local_worker_generation.Generation.test_one_post_with_full_audit_and_idempotent_replay) ... ok
+test_prompt_count_contradiction_blocks_following_task (tests.test_local_worker_generation.Generation.test_prompt_count_contradiction_blocks_following_task) ... ok
+test_same_hostname_with_changed_selection_revision_refuses (tests.test_local_worker_generation.Generation.test_same_hostname_with_changed_selection_revision_refuses) ... ok
+test_stale_endpoint_selection_prevents_any_post (tests.test_local_worker_generation.Generation.test_stale_endpoint_selection_prevents_any_post) ... ok
+test_timeout_keeps_uncertainty_across_restart (tests.test_local_worker_generation.Generation.test_timeout_keeps_uncertainty_across_restart) ... ok
+test_default_is_metadata_only_and_no_candidate_exec (tests.test_local_worker_live_check.LiveRunner.test_default_is_metadata_only_and_no_candidate_exec) ... ok
+test_generation_requires_all_approvals_and_stable_task_id (tests.test_local_worker_live_check.LiveRunner.test_generation_requires_all_approvals_and_stable_task_id) ... usage: python.exe -m unittest [-h] [--metadata-only | --generate-synthetic]
+                              [--source-approved] [--audit-approved]
+                              [--task-id TASK_ID] [--output OUTPUT]
+python.exe -m unittest: error: generation requires --source-approved --audit-approved and a stable --task-id
+usage: python.exe -m unittest [-h] [--metadata-only | --generate-synthetic]
+                              [--source-approved] [--audit-approved]
+                              [--task-id TASK_ID] [--output OUTPUT]
+python.exe -m unittest: error: generation requires --source-approved --audit-approved and a stable --task-id
+usage: python.exe -m unittest [-h] [--metadata-only | --generate-synthetic]
+                              [--source-approved] [--audit-approved]
+                              [--task-id TASK_ID] [--output OUTPUT]
+python.exe -m unittest: error: generation requires --source-approved --audit-approved and a stable --task-id
+ok
+test_corrupt_worker_witness_keeps_stdio_and_architect_usable (tests.test_local_worker_mcp.Mcp.test_corrupt_worker_witness_keeps_stdio_and_architect_usable) ... Executing <Task pending name='Task-246' coro=<Mcp.test_corrupt_worker_witness_keeps_stdio_and_architect_usable() running at C:\Users\kian\AppData\Local\Temp\stage_tests_iyj43bf6\tests\test_local_worker_mcp.py:60> cb=[_run_until_complete_cb() at C:\Python313\Lib\asyncio\base_events.py:181] created at C:\Python313\Lib\asyncio\runners.py:100> took 0.206 seconds
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Executing <Task pending name='Task-246' coro=<Mcp.test_corrupt_worker_witness_keeps_stdio_and_architect_usable() running at C:\Users\kian\AppData\Local\Temp\stage_tests_iyj43bf6\tests\test_local_worker_mcp.py:60> cb=[_run_until_complete_cb() at C:\Python313\Lib\asyncio\base_events.py:181] created at C:\Python313\Lib\asyncio\runners.py:100> took 0.218 seconds
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Executing <Task pending name='Task-246' coro=<Mcp.test_corrupt_worker_witness_keeps_stdio_and_architect_usable() running at C:\Users\kian\AppData\Local\Temp\stage_tests_iyj43bf6\tests\test_local_worker_mcp.py:60> cb=[_run_until_complete_cb() at C:\Python313\Lib\asyncio\base_events.py:181] created at C:\Python313\Lib\asyncio\runners.py:100> took 0.208 seconds
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+ok
+test_exact_surface_and_real_roundtrip_all_five_actions (tests.test_local_worker_mcp.Mcp.test_exact_surface_and_real_roundtrip_all_five_actions) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43128 running stdin=<_ProactorWritePipeTransport fd=972 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=808 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+<_WindowsSubprocessTransport pid=43128 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_initialization_ping_and_status_during_delayed_discovery (tests.test_local_worker_mcp.Mcp.test_initialization_ping_and_status_during_delayed_discovery) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=17580 running stdin=<_ProactorWritePipeTransport fd=972 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1004 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+<_WindowsSubprocessTransport pid=17580 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_addresses_and_fixed_settings (tests.test_local_worker_models.Contracts.test_addresses_and_fixed_settings) ... ok
+test_settings_timeouts_and_shared_root (tests.test_local_worker_models.Contracts.test_settings_timeouts_and_shared_root) ... ok
+test_strict_packets_and_action_union (tests.test_local_worker_models.Contracts.test_strict_packets_and_action_union) ... ok
+test_nested_code_and_fixtures_are_hashed_and_reviewed (tests.test_local_worker_provenance.Provenance.test_nested_code_and_fixtures_are_hashed_and_reviewed) ... ok
+test_continue_before_startup_stays_disabled (tests.test_local_worker_service.Discovery.test_continue_before_startup_stays_disabled) ... ok
+test_corrupt_witness_shapes_do_not_escape_startup (tests.test_local_worker_service.Discovery.test_corrupt_witness_shapes_do_not_escape_startup) ... ok
+test_fallback_and_continue_after_both_fail (tests.test_local_worker_service.Discovery.test_fallback_and_continue_after_both_fail) ... ok
+test_hostname_first_saved_peer_and_status_no_network (tests.test_local_worker_service.Discovery.test_hostname_first_saved_peer_and_status_no_network) ... ok
+test_invalid_address_and_corrupt_config_are_optional (tests.test_local_worker_service.Discovery.test_invalid_address_and_corrupt_config_are_optional) ... ok
+test_late_discovery_cannot_reenable_disabled_session (tests.test_local_worker_service.Discovery.test_late_discovery_cannot_reenable_disabled_session) ... ok
+test_preconfigured_first_start_is_supported (tests.test_local_worker_service.Discovery.test_preconfigured_first_start_is_supported) ... ok
+test_queued_reconnect_cannot_undo_newer_continue_without (tests.test_local_worker_service.Discovery.test_queued_reconnect_cannot_undo_newer_continue_without) ... ok
+test_status_remains_discovering_during_first_store_creation (tests.test_local_worker_service.Discovery.test_status_remains_discovering_during_first_store_creation) ... ok
+test_corruption_and_repository_overlap_refuse (tests.test_local_worker_storage.Storage.test_corruption_and_repository_overlap_refuse) ... ok
+test_hard_kill_releases_os_lock_but_preserves_active_marker (tests.test_local_worker_storage.Storage.test_hard_kill_releases_os_lock_but_preserves_active_marker) ... ok
+test_operator_resolution_requires_matching_confirmation (tests.test_local_worker_storage.Storage.test_operator_resolution_requires_matching_confirmation) ... ok
+test_other_process_cannot_acquire_held_lock (tests.test_local_worker_storage.Storage.test_other_process_cannot_acquire_held_lock) ... ok
+test_resolution_clears_persisted_busy_snapshot (tests.test_local_worker_storage.Storage.test_resolution_clears_persisted_busy_snapshot) ... ok
+test_shared_lock_and_crash_marker_survive_restart (tests.test_local_worker_storage.Storage.test_shared_lock_and_crash_marker_survive_restart) ... ok
+test_terminal_ledger_before_marker_retirement_and_replay (tests.test_local_worker_storage.Storage.test_terminal_ledger_before_marker_retirement_and_replay) ... ok
+test_cancelled_post_has_no_replay_and_reaps (tests.test_local_worker_transport.Transport.test_cancelled_post_has_no_replay_and_reaps) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=35364 running stdin=<_ProactorWritePipeTransport fd=588 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=948 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=676 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=35364 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport fd=948 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=676 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>>> exited with return code 1
+ok
+test_http_peer_no_redirect_and_bounded_body (tests.test_local_worker_transport.Transport.test_http_peer_no_redirect_and_bounded_body) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=40324 running stdin=<_ProactorWritePipeTransport fd=804 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=792 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=952 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=40324 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=792> stderr=<_ProactorReadPipeTransport closing fd=952>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=42960 running stdin=<_ProactorWritePipeTransport fd=1020 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=588 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=960 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=42960 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=588> stderr=<_ProactorReadPipeTransport closing fd=960>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=22804 running stdin=<_ProactorWritePipeTransport fd=588 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=960 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=932 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=22804 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_slow_header_timeout_kills_helper (tests.test_local_worker_transport.Transport.test_slow_header_timeout_kills_helper) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=44068 running stdin=<_ProactorWritePipeTransport fd=776 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=720 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=908 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=44068 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport fd=720 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=908 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>>> exited with return code 1
+ok
+test_stalled_helper_dns_and_malformed_protocol (tests.test_local_worker_transport.Transport.test_stalled_helper_dns_and_malformed_protocol) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=19976 running stdin=<_ProactorWritePipeTransport fd=952 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=908 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=632 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=19976 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=908> stderr=<_ProactorReadPipeTransport closing fd=632>> exited with return code 1
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=3188 running stdin=<_ProactorWritePipeTransport fd=908 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=632 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=724 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=3188 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_unapproved_path_never_spawns (tests.test_local_worker_transport.Transport.test_unapproved_path_never_spawns) ... ok
+test_compiler_only_cannot_accept_and_no_commands_execute (tests.test_local_worker_validation.Validation.test_compiler_only_cannot_accept_and_no_commands_execute) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=36356 running stdin=<_ProactorWritePipeTransport fd=924 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=816 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=632 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=36356 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=816> stderr=<_ProactorReadPipeTransport closing fd=632>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=32200 running stdin=<_ProactorWritePipeTransport fd=776 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=936 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=824 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=32200 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=936> stderr=<_ProactorReadPipeTransport closing fd=824>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=44244 running stdin=<_ProactorWritePipeTransport fd=936 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=824 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=844 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=44244 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=18084 running stdin=<_ProactorWritePipeTransport fd=1000 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=776 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=748 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=18084 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=776> stderr=<_ProactorReadPipeTransport closing fd=748>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=47068 running stdin=<_ProactorWritePipeTransport fd=928 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=644 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=960 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=47068 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=644> stderr=<_ProactorReadPipeTransport closing fd=960>> exited with return code 0
+ok
+test_one_exact_failure_retry_survives_restarts (tests.test_local_worker_validation.Validation.test_one_exact_failure_retry_survives_restarts) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=13580 running stdin=<_ProactorWritePipeTransport fd=720 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=756 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=800 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=13580 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=756> stderr=<_ProactorReadPipeTransport closing fd=800>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43348 running stdin=<_ProactorWritePipeTransport fd=800 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=756 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=860 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=43348 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=756> stderr=<_ProactorReadPipeTransport closing fd=860>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=45896 running stdin=<_ProactorWritePipeTransport fd=756 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=860 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=780 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=45896 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=860> stderr=<_ProactorReadPipeTransport closing fd=780>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=19444 running stdin=<_ProactorWritePipeTransport fd=780 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=860 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=808 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=19444 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=860> stderr=<_ProactorReadPipeTransport closing fd=808>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=46432 running stdin=<_ProactorWritePipeTransport fd=860 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=808 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=628 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=46432 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=808> stderr=<_ProactorReadPipeTransport closing fd=628>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=46328 running stdin=<_ProactorWritePipeTransport fd=1008 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=888 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=46328 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=888> stderr=<_ProactorReadPipeTransport closing fd=772>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43880 running stdin=<_ProactorWritePipeTransport fd=888 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=756 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=43880 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=15036 running stdin=<_ProactorWritePipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=756 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1012 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=15036 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=756> stderr=<_ProactorReadPipeTransport closing fd=1012>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=15980 running stdin=<_ProactorWritePipeTransport fd=1012 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=756 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1008 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=15980 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=756> stderr=<_ProactorReadPipeTransport closing fd=1008>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=42724 running stdin=<_ProactorWritePipeTransport fd=588 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1008 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=860 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=42724 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1008> stderr=<_ProactorReadPipeTransport closing fd=860>> exited with return code 0
+ok
+test_replayed_old_report_cannot_reverse_newer_correction (tests.test_local_worker_validation.Validation.test_replayed_old_report_cannot_reverse_newer_correction) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=41160 running stdin=<_ProactorWritePipeTransport fd=1004 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=784 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=41160 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=772> stderr=<_ProactorReadPipeTransport closing fd=784>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=45372 running stdin=<_ProactorWritePipeTransport fd=784 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=796 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=45372 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=772> stderr=<_ProactorReadPipeTransport closing fd=796>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=25780 running stdin=<_ProactorWritePipeTransport fd=936 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=912 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=784 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=25780 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=40888 running stdin=<_ProactorWritePipeTransport fd=912 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=784 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=944 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=40888 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=21232 running stdin=<_ProactorWritePipeTransport fd=944 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=784 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=924 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=21232 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_wrong_result_or_checks_cannot_change_verdict (tests.test_local_worker_validation.Validation.test_wrong_result_or_checks_cannot_change_verdict) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=45624 running stdin=<_ProactorWritePipeTransport fd=796 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=964 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=45624 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=964> stderr=<_ProactorReadPipeTransport closing fd=772>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=3248 running stdin=<_ProactorWritePipeTransport fd=964 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=676 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=3248 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=772> stderr=<_ProactorReadPipeTransport closing fd=676>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43796 running stdin=<_ProactorWritePipeTransport fd=772 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=676 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=776 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=43796 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=676> stderr=<_ProactorReadPipeTransport closing fd=776>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=35092 running stdin=<_ProactorWritePipeTransport fd=676 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=776 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=724 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=35092 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=776> stderr=<_ProactorReadPipeTransport closing fd=724>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=16092 running stdin=<_ProactorWritePipeTransport fd=948 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=784 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=896 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=16092 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=784> stderr=<_ProactorReadPipeTransport closing fd=896>> exited with return code 0
+ok
+test_agent_narration_quoting_the_signature_is_not_scanned (tests.test_remediation.F1_ActualTurnFailures.test_agent_narration_quoting_the_signature_is_not_scanned) ... ok
+test_classify_item_unit (tests.test_remediation.F1_ActualTurnFailures.test_classify_item_unit) ... ok
+test_degraded_mode_was_removed_and_cannot_be_enabled (tests.test_remediation.F1_ActualTurnFailures.test_degraded_mode_was_removed_and_cannot_be_enabled)
+P3: an answer whose actual turn hit infrastructure failures is never returned as a review. ... ok
+test_failed_command_with_helper_unknown_error_then_completed_answer_is_not_a_success (tests.test_remediation.F1_ActualTurnFailures.test_failed_command_with_helper_unknown_error_then_completed_answer_is_not_a_success)
+The exact regression: failed command item, then turn.completed + plausible answer. ... ok
+test_failed_resumed_turn_leaves_the_pointer_alone (tests.test_remediation.F1_ActualTurnFailures.test_failed_resumed_turn_leaves_the_pointer_alone) ... ok
+test_ordinary_nonzero_command_exit_is_not_an_infrastructure_failure (tests.test_remediation.F1_ActualTurnFailures.test_ordinary_nonzero_command_exit_is_not_an_infrastructure_failure) ... ok
+test_preflight_reads_a_source_file_not_just_git_metadata (tests.test_remediation.F1_ActualTurnFailures.test_preflight_reads_a_source_file_not_just_git_metadata) ... ok
+test_repo_access_signature_counts_only_when_cwd_is_the_repository (tests.test_remediation.F1_ActualTurnFailures.test_repo_access_signature_counts_only_when_cwd_is_the_repository) ... ok
+test_rollout_style_camelcase_item_is_detected_too (tests.test_remediation.F1_ActualTurnFailures.test_rollout_style_camelcase_item_is_detected_too) ... ok
+test_signature_inside_successful_command_output_is_not_a_failure (tests.test_remediation.F1_ActualTurnFailures.test_signature_inside_successful_command_output_is_not_a_failure) ... ok
+test_allow_list_default_is_empty_and_exception_is_visible_everywhere (tests.test_remediation.F2_CapabilityContainment.test_allow_list_default_is_empty_and_exception_is_visible_everywhere) ... ok
+test_delegation_image_generation_and_web_are_controlled_and_reported_separately (tests.test_remediation.F2_CapabilityContainment.test_delegation_image_generation_and_web_are_controlled_and_reported_separately) ... ok
+test_exact_version_baseline_not_a_series (tests.test_remediation.F2_CapabilityContainment.test_exact_version_baseline_not_a_series) ... ok
+test_gate_that_stays_enabled_after_override_fails_closed (tests.test_remediation.F2_CapabilityContainment.test_gate_that_stays_enabled_after_override_fails_closed) ... ok
+test_incompatible_features_schema_fails_closed (tests.test_remediation.F2_CapabilityContainment.test_incompatible_features_schema_fails_closed) ... ok
+test_incompatible_mcp_schema_fails_closed (tests.test_remediation.F2_CapabilityContainment.test_incompatible_mcp_schema_fails_closed) ... ok
+test_missing_required_control_fails_closed (tests.test_remediation.F2_CapabilityContainment.test_missing_required_control_fails_closed) ... ok
+test_parse_features_is_strict (tests.test_remediation.F2_CapabilityContainment.test_parse_features_is_strict) ... ok
+test_sandbox_backend_override_is_visible_not_silent (tests.test_remediation.F2_CapabilityContainment.test_sandbox_backend_override_is_visible_not_silent) ... ok
+test_a_stale_marker_after_hard_termination_is_never_auto_recovered (tests.test_remediation.F3_ProcessOwnership.test_a_stale_marker_after_hard_termination_is_never_auto_recovered)
+V3: even a job-owned call needs the operator, because commands started by the Windows ... ok
+test_bridge_hard_termination_takes_the_owned_children_with_it (tests.test_remediation.F3_ProcessOwnership.test_bridge_hard_termination_takes_the_owned_children_with_it) ... ok
+test_descendant_surviving_parent_exit_is_reaped_not_ignored (tests.test_remediation.F3_ProcessOwnership.test_descendant_surviving_parent_exit_is_reaped_not_ignored) ... ok
+test_nothing_outside_the_owned_tree_is_ever_killed (tests.test_remediation.F3_ProcessOwnership.test_nothing_outside_the_owned_tree_is_ever_killed) ... C:\Python313\Lib\subprocess.py:1140: ResourceWarning: subprocess 15284 is still running
+  _warn("subprocess %s is still running" % self.pid,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_ownership_failure_refuses_the_turn_before_anything_executes (tests.test_remediation.F3_ProcessOwnership.test_ownership_failure_refuses_the_turn_before_anything_executes)
+N3: no ownership => no inference.  Previously a normal exit would have 'succeeded'. ... ok
+test_timeout_is_confirmed_through_the_job_not_assumed (tests.test_remediation.F3_ProcessOwnership.test_timeout_is_confirmed_through_the_job_not_assumed) ... ok
+test_unconfirmed_after_a_successful_turn_returns_answer_but_blocks_the_session (tests.test_remediation.F3_ProcessOwnership.test_unconfirmed_after_a_successful_turn_returns_answer_but_blocks_the_session) ... ok
+test_unconfirmed_termination_blocks_session_reuse_until_reconciled (tests.test_remediation.F3_ProcessOwnership.test_unconfirmed_termination_blocks_session_reuse_until_reconciled) ... C:\Python313\Lib\subprocess.py:1140: ResourceWarning: subprocess 10836 is still running
+  _warn("subprocess %s is still running" % self.pid,
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_after_quarantine_calls_refuse_until_explicit_reinit_and_cannot_repopulate (tests.test_remediation.F4_RegistryLifecycle.test_after_quarantine_calls_refuse_until_explicit_reinit_and_cannot_repopulate) ... ok
+test_corrupt_registry_with_established_instance_stays_untouched (tests.test_remediation.F4_RegistryLifecycle.test_corrupt_registry_with_established_instance_stays_untouched) ... ok
+test_first_initialisation_is_allowed_and_marks_the_instance_established (tests.test_remediation.F4_RegistryLifecycle.test_first_initialisation_is_allowed_and_marks_the_instance_established) ... ok
+test_loss_of_an_established_registry_never_starts_replacement_sessions (tests.test_remediation.F4_RegistryLifecycle.test_loss_of_an_established_registry_never_starts_replacement_sessions) ... ok
+test_maintenance_flag_blocks_new_calls_until_cleared (tests.test_remediation.F4_RegistryLifecycle.test_maintenance_flag_blocks_new_calls_until_cleared) ... ok
+test_quarantine_requires_quiescence_and_leaves_state_intact_when_busy (tests.test_remediation.F4_RegistryLifecycle.test_quarantine_requires_quiescence_and_leaves_state_intact_when_busy) ... ok
+test_registry_from_another_instance_is_refused (tests.test_remediation.F4_RegistryLifecycle.test_registry_from_another_instance_is_refused) ... ok
+test_reinit_refuses_when_a_registry_exists (tests.test_remediation.F4_RegistryLifecycle.test_reinit_refuses_when_a_registry_exists) ... ok
+test_restore_prev_recovers_the_pointer (tests.test_remediation.F4_RegistryLifecycle.test_restore_prev_recovers_the_pointer) ... ok
+test_interrupted_fresh_turn_preserves_thread_id_and_does_not_claim_history_is_unchanged (tests.test_remediation.F5_PartialOutcomes.test_interrupted_fresh_turn_preserves_thread_id_and_does_not_claim_history_is_unchanged) ... ok
+test_journal_and_telemetry_never_contain_prompt_source_or_answer (tests.test_remediation.F5_PartialOutcomes.test_journal_and_telemetry_never_contain_prompt_source_or_answer) ... session pointer not saved: registry_unwritable
+ok
+test_no_turn_started_is_the_only_case_that_says_history_is_unaffected (tests.test_remediation.F5_PartialOutcomes.test_no_turn_started_is_the_only_case_that_says_history_is_unaffected) ... ok
+test_pointer_save_failure_is_partial_success_blocks_silent_threads_and_is_recoverable (tests.test_remediation.F5_PartialOutcomes.test_pointer_save_failure_is_partial_success_blocks_silent_threads_and_is_recoverable) ... session pointer not saved: registry_unwritable
+ok
+test_reset_discards_a_pending_marker_without_touching_history (tests.test_remediation.F5_PartialOutcomes.test_reset_discards_a_pending_marker_without_touching_history) ... session pointer not saved: registry_unwritable
+ok
+test_resumed_turn_with_counter_save_failure_is_not_a_pending_state (tests.test_remediation.F5_PartialOutcomes.test_resumed_turn_with_counter_save_failure_is_not_a_pending_state) ... session pointer not saved: registry_unwritable
+ok
+test_without_a_pending_marker_the_retained_inflight_marker_still_blocks_reuse (tests.test_remediation.F5_PartialOutcomes.test_without_a_pending_marker_the_retained_inflight_marker_still_blocks_reuse) ... session pointer not saved: registry_unwritable
+ok
+test_change_during_the_review_is_detected_and_reported_without_content (tests.test_remediation.F6_ReviewConsistency.test_change_during_the_review_is_detected_and_reported_without_content) ... ok
+test_fingerprint_does_not_write_into_git_dir (tests.test_remediation.F6_ReviewConsistency.test_fingerprint_does_not_write_into_git_dir) ... ok
+test_fingerprint_sees_staged_unstaged_untracked_and_head_changes (tests.test_remediation.F6_ReviewConsistency.test_fingerprint_sees_staged_unstaged_untracked_and_head_changes) ... ok
+test_unavailable_fingerprint_is_reported_not_hidden (tests.test_remediation.F6_ReviewConsistency.test_unavailable_fingerprint_is_reported_not_hidden) ... ok
+test_unchanged_repository_has_no_warning_and_is_comparable (tests.test_remediation.F6_ReviewConsistency.test_unchanged_repository_has_no_warning_and_is_comparable) ... ok
+test_a_directory_in_its_place_is_refused (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_a_directory_in_its_place_is_refused) ... ok
+test_an_invalid_file_refuses_instead_of_being_ignored (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_an_invalid_file_refuses_instead_of_being_ignored) ... ok
+test_no_file_and_no_variable_leaves_the_users_codex_config_in_charge (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_no_file_and_no_variable_leaves_the_users_codex_config_in_charge) ... ok
+test_the_environment_variable_wins_over_the_file (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_environment_variable_wins_over_the_file) ... ok
+test_the_file_supplies_the_backend_when_the_environment_does_not (tests.test_review10.S1_SettingsFileSupplyingTheBackend.test_the_file_supplies_the_backend_when_the_environment_does_not) ... ok
+test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from (tests.test_review10.S2_ServicePathUsesIt.test_a_call_runs_the_preflight_under_the_file_backend_and_says_where_it_came_from) ... ok
+test_an_invalid_file_stops_the_call_before_any_process_runs (tests.test_review10.S2_ServicePathUsesIt.test_an_invalid_file_stops_the_call_before_any_process_runs) ... ok
+test_the_environment_override_banner_is_unchanged (tests.test_review10.S2_ServicePathUsesIt.test_the_environment_override_banner_is_unchanged) ... ok
+test_corrupt_instance_with_a_deleted_registry_is_not_a_first_initialisation (tests.test_review2.N10_InstanceIdentity.test_corrupt_instance_with_a_deleted_registry_is_not_a_first_initialisation) ... ok
+test_instance_with_a_malformed_shape_is_invalid (tests.test_review2.N10_InstanceIdentity.test_instance_with_a_malformed_shape_is_invalid) ... ok
+test_registry_present_but_instance_missing_or_registry_without_identity (tests.test_review2.N10_InstanceIdentity.test_registry_present_but_instance_missing_or_registry_without_identity) ... ok
+test_restore_prev_validates_schema_and_identity_before_replacing (tests.test_review2.N10_InstanceIdentity.test_restore_prev_validates_schema_and_identity_before_replacing) ... ok
+test_unreadable_instance_file_fails_closed (tests.test_review2.N10_InstanceIdentity.test_unreadable_instance_file_fails_closed) ... ok
+test_staged_content_change_with_unchanged_status_and_worktree_is_seen (tests.test_review2.N11N15_FingerprintCompletenessAndVisibility.test_staged_content_change_with_unchanged_status_and_worktree_is_seen) ... ok
+test_truncated_status_is_unavailable_never_comparable (tests.test_review2.N11N15_FingerprintCompletenessAndVisibility.test_truncated_status_is_unavailable_never_comparable) ... ok
+test_unavailable_fingerprint_is_reported_in_the_answer_not_only_telemetry (tests.test_review2.N11N15_FingerprintCompletenessAndVisibility.test_unavailable_fingerprint_is_reported_in_the_answer_not_only_telemetry) ... ok
+test_unborn_repository_tracked_content_is_covered (tests.test_review2.N11N15_FingerprintCompletenessAndVisibility.test_unborn_repository_tracked_content_is_covered) ... ok
+test_only_unsafe_names_means_a_visible_skip_not_a_pass_through_cmd (tests.test_review2.N13N15_SourceProbe.test_only_unsafe_names_means_a_visible_skip_not_a_pass_through_cmd) ... ok
+test_probe_runs_findstr_with_the_name_as_data_not_cmd_type (tests.test_review2.N13N15_SourceProbe.test_probe_runs_findstr_with_the_name_as_data_not_cmd_type) ... ok
+test_unsafe_names_are_never_selected_and_source_files_are_preferred (tests.test_review2.N13N15_SourceProbe.test_unsafe_names_are_never_selected_and_source_files_are_preferred) ... ok
+test_a_valid_thread_id_still_flows_everywhere (tests.test_review2.N14_IdentifiersAreValidatedAtIngress.test_a_valid_thread_id_still_flows_everywhere) ... ok
+test_malformed_thread_id_is_dropped_and_never_echoed_or_persisted (tests.test_review2.N14_IdentifiersAreValidatedAtIngress.test_malformed_thread_id_is_dropped_and_never_echoed_or_persisted) ... ok
+test_telemetry_nested_strings_are_restricted_to_opaque_tokens (tests.test_review2.N14_IdentifiersAreValidatedAtIngress.test_telemetry_nested_strings_are_restricted_to_opaque_tokens) ... ok
+test_fingerprint_and_probe_do_not_modify_anything_under_dot_git (tests.test_review2.N1_HostGitContainment.test_fingerprint_and_probe_do_not_modify_anything_under_dot_git) ... ok
+test_fingerprint_diff_calls_disable_textconv_and_external_diff (tests.test_review2.N1_HostGitContainment.test_fingerprint_diff_calls_disable_textconv_and_external_diff) ... ok
+test_helpers_fire_with_plain_git_but_never_through_gitsafe (tests.test_review2.N1_HostGitContainment.test_helpers_fire_with_plain_git_but_never_through_gitsafe) ... ok
+test_safe_argv_carries_every_isolation_control (tests.test_review2.N1_HostGitContainment.test_safe_argv_carries_every_isolation_control) ... ok
+test_the_control_test_fails_when_containment_is_removed (tests.test_review2.N1_HostGitContainment.test_the_control_test_fails_when_containment_is_removed)
+Mutation check: with plain `git -C <root> ...` substituted for the contained argv, the ... ok
+test_registry_wide_commands_reject_a_state_dir_inside_the_repository (tests.test_review2.N2_StateDirValidationEverywhere.test_registry_wide_commands_reject_a_state_dir_inside_the_repository) ... ok
+test_registry_wide_commands_reject_an_overlap_with_v1_even_without_a_repo (tests.test_review2.N2_StateDirValidationEverywhere.test_registry_wide_commands_reject_an_overlap_with_v1_even_without_a_repo) ... ok
+test_session_commands_validate_too (tests.test_review2.N2_StateDirValidationEverywhere.test_session_commands_validate_too) ... ok
+test_status_with_a_rejected_state_dir_probes_nothing (tests.test_review2.N2_StateDirValidationEverywhere.test_status_with_a_rejected_state_dir_probes_nothing) ... ok
+test_a_dead_owner_or_reused_pid_is_recognised_as_dead_but_never_auto_recovered (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_a_dead_owner_or_reused_pid_is_recognised_as_dead_but_never_auto_recovered)
+The owner is provably gone (so no 'owner alive' refusal), yet V3 still requires the ... ok
+test_an_exited_process_whose_handle_is_still_open_is_dead (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_an_exited_process_whose_handle_is_still_open_is_dead) ... ok
+test_child_is_assigned_to_the_job_before_it_can_run (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_child_is_assigned_to_the_job_before_it_can_run) ... ok
+test_completed_but_unbound_turn_keeps_both_process_and_thread_debt (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_completed_but_unbound_turn_keeps_both_process_and_thread_debt) ... ok
+test_owner_liveness_never_reads_a_failed_query_as_death (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_owner_liveness_never_reads_a_failed_query_as_death)
+N4: only a PID that verifiably does not exist (or has exited) is dead. ... ok
+test_resume_failure_refuses_without_running_anything (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_resume_failure_refuses_without_running_anything) ... ok
+test_setup_exception_after_attach_kills_the_child_and_blocks_the_session (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_setup_exception_after_attach_kills_the_child_and_blocks_the_session) ... ok
+test_stale_marker_with_a_live_owner_is_never_auto_cleared (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_stale_marker_with_a_live_owner_is_never_auto_cleared) ... ok
+test_unowned_dead_owner_stays_in_doubt (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_unowned_dead_owner_stays_in_doubt) ... ok
+test_unqueryable_identity_counts_as_alive_in_either_position (tests.test_review2.N3N4_OwnershipAndStaleRecovery.test_unqueryable_identity_counts_as_alive_in_either_position) ... ok
+test_a_count_that_persists_past_the_grace_window_is_still_a_survivor (tests.test_review2.N3_ExitAccountingLag.test_a_count_that_persists_past_the_grace_window_is_still_a_survivor) ... ok
+test_transient_count_after_a_normal_exit_is_not_a_survivor (tests.test_review2.N3_ExitAccountingLag.test_transient_count_after_a_normal_exit_is_not_a_survivor) ... ok
+test_a_second_maintenance_owner_can_neither_start_nor_clear_the_first (tests.test_review2.N5_ExclusiveMaintenance.test_a_second_maintenance_owner_can_neither_start_nor_clear_the_first) ... ok
+test_a_stale_flag_blocks_calls_until_the_operator_clears_it (tests.test_review2.N5_ExclusiveMaintenance.test_a_stale_flag_blocks_calls_until_the_operator_clears_it) ... ok
+test_exactly_one_of_many_concurrent_admins_wins (tests.test_review2.N5_ExclusiveMaintenance.test_exactly_one_of_many_concurrent_admins_wins) ... ok
+test_session_mutations_refuse_while_registry_wide_maintenance_is_active (tests.test_review2.N5_ExclusiveMaintenance.test_session_mutations_refuse_while_registry_wide_maintenance_is_active) ... ok
+test_a_spawn_failure_ran_nothing_and_does_not_block_the_session (tests.test_review2.N6_DurableAdmissionAndPersistence.test_a_spawn_failure_ran_nothing_and_does_not_block_the_session) ... ok
+test_crash_between_verification_and_binding_never_allows_a_silent_second_thread (tests.test_review2.N6_DurableAdmissionAndPersistence.test_crash_between_verification_and_binding_never_allows_a_silent_second_thread) ... ok
+test_independent_facts_are_all_reported_when_several_apply (tests.test_review2.N6_DurableAdmissionAndPersistence.test_independent_facts_are_all_reported_when_several_apply)
+persistence + changed repository + in-doubt process state are separate warnings. ... session pointer not saved: registry_unwritable
+ok
+test_inflight_marker_is_kept_until_the_pointer_is_committed (tests.test_review2.N6_DurableAdmissionAndPersistence.test_inflight_marker_is_kept_until_the_pointer_is_committed) ... ok
+test_instance_file_write_failure_is_a_partial_success_not_an_internal_error (tests.test_review2.N6_DurableAdmissionAndPersistence.test_instance_file_write_failure_is_a_partial_success_not_an_internal_error) ... session pointer not saved: registry_unwritable
+ok
+test_no_inference_without_a_persisted_inflight_marker (tests.test_review2.N6_DurableAdmissionAndPersistence.test_no_inference_without_a_persisted_inflight_marker) ... ok
+test_resumed_banner_only_claims_the_pointer_when_a_fresh_read_proves_it (tests.test_review2.N6_DurableAdmissionAndPersistence.test_resumed_banner_only_claims_the_pointer_when_a_fresh_read_proves_it) ... session pointer not saved: registry_lost
+ok
+test_ordinary_failures_remain_ordinary (tests.test_review2.N7_InfrastructureEvidence.test_ordinary_failures_remain_ordinary) ... ok
+test_oversized_line_with_a_signature_is_counted_not_skipped (tests.test_review2.N7_InfrastructureEvidence.test_oversized_line_with_a_signature_is_counted_not_skipped) ... ok
+test_oversized_line_without_a_signature_is_not_a_failure (tests.test_review2.N7_InfrastructureEvidence.test_oversized_line_without_a_signature_is_not_a_failure) ... ok
+test_pre_completion_error_event_with_a_signature_is_not_ordinary_success (tests.test_review2.N7_InfrastructureEvidence.test_pre_completion_error_event_with_a_signature_is_not_ordinary_success) ... ok
+test_reconnect_noise_without_a_signature_stays_tolerated (tests.test_review2.N7_InfrastructureEvidence.test_reconnect_noise_without_a_signature_stays_tolerated) ... ok
+test_repo_bound_signatures_are_ignored_when_the_command_ran_elsewhere (tests.test_review2.N7_InfrastructureEvidence.test_repo_bound_signatures_are_ignored_when_the_command_ran_elsewhere) ... ok
+test_repository_read_failures_beyond_not_a_git_repository (tests.test_review2.N7_InfrastructureEvidence.test_repository_read_failures_beyond_not_a_git_repository) ... ok
+test_signature_deep_inside_a_long_failed_output_is_found (tests.test_review2.N7_InfrastructureEvidence.test_signature_deep_inside_a_long_failed_output_is_found) ... ok
+test_allowed_servers_are_reported_from_the_final_readout (tests.test_review2.N8_CapabilityDrift.test_allowed_servers_are_reported_from_the_final_readout) ... ok
+test_duplicate_feature_rows_fail_closed (tests.test_review2.N8_CapabilityDrift.test_duplicate_feature_rows_fail_closed) ... ok
+test_resolved_evidence_is_labelled_snapshot_scoped (tests.test_review2.N8_CapabilityDrift.test_resolved_evidence_is_labelled_snapshot_scoped) ... ok
+test_server_enabled_between_audit_and_exec_blocks_inference (tests.test_review2.N8_CapabilityDrift.test_server_enabled_between_audit_and_exec_blocks_inference) ... ok
+test_server_enabled_during_the_turn_is_reported (tests.test_review2.N8_CapabilityDrift.test_server_enabled_during_the_turn_is_reported) ... ok
+test_a_missing_required_file_is_refused (tests.test_review2.VerificationPromptBuilder.test_a_missing_required_file_is_refused) ... ok
+test_assemble_embeds_files_diffs_and_records_hashes_without_sending (tests.test_review2.VerificationPromptBuilder.test_assemble_embeds_files_diffs_and_records_hashes_without_sending) ... ok
+test_stale_failing_or_missing_evidence_is_refused (tests.test_review2.VerificationPromptBuilder.test_stale_failing_or_missing_evidence_is_refused) ... ok
+test_the_material_the_reviewer_said_was_missing_is_embedded (tests.test_review2.VerificationPromptBuilder.test_the_material_the_reviewer_said_was_missing_is_embedded) ... ok
+test_the_tool_has_no_way_to_send_anything (tests.test_review2.VerificationPromptBuilder.test_the_tool_has_no_way_to_send_anything)
+Structural: the module imports nothing that can start a process or open a connection ... ok
+test_an_allow_listed_server_first_enabled_at_the_last_recheck_is_reported (tests.test_review3.V10_CapabilityRecheck.test_an_allow_listed_server_first_enabled_at_the_last_recheck_is_reported) ... ok
+test_the_recheck_follows_the_durable_marker_and_a_refusal_leaves_no_false_uncertainty (tests.test_review3.V10_CapabilityRecheck.test_the_recheck_follows_the_durable_marker_and_a_refusal_leaves_no_false_uncertainty) ... ok
+test_a_head_whose_object_is_missing_is_not_called_unborn (tests.test_review3.V12_FingerprintReadCompleteness.test_a_head_whose_object_is_missing_is_not_called_unborn) ... ok
+test_a_reader_exception_makes_the_capture_incomplete (tests.test_review3.V12_FingerprintReadCompleteness.test_a_reader_exception_makes_the_capture_incomplete) ... ok
+test_a_verified_unborn_repository_is_still_fingerprinted (tests.test_review3.V12_FingerprintReadCompleteness.test_a_verified_unborn_repository_is_still_fingerprinted) ... ok
+test_an_incomplete_head_read_is_unavailable_not_unborn (tests.test_review3.V12_FingerprintReadCompleteness.test_an_incomplete_head_read_is_unavailable_not_unborn) ... ok
+test_run_problems_rejects_a_changed_tree_a_nonzero_exit_and_skips (tests.test_review3.V13_EvidenceBinding.test_run_problems_rejects_a_changed_tree_a_nonzero_exit_and_skips) ... ok
+test_the_prompt_gate_checks_after_run_hash_exit_code_skips_and_the_retained_log (tests.test_review3.V13_EvidenceBinding.test_the_prompt_gate_checks_after_run_hash_exit_code_skips_and_the_retained_log) ... ok
+test_mcp_list_is_normalised_to_names_and_enabled_flags_only (tests.test_review3.V13_NothingLocalLeavesTheMachine.test_mcp_list_is_normalised_to_names_and_enabled_flags_only) ... ok
+test_scrub_replaces_the_profile_path_in_every_slash_style_and_the_account_name (tests.test_review3.V13_NothingLocalLeavesTheMachine.test_scrub_replaces_the_profile_path_in_every_slash_style_and_the_account_name) ... ok
+test_the_prompt_builder_embeds_scrubbed_text_and_flags_it (tests.test_review3.V13_NothingLocalLeavesTheMachine.test_the_prompt_builder_embeds_scrubbed_text_and_flags_it) ... ok
+test_a_disabled_preflight_is_visible_to_the_caller (tests.test_review3.V14_WarningsAreNeverHidden.test_a_disabled_preflight_is_visible_to_the_caller) ... ok
+test_details_precede_the_answer (tests.test_review3.V14_WarningsAreNeverHidden.test_details_precede_the_answer) ... ok
+test_every_recorded_warning_has_caller_visible_text_even_if_a_call_site_forgets (tests.test_review3.V14_WarningsAreNeverHidden.test_every_recorded_warning_has_caller_visible_text_even_if_a_call_site_forgets)
+A future call site that records a warning without text must still be rendered. ... ok
+test_there_is_no_prefix_exemption_left (tests.test_review3.V14_WarningsAreNeverHidden.test_there_is_no_prefix_exemption_left)
+R12: a code is rendered only when its banner was actually produced (exact codes). ... ok
+test_unavailable_post_turn_recheck_and_reaped_descendants_are_bannered (tests.test_review3.V14_WarningsAreNeverHidden.test_unavailable_post_turn_recheck_and_reaped_descendants_are_bannered) ... ok
+test_a_thread_started_event_with_a_trailing_newline_is_dropped_at_ingress (tests.test_review3.V15_ExactFormats.test_a_thread_started_event_with_a_trailing_newline_is_dropped_at_ingress) ... ok
+test_admin_model_and_session_arguments_must_match_in_full (tests.test_review3.V15_ExactFormats.test_admin_model_and_session_arguments_must_match_in_full)
+The call sites, not just the patterns: `$` accepted a trailing newline through `.match`. ... ok
+test_telemetry_does_not_restore_a_malformed_thread_id (tests.test_review3.V15_ExactFormats.test_telemetry_does_not_restore_a_malformed_thread_id) ... ok
+test_thread_ids_must_match_in_full (tests.test_review3.V15_ExactFormats.test_thread_ids_must_match_in_full) ... ok
+test_typed_fields_are_checked_against_their_own_schema (tests.test_review3.V15_ExactFormats.test_typed_fields_are_checked_against_their_own_schema) ... ok
+test_a_failed_thread_start_is_a_categorised_failure_and_the_job_is_released (tests.test_review3.V1_RunnerCleanup.test_a_failed_thread_start_is_a_categorised_failure_and_the_job_is_released) ... ok
+test_a_reader_thread_failing_to_start_never_lets_the_prompt_be_written (tests.test_review3.V1_RunnerCleanup.test_a_reader_thread_failing_to_start_never_lets_the_prompt_be_written) ... ok
+test_a_surviving_descendant_is_killed_when_setup_fails_after_the_root_exited (tests.test_review3.V1_RunnerCleanup.test_a_surviving_descendant_is_killed_when_setup_fails_after_the_root_exited) ... ok
+test_constructors_after_popen_are_inside_the_cleanup_scope (tests.test_review3.V1_RunnerCleanup.test_constructors_after_popen_are_inside_the_cleanup_scope) ... ok
+test_a_dead_owner_with_a_running_phase_is_never_auto_recovered (tests.test_review3.V2V3_StaleRecoveryNeverDeletesTheOnlyRecord.test_a_dead_owner_with_a_running_phase_is_never_auto_recovered)
+V2.2: the bridge died before the completed-phase write; the turn may have completed. ... ok
+test_completed_unbound_survives_a_failed_pending_write_and_keeps_blocking (tests.test_review3.V2V3_StaleRecoveryNeverDeletesTheOnlyRecord.test_completed_unbound_survives_a_failed_pending_write_and_keeps_blocking) ... ok
+test_hard_owner_death_requires_operator_reconciliation_even_when_job_owned (tests.test_review3.V2V3_StaleRecoveryNeverDeletesTheOnlyRecord.test_hard_owner_death_requires_operator_reconciliation_even_when_job_owned)
+V3: the OS closed the job, but commands started by the sandbox SERVICE are outside it. ... ok
+test_the_recovery_workflow_separates_process_confirmation_from_thread_disposition (tests.test_review3.V2V3_StaleRecoveryNeverDeletesTheOnlyRecord.test_the_recovery_workflow_separates_process_confirmation_from_thread_disposition) ... ok
+test_a_valid_override_is_still_used (tests.test_review3.V4_TelemetryNeverEscapesTheStateBoundary.test_a_valid_override_is_still_used) ... ok
+test_an_invalid_override_falls_back_only_to_a_validated_default (tests.test_review3.V4_TelemetryNeverEscapesTheStateBoundary.test_an_invalid_override_falls_back_only_to_a_validated_default) ... ok
+test_home_equal_to_the_repository_writes_nothing_after_the_rejection (tests.test_review3.V4_TelemetryNeverEscapesTheStateBoundary.test_home_equal_to_the_repository_writes_nothing_after_the_rejection) ... telemetry skipped: no safe state directory (record not written)
+ok
+test_a_git_in_the_repository_or_cwd_is_never_selected (tests.test_review3.V6_ExecutableSelection.test_a_git_in_the_repository_or_cwd_is_never_selected) ... ok
+test_git_commands_use_an_absolute_trusted_executable_and_a_scrubbed_env (tests.test_review3.V6_ExecutableSelection.test_git_commands_use_an_absolute_trusted_executable_and_a_scrubbed_env) ... ok
+test_no_trusted_git_makes_the_fingerprint_unavailable_not_unsafe (tests.test_review3.V6_ExecutableSelection.test_no_trusted_git_makes_the_fingerprint_unavailable_not_unsafe) ... ok
+test_resolve_cli_does_not_pick_a_codex_shipped_by_the_project (tests.test_review3.V6_ExecutableSelection.test_resolve_cli_does_not_pick_a_codex_shipped_by_the_project) ... ok
+test_taskkill_and_tasklist_are_absolute_system_paths (tests.test_review3.V6_ExecutableSelection.test_taskkill_and_tasklist_are_absolute_system_paths) ... ok
+test_the_current_directory_is_never_searched (tests.test_review3.V6_ExecutableSelection.test_the_current_directory_is_never_searched) ... ok
+test_a_signature_in_the_middle_of_an_oversized_line_is_found (tests.test_review3.V7_InfrastructureEvidenceIsComplete.test_a_signature_in_the_middle_of_an_oversized_line_is_found) ... ok
+test_oversized_prose_is_not_flagged_but_an_unknown_oversized_record_is (tests.test_review3.V7_InfrastructureEvidenceIsComplete.test_oversized_prose_is_not_flagged_but_an_unknown_oversized_record_is) ... ok
+test_signatures_in_nested_output_containers_are_found (tests.test_review3.V7_InfrastructureEvidenceIsComplete.test_signatures_in_nested_output_containers_are_found) ... ok
+test_the_command_that_was_asked_is_not_evidence (tests.test_review3.V7_InfrastructureEvidenceIsComplete.test_the_command_that_was_asked_is_not_evidence) ... ok
+test_the_oversize_scan_streams_every_byte_across_chunk_boundaries (tests.test_review3.V7_InfrastructureEvidenceIsComplete.test_the_oversize_scan_streams_every_byte_across_chunk_boundaries) ... ok
+test_adopt_settles_the_retained_marker_and_the_session_continues_on_that_thread (tests.test_review3.V8_RetainedMarkerRecovery.test_adopt_settles_the_retained_marker_and_the_session_continues_on_that_thread) ... session pointer not saved: registry_unwritable
+ok
+test_adopting_a_different_thread_does_not_settle_the_record_of_another (tests.test_review3.V8_RetainedMarkerRecovery.test_adopting_a_different_thread_does_not_settle_the_record_of_another) ... session pointer not saved: registry_unwritable
+ok
+test_independent_process_uncertainty_survives_adopt_and_reset (tests.test_review3.V8_RetainedMarkerRecovery.test_independent_process_uncertainty_survives_adopt_and_reset)
+in doubt AND the pointer/pending writes failed: two facts, two resolutions. ... session pointer not saved: registry_unwritable
+ok
+test_reconcile_does_not_discard_an_unsaved_thread (tests.test_review3.V8_RetainedMarkerRecovery.test_reconcile_does_not_discard_an_unsaved_thread) ... session pointer not saved: registry_unwritable
+ok
+test_reset_discards_the_disposition_debt (tests.test_review3.V8_RetainedMarkerRecovery.test_reset_discards_the_disposition_debt) ... session pointer not saved: registry_unwritable
+ok
+test_a_failing_quiescence_probe_leaves_no_flag_and_no_lock (tests.test_review3.V9_Maintenance.test_a_failing_quiescence_probe_leaves_no_flag_and_no_lock) ... ok
+test_a_failing_unlink_still_releases_the_lock (tests.test_review3.V9_Maintenance.test_a_failing_unlink_still_releases_the_lock) ... ok
+test_a_stale_flag_is_not_overwritten_by_a_new_maintenance_command (tests.test_review3.V9_Maintenance.test_a_stale_flag_is_not_overwritten_by_a_new_maintenance_command) ... ok
+test_a_genuine_first_initialisation_is_still_allowed (tests.test_review4.N10_IdentityAndRegistryBothLost.test_a_genuine_first_initialisation_is_still_allowed) ... ok
+test_a_surviving_registry_backup_proves_loss_even_without_instance_json (tests.test_review4.N10_IdentityAndRegistryBothLost.test_a_surviving_registry_backup_proves_loss_even_without_instance_json) ... ok
+test_a_failing_poll_during_cleanup_does_not_replace_the_original_error (tests.test_review4.R10_CleanupGapsAndMasking.test_a_failing_poll_during_cleanup_does_not_replace_the_original_error) ... ok
+test_bookkeeping_is_created_before_the_child_exists (tests.test_review4.R10_CleanupGapsAndMasking.test_bookkeeping_is_created_before_the_child_exists) ... ok
+test_non_string_values_never_raise_and_never_drop_the_record (tests.test_review4.R11_TypedTelemetryFields.test_non_string_values_never_raise_and_never_drop_the_record) ... ok
+test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered (tests.test_review4.R12_ExactRenderedCodes.test_a_code_that_merely_resembles_an_exempt_prefix_is_still_rendered) ... ok
+test_post_turn_unexpected_servers_are_named_uncontained_exposures (tests.test_review4.R12_ExactRenderedCodes.test_post_turn_unexpected_servers_are_named_uncontained_exposures) ... ok
+test_an_unchanged_filesystem_is_enforcement_only_when_attempt_and_refusal_are_recorded (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_an_unchanged_filesystem_is_enforcement_only_when_attempt_and_refusal_are_recorded) ... ok
+test_narration_is_not_a_positive_control (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_narration_is_not_a_positive_control) ... ok
+test_the_harness_no_longer_treats_the_reply_as_evidence (tests.test_review4.R13_SmokeOraclesUseRecordedCalls.test_the_harness_no_longer_treats_the_reply_as_evidence) ... ok
+test_a_resumed_call_never_leaves_a_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_a_resumed_call_never_leaves_a_debt) ... ok
+test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_an_interrupted_fresh_turn_that_announced_a_thread_leaves_a_debt) ... ok
+test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reconcile_on_a_raw_stale_record_keeps_the_fresh_threads_debt) ... ok
+test_reset_and_adopt_recognise_a_raw_stale_record_but_keep_the_process_fact (tests.test_review4.R1_ThreadDebtIsDerivedOnEveryPath.test_reset_and_adopt_recognise_a_raw_stale_record_but_keep_the_process_fact)
+S1: the thread's disposition is settled; the raw record - the only trace of the process ... ok
+test_a_completed_phase_with_a_dead_owner_still_needs_reconcile (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_completed_phase_with_a_dead_owner_still_needs_reconcile) ... ok
+test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_a_failed_uncertain_write_is_not_masked_by_a_later_phase_update) ... ok
+test_recovery_makes_the_process_fact_durable_before_the_thread_debt (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_recovery_makes_the_process_fact_durable_before_the_thread_debt) ... ok
+test_reset_clears_thread_debt_but_keeps_independent_process_uncertainty (tests.test_review4.R2_ProcessUncertaintyIsDurableFirst.test_reset_clears_thread_debt_but_keeps_independent_process_uncertainty) ... ok
+test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped (tests.test_review4.R3_ExecutionTargets.test_a_trusted_directory_entry_that_resolves_into_the_repo_is_skipped) ... ok
+test_launcher_artifacts_derived_from_a_shim_are_validated (tests.test_review4.R3_ExecutionTargets.test_launcher_artifacts_derived_from_a_shim_are_validated) ... ok
+test_no_bare_git_launch_remains_in_the_harnesses (tests.test_review4.R3_ExecutionTargets.test_no_bare_git_launch_remains_in_the_harnesses) ... ok
+test_system_tools_do_not_trust_inherited_environment_values (tests.test_review4.R3_ExecutionTargets.test_system_tools_do_not_trust_inherited_environment_values) ... ok
+test_a_dead_stdout_reader_withholds_the_answer (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_dead_stdout_reader_withholds_the_answer)
+The reader dies AFTER turn.completed: exit 0 and an answer file would otherwise be a success. ... ok
+test_a_json_escaped_signature_in_an_oversized_line_is_found (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_a_json_escaped_signature_in_an_oversized_line_is_found) ... ok
+test_output_bearing_keys_are_not_skipped (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_output_bearing_keys_are_not_skipped) ... ok
+test_the_item_type_is_read_only_from_the_events_own_item (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_the_item_type_is_read_only_from_the_events_own_item) ... ok
+test_traversal_limits_are_reported_not_silent (tests.test_review4.R4_EvidenceIsNeverSilentlyIncomplete.test_traversal_limits_are_reported_not_silent) ... ok
+test_patch_matches_has_one_narrow_policy (tests.test_review4.R5_WrapperSemantics.test_patch_matches_has_one_narrow_policy) ... ok
+test_shadowed_names_and_use_before_binding_are_rejected (tests.test_review4.R5_WrapperSemantics.test_shadowed_names_and_use_before_binding_are_rejected) ... ok
+test_the_complete_argument_must_equal_the_expected_patch (tests.test_review4.R5_WrapperSemantics.test_the_complete_argument_must_equal_the_expected_patch) ... ok
+test_stage_a_uses_the_same_exact_comparison (tests.test_review4.R6_DenialMustNameTheTarget.test_stage_a_uses_the_same_exact_comparison) ... ok
+test_substring_and_other_directory_are_not_the_target (tests.test_review4.R6_DenialMustNameTheTarget.test_substring_and_other_directory_are_not_the_target) ... ok
+test_a_failing_existence_check_does_not_leak_the_lock (tests.test_review4.R7_MaintenanceCleanupAndReporting.test_a_failing_existence_check_does_not_leak_the_lock) ... ok
+test_failed_flag_removal_is_reported_and_exits_nonzero (tests.test_review4.R7_MaintenanceCleanupAndReporting.test_failed_flag_removal_is_reported_and_exits_nonzero) ... ok
+test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts (tests.test_review4.R8_RefusalCleanupNeverMasksTheRefusal.test_a_marker_unlink_failure_keeps_the_original_refusal_and_the_facts) ... ok
+test_a_summary_that_disagrees_with_its_log_is_rejected (tests.test_review4.R9_EvidenceGate.test_a_summary_that_disagrees_with_its_log_is_rejected) ... ok
+test_every_embedded_record_is_bound_and_the_summary_matches_the_log (tests.test_review4.R9_EvidenceGate.test_every_embedded_record_is_bound_and_the_summary_matches_the_log) ... ok
+test_execution_must_come_from_a_staged_copy_bound_to_the_hash (tests.test_review4.R9_EvidenceGate.test_execution_must_come_from_a_staged_copy_bound_to_the_hash) ... ok
+test_the_recorder_stages_a_copy_and_retains_the_log (tests.test_review4.R9_EvidenceGate.test_the_recorder_stages_a_copy_and_retains_the_log) ... ok
+test_only_show_ref_exit_one_proves_an_unborn_branch (tests.test_review4.V12_RefAbsenceMustBeVerified.test_only_show_ref_exit_one_proves_an_unborn_branch) ... ok
+test_a_truncated_capture_is_not_a_complete_readout (tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_a_truncated_capture_is_not_a_complete_readout) ... ok
+test_allowed_servers_enabled_only_in_the_discovery_list_are_still_accumulated (tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_allowed_servers_enabled_only_in_the_discovery_list_are_still_accumulated) ... ok
+test_mcp_listing_fails_closed_on_an_incomplete_capture (tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_mcp_listing_fails_closed_on_an_incomplete_capture) ... ok
+test_no_bare_git_launch_remains_in_any_tool_or_test (tests.test_review5.Also_TestSuiteHygiene.test_no_bare_git_launch_remains_in_any_tool_or_test)
+A bare `git` is resolved from the current directory first.  Every launch in tools/ and tests/ ... ok
+test_a_file_identical_to_the_verified_snapshot_is_hash_listed_unless_the_review_asked_for_it (tests.test_review5.Also_UnchangedFilesAreListedNotRepeated.test_a_file_identical_to_the_verified_snapshot_is_hash_listed_unless_the_review_asked_for_it) ... ok
+test_a_consistent_record_is_accepted (tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_a_consistent_record_is_accepted) ... ok
+test_api_errors_are_kept_distinct_from_assertions (tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_api_errors_are_kept_distinct_from_assertions) ... ok
+test_each_break_in_the_chain_is_rejected (tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_each_break_in_the_chain_is_rejected) ... ok
+test_the_gate_accounts_for_each_test_not_just_the_footer (tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_the_gate_accounts_for_each_test_not_just_the_footer) ... ok
+test_a_cleanup_that_fails_completely_is_reported_and_does_not_replace_the_refusal (tests.test_review5.S11_NoExecutionRefusalsShareOneGuardedCleanup.test_a_cleanup_that_fails_completely_is_reported_and_does_not_replace_the_refusal) ... ok
+test_spawn_refusal_survives_a_marker_that_cannot_be_deleted (tests.test_review5.S11_NoExecutionRefusalsShareOneGuardedCleanup.test_spawn_refusal_survives_a_marker_that_cannot_be_deleted) ... ok
+test_an_unexpected_server_and_a_failing_turn_are_both_visible (tests.test_review5.S12_ErrorExitsCarryTheRecordedWarnings.test_an_unexpected_server_and_a_failing_turn_are_both_visible) ... ok
+test_the_warning_block_appears_exactly_when_warnings_were_recorded (tests.test_review5.S12_ErrorExitsCarryTheRecordedWarnings.test_the_warning_block_appears_exactly_when_warnings_were_recorded) ... ok
+test_a_directory_that_merely_holds_locks_is_not_an_established_registry (tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_a_directory_that_merely_holds_locks_is_not_an_established_registry) ... ok
+test_loss_after_a_single_successful_call_is_refused (tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_loss_after_a_single_successful_call_is_refused) ... ok
+test_the_lifecycle_journal_is_a_second_witness (tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_the_lifecycle_journal_is_a_second_witness) ... ok
+test_completion_and_an_answer_are_not_enough (tests.test_review5.S14_TheSenderUsesThePackagesValidityPredicate.test_completion_and_an_answer_are_not_enough) ... ok
+test_it_refuses_without_the_allowance_acknowledgement (tests.test_review5.S14_TheSenderUsesThePackagesValidityPredicate.test_it_refuses_without_the_allowance_acknowledgement) ... ok
+test_a_forgotten_state_not_saved_code_is_not_hidden_by_a_real_persistence_banner (tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_forgotten_state_not_saved_code_is_not_hidden_by_a_real_persistence_banner) ... session pointer not saved: registry_unwritable
+ok
+test_a_probe_failure_reports_a_retained_flag_too (tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_probe_failure_reports_a_retained_flag_too) ... ok
+test_a_retained_maintenance_flag_is_reported_when_the_action_raises (tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_retained_maintenance_flag_is_reported_when_the_action_raises) ... ok
+test_a_pure_thread_debt_record_is_still_removed_by_reset (tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_a_pure_thread_debt_record_is_still_removed_by_reset) ... ok
+test_a_settlement_that_cannot_be_persisted_is_reported (tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_a_settlement_that_cannot_be_persisted_is_reported) ... ok
+test_adopt_keeps_a_raw_running_record_and_the_session_stays_blocked (tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_adopt_keeps_a_raw_running_record_and_the_session_stays_blocked) ... ok
+test_reset_keeps_a_raw_running_record_and_the_session_stays_blocked (tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_reset_keeps_a_raw_running_record_and_the_session_stays_blocked) ... ok
+test_a_previously_bound_uncertain_call_is_not_rederived_after_the_pointer_is_retired (tests.test_review5.S2_ASettledDispositionStaysSettled.test_a_previously_bound_uncertain_call_is_not_rederived_after_the_pointer_is_retired) ... ok
+test_reset_of_an_uncertain_fresh_call_is_not_rederived_by_reconcile (tests.test_review5.S2_ASettledDispositionStaysSettled.test_reset_of_an_uncertain_fresh_call_is_not_rederived_by_reconcile) ... ok
+test_thread_debt_honours_a_recorded_settlement_only_for_that_thread (tests.test_review5.S2_ASettledDispositionStaysSettled.test_thread_debt_honours_a_recorded_settlement_only_for_that_thread) ... ok
+test_an_unpersisted_uncertainty_is_never_mirrored_into_a_pending_marker (tests.test_review5.S3_ThePrimaryWriteIsCheckedBeforeMirroring.test_an_unpersisted_uncertainty_is_never_mirrored_into_a_pending_marker) ... ok
+test_reset_after_an_unpersisted_conversion_cannot_make_the_call_runnable (tests.test_review5.S3_ThePrimaryWriteIsCheckedBeforeMirroring.test_reset_after_an_unpersisted_conversion_cannot_make_the_call_runnable) ... ok
+test_a_reader_still_alive_after_its_join_withholds_the_answer (tests.test_review5.S4_AReaderThatDidNotFinishIsIncompleteEvidence.test_a_reader_still_alive_after_its_join_withholds_the_answer) ... C:\Python313\Lib\threading.py:998: ResourceWarning: unclosed file <_io.BufferedReader name=8>
+  del self._target, self._args, self._kwargs
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_turn_problems_names_every_reason_a_review_cannot_be_relied_on (tests.test_review5.S4_AReaderThatDidNotFinishIsIncompleteEvidence.test_turn_problems_names_every_reason_a_review_cannot_be_relied_on) ... ok
+test_a_command_that_supplies_the_refusal_wording_itself_proves_nothing (tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_command_that_supplies_the_refusal_wording_itself_proves_nothing) ... ok
+test_a_printed_refusal_is_not_a_blocked_write (tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_printed_refusal_is_not_a_blocked_write) ... ok
+test_a_read_that_is_denied_is_not_a_denied_write (tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_read_that_is_denied_is_not_a_denied_write) ... ok
+test_genuine_attributed_writes_are_recognised (tests.test_review5.S5_OraclesAttributeOperationsNotText.test_genuine_attributed_writes_are_recognised) ... ok
+test_printing_a_command_and_a_hash_is_not_a_control (tests.test_review5.S5_OraclesAttributeOperationsNotText.test_printing_a_command_and_a_hash_is_not_a_control) ... ok
+test_wrappers_with_logic_or_several_calls_are_not_attributed (tests.test_review5.S5_OraclesAttributeOperationsNotText.test_wrappers_with_logic_or_several_calls_are_not_attributed) ... ok
+test_json_whitespace_escapes_in_an_oversized_line_are_resolved (tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_json_whitespace_escapes_in_an_oversized_line_are_resolved) ... ok
+test_request_named_keys_inside_returned_output_are_scanned (tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_request_named_keys_inside_returned_output_are_scanned) ... ok
+test_the_request_itself_is_still_not_evidence (tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_the_request_itself_is_still_not_evidence) ... ok
+test_unbounded_whitespace_cannot_make_the_scan_quadratic (tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_unbounded_whitespace_cannot_make_the_scan_quadratic) ... ok
+test_kill_tree_never_launches_a_path_built_from_the_environment (tests.test_review5.S7_SystemToolsFailClosed.test_kill_tree_never_launches_a_path_built_from_the_environment) ... ok
+test_no_environment_fallback_when_the_os_query_fails (tests.test_review5.S7_SystemToolsFailClosed.test_no_environment_fallback_when_the_os_query_fails) ... ok
+test_a_raw_carriage_return_inside_a_quoted_string_is_not_attested (tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_a_raw_carriage_return_inside_a_quoted_string_is_not_attested) ... ok
+test_an_escaped_cr_is_still_a_cr (tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_an_escaped_cr_is_still_a_cr) ... ok
+test_reserved_words_cannot_be_binding_identifiers (tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_reserved_words_cannot_be_binding_identifiers) ... ok
+test_a_test_that_rewrites_a_staged_module_invalidates_the_record (tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_a_test_that_rewrites_a_staged_module_invalidates_the_record) ... ok
+test_an_unmodified_stage_records_equal_fingerprints_and_read_only_files (tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_an_unmodified_stage_records_equal_fingerprints_and_read_only_files) ... ok
+test_run_problems_rejects_a_staged_copy_that_changed (tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_run_problems_rejects_a_staged_copy_that_changed) ... ok
+test_a_first_write_whose_backup_cannot_be_written_creates_no_registry (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_a_first_write_whose_backup_cannot_be_written_creates_no_registry) ... session pointer not saved: registry_unwritable
+ok
+test_recovery_advice_does_not_name_a_command_that_cannot_work (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_recovery_advice_does_not_name_a_command_that_cannot_work) ... ok
+test_register_new_leaves_a_journal_witness_and_a_backup (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_register_new_leaves_a_journal_witness_and_a_backup) ... ok
+test_reinit_is_part_of_the_witness_policy (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_reinit_is_part_of_the_witness_policy) ... ok
+test_files_that_differ_only_in_line_endings_are_not_called_unchanged (tests.test_review6.T11_OmissionComparesRawBytes.test_files_that_differ_only_in_line_endings_are_not_called_unchanged) ... ok
+test_a_failing_test_is_failed_not_invalid (tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_failing_test_is_failed_not_invalid) ... ok
+test_a_modified_stage_is_labelled_invalid (tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_modified_stage_is_labelled_invalid) ... ok
+test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record) ... ok
+test_an_observer_never_recreates_a_removed_record (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_an_observer_never_recreates_a_removed_record) ... ok
+test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer) ... ok
+test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write) ... ok
+test_a_refusal_must_be_specific_denial_wording (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_refusal_must_be_specific_denial_wording) ... ok
+test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it) ... ok
+test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt) ... ok
+test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations) ... ok
+test_a_conflicting_record_is_not_pure_thread_debt (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_conflicting_record_is_not_pure_thread_debt) ... ok
+test_a_consistent_persistence_failed_record_is_still_pure (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_consistent_persistence_failed_record_is_still_pure) ... ok
+test_reconcile_treats_a_conflicting_record_as_a_process_fact (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reconcile_treats_a_conflicting_record_as_a_process_fact) ... ok
+test_reset_and_adopt_keep_a_conflicting_record (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reset_and_adopt_keep_a_conflicting_record) ... ok
+test_the_service_converts_a_conflicting_record_instead_of_dropping_it (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_the_service_converts_a_conflicting_record_instead_of_dropping_it) ... ok
+test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted) ... session pointer not saved: registry_unwritable
+ok
+test_unchecked_completion_and_observer_writes_are_reported (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_unchecked_completion_and_observer_writes_are_reported) ... ok
+test_with_a_durable_uncertainty_the_pending_marker_is_still_written (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_with_a_durable_uncertainty_the_pending_marker_is_still_written) ... session pointer not saved: registry_unwritable
+ok
+test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected) ... ok
+test_a_split_inside_an_escape_sequence_is_detected_too (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_split_inside_an_escape_sequence_is_detected_too) ... ok
+test_the_window_is_at_least_the_longest_encoded_signature (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_the_window_is_at_least_the_longest_encoded_signature) ... ok
+test_an_unexpected_exception_after_a_recorded_warning_carries_it (tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_an_unexpected_exception_after_a_recorded_warning_carries_it) ... ok
+test_the_original_exception_is_still_the_cause (tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_the_original_exception_is_still_the_cause) ... ok
+test_a_resumed_review_must_name_the_requested_thread (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_a_resumed_review_must_name_the_requested_thread) ... ok
+test_no_observed_thread_is_a_problem (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_no_observed_thread_is_a_problem) ... ok
+test_the_sender_and_stage_b_use_the_shared_predicate (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_the_sender_and_stage_b_use_the_shared_predicate) ... ok
+test_a_complete_chain_is_accepted (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_complete_chain_is_accepted) ... ok
+test_a_reduced_overlay_is_rejected (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_reduced_overlay_is_rejected) ... ok
+test_a_repeated_passing_line_is_not_two_tests (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_repeated_passing_line_is_not_two_tests) ... ok
+test_ast_identities_follow_inheritance_and_ignore_helpers (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_ast_identities_follow_inheritance_and_ignore_helpers) ... ok
+test_identities_and_kinds_are_reconstructed_not_trusted (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_identities_and_kinds_are_reconstructed_not_trusted) ... ok
+test_snapshot_bytes_are_rehashed_from_disk (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_snapshot_bytes_are_rehashed_from_disk) ... ok
+test_the_module_under_test_must_be_in_the_overlay (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_the_module_under_test_must_be_in_the_overlay) ... ok
+test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected (tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected) ... ok
+test_ordinary_whitespace_is_still_accepted (tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_ordinary_whitespace_is_still_accepted) ... ok
+test_python_whitespace_that_javascript_does_not_accept_is_rejected (tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_python_whitespace_that_javascript_does_not_accept_is_rejected) ... ok
+test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence) ... ok
+test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory) ... ok
+test_an_inconclusive_check_is_named_and_explained_by_its_own_reason (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_an_inconclusive_check_is_named_and_explained_by_its_own_reason) ... ok
+test_any_other_non_string_value_makes_the_call_unattributable (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_any_other_non_string_value_makes_the_call_unattributable) ... ok
+test_every_command_the_probe_requests_is_attributable_by_the_oracle (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_every_command_the_probe_requests_is_attributable_by_the_oracle) ... ok
+test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed) ... ok
+test_the_probe_asks_for_attempts_one_command_per_call (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_asks_for_attempts_one_command_per_call) ... ok
+test_the_probe_names_the_target_it_will_be_judged_on (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_names_the_target_it_will_be_judged_on) ... ok
+test_a_real_repository_read_failure_still_withholds_the_answer (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_real_repository_read_failure_still_withholds_the_answer) ... ok
+test_a_sandbox_refused_git_commit_does_not_withhold_the_answer (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_sandbox_refused_git_commit_does_not_withhold_the_answer) ... ok
+test_a_write_refusal_does_not_hide_a_read_failure_on_another_line (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_write_refusal_does_not_hide_a_read_failure_on_another_line) ... ok
+test_read_failures_and_unreadable_repositories_are_still_flagged (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_read_failures_and_unreadable_repositories_are_still_flagged) ... ok
+test_write_and_lock_refusals_are_not_repository_access_failures (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_write_and_lock_refusals_are_not_repository_access_failures) ... ok
+test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository) ... ok
+test_a_commit_must_be_the_plain_command_in_the_disposable_repository (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_commit_must_be_the_plain_command_in_the_disposable_repository) ... ok
+test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed) ... ok
+test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it) ... ok
+test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable) ... ok
+test_cmd_expansion_and_escape_syntax_is_not_data (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_cmd_expansion_and_escape_syntax_is_not_data) ... ok
+test_doubled_quotes_are_not_silently_concatenated (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_doubled_quotes_are_not_silently_concatenated) ... ok
+test_the_control_is_not_attributed_when_it_ran_elsewhere (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_control_is_not_attributed_when_it_ran_elsewhere) ... ok
+test_the_outer_attack_wrapper_must_be_apply_patch_or_exec (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_outer_attack_wrapper_must_be_apply_patch_or_exec) ... ok
+test_the_target_in_path_position_is_still_an_attempt (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_target_in_path_position_is_still_an_attempt) ... ok
+test_a_failed_final_retained_write_is_reported (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_failed_final_retained_write_is_reported) ... session pointer not saved: registry_unwritable
+ok
+test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer) ... ok
+test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted) ... ok
+test_an_unexpected_state_file_failure_is_never_a_bare_traceback (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_an_unexpected_state_file_failure_is_never_a_bare_traceback) ... ok
+test_reconcile_reports_an_unremovable_inflight_marker (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reconcile_reports_an_unremovable_inflight_marker) ... ok
+test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback) ... ok
+test_a_reinit_that_cannot_leave_its_witness_creates_no_registry (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_a_reinit_that_cannot_leave_its_witness_creates_no_registry) ... ok
+test_reinit_journals_the_event_itself_not_only_the_admin_command (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_reinit_journals_the_event_itself_not_only_the_admin_command) ... ok
+test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss) ... ok
+test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt (tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt) ... ok
+test_the_exception_carries_the_frozen_observed_identity (tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_the_exception_carries_the_frozen_observed_identity) ... ok
+test_diagnostics_are_sanitised (tests.test_review8.D1_LogConfirmedLock.test_diagnostics_are_sanitised) ... ok
+test_the_named_file_and_reason_come_from_the_log_not_from_process_presence (tests.test_review8.D1_LogConfirmedLock.test_the_named_file_and_reason_come_from_the_log_not_from_process_presence) ... ok
+test_an_old_log_entry_is_not_attributed_to_this_call (tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_an_old_log_entry_is_not_attributed_to_this_call) ... ok
+test_node_repl_without_log_evidence_is_reported_as_unconfirmed (tests.test_review8.D2_ProcessOnlyIsUnconfirmed.test_node_repl_without_log_evidence_is_reported_as_unconfirmed) ... ok
+test_a_different_logged_failure_is_reported_as_itself (tests.test_review8.D3_NothingFound.test_a_different_logged_failure_is_reported_as_itself) ... ok
+test_no_process_and_no_log_makes_no_lock_claim (tests.test_review8.D3_NothingFound.test_no_process_and_no_log_makes_no_lock_claim) ... ok
+test_a_repository_read_failure_never_claims_a_lock (tests.test_review8.D4_OtherStagesAndTurnFailures.test_a_repository_read_failure_never_claims_a_lock) ... ok
+test_an_actual_turn_failure_after_a_clean_preflight_names_no_lock (tests.test_review8.D4_OtherStagesAndTurnFailures.test_an_actual_turn_failure_after_a_clean_preflight_names_no_lock) ... ok
+test_a_failed_fresh_call_runs_nothing_and_creates_no_session (tests.test_review8.D5_NoInferenceNoSessionAdvance.test_a_failed_fresh_call_runs_nothing_and_creates_no_session) ... ok
+test_a_failed_resumed_call_leaves_the_bound_session_alone (tests.test_review8.D5_NoInferenceNoSessionAdvance.test_a_failed_resumed_call_leaves_the_bound_session_alone) ... ok
+test_tool_names_and_single_string_inputs_are_unchanged (tests.test_review8.D6_McpSchemasUnchanged.test_tool_names_and_single_string_inputs_are_unchanged) ... ok
+test_the_directory_inherits_where_mkdtemp_does_not (tests.test_review9.W1_FreshDirInheritsItsParentsAcl.test_the_directory_inherits_where_mkdtemp_does_not) ... ok
+test_the_helper_exists_and_makes_unique_directories (tests.test_review9.W1_FreshDirInheritsItsParentsAcl.test_the_helper_exists_and_makes_unique_directories) ... ok
+test_attack_test_workspace_is_not_a_private_mkdtemp_directory (tests.test_review9.W2_TheHarnessesUseIt.test_attack_test_workspace_is_not_a_private_mkdtemp_directory) ... ok
+test_smoke_test_workspace_is_not_a_private_mkdtemp_directory (tests.test_review9.W2_TheHarnessesUseIt.test_smoke_test_workspace_is_not_a_private_mkdtemp_directory) ... ok
+test_any_attempted_is_false_only_when_nothing_was_attempted (tests.test_review9.W3_ARefusalToAttemptIsReConfirmed.test_any_attempted_is_false_only_when_nothing_was_attempted) ... ok
+test_the_harness_escalates_only_when_nothing_was_attempted (tests.test_review9.W3_ARefusalToAttemptIsReConfirmed.test_the_harness_escalates_only_when_nothing_was_attempted) ... ok
+test_the_retry_text_asks_for_the_same_attributable_commands (tests.test_review9.W3_ARefusalToAttemptIsReConfirmed.test_the_retry_text_asks_for_the_same_attributable_commands) ... ok
+test_a_failed_row_a_broken_control_or_a_missing_control_blocks_it (tests.test_review9.W4_StageBGate.test_a_failed_row_a_broken_control_or_a_missing_control_blocks_it) ... ok
+test_inconclusive_attacks_alone_do_not_block_the_live_stage (tests.test_review9.W4_StageBGate.test_inconclusive_attacks_alone_do_not_block_the_live_stage) ... ok
+test_new_then_first_call_uses_named_session (tests.test_server_admin.AdminCli.test_new_then_first_call_uses_named_session) ... ok
+test_quarantine_recovers_from_corrupt_registry_explicitly (tests.test_server_admin.AdminCli.test_quarantine_recovers_from_corrupt_registry_explicitly) ... ok
+test_reset_refuses_while_a_call_is_running (tests.test_server_admin.AdminCli.test_reset_refuses_while_a_call_is_running) ... ok
+test_reset_requires_yes_retires_pointer_keeps_audit_and_next_call_is_fresh (tests.test_server_admin.AdminCli.test_reset_requires_yes_retires_pointer_keeps_audit_and_next_call_is_fresh) ... ok
+test_status_flags_problems_with_nonzero_exit (tests.test_server_admin.AdminCli.test_status_flags_problems_with_nonzero_exit) ... ok
+test_status_reports_routes_auth_audit_and_registry_without_inference (tests.test_server_admin.AdminCli.test_status_reports_routes_auth_audit_and_registry_without_inference) ... ok
+test_signatures_are_single_required_string (tests.test_server_admin.McpSurface.test_signatures_are_single_required_string) ... ok
+test_three_tools_with_original_v1_schemas (tests.test_server_admin.McpSurface.test_three_tools_with_original_v1_schemas) ... ok
+test_client_session_end_to_end_with_one_argument_callers (tests.test_server_admin.StdioRoundTrip.test_client_session_end_to_end_with_one_argument_callers) ... Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+ok
+test_mcp_cancellation_notification_kills_tree_and_writes_terminal_record (tests.test_server_admin.StdioRoundTrip.test_mcp_cancellation_notification_kills_tree_and_writes_terminal_record) ... ok
+test_stdout_carries_only_json_rpc (tests.test_server_admin.StdioRoundTrip.test_stdout_carries_only_json_rpc) ... ok
+test_allow_list_is_explicit_and_reported (tests.test_service.CapabilityAudit.test_allow_list_is_explicit_and_reported) ... ok
+test_audit_failure_blocks_inference (tests.test_service.CapabilityAudit.test_audit_failure_blocks_inference) ... ok
+test_hooks_found_are_disabled_and_reported_or_block_when_not_disableable (tests.test_service.CapabilityAudit.test_hooks_found_are_disabled_and_reported_or_block_when_not_disableable) ... ok
+test_mcp_servers_are_disabled_and_verified_before_inference (tests.test_service.CapabilityAudit.test_mcp_servers_are_disabled_and_verified_before_inference) ... ok
+test_repo_level_codex_config_with_hooks_is_detected (tests.test_service.CapabilityAudit.test_repo_level_codex_config_with_hooks_is_detected) ... ok
+test_corrupt_registry_blocks_inference_and_is_untouched (tests.test_service.FailureModes.test_corrupt_registry_blocks_inference_and_is_untouched) ... ok
+test_incomplete_outputs (tests.test_service.FailureModes.test_incomplete_outputs) ... ok
+test_input_validation_happens_before_any_cli_use (tests.test_service.FailureModes.test_input_validation_happens_before_any_cli_use) ... ok
+test_missing_cli (tests.test_service.FailureModes.test_missing_cli) ... ok
+test_missing_saved_session_reported_not_replaced (tests.test_service.FailureModes.test_missing_saved_session_reported_not_replaced) ... ok
+test_nonzero_exit_preserves_state_and_never_replays (tests.test_service.FailureModes.test_nonzero_exit_preserves_state_and_never_replays) ... ok
+test_rate_limit_is_categorised (tests.test_service.FailureModes.test_rate_limit_is_categorised) ... ok
+test_runtime_auth_failure_is_categorised (tests.test_service.FailureModes.test_runtime_auth_failure_is_categorised) ... ok
+test_state_inside_repository_is_refused (tests.test_service.FailureModes.test_state_inside_repository_is_refused) ... ok
+test_state_pointer_save_failure_does_not_discard_or_replay (tests.test_service.FailureModes.test_state_pointer_save_failure_does_not_discard_or_replay) ... session pointer not saved: registry_unwritable
+ok
+test_thread_mismatch_on_resume_is_not_concealed (tests.test_service.FailureModes.test_thread_mismatch_on_resume_is_not_concealed) ... ok
+test_unsupported_effort_and_model_rejected_before_inference (tests.test_service.FailureModes.test_unsupported_effort_and_model_rejected_before_inference) ... ok
+test_untested_cli_version_blocked_unless_opted_in (tests.test_service.FailureModes.test_untested_cli_version_blocked_unless_opted_in) ... ok
+test_error_event_before_completion_is_tolerated_but_after_is_not (tests.test_service.HappyPath.test_error_event_before_completion_is_tolerated_but_after_is_not) ... ok
+test_events_with_unknown_types_and_garbage_lines_still_succeed (tests.test_service.HappyPath.test_events_with_unknown_types_and_garbage_lines_still_succeed) ... ok
+test_fresh_then_resumed_with_continuity_and_telemetry (tests.test_service.HappyPath.test_fresh_then_resumed_with_continuity_and_telemetry) ... ok
+test_huge_stderr_is_tail_bounded_in_errors_and_never_in_telemetry (tests.test_service.HappyPath.test_huge_stderr_is_tail_bounded_in_errors_and_never_in_telemetry) ... ok
+test_missing_usage_is_null_not_zero (tests.test_service.HappyPath.test_missing_usage_is_null_not_zero) ... ok
+test_named_session_is_separate_from_default (tests.test_service.HappyPath.test_named_session_is_separate_from_default) ... ok
+test_oversize_event_lines_are_skipped_and_capture_is_bounded (tests.test_service.HappyPath.test_oversize_event_lines_are_skipped_and_capture_is_bounded) ... ok
+test_per_tool_routing_and_model_separated_sessions (tests.test_service.HappyPath.test_per_tool_routing_and_model_separated_sessions) ... ok
+test_prompt_composition_matches_v1 (tests.test_service.HappyPath.test_prompt_composition_matches_v1) ... ok
+test_repository_isolation (tests.test_service.HappyPath.test_repository_isolation) ... ok
+test_can_be_disabled_explicitly_and_is_recorded (tests.test_service.SandboxPreflight.test_can_be_disabled_explicitly_and_is_recorded) ... ok
+test_failure_does_not_poison_the_next_call_and_lock_is_released (tests.test_service.SandboxPreflight.test_failure_does_not_poison_the_next_call_and_lock_is_released) ... ok
+test_repo_unreadable_is_distinguished (tests.test_service.SandboxPreflight.test_repo_unreadable_is_distinguished) ... ok
+test_resumed_calls_are_preflighted_too (tests.test_service.SandboxPreflight.test_resumed_calls_are_preflighted_too) ... ok
+test_runs_before_inference_with_same_overrides_and_read_only (tests.test_service.SandboxPreflight.test_runs_before_inference_with_same_overrides_and_read_only) ... ok
+test_setup_failure_blocks_inference_with_actionable_error (tests.test_service.SandboxPreflight.test_setup_failure_blocks_inference_with_actionable_error) ... ok
+test_status_runs_it_only_on_request (tests.test_service.SandboxPreflight.test_status_runs_it_only_on_request) ... ok
+test_exactly_one_terminal_record_per_invocation (tests.test_service.Telemetry.test_exactly_one_terminal_record_per_invocation) ... ok
+test_redaction_by_construction (tests.test_service.Telemetry.test_redaction_by_construction) ... ok
+test_rotation_is_bounded (tests.test_service.Telemetry.test_rotation_is_bounded) ... ok
+test_telemetry_failure_never_fails_or_replays_the_call (tests.test_service.Telemetry.test_telemetry_failure_never_fails_or_replays_the_call) ... telemetry write failed: OSError
+telemetry emit failed: RuntimeError
+ok
+test_cancellation_terminates_children_and_records_terminal_event (tests.test_service.TimeoutAndCancellation.test_cancellation_terminates_children_and_records_terminal_event) ... ok
+test_concurrent_calls_on_one_session_are_serialised (tests.test_service.TimeoutAndCancellation.test_concurrent_calls_on_one_session_are_serialised) ... ok
+test_queue_timeout_when_another_call_holds_the_session (tests.test_service.TimeoutAndCancellation.test_queue_timeout_when_another_call_holds_the_session) ... ok
+test_timeout_kills_process_tree_releases_lock_and_keeps_state (tests.test_service.TimeoutAndCancellation.test_timeout_kills_process_tree_releases_lock_and_keeps_state) ... ok
+test_directory_junction_resolves_to_same_repository (tests.test_state.CanonicalRepo.test_directory_junction_resolves_to_same_repository) ... ok
+test_distinct_repos_distinct_keys (tests.test_state.CanonicalRepo.test_distinct_repos_distinct_keys) ... ok
+test_git_file_worktree_is_accepted (tests.test_state.CanonicalRepo.test_git_file_worktree_is_accepted) ... ok
+test_non_git_directory_is_rejected (tests.test_state.CanonicalRepo.test_non_git_directory_is_rejected) ... ok
+test_same_repo_many_spellings_same_key (tests.test_state.CanonicalRepo.test_same_repo_many_spellings_same_key) ... ok
+test_state_dir_must_be_outside_repo_and_v1 (tests.test_state.CanonicalRepo.test_state_dir_must_be_outside_repo_and_v1) ... ok
+test_lock_excludes_other_process_and_is_released (tests.test_state.Concurrency.test_lock_excludes_other_process_and_is_released) ... ok
+test_lock_is_released_when_holder_dies (tests.test_state.Concurrency.test_lock_is_released_when_holder_dies) ... ok
+test_parallel_processes_do_not_lose_registry_updates (tests.test_state.Concurrency.test_parallel_processes_do_not_lose_registry_updates) ... ok
+test_atomic_write_failure_keeps_previous_registry (tests.test_state.RegistryBehaviour.test_atomic_write_failure_keeps_previous_registry) ... ok
+test_corrupt_registry_is_never_replaced (tests.test_state.RegistryBehaviour.test_corrupt_registry_is_never_replaced) ... ok
+test_hand_edited_entry_mismatch_detected (tests.test_state.RegistryBehaviour.test_hand_edited_entry_mismatch_detected) ... ok
+test_model_session_and_repo_isolation (tests.test_state.RegistryBehaviour.test_model_session_and_repo_isolation) ... ok
+test_quarantine_renames_but_never_deletes (tests.test_state.RegistryBehaviour.test_quarantine_renames_but_never_deletes) ... ok
+test_rebind_to_different_thread_is_refused (tests.test_state.RegistryBehaviour.test_rebind_to_different_thread_is_refused) ... ok
+test_register_new_is_idempotent_and_does_not_clobber (tests.test_state.RegistryBehaviour.test_register_new_is_idempotent_and_does_not_clobber) ... ok
+test_reset_retires_pointer_and_keeps_thread_id_for_audit (tests.test_state.RegistryBehaviour.test_reset_retires_pointer_and_keeps_thread_id_for_audit) ... ok
+test_restart_continuity (tests.test_state.RegistryBehaviour.test_restart_continuity) ... ok
+
+----------------------------------------------------------------------
+Ran 531 tests in 605.672s
+
+OK

@@ -1,0 +1,131 @@
+{
+  "schema": "start-01/1",
+  "generated_at": "2026-10-15T06:14:26Z",
+  "mode": "startup",
+  "verdict": "pass_native_unverified",
+  "exit_code": 0,
+  "failures": [],
+  "warnings": [
+    "open_checkout_in_codex_manually"
+  ],
+  "app": {
+    "status": "reused",
+    "checkout": "manual_action_required",
+    "native_tool_connection": "unverified"
+  },
+  "dashboard": {
+    "port": 8089,
+    "url": "http://127.0.0.1:8089/",
+    "state": "healthy",
+    "code": "ok",
+    "telemetry": {
+      "complete": true,
+      "reasons": []
+    },
+    "action": "started",
+    "started_pid": 17636
+  },
+  "mcp_transport": {
+    "status": "pass",
+    "scope": "direct temporary stdio clients; initialize, tools/list and read-only checks; no model calls",
+    "launches": 3,
+    "registrations": {
+      "gpt-architect": {
+        "status": "pass",
+        "transport": "pass",
+        "code": "ok",
+        "tools": {
+          "expected": [
+            "consult_architect",
+            "review_implementation"
+          ],
+          "missing": [],
+          "discovered": 2
+        },
+        "read_only_checks": {},
+        "elapsed_ms": 1784,
+        "cleanup": "descendants_reaped",
+        "same_launch_as": null
+      },
+      "gpt-architect-v1": {
+        "status": "pass",
+        "transport": "pass",
+        "code": "ok",
+        "tools": {
+          "expected": [
+            "consult_architect",
+            "review_implementation"
+          ],
+          "missing": [],
+          "discovered": 2
+        },
+        "read_only_checks": {},
+        "elapsed_ms": 1760,
+        "cleanup": "descendants_reaped",
+        "same_launch_as": null
+      },
+      "gpt-architect-v2": {
+        "status": "pass",
+        "transport": "pass",
+        "code": "ok",
+        "tools": {
+          "expected": [
+            "consult_architect",
+            "review_implementation"
+          ],
+          "missing": [],
+          "discovered": 2
+        },
+        "read_only_checks": {},
+        "elapsed_ms": 1784,
+        "cleanup": "descendants_reaped",
+        "same_launch_as": "gpt-architect"
+      },
+      "claude-implementer": {
+        "status": "pass",
+        "transport": "pass",
+        "code": "ok",
+        "tools": {
+          "expected": [
+            "capture_source_state",
+            "implement_changes",
+            "implementation_status",
+            "list_receipts",
+            "record_review"
+          ],
+          "missing": [],
+          "discovered": 5
+        },
+        "read_only_checks": {
+          "capture_source_state": "ok",
+          "list_receipts": "ok"
+        },
+        "elapsed_ms": 4636,
+        "cleanup": "descendants_reaped",
+        "same_launch_as": null
+      }
+    }
+  },
+  "cli": {
+    "executables": {
+      "claude": "found",
+      "codex": "found"
+    },
+    "auth": {
+      "claude": {
+        "status": "signed_in",
+        "code": "ok",
+        "cleanup": "exited"
+      },
+      "codex": {
+        "status": "signed_in",
+        "code": "ok",
+        "cleanup": "descendants_reaped"
+      }
+    }
+  },
+  "not_verified": [
+    "native_app_tool_connection",
+    "cold_reboot_persistence"
+  ]
+}

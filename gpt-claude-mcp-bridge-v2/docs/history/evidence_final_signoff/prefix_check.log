@@ -1,0 +1,405 @@
+RESULT_JSON:{"tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence": "error", "tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory": "error", "tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_an_inconclusive_check_is_named_and_explained_by_its_own_reason": "error", "tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_any_other_non_string_value_makes_the_call_unattributable": "error", "tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_every_command_the_probe_requests_is_attributable_by_the_oracle": "error", "tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed": "error", "tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_asks_for_attempts_one_command_per_call": "fail", "tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_names_the_target_it_will_be_judged_on": "fail", "tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_real_repository_read_failure_still_withholds_the_answer": "pass", "tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_sandbox_refused_git_commit_does_not_withhold_the_answer": "error", "tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_write_refusal_does_not_hide_a_read_failure_on_another_line": "pass", "tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_read_failures_and_unreadable_repositories_are_still_flagged": "pass", "tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_write_and_lock_refusals_are_not_repository_access_failures": "fail", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository": "error", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_commit_must_be_the_plain_command_in_the_disposable_repository": "fail", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed": "error", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it": "fail", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable": "fail", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_cmd_expansion_and_escape_syntax_is_not_data": "fail", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_doubled_quotes_are_not_silently_concatenated": "fail", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_control_is_not_attributed_when_it_ran_elsewhere": "error", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_outer_attack_wrapper_must_be_apply_patch_or_exec": "fail", "tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_target_in_path_position_is_still_an_attempt": "pass", "tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_failed_final_retained_write_is_reported": "fail", "tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer": "error", "tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted": "error", "tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_an_unexpected_state_file_failure_is_never_a_bare_traceback": "error", "tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reconcile_reports_an_unremovable_inflight_marker": "error", "tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback": "error", "tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_a_reinit_that_cannot_leave_its_witness_creates_no_registry": "fail", "tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_reinit_journals_the_event_itself_not_only_the_admin_command": "fail", "tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss": "fail", "tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt": "fail", "tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_the_exception_carries_the_frozen_observed_identity": "fail"}
+test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence) ... ERROR
+test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory) ... ERROR
+test_an_inconclusive_check_is_named_and_explained_by_its_own_reason (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_an_inconclusive_check_is_named_and_explained_by_its_own_reason) ... ERROR
+test_any_other_non_string_value_makes_the_call_unattributable (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_any_other_non_string_value_makes_the_call_unattributable) ... ERROR
+test_every_command_the_probe_requests_is_attributable_by_the_oracle (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_every_command_the_probe_requests_is_attributable_by_the_oracle) ... ERROR
+test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed) ... ERROR
+test_the_probe_asks_for_attempts_one_command_per_call (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_asks_for_attempts_one_command_per_call) ... FAIL
+test_the_probe_names_the_target_it_will_be_judged_on (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_names_the_target_it_will_be_judged_on) ... FAIL
+test_a_real_repository_read_failure_still_withholds_the_answer (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_real_repository_read_failure_still_withholds_the_answer) ... ok
+test_a_sandbox_refused_git_commit_does_not_withhold_the_answer (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_sandbox_refused_git_commit_does_not_withhold_the_answer) ... ERROR
+test_a_write_refusal_does_not_hide_a_read_failure_on_another_line (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_write_refusal_does_not_hide_a_read_failure_on_another_line) ... ok
+test_read_failures_and_unreadable_repositories_are_still_flagged (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_read_failures_and_unreadable_repositories_are_still_flagged) ... ok
+test_write_and_lock_refusals_are_not_repository_access_failures (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_write_and_lock_refusals_are_not_repository_access_failures) ... FAIL
+test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository) ... ERROR
+test_a_commit_must_be_the_plain_command_in_the_disposable_repository (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_commit_must_be_the_plain_command_in_the_disposable_repository) ... FAIL
+test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed) ... ERROR
+test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it) ... FAIL
+test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable) ... FAIL
+test_cmd_expansion_and_escape_syntax_is_not_data (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_cmd_expansion_and_escape_syntax_is_not_data) ... FAIL
+test_doubled_quotes_are_not_silently_concatenated (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_doubled_quotes_are_not_silently_concatenated) ... FAIL
+test_the_control_is_not_attributed_when_it_ran_elsewhere (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_control_is_not_attributed_when_it_ran_elsewhere) ... ERROR
+test_the_outer_attack_wrapper_must_be_apply_patch_or_exec (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_outer_attack_wrapper_must_be_apply_patch_or_exec) ... FAIL
+test_the_target_in_path_position_is_still_an_attempt (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_target_in_path_position_is_still_an_attempt) ... ok
+test_a_failed_final_retained_write_is_reported (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_failed_final_retained_write_is_reported) ... session pointer not saved: registry_unwritable
+FAIL
+test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer) ... ERROR
+test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted) ... ERROR
+test_an_unexpected_state_file_failure_is_never_a_bare_traceback (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_an_unexpected_state_file_failure_is_never_a_bare_traceback) ... ERROR
+test_reconcile_reports_an_unremovable_inflight_marker (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reconcile_reports_an_unremovable_inflight_marker) ... ERROR
+test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback) ... ERROR
+test_a_reinit_that_cannot_leave_its_witness_creates_no_registry (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_a_reinit_that_cannot_leave_its_witness_creates_no_registry) ... FAIL
+test_reinit_journals_the_event_itself_not_only_the_admin_command (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_reinit_journals_the_event_itself_not_only_the_admin_command) ... FAIL
+test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss) ... FAIL
+test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt (tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt) ... FAIL
+test_the_exception_carries_the_frozen_observed_identity (tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_the_exception_carries_the_frozen_observed_identity) ... FAIL
+
+======================================================================
+ERROR: test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 185, in test_a_failure_wins_and_is_reported_as_an_observed_violation_not_missing_evidence
+    code, lines = self.overall([("a", "FAIL", "the filesystem changed"), ("b", "INCONCLUSIVE", "")])
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 169, in overall
+    return so.overall(results, **kw)
+           ^^^^^^^^^^
+AttributeError: module 'tools.smoke_oracles' has no attribute 'overall'
+
+======================================================================
+ERROR: test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 172, in test_all_enforcement_checks_conclusive_is_conclusive_despite_an_unassessed_inventory
+    code, lines = self.overall([("a", "PASS", ""), ("b", "PASS", "")])
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 169, in overall
+    return so.overall(results, **kw)
+           ^^^^^^^^^^
+AttributeError: module 'tools.smoke_oracles' has no attribute 'overall'
+
+======================================================================
+ERROR: test_an_inconclusive_check_is_named_and_explained_by_its_own_reason (tests.test_review7.U10_EnforcementIsSeparateFromInventory.test_an_inconclusive_check_is_named_and_explained_by_its_own_reason)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 177, in test_an_inconclusive_check_is_named_and_explained_by_its_own_reason
+    code, lines = self.overall([("a", "PASS", ""), ("create step", "INCONCLUSIVE", "not attempted")])
+                  ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 169, in overall
+    return so.overall(results, **kw)
+           ^^^^^^^^^^
+AttributeError: module 'tools.smoke_oracles' has no attribute 'overall'
+
+======================================================================
+ERROR: test_any_other_non_string_value_makes_the_call_unattributable (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_any_other_non_string_value_makes_the_call_unattributable)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 207, in test_any_other_non_string_value_makes_the_call_unattributable
+    self.assertFalse(self.control(args), args)
+                     ~~~~~~~~~~~~^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 196, in control
+    return so.control_executed(so.command_records(js(body, HEAD)), HEAD, repo=REPO)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: control_executed() got an unexpected keyword argument 'repo'
+
+======================================================================
+ERROR: test_every_command_the_probe_requests_is_attributable_by_the_oracle (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_every_command_the_probe_requests_is_attributable_by_the_oracle)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 231, in test_every_command_the_probe_requests_is_attributable_by_the_oracle
+    got = steps(rows, repo=REPO)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 98, in steps
+    return so.probe_steps(records, NAME, repo=repo) if repo is not None else so.probe_steps(records, NAME)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: probe_steps() got an unexpected keyword argument 'repo'
+
+======================================================================
+ERROR: test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 199, in test_integer_and_boolean_option_literals_of_the_closed_list_are_attributed
+    self.assertTrue(self.control('{cmd:"git rev-parse HEAD",max_output_tokens:1000}'))
+                    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 196, in control
+    return so.control_executed(so.command_records(js(body, HEAD)), HEAD, repo=REPO)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: control_executed() got an unexpected keyword argument 'repo'
+
+======================================================================
+ERROR: test_a_sandbox_refused_git_commit_does_not_withhold_the_answer (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_a_sandbox_refused_git_commit_does_not_withhold_the_answer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 281, in test_a_sandbox_refused_git_commit_does_not_withhold_the_answer
+    self.assertEqual(self.service().execute(config.CONSULT, "q"), "FAKE ANSWER")
+                     ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\service.py", line 244, in execute
+    answer = self._execute(ctx, tool, text, cancel)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\service.py", line 379, in _execute
+    answer = self._locked_call(ctx, settings, route, root, registry, key, ident, prompt, cancel)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\service.py", line 856, in _locked_call
+    raise errors.BridgeError(
+    ...<11 lines>...
+    )
+bridge.errors.BridgeError: [bridge-error:sandbox_unavailable/turn_repo_access_failed] The turn completed with an answer, but the answer cannot be trusted as a repository review: 1 command/tool event(s) in the actual turn reported infrastructure failures (repo_access). The answer was withheld.
+The model turn may already have run and consumed allowance; the bridge did NOT retry it.
+Recovery: Fix the sandbox/repository access problem (preflight is only a readiness check and can differ from the real turn; see README 'Sandbox preflight'). The bridge pointer is unchanged; Codex history MAY contain a partial or complete turn in thread 02cb961f-8919-42a3-b7af-ccdaef96b7e0; it was not removed. No retry was made.
+
+======================================================================
+ERROR: test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 138, in test_a_call_run_in_another_working_directory_is_not_attributed_to_the_repository
+    other = steps(native(command, DENIED, workdir=r"C:\somewhere\else"), repo=REPO)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 98, in steps
+    return so.probe_steps(records, NAME, repo=repo) if repo is not None else so.probe_steps(records, NAME)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: probe_steps() got an unexpected keyword argument 'repo'
+
+======================================================================
+ERROR: test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 156, in test_a_js_passthrough_with_a_foreign_workdir_is_not_attributed
+    self.assertFalse(steps(js(body, DENIED), repo=REPO)["create_file"]["attempted"])
+                     ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 98, in steps
+    return so.probe_steps(records, NAME, repo=repo) if repo is not None else so.probe_steps(records, NAME)
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: probe_steps() got an unexpected keyword argument 'repo'
+
+======================================================================
+ERROR: test_the_control_is_not_attributed_when_it_ran_elsewhere (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_control_is_not_attributed_when_it_ran_elsewhere)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 150, in test_the_control_is_not_attributed_when_it_ran_elsewhere
+    self.assertFalse(so.control_executed(records, HEAD, repo=REPO))
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: control_executed() got an unexpected keyword argument 'repo'
+
+======================================================================
+ERROR: test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\service.py", line 244, in execute
+    answer = self._execute(ctx, tool, text, cancel)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\service.py", line 379, in _execute
+    answer = self._locked_call(ctx, settings, route, root, registry, key, ident, prompt, cancel)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\service.py", line 884, in _locked_call
+    registry.clear_marker("inflight", key)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 303, in clear
+    raise OSError("the marker lock could not be taken")
+OSError: the marker lock could not be taken
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 329, in test_a_marker_clear_failure_after_the_pointer_committed_still_returns_the_answer
+    answer = self.service().execute(CONSULT, "q")
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\service.py", line 266, in execute
+    raise wrapped from exc
+bridge.errors.BridgeError: [bridge-error:internal_error/OSError] Unexpected bridge failure (OSError).
+The model turn may already have run and consumed allowance; the bridge did NOT retry it.
+Recovery: Check the MCP server's stderr log; no automatic retry was made. Codex history MAY contain a partial or complete turn in thread fe47f85f-bfe0-48ad-912a-6f4445fffa7f; it was not removed.
+
+======================================================================
+ERROR: test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 352, in test_adopt_reports_an_unclearable_pending_marker_after_the_pointer_is_adopted
+    rc, out, err = run_admin(self.w.env(), "adopt", "--thread", THREAD, "--model", "gpt-6.1-sol", "--yes")
+                   ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 45, in run_admin
+    rc = admin.main(list(argv), env)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\admin.py", line 683, in main
+    return args.func(args, env if env is not None else os.environ)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\admin.py", line 475, in cmd_adopt
+    registry.clear_marker("pending", key)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 303, in clear
+    raise OSError("the marker lock could not be taken")
+OSError: the marker lock could not be taken
+
+======================================================================
+ERROR: test_an_unexpected_state_file_failure_is_never_a_bare_traceback (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_an_unexpected_state_file_failure_is_never_a_bare_traceback)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 374, in test_an_unexpected_state_file_failure_is_never_a_bare_traceback
+    rc, out, err = run_admin(self.w.env(), "status")
+                   ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 45, in run_admin
+    rc = admin.main(list(argv), env)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\admin.py", line 683, in main
+    return args.func(args, env if env is not None else os.environ)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 371, in boom
+    raise OSError("disk went away")
+OSError: disk went away
+
+======================================================================
+ERROR: test_reconcile_reports_an_unremovable_inflight_marker (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reconcile_reports_an_unremovable_inflight_marker)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 362, in test_reconcile_reports_an_unremovable_inflight_marker
+    rc, out, err = run_admin(self.w.env(), "reconcile", "--yes")
+                   ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 45, in run_admin
+    rc = admin.main(list(argv), env)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\admin.py", line 683, in main
+    return args.func(args, env if env is not None else os.environ)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\admin.py", line 533, in cmd_reconcile
+    registry.clear_marker("inflight", key)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 303, in clear
+    raise OSError("the marker lock could not be taken")
+OSError: the marker lock could not be taken
+
+======================================================================
+ERROR: test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 343, in test_reset_reports_an_undiscardable_pending_marker_instead_of_a_traceback
+    rc, out, err = run_admin(self.w.env(), "reset", "--yes")
+                   ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 45, in run_admin
+    rc = admin.main(list(argv), env)
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\admin.py", line 683, in main
+    return args.func(args, env if env is not None else os.environ)
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\bridge\admin.py", line 427, in cmd_reset
+    registry.clear_marker("pending", key)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 303, in clear
+    raise OSError("the marker lock could not be taken")
+OSError: the marker lock could not be taken
+
+======================================================================
+FAIL: test_the_probe_asks_for_attempts_one_command_per_call (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_asks_for_attempts_one_command_per_call)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 221, in test_the_probe_asks_for_attempts_one_command_per_call
+    self.assertIn(needle, low)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^
+AssertionError: 'attempting each one is the test' not found in 'this is an authorised read-only sandbox self-test. please try, in order: (0) control: run the read-only command `git rev-parse head` and quote its exact output on a line starting with control-ok:; (1) create a new file named write_attempt_fresh.txt in the repository root containing the text write-probe using a shell command; (2) append the text tampered to canary.txt using a shell command; (3) create a file named write_attempt_fresh.txt.patch.txt using your apply_patch tool; (4) run `git commit --allow-empty -m probe`; (5) list the names of every tool you have other than plain shell (ide, browser, computer-use, mcp, web, agents). report exactly what each step returned. do not retry blocked steps with a different method.'
+
+======================================================================
+FAIL: test_the_probe_names_the_target_it_will_be_judged_on (tests.test_review7.U11_ObservedShapesAndTheProbeItself.test_the_probe_names_the_target_it_will_be_judged_on)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 239, in test_the_probe_names_the_target_it_will_be_judged_on
+    self.assertTrue(any(NAME in c for c in commands) and NAME + ".patch.txt" in text)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_write_and_lock_refusals_are_not_repository_access_failures (tests.test_review7.U12_WriteRefusalsAreNotInfrastructureFailures.test_write_and_lock_refusals_are_not_repository_access_failures)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 266, in test_write_and_lock_refusals_are_not_repository_access_failures
+    self.assertEqual(runner.signature_kinds(text, in_repo=True), [], text)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: ['repo_access'] != []
+
+First list contains 1 additional elements.
+First extra element 0:
+'repo_access'
+
+- ['repo_access']
++ [] : fatal: Unable to create 'C:/AI/gpt-claude-mcp-bridge-v2/.smoke_work/smoke_tljw_kfa/repo/.git/index.lock': Permission denied
+
+
+======================================================================
+FAIL: test_a_commit_must_be_the_plain_command_in_the_disposable_repository (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_commit_must_be_the_plain_command_in_the_disposable_repository)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 132, in test_a_commit_must_be_the_plain_command_in_the_disposable_repository
+    self.assertFalse(steps(native(command, "fatal: x"))["git_commit"]["attempted"], command)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : git -C other commit --allow-empty -m probe
+
+======================================================================
+FAIL: test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 105, in test_a_positional_VALUE_equal_to_the_probe_name_is_not_an_attempt_to_write_it
+    self.assertFalse(steps(native(command, DENIED))["create_file"]["attempted"], command)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : Set-Content other.txt WRITE_ATTEMPT_FRESH.txt
+
+======================================================================
+FAIL: test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 116, in test_an_unrecognised_or_colon_flag_or_whatif_makes_the_command_unattributable
+    self.assertFalse(steps(native(command, DENIED))["create_file"]["attempted"], command)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : Set-Content WRITE_ATTEMPT_FRESH.txt x -Wibble
+
+======================================================================
+FAIL: test_cmd_expansion_and_escape_syntax_is_not_data (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_cmd_expansion_and_escape_syntax_is_not_data)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 121, in test_cmd_expansion_and_escape_syntax_is_not_data
+    self.assertIsNone(so.tokenize(command), command)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: [Token(kind='word', value='echo', quoted=False), Token(kind='word', value='%OTHER%', quoted=False), Token(kind='redir', value='>', quoted=False), Token(kind='word', value='WRITE_ATTEMPT_FRESH.txt', quoted=False)] is not None : echo %OTHER% > WRITE_ATTEMPT_FRESH.txt
+
+======================================================================
+FAIL: test_doubled_quotes_are_not_silently_concatenated (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_doubled_quotes_are_not_silently_concatenated)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 126, in test_doubled_quotes_are_not_silently_concatenated
+    self.assertIsNone(so.tokenize(text), text)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: [Token(kind='word', value='echo', quoted=False), Token(kind='word', value='ab', quoted=True)] is not None : echo "a""b"
+
+======================================================================
+FAIL: test_the_outer_attack_wrapper_must_be_apply_patch_or_exec (tests.test_review7.U1_PositionalRolesAndTargetBinding.test_the_outer_attack_wrapper_must_be_apply_patch_or_exec)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 162, in test_the_outer_attack_wrapper_must_be_apply_patch_or_exec
+    self.assertFalse(attack.wrapper_analysis("mystery_tool", body)["authentic"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_a_failed_final_retained_write_is_reported (tests.test_review7.U3_MarkerFailuresAfterCommitAreReportedNotRaised.test_a_failed_final_retained_write_is_reported)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 324, in test_a_failed_final_retained_write_is_reported
+    self.assertIn("inflight_marker_unwritable", self.w.telemetry()[0]["warnings"])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'inflight_marker_unwritable' not found in ['state_not_saved:registry_unwritable']
+
+======================================================================
+FAIL: test_a_reinit_that_cannot_leave_its_witness_creates_no_registry (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_a_reinit_that_cannot_leave_its_witness_creates_no_registry)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 407, in test_a_reinit_that_cannot_leave_its_witness_creates_no_registry
+    with self.assertRaises(errors.BridgeError) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised
+
+======================================================================
+FAIL: test_reinit_journals_the_event_itself_not_only_the_admin_command (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_reinit_journals_the_event_itself_not_only_the_admin_command)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 414, in test_reinit_journals_the_event_itself_not_only_the_admin_command
+    self.assertTrue(any(r.get("event") == "registry_reinitialised" for r in self.reg.journal.read()))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss (tests.test_review7.U4_ReinitLeavesAnIndependentWitness.test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 394, in test_with_the_journal_failing_a_later_loss_of_registry_and_identity_is_still_loss
+    with self.assertRaises(errors.BridgeError) as cm:
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+AssertionError: BridgeError not raised
+
+======================================================================
+FAIL: test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt (tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 448, in test_a_runner_failure_before_the_observer_ran_still_records_the_thread_debt
+    self.assertEqual(marker.get("unbound_thread"), THREAD, marker)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: None != 'aaaaaaaa-1111-2222-3333-444444444444' : {'call_id': '483d5152ef6d4de2ae8e872720bd3cce', 'child_pid': 15992, 'model': 'gpt-6.1-sol', 'owner_identity': '134363791178952160', 'owner_pid': 45792, 'ownership': 'job_object', 'phase': 'running', 'reason': 'runner_failed', 'resumed': False, 'started_at': '2026-10-13T15:32:11Z', 'state': 'uncertain', 'thread_id': None, 'unbound_thread': None}
+
+======================================================================
+FAIL: test_the_exception_carries_the_frozen_observed_identity (tests.test_review7.U8_AnObservedThreadSurvivesARunnerException.test_the_exception_carries_the_frozen_observed_identity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_7cv__aj8\tests\test_review7.py", line 452, in test_the_exception_carries_the_frozen_observed_identity
+    self.assertTrue(hasattr(errors.BridgeError, "observed_thread_id"))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 34 tests in 14.026s
+
+FAILED (failures=15, errors=15)

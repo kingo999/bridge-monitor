@@ -1,0 +1,30 @@
+# Copy within this project and replace each REQUIRED value before live admission.
+# A secret reference is resolved by the process environment, not stored in events.
+[limits]
+claude_global_active = 2
+claude_per_root_active = 2
+claude_waiting = 8
+qwen_active = 1
+qwen_waiting = 4
+local_outstanding_per_claude = 1
+claude_execution_seconds = 900
+qwen_execution_seconds = 180
+
+[deployment]
+queue_deadline_seconds = 0 # REQUIRED: choose for your client deadline
+context_wait_seconds = 0 # REQUIRED
+fallback_allowance_tokens = 0 # REQUIRED
+client_timeout_seconds = 0 # REQUIRED
+delivery_margin_seconds = 0 # REQUIRED
+payload_limit_bytes = 0 # REQUIRED
+spool_limit_bytes = 0 # REQUIRED
+retention_days = 0 # REQUIRED
+postgres_dsn_ref = "env:BRIDGE_MONITOR_DSN"
+qwen_endpoint = "REQUIRED"
+
+[fallback]
+paid_model_profile = "REQUIRED"
+
+[review]
+reviewer = "REQUIRED"
+approval_reference = "REQUIRED"

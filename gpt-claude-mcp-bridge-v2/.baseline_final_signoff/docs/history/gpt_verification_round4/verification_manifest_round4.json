@@ -1,0 +1,562 @@
+{
+  "diff_base_snapshot": ".baseline_post_remediation3",
+  "files": [
+    {
+      "bytes": 39765,
+      "lines": 545,
+      "mode": "full",
+      "path": "README.md",
+      "scrubbed_local_identifiers": false,
+      "sha256": "13bd0749a4c7acae66d57c707e33ce273074aa61f06db7443e4c4508c6261f5b"
+    },
+    {
+      "bytes": 21776,
+      "lines": 267,
+      "mode": "full",
+      "path": "REVIEW_PACKAGE.md",
+      "scrubbed_local_identifiers": false,
+      "sha256": "b192a57e2bb1d89079e72f841486e123229b687f8663ac5d3b010733ff58a760"
+    },
+    {
+      "bytes": 6439,
+      "lines": 62,
+      "mode": "full",
+      "path": "docs/REMEDIATION_CHECKLIST_4.md",
+      "scrubbed_local_identifiers": false,
+      "sha256": "bf18eeaf57ed98b5ac1270f95dc109bdd242618b7f74581a578e49fa5b0b587a"
+    },
+    {
+      "bytes": 2336,
+      "lines": 33,
+      "mode": "full",
+      "path": "docs/remediation4_stat.txt",
+      "scrubbed_local_identifiers": false,
+      "sha256": "fc026d62ef05da1dcc304b546ed191ac5be777b8fec8ca5bf12e3dc239fc40d7"
+    },
+    {
+      "bytes": 631,
+      "lines": 21,
+      "mode": "full",
+      "path": "architect_bridge.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "1c96f21e8060ffc56376b36350334b0e2347fb9c9145a759e00c7eb171a106c8"
+    },
+    {
+      "bytes": 385,
+      "lines": 17,
+      "mode": "full",
+      "path": "bridge_admin.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "2f1338751465367a9cb144912145d257a865e204588b73a057678c8184e8ac44"
+    },
+    {
+      "bytes": 98,
+      "lines": 4,
+      "mode": "full",
+      "path": "bridge/__init__.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "9fd4de9f72e0afe11028c6ade1883faed6aaad3d24ecc666c01319df7030daad"
+    },
+    {
+      "bytes": 31009,
+      "lines": 650,
+      "mode": "full",
+      "path": "bridge/admin.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "e91749748f8d515997aedbd72403a3967c6cd4f57dbc7f406aeb0cc3b047db37"
+    },
+    {
+      "bytes": 41374,
+      "lines": 905,
+      "mode": "full",
+      "path": "bridge/codexcli.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "473c5adc3ff3b37350a3bba1d4ace91989a5f96c591207bc9ab861282d1661bd"
+    },
+    {
+      "bytes": 7611,
+      "lines": 206,
+      "mode": "full",
+      "path": "bridge/config.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "bba7969789e0a922a950aedb19ffb30fb7900d7a7f69d53f4bd4462198aa7bee"
+    },
+    {
+      "bytes": 2859,
+      "lines": 91,
+      "mode": "full",
+      "path": "bridge/errors.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "c461cf6f02b7d9ea4ae4090ad2ea4f1a0a12212041b3a41ad0947f36a253833c"
+    },
+    {
+      "bytes": 6849,
+      "lines": 166,
+      "mode": "full",
+      "path": "bridge/execpath.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "95f495d0fa93facc1064990178b1a30dcf1221c49189561f298813932bca8535"
+    },
+    {
+      "bytes": 8230,
+      "lines": 186,
+      "mode": "full",
+      "path": "bridge/fingerprint.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "cf08b9070fdeb965c285ee101f4ebc133c36bac5b2b424487478a6a7443cca63"
+    },
+    {
+      "bytes": 4465,
+      "lines": 102,
+      "mode": "full",
+      "path": "bridge/gitsafe.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "d57d1e0fd3ff7720a8b775e82dd6a0f1c00e99ccb541988040337658605dec5e"
+    },
+    {
+      "bytes": 596,
+      "lines": 19,
+      "mode": "full",
+      "path": "bridge/ids.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "0250a796c8f8bc7749702ca5c6cf57460155d2f88d9dc458e5313a3948628ebf"
+    },
+    {
+      "bytes": 8850,
+      "lines": 202,
+      "mode": "full",
+      "path": "bridge/jobobject.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "bd06f34d8668e659c0a24db3e34bb97969dda0f4173044114cef14ad52e4cf00"
+    },
+    {
+      "bytes": 456,
+      "lines": 18,
+      "mode": "full",
+      "path": "bridge/redact.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "a67a964840010ebfd21d0d9cebaf8bc30cdeaf32c040b923ffdbb34b85a27b6f"
+    },
+    {
+      "bytes": 27621,
+      "lines": 631,
+      "mode": "full",
+      "path": "bridge/runner.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "8818ebd9f8c9363dca3100341131338c6d5e6cfb8adc0d930f030283e7494d88"
+    },
+    {
+      "bytes": 2328,
+      "lines": 76,
+      "mode": "full",
+      "path": "bridge/server.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "30f513f8f8c484d3e07da396ae73ed092cc51e6a42382d12f9c4df704ee633dc"
+    },
+    {
+      "bytes": 55754,
+      "lines": 986,
+      "mode": "full",
+      "path": "bridge/service.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "d141ea8efd265c9a93c15d79d598c7269e28ff226e33a343d4d9d70ecf59a14a"
+    },
+    {
+      "bytes": 41217,
+      "lines": 907,
+      "mode": "full",
+      "path": "bridge/state.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "bf1c9b6a3fd4648fc8b404b127d252fb6017a939e62d894edbb2bb0f19becccb"
+    },
+    {
+      "bytes": 6992,
+      "lines": 184,
+      "mode": "full",
+      "path": "bridge/telemetry.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "88e7494d70650964fa72e4b9fcb3d0450636613df5ac0d886d8fd1c0bf543247"
+    },
+    {
+      "bytes": 45799,
+      "lines": 892,
+      "mode": "full",
+      "path": "tools/apply_patch_attack_test.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "020ff6fe07a7449c7d92a9e0466d31a71059919c0f9c202e12e8baf210c3f977"
+    },
+    {
+      "bytes": 18652,
+      "lines": 384,
+      "mode": "full",
+      "path": "tools/record_evidence.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "6b9a159a7a6cbe543d47cf076d67829b9f9663daa5698d03090349b8fbbeb72a"
+    },
+    {
+      "bytes": 30232,
+      "lines": 518,
+      "mode": "full",
+      "path": "tools/make_verification_prompt.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "283c2caacb739d5a5cc5ad8e69e5ecc38a7c762170afcbe59087498ea03f83dc"
+    },
+    {
+      "bytes": 5737,
+      "lines": 124,
+      "mode": "full",
+      "path": "tools/prefix_check.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "4cc97932d6bbf674ca81af9e6e6bb8d82ed6661d5a58c850bc2f18217f563105"
+    },
+    {
+      "bytes": 1355,
+      "lines": 37,
+      "mode": "full",
+      "path": "tools/privacy.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "c76c934089b7222cbb4a1d9b7c926bbdca6a955941417beeeaee9b3dfd392aad"
+    },
+    {
+      "bytes": 4266,
+      "lines": 86,
+      "mode": "full",
+      "path": "tools/smoke_oracles.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "58dd5a80bab02c93c203e3486af2db8bf33552620afb81f2426847d1ac569dd4"
+    },
+    {
+      "bytes": 12136,
+      "lines": 235,
+      "mode": "full",
+      "path": "tools/live_smoke_test.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "57072304c576eaad09c26dbe8a3e95a0c9c1d881d5f2dc230d66d0d41aa88fd9"
+    },
+    {
+      "bytes": 8173,
+      "lines": 167,
+      "mode": "full",
+      "path": "tools/make_telemetry_examples.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "5e6855533be9953f95bd3848c7f3747ee88d52cf0b17917f6ae8c98f7569c575"
+    },
+    {
+      "bytes": 3766,
+      "lines": 86,
+      "mode": "full",
+      "path": "tools/make_remediation_diff.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "14ec02971a969b2fdcbe0a7860dec6d3e9f201cc1b6e6b5c77546774a719c3f9"
+    },
+    {
+      "bytes": 1825,
+      "lines": 46,
+      "mode": "full",
+      "path": "tools/make_v1_diff.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "b4b07b1bf96c6c73aa647669b403852312fb47832346d52b05c5cea8193f3f11"
+    },
+    {
+      "bytes": 3670,
+      "lines": 102,
+      "mode": "full",
+      "path": "tools/v1_manifest.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "fc8d1a8916f2d56d54871a026816879c20f457dd79c31c2020f545a212671058"
+    },
+    {
+      "bytes": 1660,
+      "lines": 57,
+      "mode": "full",
+      "path": "tools/verify_lock.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "20ccb4187adc60935e9f10f4f76b33243632925b81e5bf1530a60a32873c17cf"
+    },
+    {
+      "bytes": 9518,
+      "lines": 243,
+      "mode": "full",
+      "path": "tests/fake_codex.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "abaf1f818738fea963ac87b5aae8d3d10bff2c0e7bcab6bd840cab77c44b1165"
+    },
+    {
+      "bytes": 5331,
+      "lines": 148,
+      "mode": "full",
+      "path": "tests/helpers.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "a99fd811fdea1c9a73d4fa00d6fa965e1910c581dab963139938e8188d04f611"
+    },
+    {
+      "bytes": 691,
+      "lines": 21,
+      "mode": "full",
+      "path": "tests/hard_kill_helper.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "fb1f90d06760b48a3279449e8448f63b3cd6b6b728ded6780ad30920c4efb15c"
+    },
+    {
+      "bytes": 36617,
+      "lines": 682,
+      "mode": "full",
+      "path": "tests/test_review4.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "d2840d7eed81fd87aae88c482de0ec076026e8f8a6e3e0582cb94ce376dd650d"
+    },
+    {
+      "bytes": 53686,
+      "lines": 987,
+      "mode": "full",
+      "path": "tests/test_review2.py",
+      "scrubbed_local_identifiers": true,
+      "sha256": "382a9b39442bc742ec5d78671d7f080475cf220cc2c34fefc7105eee10dfd2cf"
+    },
+    {
+      "bytes": 21769,
+      "lines": 416,
+      "mode": "full",
+      "path": "tests/test_apply_patch_attack.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "4f1c2afa2e9f3a86e6b15ac9a7ce0490ec7a2f607df3447c697b5b7b9a393da7"
+    },
+    {
+      "bytes": 11361,
+      "lines": 259,
+      "mode": "full",
+      "path": "tests/test_state.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "8133e44bf21f6282d4838da7d0daf5b75bf4d1568e971031bf550f8283b41029"
+    },
+    {
+      "bytes": 12414,
+      "lines": 260,
+      "mode": "full",
+      "path": "tests/test_server_admin.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "70f2a2c8e6360aa15e4733ade40f5269fce142df4bdd27e2cfd4e1e5290c7fed"
+    },
+    {
+      "bytes": 10056,
+      "lines": 197,
+      "mode": "full",
+      "path": "tests/test_config_argv_auth.py",
+      "scrubbed_local_identifiers": false,
+      "sha256": "ab1320a94c85291b72b394590c39e376a453086f3efc7ce379e3fd6159b3ecab"
+    },
+    {
+      "bytes": 3558,
+      "lines": 66,
+      "mode": "full",
+      "path": "requirements.lock.txt",
+      "scrubbed_local_identifiers": false,
+      "sha256": "fd08725f61a27af8d0e021da9b94a68b02f96ad6d979ca954d3900c544fc991c"
+    },
+    {
+      "bytes": 3880,
+      "lines": 148,
+      "mode": "full",
+      "path": "tests/fixtures/v1_subprocess_behavior.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "7261b55c79040ca19293f22924a3e7c93e1843691ceceb44d6cfd467827c6842"
+    },
+    {
+      "bytes": 1643,
+      "lines": 62,
+      "mode": "full",
+      "path": "tests/fixtures/v1_tool_schemas.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "8e33cbc6123b1d5ab008f0ed806f2d2889e68e9c9603063251957440385a0b21"
+    },
+    {
+      "bytes": 8704,
+      "lines": 272,
+      "mode": "full",
+      "path": "docs/evidence/source_fingerprint.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "cb418f210245dd9a921578d592b953d1d64f4126ebf68d9806514e05cae5dc37"
+    },
+    {
+      "bytes": 4171,
+      "lines": 124,
+      "mode": "full",
+      "path": "docs/evidence/capability_policy_real_cli.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "7c887353debf6cf5104cf4ba2c286c9c90a32096e09d4d3366a57e6e4fc2c0bd"
+    },
+    {
+      "bytes": 1467,
+      "lines": 34,
+      "mode": "full",
+      "path": "docs/evidence/tests_fourth_remediation_full.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "7a4695da7dada2419a164c44eb7218fcd05f69a6a300d258225014abb6105e20"
+    },
+    {
+      "bytes": 1142,
+      "lines": 26,
+      "mode": "full",
+      "path": "docs/evidence/integrity.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "d5c4e4c54871508761086881040416973683880c4e95a80178ff2550ce0652cc"
+    },
+    {
+      "bytes": 21123,
+      "lines": 129,
+      "mode": "full",
+      "path": "docs/evidence/cli_observations.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "379c9831ba19ec64f012891abf71ac02b2178c1b5384616055dd7abf0b1ef189"
+    },
+    {
+      "bytes": 6145,
+      "lines": 65,
+      "mode": "full",
+      "path": "docs/evidence/prefix_check.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "27782d9a86be5ce8e5aa9e66c80fcbcf7470fb72260fcf19c060188b08ee101f"
+    },
+    {
+      "bytes": 61518,
+      "lines": 479,
+      "mode": "full",
+      "path": "docs/evidence/prefix_check.log",
+      "scrubbed_local_identifiers": true,
+      "sha256": "93cb79bbecc4bfb48b3d86000c9f80f6617540462ddd9a5dc1ac40d767d74e3c"
+    },
+    {
+      "bytes": 42514,
+      "lines": 412,
+      "mode": "full",
+      "path": "docs/gpt_verification/gpt_verification_20261013T064429Z.md",
+      "scrubbed_local_identifiers": false,
+      "sha256": "baa8dc16b6980e96e2e54c89c844a6e7bc14d587d88ffe6c4bb95f95e980ece3"
+    },
+    {
+      "bytes": 1518,
+      "lines": 59,
+      "mode": "full",
+      "path": "docs/gpt_verification/request_20261013T064429Z.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "f5e6c921871c79c8b6992bee23d1f033ed489c2cc3f562d1825a1fd5bd3d5605"
+    },
+    {
+      "bytes": 14868,
+      "lines": 478,
+      "mode": "full",
+      "path": "docs/gpt_verification/verification_manifest_round3.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "8cf93a8baad9edc6831e373cf22b3f0573ca5c9b90046a8da133caacaabfe46b"
+    },
+    {
+      "bytes": 6665,
+      "lines": 131,
+      "mode": "full",
+      "path": "docs/gpt_verification/send_verification_source.py.txt",
+      "scrubbed_local_identifiers": false,
+      "sha256": "8145cbe63bd037122b8ab209385460fbbc1c6d391ea531061540546f9e7b8d94"
+    },
+    {
+      "bytes": 14080,
+      "lines": 388,
+      "mode": "full",
+      "path": ".baseline_post_remediation3/MANIFEST.json",
+      "scrubbed_local_identifiers": false,
+      "sha256": "c063b18e4548ef2f3ec566a0fbf42d4092b312c5b417cbfa3fd1f500ff33a466"
+    },
+    {
+      "bytes": 38789,
+      "diff_bytes": 486,
+      "mode": "diff_vs_verified_snapshot",
+      "path": "tests/test_remediation.py",
+      "sha256": "df4804d29398c890d232e157da67db3f1f471a753b8064f394372880d0e3b8f6"
+    },
+    {
+      "bytes": 42268,
+      "diff_bytes": 3601,
+      "mode": "diff_vs_verified_snapshot",
+      "path": "tests/test_review3.py",
+      "sha256": "e894b104371e398a1d01062904a3ec1f97f7ae1da99434ce91f7bd0d3ad670e6"
+    },
+    {
+      "bytes": 34600,
+      "diff_bytes": 0,
+      "mode": "diff_vs_verified_snapshot",
+      "path": "tests/test_service.py",
+      "sha256": "2f93c3b7d254400e23675fa41417b641934843d0b6e50322854d5f2ae2d697e3"
+    },
+    {
+      "bytes": 43664,
+      "mode": "computed_diff",
+      "path": "(computed) bridge/ diff vs verified snapshot",
+      "sha256": "c84377329225c6abacb82d872fb1f30c750b50fbf48763f31f6bf3dfbc6ff04d"
+    },
+    {
+      "bytes": 3018,
+      "mode": "listed_only",
+      "path": "tools/make_lock.py",
+      "sha256": "ad7504b76444308e0d3847f72860cf5655dde45ed676795374f685f008ee7ffb"
+    },
+    {
+      "bytes": 5504,
+      "mode": "listed_only",
+      "path": "tools/capture_v1_fixtures.py",
+      "sha256": "cfd5c4e820283934fd3f6286baa37b1eea644115e7f7f9525aa4ceafa7db88f8"
+    },
+    {
+      "bytes": 12,
+      "mode": "listed_only",
+      "path": "requirements.in",
+      "sha256": "4fe75062c5d424bbc86a8cd58c63ab19aeffe4f0a0e100022252c8032e12ee5b"
+    },
+    {
+      "bytes": 3889,
+      "mode": "listed_only",
+      "path": "docs/remediation_stat.txt",
+      "sha256": "9dbc8394ea9b5d402139855e0f22c2d9cec3b1cf6f6a2e09fdb462c5080f1c65"
+    },
+    {
+      "bytes": 2176,
+      "mode": "listed_only",
+      "path": "docs/remediation2_stat.txt",
+      "sha256": "ad8d0592ba5f284ca3181abe4049a6af510c983e5d28f4096b645250599262f7"
+    },
+    {
+      "bytes": 2329,
+      "mode": "listed_only",
+      "path": "docs/remediation3_stat.txt",
+      "sha256": "93bcd75c922af819f6ffb0c10754cefd24e56c97f1864dec9128a9ee104fe0eb"
+    },
+    {
+      "bytes": 1313933,
+      "mode": "listed_only",
+      "path": "docs/remediation3.diff",
+      "sha256": "f689786e6f74420b034922aa75176cb4e3f6ab7534e248840f122c92d0c996b9"
+    },
+    {
+      "bytes": 24996,
+      "mode": "listed_only",
+      "path": "docs/telemetry_examples_remediation.jsonl",
+      "sha256": "2ac67a33c7d5d642dd892a7a08ea676d4f57c4e74a9707b6d091596d91882381"
+    },
+    {
+      "bytes": 711,
+      "mode": "listed_only",
+      "path": "docs/v1_baseline_before.json",
+      "sha256": "3391d0d2798c5c915660c5bb379a1a68a19d07c6a61f5c5bc01a6b3f5973116d"
+    },
+    {
+      "bytes": 56926,
+      "mode": "listed_only",
+      "path": "docs/evidence/tests_fourth_remediation_full.log",
+      "sha256": "bcffb1a9515751fd219ab5f319f6187a88019d1d95b6d479ca8e24cd77011c6c"
+    }
+  ],
+  "prepared_at": "2026-10-13T07:59:47Z",
+  "prompt_bytes": 868098,
+  "prompt_chars": 867794,
+  "prompt_sha256": "f963dbd2cd40ff288c2074957d42467ec6c76c851fd281cfcb0e4cbfd578af39",
+  "source_combined_sha256": "2551d85fa0e89333ffb12903133ac1091928dc1924b70504f98b8e0569987dba",
+  "status": "prepared_not_sent"
+}

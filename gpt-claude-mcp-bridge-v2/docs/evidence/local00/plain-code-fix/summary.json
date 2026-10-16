@@ -1,0 +1,46 @@
+{
+  "task_id": "registered-clamp-plaincode-20261015",
+  "scope": "Fresh registered v2 MCP connection; no temporary client.",
+  "output_form": "plain_code",
+  "policy": "plain-code-envelope-v1",
+  "source_sha256": "78a831df94c066dfa0e465fec4c186e4ec0fa80b09ba5c86d924a9575acfd164",
+  "registered_tool": "mcp__gpt_architect__local_worker",
+  "worker_id": "LOCAL-00",
+  "peer_ip": "192.168.0.78",
+  "attempts": 1,
+  "feedback_retries": 0,
+  "supervisor_edits": "",
+  "acceptance": "accepted",
+  "raw_model_fenced": true,
+  "adapter_normalization": true,
+  "exact_tool_response_compiled": true,
+  "behaviour_cases": 2547,
+  "behaviour_failures": 0,
+  "candidate_sha256": "2b515cd59feeb13bb6ffac0f9fca12cb18c68e3c8a3d9d136d3bafc7c7a46525",
+  "full_suite": {
+    "result": "OK",
+    "tests": 537,
+    "seconds": 609.801,
+    "skipped": 0,
+    "failures": [],
+    "problems": [],
+    "four_source_hashes_equal": true,
+    "evidence": "../../tests_local00_plain_code_final.json"
+  },
+  "review": {
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "evidence": "independent-review.json",
+    "scope_rulings": [
+      "Only the synthetic language contract is independently validated, not arbitrary generated code.",
+      "Embedded delimiter lines are conservatively rejected in plain_code mode, as documented.",
+      "Parent completed full staged regression/cancellation/locking tests.",
+      "V1 source hash compared before/after; no v1 tool, auth or configuration mutation requested or performed."
+    ]
+  },
+  "v1_source_unchanged": true,
+  "v1_called": false,
+  "v1_policy": "manual fallback only",
+  "deployment": "Existing MCP sessions need reconnecting to import source changes."
+}

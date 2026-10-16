@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "action": "generate",
+  "worker_id": "LOCAL-00",
+  "state": "draft_returned",
+  "code": "draft_returned",
+  "explanation": "Removed one outer Markdown code fence in plain_code mode; raw response retained in audit.",
+  "availability": "available",
+  "coordination": "idle",
+  "validation": "pending",
+  "next_actions": [],
+  "task_id": "gpt-claude-skynet-clamp-20261015T153114Z",
+  "packet_hash": "0d1f52a14240b0a351613d04cfaed92d4552ab424825b5d8c8a607106d88e907",
+  "request_id": "13598588090f4c32b8f9714d7e646121",
+  "attempt": 1,
+  "endpoint": "http://skynet.local:11434",
+  "peer_ip": "192.168.0.78",
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+  "result_digest": "69b4538862dda55a0c93d405c5dc4fbe26d5f3b7672ba986e855eff7a62f11b0",
+  "response": "def clamp(value, lower, upper):\n    if lower > upper:\n        raise ValueError(\"lower should not be greater than upper\")\n    return max(lower, min(value, upper))\n",
+  "done": true,
+  "done_reason": "stop",
+  "metrics": {
+    "prompt_eval_count": 331,
+    "eval_count": 41,
+    "prompt_eval_cached_count": null,
+    "total_duration": 3828389269,
+    "load_duration": 3115813813,
+    "prompt_eval_duration": 115278000,
+    "eval_duration": 594582000,
+    "total_duration_s": 3.828389269,
+    "load_duration_s": 3.115813813,
+    "prompt_eval_duration_s": 0.115278,
+    "eval_duration_s": 0.594582
+  },
+  "timings": {
+    "checks_s": 0.608164700002817,
+    "inference_s": 3.9804638999994495,
+    "client_elapsed_s": 4.599090800002159
+  },
+  "audit_refs": [
+    "audit/13598588090f4c32b8f9714d7e646121/request.json",
+    "audit/13598588090f4c32b8f9714d7e646121/response.json",
+    "audit/13598588090f4c32b8f9714d7e646121/normalization.json"
+  ],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": null
+}

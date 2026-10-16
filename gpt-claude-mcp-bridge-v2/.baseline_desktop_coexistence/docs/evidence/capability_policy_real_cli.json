@@ -1,0 +1,123 @@
+{
+  "argv_overrides": [
+    "--disable",
+    "hooks",
+    "--disable",
+    "plugins",
+    "--disable",
+    "apps",
+    "--disable",
+    "browser_use",
+    "--disable",
+    "in_app_browser",
+    "--disable",
+    "computer_use",
+    "--disable",
+    "multi_agent",
+    "--disable",
+    "image_generation",
+    "--disable",
+    "browser_use_external",
+    "--disable",
+    "browser_use_full_cdp_access",
+    "--disable",
+    "multi_agent_v2",
+    "-c",
+    "web_search=\"disabled\"",
+    "-c",
+    "mcp_servers.idea.enabled=false",
+    "-c",
+    "mcp_servers.node_repl.enabled=false"
+  ],
+  "command": "capability_audit(real CLI, disposable repo, empty MCP allow-list)",
+  "environment": {
+    "codex_cli_version": "0.162.1",
+    "codex_launcher": "node-script",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.7",
+    "recorded_at": "2026-10-13T16:10:04Z",
+    "sandbox_backend": "elevated",
+    "sandbox_provisioning_at_record_time": "failed"
+  },
+  "evidence_class": "implementer_executed",
+  "policy": {
+    "allowed_mcp_servers": [],
+    "capabilities": [
+      {
+        "control": "mcp_servers.<name>.enabled=false per configured server",
+        "level": "resolved",
+        "name": "mcp_servers",
+        "note": "snapshot-scoped: 2 disabled at audit time; the CLI has no deny-all mechanism, so a server added to the configuration after the audit is not covered (rechecked immediately before exec and after the turn)"
+      },
+      {
+        "control": "feature gate: hooks",
+        "level": "resolved",
+        "name": "hooks",
+        "note": "hook definitions found: none"
+      },
+      {
+        "control": "feature gates: plugins, apps",
+        "level": "resolved",
+        "name": "plugins_and_apps",
+        "note": ""
+      },
+      {
+        "control": "feature gates: browser_use*, in_app_browser, computer_use",
+        "level": "resolved",
+        "name": "browser_and_computer_use",
+        "note": ""
+      },
+      {
+        "control": "feature gates: multi_agent (+ multi_agent_v2 when present)",
+        "level": "resolved",
+        "name": "delegation",
+        "note": "resolved = CLI effective-state readout; removal of the tools at runtime needs a live tool listing"
+      },
+      {
+        "control": "feature gate: image_generation",
+        "level": "resolved",
+        "name": "image_generation",
+        "note": "same caveat as delegation"
+      },
+      {
+        "control": "config key web_search=\"disabled\"",
+        "level": "requested",
+        "name": "web_search",
+        "note": "key exists in the CLI's config schema; the CLI offers no readout for it and the `web__run` tool observed in live runs has not been mapped to this key"
+      },
+      {
+        "control": "sandbox_mode=read-only + approval_policy=never (argv-pinned)",
+        "level": "requested",
+        "name": "shell_and_apply_patch_writes",
+        "note": "argv content is guarded at build time. This audit does not establish effectiveness; native write rejection has not been live-verified for the current source (attack results in docs/history are for earlier candidates)"
+      },
+      {
+        "control": "none available/used",
+        "level": "uncontained",
+        "name": "view_image_goals_sleep_skills",
+        "note": "view_image can read local image files; skills under ~/.codex and ~/.agents inject instructions; neither is a repository write route"
+      }
+    ],
+    "disabled_features": [
+      "hooks",
+      "plugins",
+      "apps",
+      "browser_use",
+      "in_app_browser",
+      "computer_use",
+      "multi_agent",
+      "image_generation",
+      "browser_use_external",
+      "browser_use_full_cdp_access",
+      "multi_agent_v2"
+    ],
+    "disabled_mcp_servers": [
+      "idea",
+      "node_repl"
+    ],
+    "hook_sources_found": [],
+    "project_config_found": []
+  },
+  "source_combined_sha256": "4ba8cdad6b732e15fd10518759cdc453156af08b639bd9595a63a41fe312d140",
+  "what": "effective capability policy read from the installed CLI (model-free; no sandbox preflight, no inference)"
+}

@@ -1,0 +1,9 @@
+test_fallback_and_continue_after_both_fail (tests.test_local_worker_service.Discovery.test_fallback_and_continue_after_both_fail) ... ok
+test_hostname_first_saved_peer_and_status_no_network (tests.test_local_worker_service.Discovery.test_hostname_first_saved_peer_and_status_no_network) ... ok
+test_invalid_address_and_corrupt_config_are_optional (tests.test_local_worker_service.Discovery.test_invalid_address_and_corrupt_config_are_optional) ... ok
+test_late_discovery_cannot_reenable_disabled_session (tests.test_local_worker_service.Discovery.test_late_discovery_cannot_reenable_disabled_session) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.615s
+
+OK

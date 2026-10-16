@@ -1,0 +1,62 @@
+[
+  {
+    "description": "Ask the GPT architecture agent about repository design, contracts, and trade-offs.\nGPT reads this repository in a read-only sandbox; it cannot approve changes\nto an agreed design on the human architect's behalf.\n",
+    "inputSchema": {
+      "properties": {
+        "question": {
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question"
+      ],
+      "title": "consult_architectArguments",
+      "type": "object"
+    },
+    "name": "consult_architect",
+    "outputSchema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "consult_architectOutput",
+      "type": "object"
+    }
+  },
+  {
+    "description": "Ask GPT to review the current Git changes for architectural regressions.\nGPT should check actual diffs/source and return findings with paths and\nsuggested tests, without modifying files.\n",
+    "inputSchema": {
+      "properties": {
+        "focus": {
+          "title": "Focus",
+          "type": "string"
+        }
+      },
+      "required": [
+        "focus"
+      ],
+      "title": "review_implementationArguments",
+      "type": "object"
+    },
+    "name": "review_implementation",
+    "outputSchema": {
+      "properties": {
+        "result": {
+          "title": "Result",
+          "type": "string"
+        }
+      },
+      "required": [
+        "result"
+      ],
+      "title": "review_implementationOutput",
+      "type": "object"
+    }
+  }
+]

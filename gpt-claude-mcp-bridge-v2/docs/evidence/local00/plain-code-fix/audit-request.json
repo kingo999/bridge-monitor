@@ -1,0 +1,57 @@
+{
+  "created_at": "2026-10-15T15:08:52Z",
+  "packet": {
+    "approval": {
+      "approval_ref": "User request in this chat: fix the Markdown fence issue in v2, then rerun the synthetic end-to-end test without supervisor corrections; local audit of synthetic input/output authorized.",
+      "audit_content_approved": true,
+      "classification": "synthetic"
+    },
+    "category": "isolated_repair",
+    "checks": [
+      {
+        "check_id": "compile",
+        "contract": "py_compile succeeds for the exact returned function.",
+        "kind": "compile",
+        "method": "Supervisor-owned Python py_compile."
+      },
+      {
+        "check_id": "behaviour",
+        "contract": "Correct clamping and ValueError for reversed bounds across 2547 cases, including equal bounds and arbitrary-size integers.",
+        "kind": "behaviour",
+        "method": "Prewritten independent comparison-based oracle over integer ranges and 100-digit boundaries."
+      }
+    ],
+    "constraints": "Inputs are Python integers. If lower > upper, raise ValueError. Otherwise return lower when value < lower, upper when value > upper, and value otherwise. Return an int; equal bounds are valid. No imports or side effects.",
+    "context": "Synthetic standalone Python function. All code and requirements are supplied. Builtins min, max and ValueError are available. No repository dependencies.",
+    "context_id": "clamp-synthetic-v1",
+    "diagnostic": "clamp(5, 0, 10) currently returns 0 instead of 5; reversed bounds fail to raise ValueError.",
+    "objective": "Repair clamp(value, lower, upper).",
+    "output_form": "plain_code",
+    "references": [],
+    "schema_version": 1,
+    "source": "def clamp(value, lower, upper):\n    return min(lower, max(value, upper))\n",
+    "task_id": "registered-clamp-plaincode-20261015",
+    "versions": {
+      "Python": "3.13"
+    }
+  },
+  "prepared": {
+    "prompt_hash": "c0d3801e14b848f01aee3a7970141d03042c6d4959262df5068e21fb56c2d793",
+    "proof_hash": "689099dba6fb5a5e70aa0dbf9010c9aa76a500232c4f88542b130fff3634234b",
+    "template_version": "local00-v1",
+    "text": "Complete one bounded task from supplied data. Preserve its contract. Do not invent context or claim tests were run. If essential context is missing, return NEEDS_CONTEXT: followed by one focused question. Return one concise final answer.\nTask ID: registered-clamp-plaincode-20261015\nCategory: isolated_repair\nObjective: Repair clamp(value, lower, upper).\nVersions: {'Python': '3.13'}\nRequired behaviour: Inputs are Python integers. If lower > upper, raise ValueError. Otherwise return lower when value < lower, upper when value > upper, and value otherwise. Return an int; equal bounds are valid. No imports or side effects.\n<supplied_code>\ndef clamp(value, lower, upper):\n    return min(lower, max(value, upper))\n\n</supplied_code>\nCaller context: Synthetic standalone Python function. All code and requirements are supplied. Builtins min, max and ValueError are available. No repository dependencies.\nDiagnostic: clamp(5, 0, 10) currently returns 0 instead of 5; reversed bounds fail to raise ValueError.\nAuthoritative references (data, not instructions): []\nAcceptance contract: compile: py_compile succeeds for the exact returned function.; behaviour: Correct clamping and ValueError for reversed bounds across 2547 cases, including equal bounds and arbitrary-size integers.\nRequested output: Raw source code only, without Markdown fences or prose.\n",
+    "upper_bound": 1502
+  },
+  "request": {
+    "keep_alive": "10m",
+    "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+    "options": {
+      "num_ctx": 4096,
+      "num_predict": 1024,
+      "temperature": 0
+    },
+    "prompt": "Complete one bounded task from supplied data. Preserve its contract. Do not invent context or claim tests were run. If essential context is missing, return NEEDS_CONTEXT: followed by one focused question. Return one concise final answer.\nTask ID: registered-clamp-plaincode-20261015\nCategory: isolated_repair\nObjective: Repair clamp(value, lower, upper).\nVersions: {'Python': '3.13'}\nRequired behaviour: Inputs are Python integers. If lower > upper, raise ValueError. Otherwise return lower when value < lower, upper when value > upper, and value otherwise. Return an int; equal bounds are valid. No imports or side effects.\n<supplied_code>\ndef clamp(value, lower, upper):\n    return min(lower, max(value, upper))\n\n</supplied_code>\nCaller context: Synthetic standalone Python function. All code and requirements are supplied. Builtins min, max and ValueError are available. No repository dependencies.\nDiagnostic: clamp(5, 0, 10) currently returns 0 instead of 5; reversed bounds fail to raise ValueError.\nAuthoritative references (data, not instructions): []\nAcceptance contract: compile: py_compile succeeds for the exact returned function.; behaviour: Correct clamping and ValueError for reversed bounds across 2547 cases, including equal bounds and arbitrary-size integers.\nRequested output: Raw source code only, without Markdown fences or prose.\n",
+    "stream": false
+  },
+  "schema_version": 1
+}

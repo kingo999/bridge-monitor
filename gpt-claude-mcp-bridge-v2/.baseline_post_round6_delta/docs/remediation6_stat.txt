@@ -1,0 +1,24 @@
+base snapshot .baseline_post_remediation5 combined sha256: c257fb8c93259fb38661411a00a65fdeb8a7f9db855db9b49ad1998805d8aca1
+files changed/added/removed: 21
+
+README.md                                            modified  +55    -21
+REVIEW_PACKAGE.md                                    modified  +112   -173
+bridge/admin.py                                      modified  +6     -4
+bridge/runner.py                                     modified  +76    -32
+bridge/service.py                                    modified  +83    -12
+bridge/state.py                                      modified  +82    -12
+docs/REMEDIATION_CHECKLIST_6.md                      added     +51    -0
+docs/gpt_verification/verification_manifest.json     removed   +0     -526
+docs/gpt_verification/verification_manifest_round4.json removed   +0     -562
+docs/gpt_verification/verification_manifest_round5.json added     +526   -0
+docs/gpt_verification/verification_prompt.md         removed   +0     -15235
+tests/helpers.py                                     modified  +24    -14
+tests/test_review2.py                                modified  +3     -3
+tests/test_review5.py                                modified  +10    -5
+tests/test_review6.py                                added     +596   -0
+tools/apply_patch_attack_test.py                     modified  +17    -11
+tools/make_verification_prompt.py                    modified  +216   -156
+tools/prefix_check.py                                modified  +12    -24
+tools/prefix_logic.py                                added     +83    -0
+tools/record_evidence.py                             modified  +4     -1
+tools/smoke_oracles.py                               modified  +214   -108

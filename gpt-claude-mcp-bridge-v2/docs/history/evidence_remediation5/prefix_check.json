@@ -1,0 +1,371 @@
+{
+  "declared_guards": [],
+  "evidence_class": "implementer_executed",
+  "expected_test_ids": [
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_a_first_write_whose_backup_cannot_be_written_creates_no_registry",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_recovery_advice_does_not_name_a_command_that_cannot_work",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_register_new_leaves_a_journal_witness_and_a_backup",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_reinit_is_part_of_the_witness_policy",
+    "tests.test_review6.T11_OmissionComparesRawBytes.test_files_that_differ_only_in_line_endings_are_not_called_unchanged",
+    "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_failing_test_is_failed_not_invalid",
+    "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_modified_stage_is_labelled_invalid",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_an_observer_never_recreates_a_removed_record",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_refusal_must_be_specific_denial_wording",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_conflicting_record_is_not_pure_thread_debt",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_consistent_persistence_failed_record_is_still_pure",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reconcile_treats_a_conflicting_record_as_a_process_fact",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reset_and_adopt_keep_a_conflicting_record",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_the_service_converts_a_conflicting_record_instead_of_dropping_it",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_unchecked_completion_and_observer_writes_are_reported",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_with_a_durable_uncertainty_the_pending_marker_is_still_written",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_split_inside_an_escape_sequence_is_detected_too",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_the_window_is_at_least_the_longest_encoded_signature",
+    "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_an_unexpected_exception_after_a_recorded_warning_carries_it",
+    "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_the_original_exception_is_still_the_cause",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_a_resumed_review_must_name_the_requested_thread",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_no_observed_thread_is_a_problem",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_the_sender_and_stage_b_use_the_shared_predicate",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_complete_chain_is_accepted",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_reduced_overlay_is_rejected",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_repeated_passing_line_is_not_two_tests",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_ast_identities_follow_inheritance_and_ignore_helpers",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_identities_and_kinds_are_reconstructed_not_trusted",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_snapshot_bytes_are_rehashed_from_disk",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_the_module_under_test_must_be_in_the_overlay",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_ordinary_whitespace_is_still_accepted",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_python_whitespace_that_javascript_does_not_accept_is_rejected"
+  ],
+  "expected_tests": 41,
+  "fail_or_error_on_prefix": 34,
+  "failure_kind_by_test": {
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_a_first_write_whose_backup_cannot_be_written_creates_no_registry": "assertion",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_recovery_advice_does_not_name_a_command_that_cannot_work": "assertion",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_register_new_leaves_a_journal_witness_and_a_backup": "assertion",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_reinit_is_part_of_the_witness_policy": "assertion",
+    "tests.test_review6.T11_OmissionComparesRawBytes.test_files_that_differ_only_in_line_endings_are_not_called_unchanged": "assertion",
+    "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_modified_stage_is_labelled_invalid": "assertion",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record": "assertion",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_an_observer_never_recreates_a_removed_record": "assertion",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer": "api_missing",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write": "assertion",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_refusal_must_be_specific_denial_wording": "assertion",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt": "assertion",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations": "assertion",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_conflicting_record_is_not_pure_thread_debt": "api_missing",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_consistent_persistence_failed_record_is_still_pure": "api_missing",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reconcile_treats_a_conflicting_record_as_a_process_fact": "assertion",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reset_and_adopt_keep_a_conflicting_record": "assertion",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_the_service_converts_a_conflicting_record_instead_of_dropping_it": "assertion",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted": "assertion",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_unchecked_completion_and_observer_writes_are_reported": "assertion",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected": "assertion",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_split_inside_an_escape_sequence_is_detected_too": "assertion",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_the_window_is_at_least_the_longest_encoded_signature": "assertion",
+    "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_an_unexpected_exception_after_a_recorded_warning_carries_it": "assertion",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_a_resumed_review_must_name_the_requested_thread": "api_missing",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_no_observed_thread_is_a_problem": "assertion",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_the_sender_and_stage_b_use_the_shared_predicate": "assertion",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_reduced_overlay_is_rejected": "assertion",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_repeated_passing_line_is_not_two_tests": "assertion",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_ast_identities_follow_inheritance_and_ignore_helpers": "api_missing",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_identities_and_kinds_are_reconstructed_not_trusted": "assertion",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_snapshot_bytes_are_rehashed_from_disk": "assertion",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_the_module_under_test_must_be_in_the_overlay": "assertion",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_python_whitespace_that_javascript_does_not_accept_is_rejected": "assertion"
+  },
+  "failure_kinds": {
+    "api_missing": 5,
+    "assertion": 29,
+    "behavioural_error": 0
+  },
+  "loader_errors": [],
+  "module": "tests.test_review6",
+  "module_file": "tests/test_review6.py",
+  "outcomes": {
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_a_first_write_whose_backup_cannot_be_written_creates_no_registry": "fail",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_recovery_advice_does_not_name_a_command_that_cannot_work": "fail",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_register_new_leaves_a_journal_witness_and_a_backup": "fail",
+    "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_reinit_is_part_of_the_witness_policy": "fail",
+    "tests.test_review6.T11_OmissionComparesRawBytes.test_files_that_differ_only_in_line_endings_are_not_called_unchanged": "fail",
+    "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_failing_test_is_failed_not_invalid": "pass",
+    "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_modified_stage_is_labelled_invalid": "fail",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record": "fail",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_an_observer_never_recreates_a_removed_record": "fail",
+    "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer": "error",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write": "fail",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_refusal_must_be_specific_denial_wording": "fail",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it": "pass",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt": "fail",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations": "fail",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_conflicting_record_is_not_pure_thread_debt": "error",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_consistent_persistence_failed_record_is_still_pure": "error",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reconcile_treats_a_conflicting_record_as_a_process_fact": "fail",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reset_and_adopt_keep_a_conflicting_record": "fail",
+    "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_the_service_converts_a_conflicting_record_instead_of_dropping_it": "fail",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted": "fail",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_unchecked_completion_and_observer_writes_are_reported": "fail",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_with_a_durable_uncertainty_the_pending_marker_is_still_written": "pass",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected": "fail",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_split_inside_an_escape_sequence_is_detected_too": "fail",
+    "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_the_window_is_at_least_the_longest_encoded_signature": "fail",
+    "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_an_unexpected_exception_after_a_recorded_warning_carries_it": "fail",
+    "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_the_original_exception_is_still_the_cause": "pass",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_a_resumed_review_must_name_the_requested_thread": "error",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_no_observed_thread_is_a_problem": "fail",
+    "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_the_sender_and_stage_b_use_the_shared_predicate": "fail",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_complete_chain_is_accepted": "pass",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_reduced_overlay_is_rejected": "fail",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_repeated_passing_line_is_not_two_tests": "fail",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_ast_identities_follow_inheritance_and_ignore_helpers": "error",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_identities_and_kinds_are_reconstructed_not_trusted": "fail",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_snapshot_bytes_are_rehashed_from_disk": "fail",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_the_module_under_test_must_be_in_the_overlay": "fail",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected": "pass",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_ordinary_whitespace_is_still_accepted": "pass",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_python_whitespace_that_javascript_does_not_accept_is_rejected": "fail"
+  },
+  "overlay": [
+    {
+      "origin": "snapshot",
+      "path": "architect_bridge.py",
+      "sha256": "1c96f21e8060ffc56376b36350334b0e2347fb9c9145a759e00c7eb171a106c8"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/__init__.py",
+      "sha256": "9fd4de9f72e0afe11028c6ade1883faed6aaad3d24ecc666c01319df7030daad"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/admin.py",
+      "sha256": "7b12b74904278473ccb59fbad98d13196c6e5941e2a57fffb585b5888cffb074"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/codexcli.py",
+      "sha256": "54beda0aa876202e81c813c5e5276d6a3ed18049b2b61e9312a79353624ae6de"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/config.py",
+      "sha256": "bba7969789e0a922a950aedb19ffb30fb7900d7a7f69d53f4bd4462198aa7bee"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/errors.py",
+      "sha256": "c461cf6f02b7d9ea4ae4090ad2ea4f1a0a12212041b3a41ad0947f36a253833c"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/execpath.py",
+      "sha256": "6bbbe47dc2cbc472ab54555f2f13bdbdbf335b92261423c69b5173e9cd60ed1c"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/fingerprint.py",
+      "sha256": "cf08b9070fdeb965c285ee101f4ebc133c36bac5b2b424487478a6a7443cca63"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/gitsafe.py",
+      "sha256": "d57d1e0fd3ff7720a8b775e82dd6a0f1c00e99ccb541988040337658605dec5e"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/ids.py",
+      "sha256": "0250a796c8f8bc7749702ca5c6cf57460155d2f88d9dc458e5313a3948628ebf"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/jobobject.py",
+      "sha256": "bd06f34d8668e659c0a24db3e34bb97969dda0f4173044114cef14ad52e4cf00"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/redact.py",
+      "sha256": "a67a964840010ebfd21d0d9cebaf8bc30cdeaf32c040b923ffdbb34b85a27b6f"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/runner.py",
+      "sha256": "9e405512b451a9145dc25d6951d2465a0b246dcaa4cea6ae9355baf7fc3a9e52"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/server.py",
+      "sha256": "30f513f8f8c484d3e07da396ae73ed092cc51e6a42382d12f9c4df704ee633dc"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/service.py",
+      "sha256": "31b34f6c1f54ab8a6f3f106812fea69d805c8effc6e3ba05a49999bd0857bc83"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/state.py",
+      "sha256": "413afa30e2f99b72a05d27e27c2334bb37eeaaf6e42d052674d0f3aaee68ff27"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/telemetry.py",
+      "sha256": "88e7494d70650964fa72e4b9fcb3d0450636613df5ac0d886d8fd1c0bf543247"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge_admin.py",
+      "sha256": "2f1338751465367a9cb144912145d257a865e204588b73a057678c8184e8ac44"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/fake_codex.py",
+      "sha256": "abaf1f818738fea963ac87b5aae8d3d10bff2c0e7bcab6bd840cab77c44b1165"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/hard_kill_helper.py",
+      "sha256": "fb1f90d06760b48a3279449e8448f63b3cd6b6b728ded6780ad30920c4efb15c"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/helpers.py",
+      "sha256": "b97fe0c04a1a7940517186b609b5b606e8762131121e8fe6e34d7a29701ffcfa"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/test_review6.py",
+      "sha256": "d4cf1bd9b82c399a3ee747f5c20580d88a4967e0e6fd03312f4dafbb62f07c6f"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/apply_patch_attack_test.py",
+      "sha256": "aa708061eb7a89a93267c22d89a9adf6235be6bf6758d53db3b73d46feb9ea09"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/capture_v1_fixtures.py",
+      "sha256": "cfd5c4e820283934fd3f6286baa37b1eea644115e7f7f9525aa4ceafa7db88f8"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/live_smoke_test.py",
+      "sha256": "57072304c576eaad09c26dbe8a3e95a0c9c1d881d5f2dc230d66d0d41aa88fd9"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_lock.py",
+      "sha256": "ad7504b76444308e0d3847f72860cf5655dde45ed676795374f685f008ee7ffb"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_remediation_diff.py",
+      "sha256": "14ec02971a969b2fdcbe0a7860dec6d3e9f201cc1b6e6b5c77546774a719c3f9"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_telemetry_examples.py",
+      "sha256": "5e6855533be9953f95bd3848c7f3747ee88d52cf0b17917f6ae8c98f7569c575"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_v1_diff.py",
+      "sha256": "b4b07b1bf96c6c73aa647669b403852312fb47832346d52b05c5cea8193f3f11"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_verification_prompt.py",
+      "sha256": "8f01f5ae7d7e74a4a9980a1ed28ef3d5ccc7d864732105b53574c6dae4e08ba2"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/prefix_check.py",
+      "sha256": "3177c2433c96a322f467b28a3e28f960f993586b1c0887227dac85f3f001b266"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/privacy.py",
+      "sha256": "c76c934089b7222cbb4a1d9b7c926bbdca6a955941417beeeaee9b3dfd392aad"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/record_evidence.py",
+      "sha256": "ca779bd1d202da2ab17b47c0977c9e54264c3fa1d9096f60ddc410994578eaff"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/send_verification.py",
+      "sha256": "9d78ad3412c8cf1556d3f4c64c192767d6a2a21d9ba1f8a4d2a83ed74b1248c7"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/smoke_oracles.py",
+      "sha256": "cf465405055326b123d150a3ea11d6e49d95ec276625b7b3d1a7249d00277af7"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/v1_manifest.py",
+      "sha256": "fc8d1a8916f2d56d54871a026816879c20f457dd79c31c2020f545a212671058"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/verify_lock.py",
+      "sha256": "20ccb4187adc60935e9f10f4f76b33243632925b81e5bf1530a60a32873c17cf"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/fixtures/v1_subprocess_behavior.json",
+      "sha256": "7261b55c79040ca19293f22924a3e7c93e1843691ceceb44d6cfd467827c6842"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/fixtures/v1_tool_schemas.json",
+      "sha256": "8e33cbc6123b1d5ab008f0ed806f2d2889e68e9c9603063251957440385a0b21"
+    }
+  ],
+  "overlay_problems": [],
+  "pass_on_prefix": [
+    "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_failing_test_is_failed_not_invalid",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_with_a_durable_uncertainty_the_pending_marker_is_still_written",
+    "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_the_original_exception_is_still_the_cause",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_complete_chain_is_accepted",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_ordinary_whitespace_is_still_accepted"
+  ],
+  "raw_log": "prefix_check.log",
+  "raw_log_sha256": "b9a7f86bf5880136fdcad467230397eb6466d394888b2b37489009e0c51ffdb9",
+  "seconds": 29.9,
+  "skipped": [],
+  "snapshot": ".baseline_post_remediation5",
+  "snapshot_manifest_combined_sha256_all_files": "c257fb8c93259fb38661411a00a65fdeb8a7f9db855db9b49ad1998805d8aca1",
+  "source_combined_sha256": "05f6bd6c7307bea02e457415b525a8722148d72eae0fce4b8d829f3091c83438",
+  "tests": 41,
+  "undeclared_passes": [
+    "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_failing_test_is_failed_not_invalid",
+    "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it",
+    "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_with_a_durable_uncertainty_the_pending_marker_is_still_written",
+    "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_the_original_exception_is_still_the_cause",
+    "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_complete_chain_is_accepted",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected",
+    "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_ordinary_whitespace_is_still_accepted"
+  ],
+  "what": "the round's new tests run against the PRE-FIX source (overlay described in tools/prefix_check.py)"
+}

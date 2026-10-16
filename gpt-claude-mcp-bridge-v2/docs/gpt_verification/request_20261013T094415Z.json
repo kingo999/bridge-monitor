@@ -1,0 +1,65 @@
+{
+  "cancelled": false,
+  "capability_policy": {
+    "mcp_allowed": [],
+    "mcp_disabled": 2,
+    "mcp_unexpected_seen": [],
+    "requested": [
+      "web_search",
+      "shell_and_apply_patch_writes"
+    ],
+    "resolved": [
+      "mcp_servers",
+      "hooks",
+      "plugins_and_apps",
+      "browser_and_computer_use",
+      "delegation",
+      "image_generation"
+    ],
+    "uncontained": [
+      "view_image_goals_sleep_skills"
+    ]
+  },
+  "codex_cli": "0.162.1",
+  "command_or_tool_items": 0,
+  "errors_after_completion": 0,
+  "errors_before_completion": 0,
+  "events_total": 7,
+  "evidence_truncated_items": 0,
+  "exit_code": 0,
+  "human_authorised": true,
+  "infra_failed_items": 0,
+  "invalid_reasons": [],
+  "process": {
+    "active_after": 0,
+    "ownership": "job_object",
+    "reaped_descendants": 0,
+    "termination": "not_needed"
+  },
+  "prompt_bytes": 848200,
+  "prompt_files": 74,
+  "prompt_sha256": "ba0a15c5bbccbc91c18680afbf515a8a0885cf7982daf796a2201363104f4a67",
+  "reader_failed": false,
+  "retried": false,
+  "route": {
+    "effort": "high",
+    "effort_source": "default",
+    "model": "gpt-6.1-sol",
+    "model_source": "default"
+  },
+  "seconds": 885.1,
+  "sent_at": "20261013T094415Z",
+  "source_combined_sha256": "f68b192cba158e44b104cc823789e9f2a821f170b4c8b0417e36eacb1fb7467a",
+  "stdout_eof": true,
+  "thread_id": "01a134a6-0642-70f2-9c47-aa2671336f13",
+  "timed_out": false,
+  "turn_completed": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 218529,
+    "output_tokens": 23368,
+    "reasoning_output_tokens": 13403,
+    "total_tokens": null
+  },
+  "valid_review": true
+}

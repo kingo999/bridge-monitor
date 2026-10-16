@@ -1,0 +1,12 @@
+base snapshot .baseline_desktop_coexistence combined sha256: e8c511c1b38514bca9d4d8dee98f1ee714ebbbaf5593ab7f93d35148f4c9fbf8
+files changed/added/removed: 9
+
+README.md                                            modified  +18    -4
+bridge/config.py                                     modified  +54    -0
+bridge/service.py                                    modified  +3     -1
+tests/test_review10.py                               added     +93    -0
+tests/test_review9.py                                added     +141   -0
+tools/apply_patch_attack_test.py                     modified  +21    -3
+tools/live_smoke_test.py                             modified  +26    -4
+tools/smoke_oracles.py                               modified  +5     -0
+tools/workdirs.py                                    added     +31    -0

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "task_id": "registered-clamp-20261015T145755Z",
+  "registered_tool": "mcp__gpt_architect__local_worker",
+  "worker_id": "LOCAL-00",
+  "endpoint": "http://skynet.local:11434",
+  "peer_ip": "192.168.0.78",
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "model_digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+  "generation_attempts": 2,
+  "feedback_retries": 1,
+  "unedited_worker_success": false,
+  "final_validation": "accepted",
+  "final_code": "supervisor_corrected",
+  "evidence_origin": "supervisor_reported",
+  "supervisor_correction": "Removed only Markdown fence lines and added final newline; no function code changes.",
+  "baseline": {
+    "compile_passed": true,
+    "cases": 2547,
+    "failures": 1818
+  },
+  "corrected_candidate": {
+    "compile_passed": true,
+    "cases": 2547,
+    "failures": 0,
+    "evidence": "candidate-validation.json",
+    "source": "candidate.py"
+  },
+  "v1_called": false,
+  "v1_modified": false,
+  "inference_seconds": [
+    3.96615440000096,
+    0.9137136000026658
+  ],
+  "savings_claimed": false
+}

@@ -1,0 +1,8 @@
+{
+  "created_at": "2026-10-15T15:08:53Z",
+  "policy": "plain-code-envelope-v1",
+  "raw_result_digest": "03dca35152e87e5c9e0b66451659b205851ad601f4e758a02fee91cdc4a515ec",
+  "result_digest": "ad6b883b8fb721b6fa88582871e8474c2cd3ab9cf56de714a97232dfacbe6468",
+  "returned_response": "def clamp(value, lower, upper):\n    if lower > upper:\n        raise ValueError(\"lower should not be greater than upper\")\n    return max(lower, min(value, upper))\n",
+  "schema_version": 1
+}

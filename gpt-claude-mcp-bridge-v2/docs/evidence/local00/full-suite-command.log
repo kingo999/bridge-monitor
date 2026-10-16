@@ -1,0 +1,2 @@
+C:\AI\gpt-claude-mcp-bridge-v2\docs\evidence\tests_local00_full.json
+INVALID: 523 tests in 586.305s; failing=['test_the_material_the_reviewer_said_was_missing_is_embedded', 'test_tool_names_and_single_string_inputs_are_unchanged']; problems=['the source tree changed while the tests ran (before/after fingerprints differ)', 'the test process exited 1', '2 failing test(s)']

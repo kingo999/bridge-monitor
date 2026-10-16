@@ -1,0 +1,59 @@
+{
+  "cancelled": false,
+  "capability_policy": {
+    "mcp_allowed": [],
+    "mcp_disabled": 2,
+    "requested": [
+      "web_search",
+      "shell_and_apply_patch_writes"
+    ],
+    "resolved": [
+      "mcp_servers",
+      "hooks",
+      "plugins_and_apps",
+      "browser_and_computer_use",
+      "delegation",
+      "image_generation"
+    ],
+    "uncontained": [
+      "view_image_goals_sleep_skills"
+    ]
+  },
+  "codex_cli": "0.162.1",
+  "command_or_tool_items": 0,
+  "errors_before_completion": 0,
+  "events_total": 6,
+  "exit_code": 0,
+  "human_authorised": true,
+  "infra_failed_items": 0,
+  "process": {
+    "active_after": 0,
+    "ownership": "job_object",
+    "reaped_descendants": 0,
+    "termination": "not_needed"
+  },
+  "prompt_bytes": 723272,
+  "prompt_files": 62,
+  "prompt_sha256": "5d7efb70654600b5146799be87b5f933da3d434b15abc8e371f6a056e4cd9e75",
+  "retried": false,
+  "route": {
+    "effort": "high",
+    "effort_source": "default",
+    "model": "gpt-6.1-sol",
+    "model_source": "default"
+  },
+  "seconds": 756.6,
+  "sent_at": "20261013T064429Z",
+  "source_combined_sha256": "c58537c24582c347cb4323d4c713d998dff8fafad50ff5ed4968a38dfc65ee49",
+  "thread_id": "01a13401-7067-70f2-86f0-cba7b154cde7",
+  "timed_out": false,
+  "turn_completed": true,
+  "usage": {
+    "cached_input_tokens": 0,
+    "input_tokens": 184975,
+    "output_tokens": 18758,
+    "reasoning_output_tokens": 10154,
+    "total_tokens": null
+  },
+  "valid_review": true
+}

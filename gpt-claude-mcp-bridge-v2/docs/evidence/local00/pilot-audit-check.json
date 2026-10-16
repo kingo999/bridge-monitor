@@ -1,0 +1,12 @@
+{
+  "request_id": "837b0975d4f847678ddf7a105777912f",
+  "fixed_profile_matches": true,
+  "input_bound": 1150,
+  "actual_prompt_eval_count": 258,
+  "worker_accepted": false,
+  "validation": "unverifiable",
+  "supervisor_correction": true,
+  "active_marker_present": false,
+  "human_active_s": null,
+  "generation_timings_retained": true
+}

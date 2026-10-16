@@ -1,0 +1,12 @@
+{
+  "session_id": "4c7265cb-d86e-4704-a301-6432e489c318",
+  "configured_claude_model": "opus",
+  "task_id": "gpt-claude-skynet-clamp-20261015T153114Z",
+  "workspace": "C:\\AI\\tmp\\gpt-claude-skynet-20261015T153114Z\\workspace",
+  "v2_registration_matches": true,
+  "v1_configured_for_session": false,
+  "verifier_sha256": "7617457b5422c886dfbf75b5fbcfe9bb15512cb3af6b574d4b34d356bfe4edfb",
+  "prompt_sha256": "a1359b7c409bbaabb179e3df705c42cd52d8f2f513e0ecd8c6791e85ff0d7fff",
+  "request_sha256": "f2c01c43cc95f4bbe2909e639304ae38b153829a43865334411ea7c00e3f8c7f",
+  "original_sha256": "4e5a8fb24a45accfa4ae5b342b80b9da1ab5401cf23af1887cbb4ee3bbae3f58"
+}

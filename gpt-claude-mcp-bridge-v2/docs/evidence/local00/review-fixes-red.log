@@ -1,0 +1,116 @@
+test_queued_reconnect_cannot_undo_newer_continue_without (tests.test_local_worker_service.Discovery.test_queued_reconnect_cannot_undo_newer_continue_without) ... FAIL
+test_continue_before_startup_stays_disabled (tests.test_local_worker_service.Discovery.test_continue_before_startup_stays_disabled) ... FAIL
+test_corrupt_witness_shapes_do_not_escape_startup (tests.test_local_worker_service.Discovery.test_corrupt_witness_shapes_do_not_escape_startup) ... ERROR
+test_stale_endpoint_selection_prevents_any_post (tests.test_local_worker_generation.Generation.test_stale_endpoint_selection_prevents_any_post) ... FAIL
+test_replayed_old_report_cannot_reverse_newer_correction (tests.test_local_worker_validation.Validation.test_replayed_old_report_cannot_reverse_newer_correction) ... Executing <Task finished name='Task-44' coro=<Validation.test_replayed_old_report_cannot_reverse_newer_correction() done, defined at C:\AI\gpt-claude-mcp-bridge-v2\tests\test_local_worker_validation.py:57> exception=AssertionError("'accepted' != 'failed'\n- accepted\n+ failed\n") created at C:\Python313\Lib\asyncio\runners.py:100> took 0.116 seconds
+FAIL
+
+======================================================================
+ERROR: test_corrupt_witness_shapes_do_not_escape_startup (tests.test_local_worker_service.Discovery.test_corrupt_witness_shapes_do_not_escape_startup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\tests\test_local_worker_service.py", line 104, in test_corrupt_witness_shapes_do_not_escape_startup
+    await service.startup()
+  File "C:\AI\gpt-claude-mcp-bridge-v2\bridge\local_worker\service.py", line 60, in startup
+    try:await self.discover()
+        ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\bridge\local_worker\service.py", line 67, in discover
+    return await self._discover(address)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\bridge\local_worker\service.py", line 83, in _discover
+    connection_revision=await asyncio.to_thread(reserve)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\asyncio\threads.py", line 25, in to_thread
+    return await loop.run_in_executor(None, func_call)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\concurrent\futures\thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "C:\AI\gpt-claude-mcp-bridge-v2\bridge\local_worker\service.py", line 78, in reserve
+    with self.store.try_lock():
+         ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "C:\AI\gpt-claude-mcp-bridge-v2\bridge\local_worker\storage.py", line 105, in try_lock
+    self._establish()
+    ~~~~~~~~~~~~~~~^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\bridge\local_worker\storage.py", line 80, in _establish
+    if self.read('instance.json',16384).get('schema_version')!=1:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'get'
+
+======================================================================
+FAIL: test_queued_reconnect_cannot_undo_newer_continue_without (tests.test_local_worker_service.Discovery.test_queued_reconnect_cannot_undo_newer_continue_without)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\tests\test_local_worker_service.py", line 89, in test_queued_reconnect_cannot_undo_newer_continue_without
+    self.assertTrue(service.disabled,'queued older reconnect re-enabled a newer disabled session')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : queued older reconnect re-enabled a newer disabled session
+
+======================================================================
+FAIL: test_continue_before_startup_stays_disabled (tests.test_local_worker_service.Discovery.test_continue_before_startup_stays_disabled)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\tests\test_local_worker_service.py", line 97, in test_continue_before_startup_stays_disabled
+    self.assertTrue(service.disabled,'automatic startup must never re-enable the session')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : automatic startup must never re-enable the session
+
+======================================================================
+FAIL: test_stale_endpoint_selection_prevents_any_post (tests.test_local_worker_generation.Generation.test_stale_endpoint_selection_prevents_any_post)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\tests\test_local_worker_generation.py", line 107, in test_stale_endpoint_selection_prevents_any_post
+    self.assertEqual(result.code,'endpoint_selection_changed',result.model_dump())
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'draft_returned' != 'endpoint_selection_changed'
+- draft_returned
++ endpoint_selection_changed
+ : {'schema_version': 1, 'action': 'generate', 'worker_id': 'LOCAL-00', 'state': 'draft_returned', 'code': 'draft_returned', 'explanation': '', 'availability': 'available', 'coordination': 'idle', 'validation': 'pending', 'next_actions': [], 'task_id': 'sample', 'packet_hash': '915692332d78284380183b04e2ed1f291ad7d3fd28fce14e532a36a2aee9e3d9', 'request_id': 'b3a5da6be4c34d15b0a4cd7b5683f753', 'attempt': 1, 'endpoint': 'http://old-host:11434', 'peer_ip': '127.0.0.1', 'model': 'qwen2.5-coder:14b-instruct-q4_K_M', 'digest': '9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849', 'result_digest': '3eaca94a722e6832bd1597641d05117c25a9372f678082d3fdd05aeb44054255', 'response': 'def stable_unique(items): return list(dict.fromkeys(items or []))', 'done': True, 'done_reason': 'stop', 'metrics': {'prompt_eval_count': 200, 'eval_count': 20, 'prompt_eval_cached_count': None, 'total_duration': 1000000000, 'load_duration': None, 'prompt_eval_duration': None, 'eval_duration': None, 'total_duration_s': 1.0, 'load_duration_s': None, 'prompt_eval_duration_s': None, 'eval_duration_s': None}, 'timings': {'checks_s': 0.6059551999969699, 'inference_s': 0.12349600000015926, 'client_elapsed_s': 0.7365050999978848}, 'audit_refs': ['audit/b3a5da6be4c34d15b0a4cd7b5683f753/request.json', 'audit/b3a5da6be4c34d15b0a4cd7b5683f753/response.json'], 'replayed_from_ledger': False, 'needs_context': False, 'evidence_origin': None}
+
+======================================================================
+FAIL: test_replayed_old_report_cannot_reverse_newer_correction (tests.test_local_worker_validation.Validation.test_replayed_old_report_cannot_reverse_newer_correction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\AI\gpt-claude-mcp-bridge-v2\tests\test_local_worker_validation.py", line 63, in test_replayed_old_report_cannot_reverse_newer_correction
+    self.assertEqual(replay.validation,'failed')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'accepted' != 'failed'
+- accepted
++ failed
+
+
+----------------------------------------------------------------------
+Ran 5 tests in 2.861s
+
+FAILED (failures=4, errors=1)

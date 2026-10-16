@@ -1,0 +1,23 @@
+{
+  "task_id": "registered-clamp-20261015T145755Z",
+  "attempt": 2,
+  "packet_hash": "d91b76fe5118caa55947f0f1b5b0bb592ab1d388ae89a51727663e10b017d22d",
+  "result_digest": "17bd1fe4c731ed7bd8ede7ced98388a252ae5a727342c801b91f003538b15d95",
+  "verdict": "accepted",
+  "toolchain_ref": "CPython 3.13.7 (MSC v.1944 AMD64), C:/AI/gpt-claude-mcp-bridge-v2/.venv/Scripts/python.exe; prewritten verify.py",
+  "observations": [
+    {
+      "check_id": "compile",
+      "passed": true,
+      "evidence_ref": "C:/AI/gpt-claude-mcp-bridge-v2/docs/evidence/local00/registered-e2e-20261015T145755Z/candidate-validation.json",
+      "observed": "py_compile succeeded for candidate.py after supervisor removed only opening and closing Markdown fence lines."
+    },
+    {
+      "check_id": "behaviour",
+      "passed": true,
+      "evidence_ref": "C:/AI/gpt-claude-mcp-bridge-v2/docs/evidence/local00/registered-e2e-20261015T145755Z/candidate-validation.json",
+      "observed": "2547 independent comparison-oracle cases passed; zero failures. Covers all values -10..10 against all bounds -5..5, reversed bounds ValueError, equal bounds, and 100-digit integers. Original source failed 1818 cases."
+    }
+  ],
+  "supervisor_edits": "Removed opening ```python and closing ``` wrapper lines from attempt 2, added trailing newline; no function code changes. Corrected artifact is candidate.py beside raw attempt-2.py and candidate-validation.json. This accepts supervisor-corrected code; raw attempts remain recorded failures and this is not unedited worker success."
+}

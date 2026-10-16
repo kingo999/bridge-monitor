@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "cases": [
+    "retry_same_work_item",
+    "decomposition_parent_excluded",
+    "superseded_disposition",
+    "late_undelivered_result",
+    "mixed_guidance",
+    "unknown_final_lineage",
+    "pending_route"
+  ],
+  "status_events": ["capacity.reserved", "admission.blocked", "capture.spool_pressure", "capture.gap", "capture.recovered"]
+}

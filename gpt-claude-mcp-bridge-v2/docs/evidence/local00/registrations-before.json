@@ -1,0 +1,14 @@
+{
+  "gpt-architect": {
+    "command": "C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe",
+    "args": [
+      "C:\\AI\\gpt-claude-mcp-bridge-v2\\architect_bridge.py"
+    ]
+  },
+  "gpt-architect-v1": {
+    "command": "C:\\AI\\gpt-claude-mcp-bridge\\.venv\\Scripts\\python.exe",
+    "args": [
+      "C:\\AI\\gpt-claude-mcp-bridge\\architect_bridge.py"
+    ]
+  }
+}

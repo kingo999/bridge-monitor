@@ -1,0 +1,32 @@
+base snapshot .baseline_post_remediation3 combined sha256: dee9a3ae15aa017b1fe80aed2363d8c0cd1ad7370efbea7e52ed2d6abcbd33d7
+files changed/added/removed: 29
+
+README.md                                            modified  +96    -36
+REVIEW_PACKAGE.md                                    modified  +150   -167
+bridge/admin.py                                      modified  +37    -10
+bridge/codexcli.py                                   modified  +31    -0
+bridge/execpath.py                                   modified  +33    -3
+bridge/fingerprint.py                                modified  +3     -1
+bridge/runner.py                                     modified  +97    -44
+bridge/service.py                                    modified  +123   -108
+bridge/state.py                                      modified  +57    -16
+bridge/telemetry.py                                  modified  +4     -1
+docs/REMEDIATION_CHECKLIST_4.md                      added     +61    -0
+docs/gpt_verification/send_verification_source.py.txt added     +130   -0
+docs/gpt_verification/verification_manifest.json     removed   +0     -477
+docs/gpt_verification/verification_manifest_round2.json removed   +0     -337
+docs/gpt_verification/verification_manifest_round3.json added     +477   -0
+docs/gpt_verification/verification_prompt.md         removed   +0     -13409
+tests/fake_codex.py                                  modified  +4     -0
+tests/helpers.py                                     modified  +6     -1
+tests/test_apply_patch_attack.py                     modified  +9     -5
+tests/test_remediation.py                            modified  +2     -1
+tests/test_review2.py                                modified  +20    -12
+tests/test_review3.py                                modified  +20    -14
+tests/test_review4.py                                added     +681   -0
+tools/apply_patch_attack_test.py                     modified  +95    -52
+tools/live_smoke_test.py                             modified  +55    -13
+tools/make_verification_prompt.py                    modified  +194   -152
+tools/prefix_check.py                                added     +123   -0
+tools/record_evidence.py                             modified  +48    -20
+tools/smoke_oracles.py                               added     +85    -0

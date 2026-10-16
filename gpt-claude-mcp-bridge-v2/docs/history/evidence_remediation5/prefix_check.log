@@ -1,0 +1,375 @@
+C:\Users\kian\AppData\Local\Temp\tmp_e1to5wu\ev\tests_failing.json
+FAILED: 1 tests in 0.0s; failing=['test_it']; problems=['the test process exited 1', '1 failing test(s)']
+C:\Users\kian\AppData\Local\Temp\tmp2_j7u5g9\ev\tests_mutation.json
+FAILED: 1 tests in 0.001s; failing=[]; problems=['the staged copy was modified (or could not be re-fingerprinted) during the run (post-run staged fingerprint differs)']
+RESULT_JSON:{"tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_a_first_write_whose_backup_cannot_be_written_creates_no_registry": "fail", "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_recovery_advice_does_not_name_a_command_that_cannot_work": "fail", "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_register_new_leaves_a_journal_witness_and_a_backup": "fail", "tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_reinit_is_part_of_the_witness_policy": "fail", "tests.test_review6.T11_OmissionComparesRawBytes.test_files_that_differ_only_in_line_endings_are_not_called_unchanged": "fail", "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_failing_test_is_failed_not_invalid": "pass", "tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_modified_stage_is_labelled_invalid": "fail", "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record": "fail", "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_an_observer_never_recreates_a_removed_record": "fail", "tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer": "error", "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write": "fail", "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_refusal_must_be_specific_denial_wording": "fail", "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it": "pass", "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt": "fail", "tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations": "fail", "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_conflicting_record_is_not_pure_thread_debt": "error", "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_consistent_persistence_failed_record_is_still_pure": "error", "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reconcile_treats_a_conflicting_record_as_a_process_fact": "fail", "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reset_and_adopt_keep_a_conflicting_record": "fail", "tests.test_review6.T3_PurityIsValidatedNotAssumed.test_the_service_converts_a_conflicting_record_instead_of_dropping_it": "fail", "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted": "fail", "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_unchecked_completion_and_observer_writes_are_reported": "fail", "tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_with_a_durable_uncertainty_the_pending_marker_is_still_written": "pass", "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected": "fail", "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_split_inside_an_escape_sequence_is_detected_too": "fail", "tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_the_window_is_at_least_the_longest_encoded_signature": "fail", "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_an_unexpected_exception_after_a_recorded_warning_carries_it": "fail", "tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_the_original_exception_is_still_the_cause": "pass", "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_a_resumed_review_must_name_the_requested_thread": "error", "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_no_observed_thread_is_a_problem": "fail", "tests.test_review6.T7_AReviewNeedsAnObservedThread.test_the_sender_and_stage_b_use_the_shared_predicate": "fail", "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_complete_chain_is_accepted": "pass", "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_reduced_overlay_is_rejected": "fail", "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_repeated_passing_line_is_not_two_tests": "fail", "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_ast_identities_follow_inheritance_and_ignore_helpers": "error", "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_identities_and_kinds_are_reconstructed_not_trusted": "fail", "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_snapshot_bytes_are_rehashed_from_disk": "fail", "tests.test_review6.T8_ThePrefixChainIsReconstructed.test_the_module_under_test_must_be_in_the_overlay": "fail", "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected": "pass", "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_ordinary_whitespace_is_still_accepted": "pass", "tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_python_whitespace_that_javascript_does_not_accept_is_rejected": "fail"}
+test_a_first_write_whose_backup_cannot_be_written_creates_no_registry (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_a_first_write_whose_backup_cannot_be_written_creates_no_registry) ... FAIL
+test_recovery_advice_does_not_name_a_command_that_cannot_work (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_recovery_advice_does_not_name_a_command_that_cannot_work) ... FAIL
+test_register_new_leaves_a_journal_witness_and_a_backup (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_register_new_leaves_a_journal_witness_and_a_backup) ... FAIL
+test_reinit_is_part_of_the_witness_policy (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_reinit_is_part_of_the_witness_policy) ... FAIL
+test_files_that_differ_only_in_line_endings_are_not_called_unchanged (tests.test_review6.T11_OmissionComparesRawBytes.test_files_that_differ_only_in_line_endings_are_not_called_unchanged) ... FAIL
+test_a_failing_test_is_failed_not_invalid (tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_failing_test_is_failed_not_invalid) ... ok
+test_a_modified_stage_is_labelled_invalid (tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_modified_stage_is_labelled_invalid) ... FAIL
+test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record) ... FAIL
+test_an_observer_never_recreates_a_removed_record (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_an_observer_never_recreates_a_removed_record) ... FAIL
+test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer) ... ERROR
+test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write) ... FAIL
+test_a_refusal_must_be_specific_denial_wording (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_refusal_must_be_specific_denial_wording) ... FAIL
+test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_single_exact_command_is_still_attributed_and_its_denial_belongs_to_it) ... ok
+test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt) ... FAIL
+test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations) ... FAIL
+test_a_conflicting_record_is_not_pure_thread_debt (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_conflicting_record_is_not_pure_thread_debt) ... ERROR
+test_a_consistent_persistence_failed_record_is_still_pure (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_consistent_persistence_failed_record_is_still_pure) ... ERROR
+test_reconcile_treats_a_conflicting_record_as_a_process_fact (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reconcile_treats_a_conflicting_record_as_a_process_fact) ... FAIL
+test_reset_and_adopt_keep_a_conflicting_record (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reset_and_adopt_keep_a_conflicting_record) ... FAIL
+test_the_service_converts_a_conflicting_record_instead_of_dropping_it (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_the_service_converts_a_conflicting_record_instead_of_dropping_it) ... FAIL
+test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted) ... session pointer not saved: registry_unwritable
+FAIL
+test_unchecked_completion_and_observer_writes_are_reported (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_unchecked_completion_and_observer_writes_are_reported) ... FAIL
+test_with_a_durable_uncertainty_the_pending_marker_is_still_written (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_with_a_durable_uncertainty_the_pending_marker_is_still_written) ... session pointer not saved: registry_unwritable
+ok
+test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected) ... FAIL
+test_a_split_inside_an_escape_sequence_is_detected_too (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_split_inside_an_escape_sequence_is_detected_too) ... FAIL
+test_the_window_is_at_least_the_longest_encoded_signature (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_the_window_is_at_least_the_longest_encoded_signature) ... FAIL
+test_an_unexpected_exception_after_a_recorded_warning_carries_it (tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_an_unexpected_exception_after_a_recorded_warning_carries_it) ... FAIL
+test_the_original_exception_is_still_the_cause (tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_the_original_exception_is_still_the_cause) ... ok
+test_a_resumed_review_must_name_the_requested_thread (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_a_resumed_review_must_name_the_requested_thread) ... ERROR
+test_no_observed_thread_is_a_problem (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_no_observed_thread_is_a_problem) ... FAIL
+test_the_sender_and_stage_b_use_the_shared_predicate (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_the_sender_and_stage_b_use_the_shared_predicate) ... FAIL
+test_a_complete_chain_is_accepted (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_complete_chain_is_accepted) ... ok
+test_a_reduced_overlay_is_rejected (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_reduced_overlay_is_rejected) ... FAIL
+test_a_repeated_passing_line_is_not_two_tests (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_repeated_passing_line_is_not_two_tests) ... FAIL
+test_ast_identities_follow_inheritance_and_ignore_helpers (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_ast_identities_follow_inheritance_and_ignore_helpers) ... ERROR
+test_identities_and_kinds_are_reconstructed_not_trusted (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_identities_and_kinds_are_reconstructed_not_trusted) ... FAIL
+test_snapshot_bytes_are_rehashed_from_disk (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_snapshot_bytes_are_rehashed_from_disk) ... FAIL
+test_the_module_under_test_must_be_in_the_overlay (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_the_module_under_test_must_be_in_the_overlay) ... FAIL
+test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected (tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_a_lone_raw_cr_inside_a_quoted_literal_is_rejected) ... ok
+test_ordinary_whitespace_is_still_accepted (tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_ordinary_whitespace_is_still_accepted) ... ok
+test_python_whitespace_that_javascript_does_not_accept_is_rejected (tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_python_whitespace_that_javascript_does_not_accept_is_rejected) ... FAIL
+
+======================================================================
+ERROR: test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 150, in test_events_are_a_frozen_snapshot_and_sealing_never_waits_for_an_observer
+    ev.finish(reader_alive=True)                              # must not wait for the stuck callback
+    ^^^^^^^^^
+AttributeError: 'Events' object has no attribute 'finish'
+
+======================================================================
+ERROR: test_a_conflicting_record_is_not_pure_thread_debt (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_conflicting_record_is_not_pure_thread_debt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 232, in test_a_conflicting_record_is_not_pure_thread_debt
+    self.assertTrue(state.is_pure_thread_debt({"state": "persistence_failed", "reason": "registry_unwritable"}))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'bridge.state' has no attribute 'is_pure_thread_debt'
+
+======================================================================
+ERROR: test_a_consistent_persistence_failed_record_is_still_pure (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_a_consistent_persistence_failed_record_is_still_pure)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 264, in test_a_consistent_persistence_failed_record_is_still_pure
+    self.assertTrue(state.is_pure_thread_debt(marker))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'bridge.state' has no attribute 'is_pure_thread_debt'
+
+======================================================================
+ERROR: test_a_resumed_review_must_name_the_requested_thread (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_a_resumed_review_must_name_the_requested_thread)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 375, in test_a_resumed_review_must_name_the_requested_thread
+    self.assertEqual(runner.turn_problems(self._result(), expected_thread=THREAD), [])
+                     ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: turn_problems() got an unexpected keyword argument 'expected_thread'
+
+======================================================================
+ERROR: test_ast_identities_follow_inheritance_and_ignore_helpers (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_ast_identities_follow_inheritance_and_ignore_helpers)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 450, in test_ast_identities_follow_inheritance_and_ignore_helpers
+    from tools import prefix_logic
+ImportError: cannot import name 'prefix_logic' from 'tools' (C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tools\__init__.py)
+
+======================================================================
+FAIL: test_a_first_write_whose_backup_cannot_be_written_creates_no_registry (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_a_first_write_whose_backup_cannot_be_written_creates_no_registry)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 498, in test_a_first_write_whose_backup_cannot_be_written_creates_no_registry
+    self.assertIn("PARTIAL SUCCESS", answer)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'PARTIAL SUCCESS' not found in 'FAKE ANSWER'
+
+======================================================================
+FAIL: test_recovery_advice_does_not_name_a_command_that_cannot_work (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_recovery_advice_does_not_name_a_command_that_cannot_work)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 521, in test_recovery_advice_does_not_name_a_command_that_cannot_work
+    self.assertIn("instance.json is missing", str(exc))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'instance.json is missing' not found in '[bridge-error:session_corrupt/registry_lost] The session registry registry.json is missing and its identity file is missing, but registry.prev.json / the lifecycle journal prove a registry existed here.  The bridge will not silently start replacement sessions.\nRecovery: `bridge_admin.py restore-prev --yes` restores it (after `quarantine` if needed); otherwise `reinit --yes` creates an explicit empty registry and threads are re-attached with `adopt`. Codex history is not affected.'
+
+======================================================================
+FAIL: test_register_new_leaves_a_journal_witness_and_a_backup (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_register_new_leaves_a_journal_witness_and_a_backup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 507, in test_register_new_leaves_a_journal_witness_and_a_backup
+    self.assertIn("registry_established", events)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'registry_established' not found in []
+
+======================================================================
+FAIL: test_reinit_is_part_of_the_witness_policy (tests.test_review6.T10_EstablishmentWitnessesAreNotBestEffort.test_reinit_is_part_of_the_witness_policy)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 526, in test_reinit_is_part_of_the_witness_policy
+    self.assertIn("registry_established", state.Registry._ESTABLISHED_EVENTS)        # noqa: SLF001
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'registry_established' not found in frozenset({'turn_finished', 'thread_adopted', 'registry_restored_prev', 'registry_reinitialised'})
+
+======================================================================
+FAIL: test_files_that_differ_only_in_line_endings_are_not_called_unchanged (tests.test_review6.T11_OmissionComparesRawBytes.test_files_that_differ_only_in_line_endings_are_not_called_unchanged)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 551, in test_files_that_differ_only_in_line_endings_are_not_called_unchanged
+    self.assertEqual(by_path["bridge/runner.py"]["mode"], "full", "different raw bytes: embedded")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'unchanged_since_verified_snapshot' != 'full'
+- unchanged_since_verified_snapshot
++ full
+ : different raw bytes: embedded
+
+======================================================================
+FAIL: test_a_modified_stage_is_labelled_invalid (tests.test_review6.T12_ProvenanceBreaksAreInvalid.test_a_modified_stage_is_labelled_invalid)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 574, in test_a_modified_stage_is_labelled_invalid
+    self.assertEqual(record["outcome"], "INVALID", record["problems"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'FAILED' != 'INVALID'
+- FAILED
++ INVALID
+ : ['the staged copy was modified (or could not be re-fingerprinted) during the run (post-run staged fingerprint differs)']
+
+======================================================================
+FAIL: test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 115, in test_a_callback_blocked_past_the_join_cannot_erase_settlement_or_recreate_a_record
+    self.assertEqual(after, before, "an abandoned observer rewrote the record of a later owner")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'call_id': '729fa32ada484b609e91052fef1584e7', 'child[267 chars]f0a'} != {'call_id': 'dddddddd', 'model': 'gpt-6.1-sol', 'owner[218 chars]444'}
+Diff is 659 characters long. Set self.maxDiff to None to see it. : an abandoned observer rewrote the record of a later owner
+
+======================================================================
+FAIL: test_an_observer_never_recreates_a_removed_record (tests.test_review6.T1_AnAbandonedObserverCannotTouchLaterState.test_an_observer_never_recreates_a_removed_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 133, in test_an_observer_never_recreates_a_removed_record
+    self.assertIsNone(state.Registry(self.w.state).read_marker("inflight", self.key()),
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      "a stale observer write recreated a record that recovery had removed")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'call_id': '0c1732f211ec4aa7b04f46d0c7540681', 'child_pid': 39076, 'model': 'gpt-6.1-sol', 'owner_identity': '134363606777289998', 'owner_pid': 8956, 'ownership': 'job_object', 'phase': 'running', 'resumed': False, 'started_at': '2026-10-13T10:24:46Z', 'state': 'running', 'thread_id': '3035c0f1-ca2d-4ddc-9c42-d6a863cf8511'} is not None : a stale observer write recreated a record that recovery had removed
+
+======================================================================
+FAIL: test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 187, in test_a_quoted_write_verb_next_to_a_denied_read_is_not_an_attempted_write
+    self.assertFalse(step["attempted"])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_a_refusal_must_be_specific_denial_wording (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_a_refusal_must_be_specific_denial_wording)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 221, in test_a_refusal_must_be_specific_denial_wording
+    self.assertFalse(step["append_canary"]["refusal_recorded"], "generic words are not a denial")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : generic words are not a denial
+
+======================================================================
+FAIL: test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 197, in test_an_unreachable_write_branch_followed_by_a_denied_read_is_not_an_attempt
+    self.assertFalse(step["attempted"], command)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : if ($false) { Add-Content canary.txt TAMPERED }; Get-Content nope.txt
+
+======================================================================
+FAIL: test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations (tests.test_review6.T2_ShellSemanticsAreParsedNotSubstringMatched.test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 214, in test_unknown_tool_names_reserved_results_and_malformed_arrays_are_not_operations
+    self.assertFalse(o.control_executed(o.command_records(self.js(body, head)), head), body)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: True is not false : text(await tools.mystery({cmd: "git rev-parse HEAD"}));
+
+======================================================================
+FAIL: test_reconcile_treats_a_conflicting_record_as_a_process_fact (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reconcile_treats_a_conflicting_record_as_a_process_fact)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 257, in test_reconcile_treats_a_conflicting_record_as_a_process_fact
+    self.assertEqual(rc, 0, out)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+AssertionError: 1 != 0 : not reconciled: model=gpt-6.1-sol session=default: the marker records Codex thread aaaaaaaa-1111-2222-3333-444444444444 whose session pointer could not be saved. Keep it with `adopt --thread <id> --model <model> --yes` or discard the pointer state with `reset --yes`.
+
+
+======================================================================
+FAIL: test_reset_and_adopt_keep_a_conflicting_record (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_reset_and_adopt_keep_a_conflicting_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 240, in test_reset_and_adopt_keep_a_conflicting_record
+    self.assertIsNotNone(reg.read_marker("inflight", self.key()), "the process fact must survive reset")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: unexpectedly None : the process fact must survive reset
+
+======================================================================
+FAIL: test_the_service_converts_a_conflicting_record_instead_of_dropping_it (tests.test_review6.T3_PurityIsValidatedNotAssumed.test_the_service_converts_a_conflicting_record_instead_of_dropping_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 249, in test_the_service_converts_a_conflicting_record_instead_of_dropping_it
+    self.assertEqual(exc.code, "uncertain_termination")
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'pending_persistence' != 'uncertain_termination'
+- pending_persistence
++ uncertain_termination
+
+
+======================================================================
+FAIL: test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 292, in test_a_pending_marker_is_not_mirrored_when_the_uncertainty_was_not_persisted
+    self.assertIsNone(reg.read_marker("pending", self.key()),
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      "the debt was mirrored although the process fact was not durable")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'call_id': '4763f2a5c30a4ba3ba8a48857f57c453', 'model': 'gpt-6.1-sol', 'reason': 'registry_unwritable', 'repo_key': 'b248fd47621acabefc679b91aed8738f', 'session': 'default', 'since': '2026-10-13T10:24:56Z', 'thread_id': 'e5455ae5-48ff-4848-b3c1-8e2a102bf75d'} is not None : the debt was mirrored although the process fact was not durable
+
+======================================================================
+FAIL: test_unchecked_completion_and_observer_writes_are_reported (tests.test_review6.T4_DurableFirstOnTheOrdinaryPath.test_unchecked_completion_and_observer_writes_are_reported)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 316, in test_unchecked_completion_and_observer_writes_are_reported
+    self.assertIn("inflight_marker_unwritable", self.w.telemetry()[0]["warnings"])
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'inflight_marker_unwritable' not found in []
+
+======================================================================
+FAIL: test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 328, in test_a_fully_escaped_whitespace_run_split_across_chunks_is_detected
+    self.assertIn("process_creation", scan.kinds, f"cut after {cut} escapes")
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'process_creation' not found in set() : cut after 900 escapes
+
+======================================================================
+FAIL: test_a_split_inside_an_escape_sequence_is_detected_too (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_a_split_inside_an_escape_sequence_is_detected_too)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 336, in test_a_split_inside_an_escape_sequence_is_detected_too
+    self.assertIn("process_creation", scan.kinds, cut)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'process_creation' not found in set() : 6018
+
+======================================================================
+FAIL: test_the_window_is_at_least_the_longest_encoded_signature (tests.test_review6.T5_TheCarryWindowHoldsTheEncodedSignature.test_the_window_is_at_least_the_longest_encoded_signature)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 339, in test_the_window_is_at_least_the_longest_encoded_signature
+    self.assertGreaterEqual(runner._OVERSIZE_WINDOW, 6 * (13 + 1024 + 1))     # noqa: SLF001
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 4096 not greater than or equal to 6228
+
+======================================================================
+FAIL: test_an_unexpected_exception_after_a_recorded_warning_carries_it (tests.test_review6.T6_GenericExceptionsKeepTheWarnings.test_an_unexpected_exception_after_a_recorded_warning_carries_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 348, in test_an_unexpected_exception_after_a_recorded_warning_carries_it
+    self.assertIn("preflight is DISABLED", str(exc), "the generic branch dropped the recorded banner")
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'preflight is DISABLED' not found in "[bridge-error:internal_error/OSError] Unexpected bridge failure (OSError).\nRecovery: Check the MCP server's stderr log; no automatic retry was made. No model turn was started; Codex history is unaffected." : the generic branch dropped the recorded banner
+
+======================================================================
+FAIL: test_no_observed_thread_is_a_problem (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_no_observed_thread_is_a_problem)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 371, in test_no_observed_thread_is_a_problem
+    self.assertIn("thread_id_not_observed", runner.turn_problems(self._result(thread_id=None)))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'thread_id_not_observed' not found in []
+
+======================================================================
+FAIL: test_the_sender_and_stage_b_use_the_shared_predicate (tests.test_review6.T7_AReviewNeedsAnObservedThread.test_the_sender_and_stage_b_use_the_shared_predicate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 382, in test_the_sender_and_stage_b_use_the_shared_predicate
+    self.assertFalse(ok)
+    ~~~~~~~~~~~~~~~~^^^^
+AssertionError: True is not false
+
+======================================================================
+FAIL: test_a_reduced_overlay_is_rejected (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_reduced_overlay_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 420, in test_a_reduced_overlay_is_rejected
+    self.assertTrue(any("omits" in p for p in self.problems(reduce)))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_a_repeated_passing_line_is_not_two_tests (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_a_repeated_passing_line_is_not_two_tests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 441, in test_a_repeated_passing_line_is_not_two_tests
+    self.assertTrue(any("repeats" in p for p in mvp.log_problems(text, 3)))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_identities_and_kinds_are_reconstructed_not_trusted (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_identities_and_kinds_are_reconstructed_not_trusted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 433, in test_identities_and_kinds_are_reconstructed_not_trusted
+    self.assertTrue(any("failure kinds" in p for p in
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        self.problems(failure_kind_by_test={"tests.test_m.A.test_a": "api_missing"})))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_snapshot_bytes_are_rehashed_from_disk (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_snapshot_bytes_are_rehashed_from_disk)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 426, in test_snapshot_bytes_are_rehashed_from_disk
+    self.assertTrue(any("not the snapshot's bytes" in p for p in self.problems(tamper)))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_the_module_under_test_must_be_in_the_overlay (tests.test_review6.T8_ThePrefixChainIsReconstructed.test_the_module_under_test_must_be_in_the_overlay)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 412, in test_the_module_under_test_must_be_in_the_overlay
+    self.assertTrue(any("omits" in p for p in self.problems(drop)))
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true
+
+======================================================================
+FAIL: test_python_whitespace_that_javascript_does_not_accept_is_rejected (tests.test_review6.T9_OnlyDeclaredWhitespaceBetweenTokens.test_python_whitespace_that_javascript_does_not_accept_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\kian\AppData\Local\Temp\prefix_check_csovla83\tests\test_review6.py", line 471, in test_python_whitespace_that_javascript_does_not_accept_is_rejected
+    self.assertIsNone(self.t.parse_wrapper(body)[0], repr(ws))
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: '*** Begin Patch\n*** Add File: A.txt\n+x\n*** End Patch' is not None : '\x85'
+
+----------------------------------------------------------------------
+Ran 41 tests in 29.584s
+
+FAILED (failures=29, errors=5)

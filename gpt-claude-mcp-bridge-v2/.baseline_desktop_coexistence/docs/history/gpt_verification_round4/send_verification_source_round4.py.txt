@@ -1,0 +1,130 @@
+"""One-off: send the PREPARED verification prompt to GPT via the Codex CLI (human-authorised).
+
+Same method as round 1: the v2 candidate's own argv builder, capability policy (read-only sandbox,
+approval_policy="never", MCP/plugins/hooks/apps/browser/computer-use/delegation/image/web controls) and
+runner, against a neutral disposable repository.  The prompt is self-contained.  NEVER retried: a failed
+or timed-out call is reported, not replayed.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import shutil
+import stat
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from pathlib import Path
+
+V2 = Path(r"C:\AI\gpt-claude-mcp-bridge-v2")
+sys.path.insert(0, str(V2))
+
+from bridge import codexcli, config, errors, runner  # noqa: E402
+from tools import make_verification_prompt as mvp  # noqa: E402
+
+TIMEOUT_S = 2700
+OUT = V2 / "docs" / "gpt_verification"
+
+
+def force_rm(func, path, _exc):
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+
+def main() -> int:
+    manifest = json.loads((OUT / "verification_manifest.json").read_text(encoding="utf-8"))
+    raw = (OUT / "verification_prompt.md").read_bytes()
+    if manifest.get("status") != "prepared_not_sent":
+        print("REFUSING: manifest status is not prepared_not_sent:", manifest.get("status"))
+        return 2
+    if hashlib.sha256(raw).hexdigest() != manifest["prompt_sha256"] or len(raw) != manifest["prompt_bytes"]:
+        print("REFUSING: the prompt file does not match its manifest")
+        return 2
+    source_sha = mvp.current_source_hash()
+    problems = mvp.evidence_problems(V2, source_sha)
+    if problems or manifest["source_combined_sha256"] != source_sha:
+        print("REFUSING: evidence/source mismatch:", problems or "manifest source hash differs")
+        return 2
+    prompt = raw.decode("utf-8")
+
+    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    print(f"sending: {len(prompt):,} chars ({len(raw):,} bytes), prompt sha256 {manifest['prompt_sha256'][:16]}..., "
+          f"source {source_sha[:16]}...", flush=True)
+
+    env = codexcli.child_env(os.environ)
+    cli = codexcli.resolve_cli(None, os.environ)
+    version = codexcli.get_version(cli, env)
+    codexcli.check_compat(version, False)          # exact-version gate, before any inference
+    codexcli.check_auth(cli, env)                  # ChatGPT auth gate, before any inference
+    route = config.resolve_route(config.CONSULT, os.environ)
+    config.validate_route_against_catalog(route, codexcli.load_catalog(cli, env))
+
+    work = Path(tempfile.mkdtemp(prefix="gpt_verify_"))
+    try:
+        repo = work / "neutral_repo"
+        repo.mkdir()
+        for a in (["init", "-q"], ["config", "user.email", "r@example.invalid"], ["config", "user.name", "r"]):
+            subprocess.run(["git", "-C", str(repo), *a], check=True, capture_output=True)
+        (repo / "README.md").write_text("neutral working directory for a self-contained review\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(repo), "-c", "user.email=r@e.i", "-c", "user.name=r", "commit", "-q",
+                        "-m", "i"], check=True, capture_output=True)
+
+        features = codexcli.load_features(cli, env)
+        audit = codexcli.capability_audit(cli, env, repo, frozenset(), features)   # empty allow-list
+        answer_file = str(work / "answer.txt")
+        argv = codexcli.build_argv(cli, model=route.model, effort=route.effort, output_file=answer_file,
+                                   audit=audit, resume_thread=None, windows_sandbox=None)
+        print("route:", route.model, route.effort, "| cli", version, "| mcp disabled:", audit.disabled_servers,
+              flush=True)
+
+        started = time.time()
+        result = runner.run_turn(argv, prompt, env, str(repo), TIMEOUT_S, threading.Event())
+        ev = result.events
+        answer = Path(answer_file).read_text(encoding="utf-8", errors="replace") if Path(answer_file).is_file() else ""
+        valid = (result.returncode == 0 and ev.turn_completed and bool(answer.strip())
+                 and not result.timed_out and not ev.infra_failed_items)
+        meta = {
+            "sent_at": stamp, "human_authorised": True, "route": route.public(), "codex_cli": version,
+            "source_combined_sha256": source_sha, "prompt_sha256": manifest["prompt_sha256"],
+            "prompt_bytes": manifest["prompt_bytes"], "prompt_files": len(manifest["files"]),
+            "exit_code": result.returncode, "timed_out": result.timed_out, "cancelled": result.cancelled,
+            "turn_completed": ev.turn_completed, "thread_id": ev.thread_id,
+            "usage": ev.usage, "events_total": ev.total,
+            "command_or_tool_items": ev.command_items, "infra_failed_items": ev.infra_failed_items,
+            "errors_before_completion": ev.errors_before_completion,
+            "process": {"ownership": result.ownership, "termination": result.termination,
+                        "reaped_descendants": result.reaped_descendants, "active_after": result.active_after},
+            "capability_policy": audit.telemetry_summary(),
+            "seconds": round(time.time() - started, 1),
+            "valid_review": valid, "retried": False,
+        }
+        OUT.mkdir(parents=True, exist_ok=True)
+        (OUT / f"request_{stamp}.json").write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
+        if answer.strip():
+            tag = "" if valid else " INVALID: infrastructure/turn problems recorded in the request file;"
+            (OUT / f"gpt_verification_{stamp}.md").write_text(
+                f"<!--{tag} GPT's verification review, verbatim. Advisory; NOT approval. "
+                f"Metadata: request_{stamp}.json -->\n\n" + answer.strip() + "\n", encoding="utf-8")
+        print(json.dumps({k: meta[k] for k in ("exit_code", "timed_out", "turn_completed", "thread_id", "usage",
+                                              "command_or_tool_items", "infra_failed_items",
+                                              "errors_before_completion", "process", "seconds", "valid_review")},
+                         indent=1), flush=True)
+        print("answer chars:", len(answer), "| stamp:", stamp, flush=True)
+        if result.stderr_tail.strip():
+            print("stderr tail:", result.stderr_tail.strip()[-400:], flush=True)
+        return 0 if valid else 1
+    finally:
+        shutil.rmtree(work, onerror=force_rm)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except errors.BridgeError as exc:
+        print(str(exc))
+        sys.exit(2)

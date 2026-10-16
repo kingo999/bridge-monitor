@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "gpt-architect": {
+      "type": "stdio",
+      "command": "C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe",
+      "args": [
+        "C:\\AI\\gpt-claude-mcp-bridge-v2\\architect_bridge.py"
+      ]
+    }
+  }
+}

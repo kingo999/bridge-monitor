@@ -1,0 +1,2171 @@
+--- base/bridge/admin.py
++++ now/bridge/admin.py
+@@ -69,6 +69,15 @@
+ )
+ 
+ 
++def _end_maintenance_reporting(registry: state.Registry) -> bool:
++    """Release maintenance and, when the flag could not be removed, SAY SO at once - on every path,
++    including the one where the administrative action itself raised (S15)."""
++    cleared = registry.end_maintenance()
++    if not cleared:
++        print(_STALE_FLAG_NOTE)
++    return cleared
++
++
+ def _require_quiescent(registry: state.Registry, reason: str) -> None:
+     """Block new calls (maintenance flag), then require that no call holds a session lock."""
+     registry.ensure_dirs()
+@@ -76,10 +85,10 @@
+     try:
+         held = registry.active_sessions()
+     except BaseException:       # V9: a failing probe must not leave the flag and lock behind
+-        registry.end_maintenance()
++        _end_maintenance_reporting(registry)
+         raise
+     if held:
+-        registry.end_maintenance()
++        _end_maintenance_reporting(registry)
+         raise errors.BridgeError(
+             errors.STATE_ERROR,
+             f"Not quiescent: {len(held)} session(s) have a call in progress.",
+@@ -346,23 +355,50 @@
+ 
+ def _settle_unbound_thread(registry: state.Registry, key: str, thread: str | None, how: str,
+                            bound: str | None = None) -> dict | None:
+-    """Settle the thread-disposition part of an in-flight record (V8) without discarding independent
+-    process uncertainty.  ``thread`` None (reset) settles whatever thread the record names; an adopted
+-    thread only settles a record that names that same thread.  Returns what was settled, or None."""
++    """Settle the THREAD-disposition part of an in-flight record without touching the independent
++    PROCESS fact (V8, S1, S2).  ``thread`` None (reset) settles whatever thread the record names; an
++    adopted thread only settles a record that names that same thread.
++
++    * Only a `persistence_failed` record is a pure thread debt, and only that one is removed.
++    * Every other record - a raw `running` record of a dead owner included, because nothing has yet
++      converted it - is a process fact that only `reconcile` may clear.  It is KEPT, and the
++      disposition is written onto it durably (`thread_settled`), so `thread_debt` can never re-derive
++      the debt from the still-recorded thread id (S2).
++
++    Returns None when nothing was owed; otherwise {"thread", "process_uncertain", "ok"}.  ``ok`` is
++    False when the settlement could not be persisted: the debt then remains derivable."""
+     marker = registry.read_marker("inflight", key)
+     if marker is None:
+         return None
+     unbound = state.thread_debt(marker, bound)         # the same derivation as reconcile and the service
+     if not unbound or (thread is not None and thread != unbound):
+         return None
+-    process_uncertain = marker.get("state") == "uncertain"
+-    if process_uncertain:
+-        registry.update_marker("inflight", key, unbound_thread=None)
++    pure_debt = marker.get("state") == "persistence_failed"
++    ok = True
++    if pure_debt:
++        try:
++            registry.clear_marker("inflight", key)
++        except OSError:
++            ok = False
+     else:
+-        registry.clear_marker("inflight", key)
++        ok = registry.update_marker("inflight", key, unbound_thread=None, thread_settled=unbound,
++                                    thread_settled_how=how, thread_settled_at=state.utc_now())
+     registry.journal.append("unbound_thread_settled", key_hash=state.key_hash(key), thread_id=unbound,
+-                            how=how, process_uncertain=process_uncertain)
+-    return {"thread": unbound, "process_uncertain": process_uncertain}
++                            how=how, process_uncertain=not pure_debt, persisted=ok)
++    return {"thread": unbound, "process_uncertain": not pure_debt, "ok": ok}
++
++
++def _retained_inflight_note(registry: state.Registry, key: str) -> str:
++    """After reset/adopt: say plainly when an in-flight process fact is still there (it always is,
++    unless the record was a pure thread debt)."""
++    marker = registry.read_marker("inflight", key)
++    if marker is None or marker.get("state") in ("refused_before_exec",):
++        return ""
++    if marker.get("state") == "persistence_failed":      # a pure thread debt: reconcile refuses it
++        return (f" A thread-disposition record for {marker.get('unbound_thread') or marker.get('thread_id')} "
++                "remains: settle it with `adopt --thread <id> --model <model> --yes` or `reset --yes`.")
++    return (f" The in-flight record ({marker.get('state')}) is RETAINED: run `reconcile --yes` after "
++            "verifying that no process of that call remains.")
+ 
+ 
+ def cmd_reset(args: argparse.Namespace, env: Mapping[str, str]) -> int:
+@@ -390,20 +426,25 @@
+                 registry.journal.append("pending_discarded", key_hash=state.key_hash(key),
+                                         thread_id=pending.get("thread_id"))
+             settled = _settle_unbound_thread(registry, key, None, "reset", bound=None)
++            retained = _retained_inflight_note(registry, key)
+         finally:
+             lock.release()
+-        if entry is None and pending is None and settled is None:
++        if settled is not None and not settled["ok"]:
++            rc = 1
++        if entry is None and pending is None and settled is None and not retained:
+             print(f"nothing to reset: model={model} session={session}")
+         else:
+             thread = (entry or {}).get("thread_id")
+             print(
+                 f"retired pointer: model={model} session={session} thread={thread}"
+                 + (f"; discarded pending marker for thread {pending.get('thread_id')}" if pending else "")
+-                + (f"; discarded the unsaved-thread record for thread {settled['thread']}" if settled else "")
++                + (f"; settled the disposition of unsaved thread {settled['thread']}"
++                   if settled and settled["ok"] else "")
++                + (f"; COULD NOT persist the disposition of thread {settled['thread']} (it remains owed)"
++                   if settled and not settled["ok"] else "")
+                 + ". Codex history was not touched"
+                 + (f" (inspect with `codex resume {thread}`)." if thread else ".")
+-                + (" Process uncertainty is NOT cleared: run `reconcile --yes` after verifying no process "
+-                   "remains." if settled and settled.get("process_uncertain") else "")
++                + retained
+             )
+     return rc
+ 
+@@ -432,13 +473,15 @@
+         registry.clear_marker("pending", key)
+         registry.journal.append("thread_adopted", key_hash=state.key_hash(key), thread_id=args.thread)
+         settled = _settle_unbound_thread(registry, key, args.thread, "adopt", bound=None)
++        retained = _retained_inflight_note(registry, key)
+     finally:
+         lock.release()
+     print(f"adopted: model={model} session={session} thread={entry['thread_id']} "
+           "(Codex history was not touched; the bridge did not verify the thread exists)."
+-          + (" Process uncertainty for the interrupted call is NOT cleared: run `reconcile --yes` after "
+-             "verifying no process remains." if settled and settled.get("process_uncertain") else ""))
+-    return 0
++          + (" COULD NOT persist the settlement of the interrupted call's thread disposition." if
++             settled and not settled["ok"] else "")
++          + retained)
++    return 1 if (settled is not None and not settled["ok"]) else 0
+ 
+ 
+ def cmd_reconcile(args: argparse.Namespace, env: Mapping[str, str]) -> int:
+@@ -516,9 +559,7 @@
+         if target:
+             registry.journal.append("registry_quarantined", file=target.name)
+     finally:
+-        cleared = registry.end_maintenance()
+-    if not cleared:
+-        print(_STALE_FLAG_NOTE)
++        cleared = _end_maintenance_reporting(registry)
+     inst = registry.read_instance()
+     print(f"registry renamed to {target}" if target else "no registry file present")
+     if target and inst and inst.get("registry_established"):
+@@ -540,12 +581,9 @@
+         registry.reinit()
+         registry.journal.append("registry_reinitialised")
+     finally:
+-        cleared = registry.end_maintenance()
++        cleared = _end_maintenance_reporting(registry)
+     print("empty registry created (instance identity preserved).")
+-    if not cleared:
+-        print(_STALE_FLAG_NOTE)
+-        return 1
+-    return 0
++    return 0 if cleared else 1
+ 
+ 
+ def cmd_restore_prev(args: argparse.Namespace, env: Mapping[str, str]) -> int:
+@@ -564,12 +602,9 @@
+         if ok:
+             registry.journal.append("registry_restored_prev")
+     finally:
+-        cleared = registry.end_maintenance()
++        cleared = _end_maintenance_reporting(registry)
+     print("restored registry.prev.json" if ok else "no valid registry.prev.json to restore")
+-    if not cleared:
+-        print(_STALE_FLAG_NOTE)
+-        return 1
+-    return 0 if ok else 1
++    return 0 if (ok and cleared) else 1
+ 
+ 
+ def cmd_end_maintenance(args: argparse.Namespace, env: Mapping[str, str]) -> int:
+--- base/bridge/codexcli.py
++++ now/bridge/codexcli.py
+@@ -122,6 +122,16 @@
+     stdout: str
+     stderr: str
+     timed_out: bool = False
++    #: capture hit the byte cap (what lies beyond it was not read)
++    truncated: bool = False
++    #: a drain thread failed, or was still reading when it was abandoned (the output may be a prefix)
++    reader_incomplete: bool = False
++
++    @property
++    def complete(self) -> bool:
++        """True only when the whole output of the command was captured.  A readout used for a
++        fail-closed decision (capability audit, version, auth) must check this."""
++        return not (self.truncated or self.reader_incomplete or self.timed_out)
+ 
+ 
+ def run_simple(argv: Sequence[str], env: Mapping[str, str], cwd: str | None = None,
+@@ -137,6 +147,7 @@
+         **popen_kwargs(),
+     )
+     buffers: dict[str, bytearray] = {"out": bytearray(), "err": bytearray()}
++    flags = {"truncated": False, "failed": False}
+ 
+     def drain(stream: Any, name: str) -> None:
+         try:
+@@ -144,9 +155,13 @@
+                 chunk = stream.read(65536)
+                 if not chunk:
+                     return
+-                if len(buffers[name]) < _SIMPLE_MAX_BYTES:
+-                    buffers[name].extend(chunk[: _SIMPLE_MAX_BYTES - len(buffers[name])])
++                room = _SIMPLE_MAX_BYTES - len(buffers[name])
++                if len(chunk) > room:
++                    flags["truncated"] = True       # never silent: the readout is a prefix (S-run_simple)
++                if room > 0:
++                    buffers[name].extend(chunk[:room])
+         except Exception:  # noqa: BLE001
++            flags["failed"] = True
+             return
+ 
+     threads = [
+@@ -163,6 +178,7 @@
+         kill_tree(proc)
+     for t in threads:
+         t.join(timeout=5)
++    still_reading = any(t.is_alive() for t in threads)
+     for stream, t in zip((proc.stdout, proc.stderr), threads):
+         close_quietly(stream, t)
+     return Simple(
+@@ -170,6 +186,8 @@
+         buffers["out"].decode("utf-8", errors="replace"),
+         buffers["err"].decode("utf-8", errors="replace"),
+         timed_out,
++        truncated=flags["truncated"],
++        reader_incomplete=flags["failed"] or still_reading,
+     )
+ 
+ 
+@@ -247,7 +265,7 @@
+ def get_version(cli: Cli, env: Mapping[str, str]) -> str:
+     res = run_simple([*cli.base_argv, "--version"], env)
+     match = re.search(r"(\d+)\.(\d+)\.(\d+)(?:[-+][\w.]+)?", res.stdout + res.stderr)
+-    if res.returncode != 0 or not match:
++    if res.returncode != 0 or not match or not res.complete:
+         raise errors.BridgeError(
+             errors.CLI_MISSING,
+             "`codex --version` failed or printed an unrecognised version.",
+@@ -296,7 +314,7 @@
+ def check_auth(cli: Cli, env: Mapping[str, str]) -> None:
+     res = run_simple([*cli.base_argv, "login", "status"], env)
+     kind = classify_auth(res.returncode, _text(res))
+-    if res.timed_out:
++    if not res.complete:
+         kind = "unsupported"
+     if kind == "chatgpt":
+         return
+@@ -338,8 +356,8 @@
+             for level in item.get("supported_reasoning_levels") or []:
+                 levels.append(level["effort"] if isinstance(level, dict) else str(level))
+             catalog[str(item["slug"])] = levels
+-        if res.returncode != 0 or not catalog:
+-            raise ValueError("empty")
++        if res.returncode != 0 or not catalog or not res.complete:
++            raise ValueError("empty or incomplete")
+         return catalog
+     except Exception:  # noqa: BLE001
+         raise errors.BridgeError(
+@@ -390,10 +408,10 @@
+                   cwd: str | None = None) -> dict[str, bool]:
+     """Effective feature state *after* applying ``extra`` (--disable / -c) overrides."""
+     res = run_simple([*cli.base_argv, "features", "list", *extra], env, cwd=cwd)
+-    if res.returncode != 0 or not res.stdout.strip():
++    if res.returncode != 0 or not res.stdout.strip() or not res.complete:
+         raise errors.BridgeError(
+             errors.CLI_INCOMPATIBLE,
+-            "Could not read `codex features list`; cannot build a verified capability policy.",
++            "Could not read `codex features list` completely; cannot build a verified capability policy.",
+             code="features_unavailable",
+             recovery="Run `codex features list` in a terminal. No inference was attempted.",
+         )
+@@ -418,8 +436,9 @@
+     server_overrides: list[str] = field(default_factory=list)  # ["-c", "mcp_servers.x.enabled=false", ...]
+     config_overrides: list[str] = field(default_factory=list)  # ["-c", 'web_search="disabled"']
+     disabled_servers: list[str] = field(default_factory=list)
+-    #: allow-listed servers observed ENABLED at ANY readout of this call (a union across readouts,
+-    #: not the last snapshot): every one of them is an uncontained exposure for the call
++    #: allow-listed servers observed ENABLED at ANY readout of this call - the audit's discovery list,
++    #: its final readout and every later recheck (a union across readouts, not the last snapshot):
++    #: every one of them is an uncontained exposure for the call
+     allowed_servers: list[str] = field(default_factory=list)
+     unexpected_servers: list[str] = field(default_factory=list)
+     hook_sources: list[str] = field(default_factory=list)
+@@ -506,6 +525,8 @@
+             recovery="Run `codex mcp list --json` in the repository; no inference was attempted.",
+         )
+ 
++    if not res.complete:
++        raise bad("mcp_list_unavailable", "its output was not captured completely")
+     try:
+         data = json.loads(res.stdout)
+     except Exception:  # noqa: BLE001
+@@ -644,7 +665,11 @@
+             ),
+         )
+     audit.allow = frozenset(allow)
+-    audit.allowed_servers = sorted(r["name"] for r in after if r["enabled"] and r["name"] in allow)
++    # a union over BOTH readouts: an allow-listed server enabled only in the discovery list and gone
++    # from the final one was still enabled at a readout of this call
++    audit.allowed_servers = sorted(
++        {r["name"] for r in after if r["enabled"] and r["name"] in allow}
++        | {r["name"] for r in servers if r["enabled"] and r["name"] in allow})
+     unknown_allowed = sorted(a for a in allow if a not in {r["name"] for r in after})
+ 
+     # (3) classify by evidence level (what is *known*, not what is hoped)
+--- base/bridge/execpath.py
++++ now/bridge/execpath.py
+@@ -114,8 +114,16 @@
+     return None
+ 
+ 
++class SystemDirectoryUnavailable(OSError):
++    """The OS could not report its own system directory (S7).  There is no fallback: a value
++    inherited from the environment is exactly the trust source the lookup exists to avoid."""
++
++
+ def system_tool(name: str) -> str:
+     """Absolute path of a Windows system tool (``taskkill`` -> ``C:\\Windows\\System32\\taskkill.exe``).
++
++    Fails CLOSED: when the OS query fails, raises ``SystemDirectoryUnavailable`` - never a path built from
++    ``SystemRoot``/``windir`` or a hard-coded directory.  Callers treat the tool as unavailable.
+ 
+     On other platforms the plain name is returned (POSIX lookups never include the current
+     directory unless PATH says so, and the bridge's POSIX paths do not call these tools)."""
+@@ -127,12 +135,12 @@
+ 
+         buf = ctypes.create_unicode_buffer(260)
+         n = ctypes.windll.kernel32.GetSystemDirectoryW(buf, 260)   # the OS's answer, not an env value
+-        if 0 < n < 260 and buf.value:
+-            return os.path.join(buf.value, exe)
+-    except Exception:  # noqa: BLE001
+-        pass
+-    root = os.environ.get("SystemRoot") or os.environ.get("windir") or r"C:\Windows"
+-    return os.path.join(root, "System32", exe)
++        directory = buf.value if 0 < n < 260 else ""
++    except Exception as exc:  # noqa: BLE001
++        raise SystemDirectoryUnavailable("GetSystemDirectoryW raised") from exc
++    if not directory or not os.path.isabs(directory) or not os.path.isdir(directory):
++        raise SystemDirectoryUnavailable("GetSystemDirectoryW returned no usable directory")
++    return os.path.join(directory, exe)
+ 
+ 
+ def excluded_matches(
+--- base/bridge/runner.py
++++ now/bridge/runner.py
+@@ -63,6 +63,10 @@
+ MAX_ITEM_TEXT_CHARS = 2_000_000  # a line is at most MAX_LINE_BYTES; no prefix blind spot
+ #: how long job accounting may still show members after the parent exited before they are called survivors
+ EXIT_ACCOUNTING_GRACE_S = 0.5
++#: bounded joins at cleanup.  A reader that outlives READER_JOIN_TIMEOUT_S means the stream was not
++#: read to its end: the evidence is incomplete (S4)
++READER_JOIN_TIMEOUT_S = 5.0
++WRITER_JOIN_TIMEOUT_S = 1.0
+ 
+ # ---------------------------------------------------------------- signatures
+ #: item types that carry model-authored or model-visible *prose*: never scanned.
+@@ -74,7 +78,7 @@
+ INFRA_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
+     ("sandbox_setup", re.compile(r"helper_unknown_error|setup refresh had errors|windows sandbox failed",
+                                  re.IGNORECASE)),
+-    ("process_creation", re.compile(r"Failed to create unified exec process|CreateProcess\s*\{|"
++    ("process_creation", re.compile(r"Failed to create unified exec process|CreateProcess\s{0,1024}\{|"
+                                     r"exec_command failed: CreateProcess", re.IGNORECASE)),
+     ("repo_access", re.compile(r"fatal: not a git repository|fatal: cannot change to|"
+                                r"Unable to read current working directory|fatal: unable to read tree|"
+@@ -105,6 +109,14 @@
+     "command", "cmd", "input", "arguments", "args", "argv", "patch", "prompt", "cwd",
+     "type", "id", "call_id", "item_id",
+ })
++#: keys whose value is what a tool/command REPORTED.  Once traversal enters one of them nothing is
++#: skipped any more (S6): a returned `{"result": {"input": {"error": "helper_unknown_error"}}}` is
++#: output even though one of its keys is named like a request field.
++_OUTPUT_KEYS = frozenset({
++    "result", "results", "output", "outputs", "aggregated_output", "content", "contents", "error",
++    "errors", "stderr", "stdout", "response", "structured_content", "structuredcontent", "message",
++    "details", "data", "diagnostics",
++})
+ _MAX_GATHER_DEPTH = 64
+ _MAX_GATHER_NODES = 200_000
+ 
+@@ -116,9 +128,9 @@
+     out: list[str] = []
+     truncated = False
+     nodes = 0
+-    stack: list[tuple[Any, int]] = [(value, 0)]
++    stack: list[tuple[Any, int, bool]] = [(value, 0, False)]     # (node, depth, inside returned output)
+     while stack:
+-        current, depth = stack.pop()
++        current, depth, in_output = stack.pop()
+         nodes += 1
+         if nodes > _MAX_GATHER_NODES or depth > _MAX_GATHER_DEPTH:
+             truncated = True
+@@ -127,11 +139,16 @@
+             out.append(current)
+         elif isinstance(current, Mapping):
+             for key, inner in current.items():
+-                if str(key).lower() not in _INPUT_KEYS:
+-                    stack.append((inner, depth + 1))
++                name = str(key).lower()
++                if name in _OUTPUT_KEYS:
++                    stack.append((inner, depth + 1, True))
++                elif name in _INPUT_KEYS and not in_output:
++                    continue                      # a request field outside any returned container
++                else:
++                    stack.append((inner, depth + 1, in_output))
+         elif isinstance(current, (list, tuple)):
+             for inner in current:
+-                stack.append((inner, depth + 1))
++                stack.append((inner, depth + 1, in_output))
+     return out, truncated
+ 
+ 
+@@ -190,9 +207,21 @@
+ _ITEM_TYPE_RE = re.compile(
+     rb'\A\s*\{\s*"type"\s*:\s*"item\.[A-Za-z_]+"\s*,\s*"item"\s*:\s*\{\s*'
+     rb'(?:"id"\s*:\s*"[^"\\]{0,128}"\s*,\s*)?"type"\s*:\s*"([A-Za-z0-9_.\-]{1,64})"')
+-_UNICODE_ESCAPE = re.compile(rb"\\u00([0-7][0-9a-fA-F])")    # JSON \u00XX for ASCII
+-#: >= the longest signature (repo_access allows ~230 characters) times the 6-byte escape expansion
+-_OVERSIZE_WINDOW = 2048
++#: every JSON string escape that yields ASCII: \u00XX and the two-character forms (\n \r \t \b \f \" \\ \/)
++_JSON_ESCAPE = re.compile(rb'\\(?:u00([0-7][0-9a-fA-F])|([nrtbf"\\/]))')
++_UNICODE_ESCAPE = _JSON_ESCAPE                                   # historical name
++_SIMPLE_ESCAPES = {b"n": b"\n", b"r": b"\r", b"t": b"\t", b"b": b"\x08", b"f": b"\x0c",
++                   b'"': b'"', b"\\": b"\\", b"/": b"/"}
++#: >= the longest signature (repo_access allows ~230 characters; CreateProcess allows 1024 whitespace
++#: characters, each possibly a 2-byte escape) times the 6-byte escape expansion
++_OVERSIZE_WINDOW = 4096
++
++
++def _unescape_json(data: bytes) -> bytes:
++    def one(m: "re.Match[bytes]") -> bytes:
++        return bytes([int(m.group(1), 16)]) if m.group(1) is not None else _SIMPLE_ESCAPES[m.group(2)]
++
++    return _JSON_ESCAPE.sub(one, data)
+ 
+ 
+ class OversizeScan:
+@@ -217,7 +246,7 @@
+         # scan the text as written AND with JSON ASCII escapes (\u005f -> _) resolved: a signature
+         # encoded with escapes must not evade the scan (R4)
+         self.kinds.update(signature_kinds(data.decode("utf-8", errors="replace")))
+-        decoded = _UNICODE_ESCAPE.sub(lambda m: bytes([int(m.group(1), 16)]), data)
++        decoded = _unescape_json(data)
+         if decoded != data:
+             self.kinds.update(signature_kinds(decoded.decode("utf-8", errors="replace")))
+         self._carry = data[-_OVERSIZE_WINDOW:]
+@@ -235,8 +264,12 @@
+     oversize: int = 0
+     oversize_infra: int = 0
+     oversize_prose_skipped: int = 0
+-    #: R4: the stdout reader died mid-stream (the tail of the turn was never seen)
++    #: R4/S4: the stdout reader died mid-stream, or had not reached EOF when it was given up on (the
++    #: tail of the turn was never fully seen)
+     reader_failed: bool = False
++    #: True only when the reader reached the end of the stream and fed everything
++    stdout_eof: bool = False
++    _sealed: bool = False
+     #: failed items whose output traversal hit a limit (evidence beyond it was not read)
+     evidence_truncated_items: int = 0
+     unknown_types: int = 0
+@@ -263,6 +296,11 @@
+             self.infra_failed_items += 1
+             self.infra_kinds.update(kinds)
+ 
++    def seal(self) -> None:
++        """Stop accepting input: after a reader was abandoned, the object a caller inspects must not
++        keep changing underneath it (S4)."""
++        self._sealed = True
++
+     def feed_oversize(self, scan: "OversizeScan") -> None:
+         """An over-long line could not be parsed as JSON.
+ 
+@@ -272,6 +310,8 @@
+         (a >1 MiB line that merely *contains* the words is a false positive we accept).  An
+         oversized record whose item type is recognised as agent narration/reasoning is excluded,
+         exactly like a parsed prose item."""
++        if self._sealed:
++            return
+         if scan.item_type in _PROSE_ITEM_TYPES:
+             self.oversize_prose_skipped += 1
+             return
+@@ -280,6 +320,8 @@
+             self._count_infra(sorted(scan.kinds))
+ 
+     def feed(self, raw: bytes) -> None:
++        if self._sealed:
++            return
+         try:
+             event = json.loads(raw.decode("utf-8", errors="replace"))
+         except json.JSONDecodeError:
+@@ -360,6 +402,41 @@
+     unobservable_children_possible: bool = False
+ 
+ 
++def turn_problems(result: "RunResult") -> list[str]:
++    """Why the turn's output cannot be relied on as a usable, COMPLETE review ([] = nothing found).
++
++    The single predicate for callers outside the MCP service (the verification sender, S14).  It
++    deliberately mirrors the service's refusals: a clean exit code and a completed turn are not enough
++    when the event stream could not be read completely or an error followed the completion."""
++    ev = result.events
++    problems: list[str] = []
++    if result.timed_out:
++        problems.append("timed_out")
++    if result.cancelled:
++        problems.append("cancelled")
++    if result.returncode != 0:
++        problems.append(f"exit_code_{result.returncode}")
++    if not ev.turn_completed:
++        problems.append("turn_not_completed")
++    if ev.turn_failed:
++        problems.append("turn_failed")
++    if ev.errors_after_completion:
++        problems.append("error_after_completion")
++    if ev.thread_invalid:
++        problems.append("thread_id_invalid")
++    if ev.thread_conflict:
++        problems.append("thread_identity_conflict")
++    if ev.reader_failed or not ev.stdout_eof:
++        problems.append("stdout_not_read_completely")
++    if ev.evidence_truncated_items:
++        problems.append("evidence_truncated")
++    if ev.infra_failed_items:
++        problems.append("infrastructure_failure_in_turn")
++    if result.termination == "unconfirmed":
++        problems.append("termination_unconfirmed")
++    return problems
++
++
+ def _refuse(proc: subprocess.Popen[bytes], owner: ProcessOwnership, why: str) -> errors.BridgeError:
+     """Kill an un-owned, never-resumed child and build the refusal (no prompt byte was written)."""
+     try:
+@@ -489,6 +566,7 @@
+                     if not line:
+                         if scan is not None:
+                             events.feed_oversize(scan)
++                        events.stdout_eof = True        # the whole stream was read (S4)
+                         return
+                     complete = line.endswith(b"\n")
+                     if scan is not None:
+@@ -598,9 +676,20 @@
+                     termination = "unconfirmed"
+             for t in started_threads:
+                 try:
+-                    t.join(timeout=1 if t is writer else 5)
++                    t.join(timeout=WRITER_JOIN_TIMEOUT_S if t is writer else READER_JOIN_TIMEOUT_S)
+                 except Exception:  # noqa: BLE001
+                     pass
++            # S4: a reader that is still alive after its bounded join - or that never reached EOF - means
++            # the turn's tail was not read: the evidence is incomplete, whatever else looks fine.
++            if events is not None and reader_out is not None:
++                try:
++                    if reader_out.is_alive():
++                        events.seal()
++                        events.reader_failed = True
++                    elif not events.stdout_eof:
++                        events.reader_failed = True
++                except Exception:  # noqa: BLE001
++                    events.reader_failed = True
+             codexcli.close_quietly(proc.stdin, writer)
+             codexcli.close_quietly(proc.stdout, reader_out)
+             codexcli.close_quietly(proc.stderr, reader_err)
+--- base/bridge/service.py
++++ now/bridge/service.py
+@@ -222,6 +222,7 @@
+             ctx.error_category, ctx.error_code = exc.category, exc.code
+             ctx.inference_may_have_started = ctx.inference_may_have_started or exc.inference_may_have_started
+             ctx.outcome = {errors.TIMEOUT: "timeout", errors.CANCELLED: "cancelled"}.get(exc.category, "error")
++            self._attach_warnings(ctx, exc)       # S12: an error exit must not hide recorded exposures
+             raise
+         except BaseException as exc:  # noqa: BLE001 - includes cancellation of the worker
+             ctx.error_category, ctx.error_code = errors.INTERNAL, exc.__class__.__name__
+@@ -238,6 +239,18 @@
+             raise
+         finally:
+             self._emit(ctx)
++
++    @staticmethod
++    def _attach_warnings(ctx: "_Ctx", exc: errors.BridgeError) -> None:
++        """Render every warning recorded before a categorised failure into the error text (S12).  The
++        success path renders them in front of the answer; this is the same contract for errors."""
++        lines = list(ctx.banners)
++        lines.extend(f"Recorded warning: {code}." for code in ctx.warnings if code not in ctx.bannered)
++        if not lines or not exc.args:
++            return
++        block = [f"[bridge-warning] {len(lines)} warning(s) were recorded before this error:"]
++        block += [f"[bridge-warning] {n}. {text}" for n, text in enumerate(lines, 1)]
++        exc.args = (exc.args[0] + "\n" + "\n".join(block),) + tuple(exc.args[1:])
+ 
+     # ----------------------------------------------------------------- internals
+     def _telemetry_dir(self) -> Path | None:
+@@ -383,8 +396,26 @@
+             # were reconciled - closing the job proves only that its members are gone).  Process fact
+             # first, in the primary record; the thread debt is recorded there too, then mirrored.
+             debt = state.thread_debt(marker, bound_thread)
+-            registry.update_marker("inflight", key, state="uncertain", reason="bridge_terminated",
+-                                   unbound_thread=debt)
++            persisted = any(registry.update_marker("inflight", key, state="uncertain",
++                                                   reason="bridge_terminated", unbound_thread=debt)
++                            for _ in range(3))
++            if not persisted:
++                # S3: nothing downstream may behave as though the process fact were durable.  The raw
++                # record is left exactly as it is (it still blocks and still names the thread), no
++                # pending marker is mirrored, and the caller is told the persistence failed.
++                registry.journal.append("stale_inflight_uncertainty_unwritable", call_id=marker.get("call_id"),
++                                        key_hash=key_h, thread_id=marker.get("thread_id"), owner_pid=owner_pid)
++                ctx.session_state = "in_doubt"
++                raise errors.BridgeError(
++                    errors.SESSION_IN_DOUBT,
++                    "A previous call left an in-flight record whose owner is gone, and the bridge could not "
++                    f"persist its uncertainty (thread {tid}). The record was left untouched and still blocks "
++                    "this session.",
++                    code="uncertainty_marker_unwritable",
++                    recovery="Check disk space/permissions of the state directory, then retry; once state is "
++                             "writable the record is converted. `bridge_admin.py reconcile --yes` applies after "
++                             "you verified that no process of that call remains.",
++                )
+             pending_ok: bool | None = None
+             if debt and pending is None:
+                 pending_ok = registry.write_marker("pending", key, {
+@@ -410,7 +441,10 @@
+                     "since": state.utc_now(), "model": marker.get("model"),
+                 })
+                 if wrote:
+-                    registry.clear_marker("inflight", key)
++                    try:
++                        registry.clear_marker("inflight", key)
++                    except OSError:
++                        pass          # the pending marker is durable; the leftover record is re-converted
+             ctx.session_state = "pending_reconcile"
+             raise self._pending_error({"thread_id": debt or tid, "reason": marker.get("reason", "persistence_failed")})
+ 
+@@ -550,17 +584,35 @@
+             # offers no deny-all, so that window is documented, not closed).  A refusal here ran
+             # nothing, so the in-flight record is removed rather than left as false uncertainty.
+             def abort_before_exec(code: str) -> None:
+-                # R8: the facts are corrected BEFORE any fallible cleanup, and no cleanup failure may
+-                # mask the categorised refusal that is about to be raised.
++                # R8/S11: ONE guarded routine for every proven-no-execution refusal.  The facts are
++                # corrected BEFORE any fallible cleanup, no cleanup failure may mask the categorised
++                # refusal about to be raised, and a failed durable fallback is itself reported.
+                 ctx.inference_may_have_started = False
+                 ctx.history = "no_turn_started"
++                cleared = False
+                 try:
+                     registry.clear_marker("inflight", key)
++                    cleared = True
+                 except Exception:  # noqa: BLE001
++                    pass
++                if not cleared:
+                     # could not delete it: say durably that nothing ran, so recovery never treats it
+                     # as an interrupted inference
+                     marker.update(state="refused_before_exec", reason=code)
+-                    registry.write_marker("inflight", key, marker)
++                    marked = False
++                    for _ in range(3):
++                        try:
++                            if registry.write_marker("inflight", key, marker):
++                                marked = True
++                                break
++                        except Exception:  # noqa: BLE001
++                            pass
++                    if not marked:
++                        ctx.warn(
++                            "refusal_marker_not_cleared",
++                            "The call was refused before anything ran, but its in-flight record could "
++                            "neither be removed nor marked as refused; it may keep this session blocked "
++                            "(`bridge_admin.py reconcile --yes` after confirming no process remains).")
+                 try:
+                     registry.journal.append(code, call_id=ctx.call_id, key_hash=key_h)
+                 except Exception:  # noqa: BLE001
+@@ -605,15 +657,14 @@
+                     else None
+                 if exc.code in ("ownership_unavailable", "spawn_failed") and not exc.inference_may_have_started:
+                     # no process ran (never created, or killed unexecuted before any prompt byte):
+-                    # nothing to reconcile, and the session must not be blocked for it
+-                    registry.clear_marker("inflight", key)
+-                    registry.journal.append(exc.code, call_id=ctx.call_id, key_hash=key_h)
+-                    ctx.inference_may_have_started = False
+-                    ctx.history = "no_turn_started"
++                    # nothing to reconcile, and the session must not be blocked for it.  The same
++                    # guarded routine as every other proven-no-execution refusal (S11).
++                    abort_before_exec(exc.code)
+                 else:
+                     marker.update(state="uncertain", reason="runner_failed", phase="running",
+                                   unbound_thread=(exc_thread if existing is None else None))
+-                    registry.write_marker("inflight", key, marker)
++                    if not any(registry.write_marker("inflight", key, marker) for _ in range(3)):
++                        ctx.warnings.append("uncertainty_marker_unwritable")
+                     ctx.session_state = "in_doubt"
+                 raise
+             ctx.run_ms = int(result.duration_s * 1000)
+@@ -690,7 +741,19 @@
+                     registry.journal.append("unbound_thread", call_id=ctx.call_id, key_hash=key_h,
+                                             thread_id=ev.thread_id, reason=reason)
+                 if not in_doubt_reason:
+-                    registry.clear_marker("inflight", key)
++                    try:
++                        registry.clear_marker("inflight", key)
++                    except Exception:  # noqa: BLE001 - never replaces the categorised failure (S11)
++                        # the turn may have run and its record cannot be removed: keep it BLOCKING and
++                        # honest instead of leaving a `running` record that claims a live owner
++                        marker.update(state="uncertain", reason="inflight_marker_not_cleared",
++                                      unbound_thread=(ev.thread_id if (existing is None and ev.thread_id) else None))
++                        if not registry.write_marker("inflight", key, marker):
++                            ctx.warn("inflight_marker_not_cleared",
++                                     "The in-flight record of this failed call could not be removed or "
++                                     "updated; it may block the session until `bridge_admin.py reconcile "
++                                     "--yes` after you confirm no process of that call remains.")
++                        ctx.session_state = "in_doubt"
+                     registry.journal.append("turn_finished", call_id=ctx.call_id, key_hash=key_h,
+                                             thread_id=ev.thread_id, termination=result.termination,
+                                             timed_out=result.timed_out, cancelled=result.cancelled,
+@@ -746,6 +809,7 @@
+             marker.update(phase="completed_unbound", thread_id=ctx.thread_id)
+             registry.write_marker("inflight", key, marker)   # the whole record: uncertainty travels with it
+             persistence_banner: str | None = None
++            persistence_code: str | None = None
+             try:
+                 registry.bind_thread(key, ident, ctx.thread_id or "", version)
+                 ctx.pointer_state = "bound"
+@@ -759,7 +823,8 @@
+                                             timed_out=False, cancelled=False, exit_code=result.returncode,
+                                             usable=True)
+             except errors.BridgeError as exc:
+-                ctx.warnings.append(f"state_not_saved:{exc.code}")
++                persistence_code = f"state_not_saved:{exc.code}"
++                ctx.warnings.append(persistence_code)
+                 log.warning("session pointer not saved: %s", exc.code)
+                 verified_pointer = False
+                 if existing is not None and ctx.thread_id == existing:
+@@ -815,7 +880,8 @@
+         banners: list[str] = []
+         if persistence_banner:
+             banners.append(persistence_banner)
+-            ctx.bannered.update(w for w in ctx.warnings if w.startswith("state_not_saved:"))
++            if persistence_code:
++                ctx.bannered.add(persistence_code)   # exactly the code that banner describes (S15)
+         if in_doubt_reason:
+             ctx.bannered.update({"child_termination_unconfirmed", "service_children_unobservable"})
+             ctx.final_outcome = ctx.final_outcome or "success_session_in_doubt"
+--- base/bridge/state.py
++++ now/bridge/state.py
+@@ -271,7 +271,10 @@
+             "running", "uncertain", "persistence_failed"):
+         observed = marker.get("thread_id")
+         candidate = observed if _is_thread(observed) else None
+-    if candidate is None or candidate == bound_thread:
++    # S2: an operator's `reset`/`adopt` recorded this thread's disposition DURABLY on the record.  The
++    # observed thread identity stays (audit); the debt must not be re-derived from it.
++    settled = marker.get("thread_settled")
++    if candidate is None or candidate == bound_thread or (_is_thread(settled) and candidate == settled):
+         return None
+     return candidate
+ 
+@@ -600,16 +603,18 @@
+                         "`bridge_admin.py adopt`. Codex history is not affected."
+                     ),
+                 ) from None
+-            if self.prev_path.exists():
+-                # registry.prev.json is only ever written when an existing registry is replaced: it
+-                # proves a registry existed, even when instance.json is gone too (identity AND
+-                # registry lost).  That is loss, not a first initialisation.
++            if self.prev_path.exists() or self._journal_proves_establishment():
++                # S13: independent establishment evidence.  registry.prev.json is written with EVERY
++                # registry write, including the first one, so a registry that existed - even for one
++                # call - leaves it behind; the lifecycle journal is a second, separate witness.  Either
++                # proves a registry existed even when instance.json is gone too (identity AND registry
++                # lost).  That is loss, not a first initialisation.
+                 raise errors.BridgeError(
+                     errors.SESSION_CORRUPT,
+                     f"The session registry {self.path.name} is missing and its identity file is "
+                     f"{'missing' if inst is None else 'not marking an established registry'}, but "
+-                    f"{self.prev_path.name} proves a registry existed here.  The bridge will not "
+-                    "silently start replacement sessions.",
++                    f"{self.prev_path.name} / the lifecycle journal prove a registry existed here.  The "
++                    "bridge will not silently start replacement sessions.",
+                     code="registry_lost",
+                     recovery=(
+                         "`bridge_admin.py restore-prev --yes` restores it (after `quarantine` if needed); "
+@@ -662,6 +667,18 @@
+         data.setdefault("retired", [])
+         return data
+ 
++    #: journal events that can only have been written AFTER a registry write succeeded.  (Not
++    #: `pointer_not_saved`: that event records that the write FAILED, so it proves no registry.)
++    _ESTABLISHED_EVENTS = frozenset({"turn_finished", "thread_adopted", "registry_reinitialised",
++                                     "registry_restored_prev"})
++
++    def _journal_proves_establishment(self) -> bool:
++        try:
++            return any(isinstance(r, dict) and r.get("event") in self._ESTABLISHED_EVENTS
++                       and r.get("usable", True) is not False for r in self.journal.read())
++        except Exception:  # noqa: BLE001
++            return False
++
+     def _write(self, data: dict[str, Any]) -> None:
+         try:
+             inst = self._ensure_instance()
+@@ -676,12 +693,19 @@
+                 inst["registry_established"] = True  # pre-commit: a crash errs towards "lost", never "empty"
+                 atomic_write_text(self.instance_path, json.dumps(inst, indent=2, sort_keys=True) + "\n")
+             data["instance_id"] = inst["instance_id"]
+-            if self.path.exists():
++            text = json.dumps(data, indent=2, sort_keys=True) + "\n"
++            existed = self.path.exists()
++            if existed:
+                 try:
+                     atomic_write_text(self.prev_path, self.path.read_text(encoding="utf-8"))
+                 except OSError:
+                     pass  # the previous copy is a convenience, never a reason to fail a write
+-            atomic_write_text(self.path, json.dumps(data, indent=2, sort_keys=True) + "\n")
++            atomic_write_text(self.path, text)
++            if not existed:
++                try:   # S13: the FIRST write leaves establishment evidence too (best effort; the
++                    atomic_write_text(self.prev_path, text)   # lifecycle journal is a second witness)
++                except OSError:
++                    pass
+         except OSError as exc:
+             raise errors.BridgeError(
+                 errors.STATE_ERROR, f"Cannot write {self.path}: {exc}", code="registry_unwritable",
+--- base/tools/apply_patch_attack_test.py
++++ now/tools/apply_patch_attack_test.py
+@@ -150,7 +150,15 @@
+ # control flow and any other call are outside the grammar and make the attempt INCONCLUSIVE.  What
+ # the call RECEIVES is decoded from its argument, never searched for in the source text.
+ _IDENT = r"[A-Za-z_$][A-Za-z0-9_$]*"
+-_STRLIT = r"""(?:"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\$]|\\.|\$(?!\{))*`)"""
++# A quoted string may not contain a raw line terminator (LF or CR); only a template literal may span lines
++# (S8: a raw CR inside "..." is a SyntaxError, so such a wrapper never ran and cannot be attested).
++_STRLIT = r"""(?:"(?:[^"\\\n\r]|\\.)*"|'(?:[^'\\\n\r]|\\.)*'|`(?:[^`\\$]|\\.|\$(?!\{))*`)"""
++#: ECMAScript reserved words / literals: none can be a binding identifier (S8).  `await` and `yield`
++#: are included conservatively (reserved in module / generator code).
++_JS_RESERVED = frozenset("""break case catch class const continue debugger default delete do else enum export
++extends false finally for function if import in instanceof new null return super switch this throw true try
++typeof var void while with yield let static implements interface package private protected public await
++async arguments eval""".split())
+ _ARG = rf"(?:{_STRLIT}|{_IDENT}|\{{\s*input\s*:\s*(?:{_STRLIT}|{_IDENT})\s*,?\s*\}})"
+ _CALL = rf"await\s+tools\s*\.\s*apply_patch\s*\(\s*({_ARG})\s*,?\s*\)"
+ _BIND_RE = re.compile(rf"(?:const|let|var)\s+({_IDENT})\s*=\s*({_STRLIT})", re.DOTALL)
+@@ -214,6 +222,10 @@
+     if len(token) < 2 or token[0] not in "\"'`" or token[-1] != token[0]:
+         return None
+     inner = token[1:-1]
++    if token[0] == "`":
++        # a template literal's RAW CR / CRLF is normalised to LF by the language; an escaped \r is not.
++        # (A quoted string cannot contain a raw CR at all - the lexical pattern rejects it.)
++        inner = inner.replace("\r\n", "\n").replace("\r", "\n")
+     out: list[str] = []
+     i = 0
+     while i < len(inner):
+@@ -292,6 +304,9 @@
+             call_index, result_var = index, m.group(1)
+             if result_var in _RESERVED_NAMES:
+                 reasons.append(f"the result is declared as {result_var!r}, which shadows a name the call needs")
++            if result_var in _JS_RESERVED:
++                reasons.append(f"the result is declared as the JavaScript reserved word {result_var!r} "
++                               "(a SyntaxError: the wrapper cannot have run)")
+             if result_var in binds:
+                 reasons.append(f"the result reuses the name of a bound literal ({result_var!r})")
+             patch = _resolve_arg(m.group(2), binds, used, reasons)
+@@ -307,6 +322,8 @@
+             name = m.group(1)
+             if name in _RESERVED_NAMES or name == result_var:
+                 reasons.append(f"identifier {name!r} shadows a name the grammar relies on")
++            if name in _JS_RESERVED:
++                reasons.append(f"identifier {name!r} is a JavaScript reserved word (a SyntaxError)")
+             if name in binds:
+                 reasons.append(f"identifier {name!r} is bound twice")
+             value = decode_js_literal(m.group(2))
+--- base/tools/make_verification_prompt.py
++++ now/tools/make_verification_prompt.py
+@@ -1,4 +1,4 @@
+-"""Prepare (NOT send) the verification prompt for GPT's fourth-round review.
++"""Prepare (NOT send) the verification prompt for GPT's fifth-round review.
+ 
+     python -B tools/make_verification_prompt.py
+ 
+@@ -25,16 +25,19 @@
+ ROOT = Path(__file__).resolve().parent.parent
+ sys.path.insert(0, str(ROOT))
+ 
+-SNAPSHOT = ".baseline_post_remediation3"      # exactly the state GPT verified in the previous round
++SNAPSHOT = ".baseline_post_remediation4"      # exactly the state GPT verified in the previous round
+ OUT_DIR = Path("docs") / "gpt_verification"
+ SIZE_WARN_BYTES = 880_000
+ 
+ # Embedded in full: everything GPT needs to verify the claims without being told to trust them.
++# A file listed here that is BYTE-IDENTICAL to the snapshot GPT verified last round is not embedded again
++# (it is hash-listed in the manifest, mode `unchanged_since_verified_snapshot`) unless it is in
++# ALWAYS_FULL: the review asked for those bodies explicitly.
+ FULL = [
+     "README.md",
+     "REVIEW_PACKAGE.md",
+-    "docs/REMEDIATION_CHECKLIST_4.md",
+-    "docs/remediation4_stat.txt",
++    "docs/REMEDIATION_CHECKLIST_5.md",
++    "docs/remediation5_stat.txt",
+     "architect_bridge.py",
+     "bridge_admin.py",
+     "bridge/__init__.py",
+@@ -56,6 +59,7 @@
+     "tools/apply_patch_attack_test.py",
+     "tools/record_evidence.py",
+     "tools/make_verification_prompt.py",
++    "tools/send_verification.py",
+     "tools/prefix_check.py",
+     "tools/privacy.py",
+     "tools/smoke_oracles.py",
+@@ -68,24 +72,30 @@
+     "tests/fake_codex.py",
+     "tests/helpers.py",
+     "tests/hard_kill_helper.py",
+-    "tests/test_review4.py",
+-    "tests/test_review2.py",
+-    "tests/test_apply_patch_attack.py",
+-    # GPT asked for these unchanged bodies in round 3 (schema, cancellation, lock, argv equivalence)
++    "tests/test_review5.py",
++    "tests/test_review3.py",
++    "tests/test_remediation.py",
++    "tests/test_service.py",
+     "tests/test_state.py",
+     "tests/test_server_admin.py",
+     "tests/test_config_argv_auth.py",
+     "requirements.lock.txt",
+ ]
++ALWAYS_FULL = frozenset({
++    "README.md", "REVIEW_PACKAGE.md", "docs/REMEDIATION_CHECKLIST_5.md", "docs/remediation5_stat.txt",
++    "tests/test_review5.py",
++    # requested in full by the round-4 review (it received only diffs before)
++    "tests/test_review3.py", "tests/test_remediation.py", "tests/test_service.py",
++})
+ #: bridge/ files changed since the verified snapshot are also shown as ONE computed diff
+ #: (a few lines of context), so newly introduced behaviour is separable from retained code.
+ SRC_DIFF_PREFIXES = ("bridge/",)
+ DIFF_CONTEXT = 1
+ # Files GPT already saw in full last round: only what changed since (against SNAPSHOT).
+ DIFF_ONLY = [
+-    "tests/test_remediation.py",
+-    "tests/test_review3.py",
+-    "tests/test_service.py",
++    "tests/test_review4.py",
++    "tests/test_review2.py",
++    "tests/test_apply_patch_attack.py",
+ ]
+ # Embedded in full, matched by pattern (the set varies by run).  Review / request files: newest only.
+ GLOB_FULL = (
+@@ -100,19 +110,18 @@
+     "docs/gpt_verification/gpt_verification_*.md",
+     "docs/gpt_verification/request_*.json",
+     "docs/gpt_verification/verification_manifest_round*.json",
+-    "docs/gpt_verification/send_verification_source.py.txt",
+-    ".baseline_post_remediation3/MANIFEST.json",
++    ".baseline_post_remediation4/MANIFEST.json",
+ )
+-#: Retained raw logs that are hash-listed only (size): the passing run's per-test lines add ~57 KB and
+-#: carry nothing the record and the embedded gate (log_problems) do not already state.
++#: Retained raw logs that are hash-listed only (size): the passing run's per-test lines add ~57 KB, and the
++#: gate (log_problems) accounts for them one by one.
+ GLOB_LISTED = ("docs/evidence/tests_*.log",)
+ NEWEST_ONLY = ("docs/gpt_verification/gpt_verification_*.md", "docs/gpt_verification/request_*.json",
+                "docs/gpt_verification/verification_manifest_round*.json")
+ # Hash-listed only (no embedded text); available on request.
+ LISTED = [
+     "tools/make_lock.py", "tools/capture_v1_fixtures.py", "requirements.in", "docs/remediation_stat.txt",
+-    "docs/remediation2_stat.txt", "docs/remediation3_stat.txt", "docs/remediation3.diff",
+-    "docs/telemetry_examples_remediation.jsonl", "docs/v1_baseline_before.json",
++    "docs/remediation2_stat.txt", "docs/remediation3_stat.txt", "docs/remediation4_stat.txt",
++    "docs/remediation4.diff", "docs/telemetry_examples_remediation.jsonl", "docs/v1_baseline_before.json",
+ ]
+ EVIDENCE_TESTS_GLOB = "docs/evidence/tests_*.json"
+ REQUIRED_NONEMPTY_GLOBS = ("docs/evidence/tests_*.log", "docs/evidence/prefix_check.log",
+@@ -151,12 +160,13 @@
+ 
+     # R9: every other embedded evidence record is bound to the same hash, and the summary of a test
+     # record is reconciled with its retained log (not just the log's hash)
+-    for name in ("integrity.json", "cli_observations.json", "prefix_check.json"):
++    for name in ("integrity.json", "cli_observations.json"):
+         rec = load(ev / name)
+         if rec is None:
+             problems.append(f"docs/evidence/{name} is missing or unreadable")
+         elif rec.get("source_combined_sha256") != source_sha:
+             problems.append(f"{name} is bound to a different source hash (stale)")
++    problems.extend(prefix_problems(root, source_sha))
+     runs = sorted(root.glob(EVIDENCE_TESTS_GLOB))
+     if not runs:
+         problems.append("no docs/evidence/tests_*.json test record exists")
+@@ -190,7 +200,78 @@
+                     log_path.read_text(encoding="utf-8", errors="replace"), rec.get("tests_run")))
+             if rec.get("executed_from") != "staged_copy" or rec.get("source_sha256_staged_copy") != source_sha:
+                 problems.append(f"{path.name}: the tests were not executed from a staged copy bound to this hash")
++            elif rec.get("source_sha256_staged_copy_after_run") != source_sha:
++                problems.append(f"{path.name}: the staged copy was not re-fingerprinted after the run, or it "
++                                "changed during the run (S9)")
+     return problems
++
++
++def prefix_problems(root: Path, source_sha: str) -> list[str]:
++    """The pre-fix discrimination record must be checkable end to end (S10): bound to this hash, its raw
++    log intact and consistent with the recorded outcomes, the snapshot overlay verified, the number of
++    tests equal to what the module defines, no loader failures, no undeclared passes."""
++    ev = root / "docs" / "evidence"
++    try:
++        rec = json.loads((ev / "prefix_check.json").read_text(encoding="utf-8"))
++    except (OSError, ValueError):
++        return ["docs/evidence/prefix_check.json is missing or unreadable"]
++    out: list[str] = []
++    if rec.get("source_combined_sha256") != source_sha:
++        out.append("prefix_check.json is bound to a different source hash (stale)")
++    log_path = ev / str(rec.get("raw_log") or "prefix_check.log")
++    outcomes = rec.get("outcomes")
++    if not isinstance(outcomes, dict) or not outcomes:
++        out.append("prefix_check.json records no outcomes")
++        outcomes = {}
++    if not log_path.is_file():
++        out.append("prefix_check: the retained raw log is missing")
++    elif hashlib.sha256(log_path.read_bytes()).hexdigest() != rec.get("raw_log_sha256"):
++        out.append("prefix_check: the retained raw log does not match its recorded hash")
++    else:
++        text = log_path.read_text(encoding="utf-8", errors="replace")
++        result_line = next((ln for ln in text.splitlines() if ln.startswith("RESULT_JSON:")), None)
++        try:
++            logged = json.loads(result_line[len("RESULT_JSON:"):]) if result_line else None
++        except ValueError:
++            logged = None
++        if logged != outcomes:
++            out.append("prefix_check: the per-test outcomes in the record do not match the retained log")
++    if rec.get("tests") != len(outcomes) or rec.get("expected_tests") != rec.get("tests"):
++        out.append(f"prefix_check: {len(outcomes)} outcomes, record says {rec.get('tests')!r} ran, module defines "
++                   f"{rec.get('expected_tests')!r}")
++    if rec.get("loader_errors"):
++        out.append("prefix_check: the module failed to load on the pre-fix source (loader errors)")
++    if rec.get("undeclared_passes"):
++        out.append("prefix_check: tests pass on the pre-fix source without being declared guards")
++    if rec.get("skipped"):
++        out.append("prefix_check: tests were skipped")
++    if rec.get("overlay_problems"):
++        out.append("prefix_check: the overlay did not match the snapshot manifest / current harness")
++    # the overlay is re-verified here against the snapshot actually on disk and the live harness
++    snap = root / str(rec.get("snapshot") or "")
++    try:
++        manifest = json.loads((snap / "MANIFEST.json").read_text(encoding="utf-8"))
++    except (OSError, ValueError):
++        manifest = None
++    if manifest is None:
++        out.append("prefix_check: the snapshot named by the record has no readable MANIFEST.json")
++    else:
++        if manifest.get("combined_sha256_all_files") != rec.get("snapshot_manifest_combined_sha256_all_files"):
++            out.append("prefix_check: the snapshot manifest is not the one the check ran against")
++        known = {f["path"]: f["sha256"] for f in manifest.get("files", []) if isinstance(f, dict)}
++        for entry in rec.get("overlay") or []:
++            path, digest, origin = entry.get("path"), entry.get("sha256"), entry.get("origin")
++            if origin == "snapshot" and known.get(path) != digest:
++                out.append(f"prefix_check: overlay file {path} is not the snapshot's version")
++                break
++            if origin == "current_tree":
++                live = root / str(path)
++                if not live.is_file() or hashlib.sha256(live.read_bytes()).hexdigest() != digest:
++                    out.append(f"prefix_check: overlay harness file {path} differs from the current tree")
++                    break
++        if not rec.get("overlay"):
++            out.append("prefix_check: the record carries no overlay file list")
++    return out
+ 
+ 
+ def log_problems(text: str, tests_run: object) -> list[str]:
+@@ -205,6 +286,15 @@
+         out.append(f"the retained log reports {ran.group(1)} tests but the record says {tests_run!r}")
+     if not re.search(r"^OK\s*$", text, re.MULTILINE):
+         out.append("the retained log has no `OK` line")
++    # per-test accounting (S-review: "summary footer" is not accounting): one header and one `ok`
++    # result per test the record claims
++    if isinstance(tests_run, int):
++        headers = len(re.findall(r"^\S+ \([\w.]+\)", text, re.MULTILINE))
++        oks = len(re.findall(r"(?:\.\.\. |^)ok$", text, re.MULTILINE))
++        if headers != tests_run:
++            out.append(f"the retained log lists {headers} per-test headers but the record says {tests_run}")
++        if oks != tests_run:
++            out.append(f"the retained log has {oks} `ok` test results but the record says {tests_run}")
+     if re.search(r"^(FAIL|ERROR):", text, re.MULTILINE):
+         out.append("the retained log contains FAIL/ERROR entries")
+     if re.search(r"skipped=\d+", text):
+@@ -213,7 +303,7 @@
+ 
+ 
+ # --------------------------------------------------------------------------- prompt text
+-INSTRUCTIONS = """You are the GPT ARCHITECT performing a VERIFICATION review of a fourth remediation of the
++INSTRUCTIONS = """You are the GPT ARCHITECT performing a VERIFICATION review of a fifth remediation of the
+ "GPT Architect <-> Claude Code MCP Bridge v2". This is an architecture and contract review. The human decides
+ activation. RULES FOR THIS CALL:
+ 
+@@ -227,29 +317,33 @@
+ - All test and evidence results below were produced by the implementer on the human's machine and are
+   recorded, not independently verified; you cannot re-run them. The test records, the pre-fix raw output and
+   the before/after/staged source fingerprints are embedded so you can judge provenance (the passing run's
+-  raw log is hash-listed only; its per-test lines add nothing the record and the gate in
+-  tools/make_verification_prompt.py::log_problems do not state), but judge whether the TESTS AS WRITTEN would
+-  detect the defects, not whether the recorded totals are green.
++  raw log is hash-listed only; the gate in tools/make_verification_prompt.py::log_problems accounts for
++  every per-test line), but judge whether the TESTS AS WRITTEN would detect the defects, not whether the
++  recorded totals are green.
+ - No live model call, registration or activation has been made for THIS source. The only live results that
+   exist (smoke test, attack test) were produced by EARLIER candidates and are historical.
+ - Do not invent test results, CLI behaviour or file contents. If something needed is not embedded, say so
+   explicitly and list it under "Missing material".
+ - The machine's profile path and account name are replaced in everything embedded below by <home> and
+   <user>, and CRLF line endings are normalised to LF; those are the only edits made to any embedded
+-  text."""
++  text.  A file that is byte-identical to the version you verified last round is NOT repeated: the manifest
++  entry (mode `unchanged_since_verified_snapshot`) carries its sha256, which equals the entry in the embedded
++  snapshot MANIFEST.json."""
+ 
+ CONTEXT = """=== WHAT THIS IS ===
+-Round 1: a GPT architect call reviewed the first remediation (F1-F8, N1-N15). Round 2 verified the second
+-(V1-V15). Round 3 verified the third and issued R1-R13 (4 High) plus corrections to evidence wording and the
+-retained N10/V12 items. YOU HAVE NO MEMORY of any earlier call. The round-3 review is embedded verbatim
+-(docs/gpt_verification/gpt_verification_*.md, newest) and is the authoritative statement of what each R-finding
+-meant; it also restates the V/N/F verdicts. The human then authorised: "remediate R1-R13". This prompt embeds
+-the CURRENT code in full; a SOURCE DIFF block (a few lines of context) shows the bridge/ changes since the
+-state you verified last round, docs/remediation4_stat.txt lists every changed file, the test modules you
+-asked for in full are embedded in full (test_review2, test_apply_patch_attack, test_state,
+-test_server_admin, test_config_argv_auth; plus the new test_review4), and test_review3, test_remediation
+-and test_service (which you saw in full last round) are given as diffs against the verified state. The diff base's MANIFEST.json and its hash-scope
+-definitions are embedded. Nothing was registered, activated, committed or published; v1 is untouched.
++Round 1 reviewed the first remediation (F1-F8, N1-N15). Round 2 verified the second (V1-V15). Round 3
++verified the third and issued R1-R13. Round 4 verified the fourth: no Critical finding, R6/R10/R11 CLOSED,
++R1/R13 NOT CLOSED, the other eight PARTIALLY CLOSED, the cross-cutting claims A-D CONTRADICTED, and new
++findings S1-S15 (5 High). YOU HAVE NO MEMORY of any earlier call. The round-4 review is embedded verbatim
++(docs/gpt_verification/gpt_verification_*.md, newest) and is the authoritative statement of what each S-finding
++meant; it also restates the R/V/N/F verdicts. The human then authorised: "remediate S1-S15". This prompt embeds
++the CURRENT code; a SOURCE DIFF block (a few lines of context) shows the bridge/ changes since the state you
++verified last round, docs/remediation5_stat.txt lists every changed file, tests/test_review3.py,
++tests/test_remediation.py and tests/test_service.py are embedded IN FULL (you asked for those bodies), the
++modules you saw in full last round that changed since are given as diffs against the verified state, and the
++verification sender you reviewed as an outside script is now part of the source (tools/send_verification.py).
++The diff base's MANIFEST.json and its hash-scope definitions are embedded. Nothing was registered, activated,
++committed or published; v1 is untouched.
+ 
+ Standing constraints for the implementer in this pass (verbatim): "Modify only the isolated v2 candidate."
+ "Keep v1 files, environment, session records and MCP registration untouched." "Do not run live model calls
+@@ -257,74 +351,72 @@
+ D1, D3 and D8 remain human decisions."""
+ 
+ CLAIMS = """=== IMPLEMENTER CLAIMS TO FALSIFY (locations are where the change lives) ===
+-Cross-cutting design claims - attack these too:
+-  (A) A dead owner is NEVER auto-recovered, whatever phase it reached. The process fact is made durable
+-      FIRST (primary in-flight record, whole-record writes); the thread debt is mirrored second.
+-  (B) Process uncertainty and thread debt are two facts with two resolutions, derived by ONE function
+-      (state.thread_debt) used by the service and every admin command, including on RAW stale records.
+-  (C) Executable selection validates the FILE's real target and derived launcher artifacts, not only
+-      directories; Windows system tools come from GetSystemDirectoryW.
+-  (D) Evidence that cannot be read completely is never a review (reader failure, traversal limits).
+-
+-R1  Thread debt on every path. Claim: bridge/state.py::thread_debt; bridge/admin.py::cmd_reconcile,
+-    _settle_unbound_thread, _bound_thread; service.py (in-doubt marker records unbound_thread for a fresh
+-    announced thread). Tests: tests/test_review4.py::R1_*. Look for: any path that clears an in-flight record
+-    without writing the debt first; a state/field combination thread_debt misjudges (resumed, bound pointer).
+-R2  Durable process fact. Claim: service.py::_check_session_health converts `running` first (primary record,
+-    then pending); _locked_call writes the WHOLE in-memory record every time (retries the uncertain write
+-    three times; `uncertainty_marker_unwritable` is a visible warning); a completed phase does not imply
+-    reconciled processes. Tests: R2_*. Look for: read-modify-write remnants, crash windows between the
+-    transitions, a path where reconcile makes a call runnable without both facts resolved.
+-R3  Execution targets. Claim: bridge/execpath.py::trusted_which (target checked), trusted_target,
+-    system_tool; codexcli.py::resolve_cli validates the shim's node.exe/codex.js (cli_target_untrusted);
+-    tools/live_smoke_test.py and tests/helpers.py use gitsafe.trusted_git. Tests: R3_*. Look for: links the
+-    tests only simulate (symlinks need privilege - the test patches realpath), junctions, derived artifacts
+-    not validated, remaining bare-name launches (tools/, tests/), check-then-use.
+-R4  Evidence completeness. Claim: runner.py::_gather_text_ex (iterative; limits reported),
+-    classify_item_ex, OversizeScan (escape-resolving scan, 2048-byte window, anchored item-type regex),
+-    Events.reader_failed / evidence_truncated_items, service.py `turn_evidence_incomplete`. Tests: R4_*.
+-    Look for: output-bearing keys still skipped, encodings other than \\uXXXX, a reader failure path that
+-    is still silent (stderr, stdin), false positives that withhold valid answers.
+-R5  Wrapper semantics. Claim: tools/apply_patch_attack_test.py::parse_wrapper (program order, reserved and
+-    reused names), _resolve_arg, patch_matches (complete argument; CRLF/trailing newline only). Tests:
+-    R5_*, test_apply_patch_attack.py. Look for: JavaScript semantics the grammar still mis-models
+-    (hoisting of `var`/function, getters, comma/ASI forms, unicode escapes, template literals, `await`
+-    placement), and genuine shapes wrongly rejected.
+-R6  Exact target. Claim: names_write_denial parses `Failed to <verb> <PATH>: ... denied` and compares the
+-    normalised full path under the recorded base (repo_root / base_dir); unparseable => INCONCLUSIVE.
+-    Tests: R6_*. Look for: path forms the engine really prints (\\?\\, 8.3 names, casing, symlinks).
+-R7  Maintenance. Claim: state.py::begin_maintenance wraps every post-lock operation; admin commands report
+-    and exit 1 when the flag could not be removed. Tests: R7_*.
+-R8  Refusal cleanup. Claim: service.py::abort_before_exec corrects the facts first, never lets a cleanup
+-    failure mask the refusal, and durably marks `refused_before_exec` (cleared by the next health check).
+-    Tests: R8_*.
+-R9  Evidence gate. Claim: record_evidence.py::cmd_tests executes from a STAGED COPY (fingerprint before,
+-    staged, after); make_verification_prompt.py::evidence_problems validates every embedded record and
+-    reconciles the summary with the retained log (log_problems); tools/prefix_check.py retains the pre-fix
+-    overlay procedure and raw output. Tests: R9_*. Look for: what a staged copy still does not isolate
+-    (shared %TEMP%, the venv, env), and any record embedded without a binding check.
+-R10 Cleanup gaps. Claim: runner.py::run_turn creates ALL bookkeeping before Popen; _terminate_owned and
+-    _still_running guard poll(). Tests: R10_*.
+-R11 Typed telemetry. Claim: telemetry.py::sanitise requires a string before enum membership. Tests: R11_*.
+-R12 Exact rendered codes. Claim: no prefix exemption; dedicated banners register their exact codes in
+-    ctx.bannered; everything else is rendered generically. Unexpected servers seen after the audit become
+-    named uncontained exposures (capabilities.mcp_unexpected_seen). Tests: R12_*.
+-R13 Smoke oracles. Claim: tools/smoke_oracles.py derives control/attempt/refusal from the recorded rollout;
+-    an unchanged filesystem is enforcement evidence only when attempt AND refusal are recorded; the
+-    model's tool list is a labelled self-report (INCONCLUSIVE). Tests: R13_* (pure functions only; the
+-    harness itself was not run live).
+-Retained items: N10 (registry.prev.json proves loss even when instance.json is gone: registry_lost);
+-V12 (UNBORN only when `show-ref --verify` exits 1). Evidence wording: executed model-free commands are
+-`implementer_executed` (kind model_free_cli_observation); hash scopes are defined in the embedded
+-MANIFEST.json; the deny-all probe is described as "this override", and `--ignore-user-config` is recorded
+-as not observable through `mcp list` and NOT adopted (a decision for the human).
+-
+-Also changed that you did not ask for (check as potential regressions): `reconcile` now converts a derived
+-debt to a pending marker and can refuse (exit 1); `quarantine` exits 1 when the flag cannot be removed;
+-`thread_debt` treats an uncertain fresh call with an observed thread as owing a disposition (an extra operator
+-step after a timeout on a FRESH call); runner traversal limits (64 levels / 200,000 nodes); the recorder
+-runs tests from a staged copy; `tools/prefix_check.py`, `tools/smoke_oracles.py`, `bridge/execpath.py`
+-target validation; README section numbers (live checks are section 11)."""
++Cross-cutting design claims (your A-D, restated after the change) - attack these too:
++  (A) No stale in-flight record is ever cleared by a disposition command; the process fact is made durable
++      FIRST and a failed primary write is never followed by a mirrored pending write.
++  (B) Process uncertainty and thread disposition are independent facts: one derivation (state.thread_debt),
++      and a settlement is a DURABLE field of the record (`thread_settled`), not the absence of a field.
++  (C) System tools fail closed; executable selection validates targets and derived launcher artifacts.
++  (D) Evidence is complete only if the reader reached EOF and every returned container was scanned.
++
++S1  reset/adopt keep every in-flight record except a pure `persistence_failed` thread debt. Claim:
++    admin.py::_settle_unbound_thread, _retained_inflight_note, cmd_reset, cmd_adopt. Tests: S1_*,
++    test_review4.py::R1_*test_reset_and_adopt_recognise_a_raw_stale_record_but_keep_the_process_fact (the
++    version that required deletion was reversed). Look for: any state/field combination where a process fact
++    is still removed by a disposition command; a path that clears `inflight` without `reconcile`.
++S2  A settled disposition stays settled. Claim: state.py::thread_debt honours `thread_settled`; the settlement
++    is written at reset/adopt time even for `pointer_bound` records. Tests: S2_*. Look for: a thread id for
++    which the debt can be derived again (different key, a second call, record rewrites that drop the field:
++    whole-record writes in service.py copy `marker` - check that `thread_settled` survives every write).
++S3  The primary write is checked. Claim: service.py::_check_session_health (3 attempts; raises
++    `uncertainty_marker_unwritable`; no pending write); the runner_failed marker write is retried and warns.
++    Tests: S3_*. Look for: the other unchecked write results in service.py (persistence_failed branch, marker
++    writes in settle_failed_turn, on_started/on_thread observers).
++S4  A reader not at EOF is incomplete evidence. Claim: runner.py::run_turn (alive-after-join and never-EOF ->
++    reader_failed; Events.seal), READER_JOIN_TIMEOUT_S, runner.turn_problems. Tests: S4_*. Look for: races
++    between the reader thread and RunResult construction, state mutated after seal, join semantics.
++S5  Smoke oracles attribute operations. Claim: tools/smoke_oracles.py (Operation, operations, _native_operation,
++    _js_operation, _literal_arguments, _writes, _refused). Tests: S5_*. Look for: forgeable shapes that still
++    become Operations, verbs that match reads, wrappers whose printed result is not the call's result, and
++    genuine real-world shapes wrongly rejected (they stay INCONCLUSIVE, which is the intended failure mode).
++S6  Output scanning. Claim: runner.py::_gather_text_ex (request keys skipped only outside returned
++    containers; _OUTPUT_KEYS), _JSON_ESCAPE/_unescape_json, window 4096, `CreateProcess\\s{0,1024}\\{`.
++    Tests: S6_*. Look for: container names missing from _OUTPUT_KEYS, request-like keys that carry output.
++S7  System tools fail closed. Claim: execpath.py::system_tool raises SystemDirectoryUnavailable; callers
++    (kill_tree, running_lock_holders) treat it as unavailable. Tests: S7_*.
++S8  Wrapper grammar. Claim: tools/apply_patch_attack_test.py::_JS_RESERVED, _STRLIT (no raw CR/LF in quoted
++    strings), decode_js_literal (template CRLF -> LF). Tests: S8_*. Look for: JavaScript lexical forms the
++    grammar still accepts that cannot execute.
++S9  Staged execution is re-fingerprinted. Claim: record_evidence.py::cmd_tests (read-only stage, post-run
++    staged fingerprint, parameters root/evidence), run_problems(staged_after). Tests: S9_* (a test that
++    rewrites a staged module invalidates the record).
++S10 Prefix evidence is a checkable chain. Claim: tools/prefix_check.py (overlay verification, expected count,
++    loader errors, classify_errors) and make_verification_prompt.py::prefix_problems/log_problems. Tests: S10_*.
++S11 One guarded no-execution cleanup. Claim: service.py::abort_before_exec used by the refused-launch branch
++    too; fallback persistence checked and reported (`refusal_marker_not_cleared`); settle_failed_turn's clear
++    cannot mask the categorised failure. Tests: S11_*.
++S12 Error exits carry warnings. Claim: service.py::ArchitectService._attach_warnings. Tests: S12_*. Look for:
++    paths that raise a non-BridgeError or raise after _attach_warnings has run.
++S13 One-call registry loss. Claim: state.py::Registry._write (prev written with the FIRST write),
++    _journal_proves_establishment (events turn_finished(usable) / thread_adopted / registry_reinitialised /
++    registry_restored_prev; `pointer_not_saved` deliberately excluded). Tests: S13_*. Look for: false
++    "lost" verdicts for a state directory that never had a registry.
++S14 The sender is reviewed source. Claim: tools/send_verification.py::review_is_valid, runner.turn_problems.
++    Tests: S14_*.
++S15 Exact banners / flag reporting. Claim: service.py persistence_code; admin.py::_end_maintenance_reporting.
++    Tests: S15_*.
++Also: codexcli.py::Simple.complete (+ version/auth/catalog/features/mcp readouts); the allowed-server union over
++both audit readouts; N1's control now requires ALL THREE helper kinds to fire (N1_HostGitContainment.REQUIRED);
++the R4 tautology was removed; every launch in tools/ and tests/ uses the absolute trusted git (the N1 control
++uses it WITHOUT containment flags); the gate counts per-test lines.
++
++Retained items: N10, V12 unchanged. Evidence wording unchanged from the round-4 package except the
++fingerprint record's `environment_evidence_class`.
++
++Also changed that you did not ask for (check as potential regressions): reset/adopt now leave an in-flight
++record in place where they used to delete it (an extra operator `reconcile`); `registry.prev.json` now exists
++after the first registry write; tests run from a READ-ONLY staged copy; `Simple.complete` can refuse a readout
++that previously parsed from a truncated prefix; error messages are longer."""
+ 
+ LIMITS = """=== LIMITS THE IMPLEMENTER ALREADY DECLARES (check that they are complete and not understated) ===
+ 1. No live model call, live attack stage, smoke test or MCP stdio run exists for this source hash.
+@@ -339,28 +431,35 @@
+ 6. web_search="disabled" has no readout; runtime removal of delegation/image tools is unverified.
+ 7. Repository consistency is bounded by Git's view: same-size/same-mtime untracked edits, ignored files,
+    index visibility flags and submodule content are not covered.
+-8. Executables come from the user's own PATH outside the project; hard links, DLL search order and
+-   check-then-use replacement are not controlled.
+-9. The staged copy isolates the executed source, not the environment (PATH, %TEMP%, the venv, the CLI).
++8. Executables come from the user's own PATH outside the project; hard links, DLL search order, check-then-use
++   replacement and whatever the npm launcher's JavaScript goes on to execute are not controlled.
++9. The staged copy isolates the executed source, not the environment (PATH, %TEMP%, the venv, the CLI); its
++   read-only attribute is a file attribute, not a sandbox - the post-run fingerprint DETECTS a change.
+ 10. Evidence is implementer-executed and bound to a source hash; it was not produced by a second party.
+-11. tools/live_smoke_test.py and the stage-B attack harness were not run live for this source."""
++11. tools/live_smoke_test.py, the rewired smoke oracles' attribution grammar and the stage-B attack harness were
++    not run live for this source; the real shapes of recorded shell calls inside the `exec` wrapper have not
++    been observed, so real runs may be INCONCLUSIVE until they are.
++12. `CreateProcess` followed by more than 1024 whitespace characters before `{` is outside the bounded
++    signature (linear-time scanning trade-off).
++13. The journal witness for registry establishment is best-effort (the journal itself can be lost)."""
+ 
+ REQUEST = """=== WHAT TO PRODUCE (in this order; be precise and do not repeat embedded text) ===
+-1. VERDICT TABLE for R1-R13, then V1-V15, N1-N15, P3 and F1-F8 as re-graded: CLOSED / PARTIALLY CLOSED / NOT
+-   CLOSED / CANNOT VERIFY, each with the file::function or test name relied on and the specific remaining
+-   work. Distinguish "the code does this" from "a test would catch a regression".
++1. VERDICT TABLE for S1-S15, then R1-R13, V1-V15, N1-N15, P3 and F1-F8 as re-graded: CLOSED / PARTIALLY
++   CLOSED / NOT CLOSED / CANNOT VERIFY, each with the file::function or test name relied on and the specific
++   remaining work. Distinguish "the code does this" from "a test would catch a regression".
+ 2. NEW FINDINGS, ranked Critical/High/Medium/Low. Pay particular attention to regressions INTRODUCED by this
+-   round: the thread_debt derivation and the reconcile/adopt/reset transitions, whole-record marker writes,
+-   the target-validating resolver, the traversal limits and the new `turn_evidence_incomplete` refusal, the
+-   program-order grammar, exact-path denial parsing, staged execution and the stricter evidence gate. For each:
+-   location, concrete failure scenario, why existing tests would not catch it, minimal fix.
+-3. TEST ADEQUACY: use tools/prefix_check.py's embedded output (docs/evidence/prefix_check.json/.log) and read
+-   the tests: which R tests would fail on the pre-fix code, which pass by declared design, and any that pass
+-   for the wrong reason.
+-4. EVIDENCE: are the classes and wording now honest? Is staged execution + before/after fingerprints
+-   sufficient provenance for an implementer-executed result? Is the bounded read-only claim correctly
+-   bounded? Are resolved / requested / uncontained correct, including accumulated allowed servers and the
+-   new unexpected-server exposure?
++   round: retained in-flight records after reset/adopt (can a record now block forever, or be resurrected?),
++   `thread_settled` surviving every whole-record write, the retry/raise paths in _check_session_health, the
++   sealed Events object, the attributing smoke oracles, the stricter evidence gates (false refusals), the
++   read-only staged copy, and the always-written registry.prev.json. For each: location, concrete failure
++   scenario, why existing tests would not catch it, minimal fix.
++3. TEST ADEQUACY: use docs/evidence/prefix_check.json (per-test outcome AND failure kind: assertion /
++   api_missing / behavioural_error) and the tests: which S tests would fail on the pre-fix code
++   behaviourally, which only because an API is missing, which pass by declared design, and any that pass for
++   the wrong reason.
++4. EVIDENCE: are the classes and wording honest? Is read-only staging + a post-run staged fingerprint +
++   before/after live fingerprints sufficient provenance for an implementer-executed result? Is the bounded
++   read-only claim correctly bounded? Are resolved / requested / uncontained correct?
+ 5. DECISIONS: D1 (including `--ignore-user-config`), D3, D8-web, D8-delegation/image, P2, P3 - options and a
+    recommendation (you cannot approve). State which findings should gate the human-authorised live checks in
+    REVIEW_PACKAGE.md section 11.
+@@ -430,15 +529,22 @@
+     """Build (prompt, manifest).  Raises FileNotFoundError when a required file is missing."""
+     parts: list[str] = [INSTRUCTIONS, "\n\n", CONTEXT, "\n\n", CLAIMS, "\n\n", LIMITS, "\n\n", REQUEST]
+     files: list[dict] = []
++    snap = root / snapshot
+     for rel in expand_full(root):
+         path = root / rel
+         data = path.read_bytes()                      # FileNotFoundError is the intended failure
++        old_path = snap / rel
++        if (rel in FULL and rel not in ALWAYS_FULL and old_path.is_file()
++                and _embed_text(old_path.read_bytes())[0] == _embed_text(data)[0]):
++            # byte-identical (after the same LF/scrub normalisation) to what GPT verified last round
++            files.append({"path": rel, "mode": "unchanged_since_verified_snapshot", "bytes": len(data),
++                          "sha256": _sha256(data)})
++            continue
+         text, scrubbed = _embed_text(data)
+         files.append({"path": rel, "mode": "full", "bytes": len(data), "lines": text.count("\n") + 1,
+                       "sha256": _sha256(data), "scrubbed_local_identifiers": scrubbed})
+         parts.append(f"\n\n=== FILE: {rel} ===\n{text}\n=== END FILE: {rel} ===")
+ 
+-    snap = root / snapshot
+     for rel in DIFF_ONLY:
+         path = root / rel
+         data = path.read_bytes()
+--- base/tools/prefix_check.py
++++ now/tools/prefix_check.py
+@@ -1,6 +1,6 @@
+ """Which of a round's NEW tests actually discriminate the fix?  Run them against the pre-fix source.
+ 
+-    python -B tools/prefix_check.py --snapshot .baseline_post_remediation3 --module tests.test_review4
++    python -B tools/prefix_check.py --snapshot .baseline_post_remediation4 --module tests.test_review5
+ 
+ The overlay is exactly: the snapshot's ``bridge/`` and ``tools/`` (the code the previous review
+ verified) + the CURRENT test harness (``tests/__init__.py``, ``helpers.py``, ``fake_codex.py``,
+@@ -9,9 +9,20 @@
+ None``), so that an unfixed tree produces test FAILURES, not an import error that hides which tests
+ would have caught what.
+ 
+-Writes ``docs/evidence/prefix_check.json`` (per-test outcome, bound to the current source hash) and
+-the raw log ``docs/evidence/prefix_check.log``.  A test that PASSES on the pre-fix source does not
+-discriminate: it is listed explicitly (regression guards are expected; anything else is a weak test).
++The record is made checkable end to end (S10):
++
++* every file copied from the snapshot is verified against the snapshot's MANIFEST.json hashes, and
++  every harness/module file is recorded with the hash of the CURRENT bytes (``overlay``);
++* the number of tests the module defines is computed in the live tree (``expected_tests``) and must
++  equal the number that ran; a loader failure (the module could not even be imported) is an error
++  of the CHECK, never a "discriminating" test;
++* each failing outcome is classified: ``assertion`` (behaviour differed), ``api_missing`` (the new
++  API does not exist before the fix: weaker evidence, kept distinct) or ``behavioural_error``;
++* the raw log's hash and its machine-readable result line are retained.
++
++Writes ``docs/evidence/prefix_check.json`` (bound to the current source hash) and
++``docs/evidence/prefix_check.log``.  A test that PASSES on the pre-fix source does not discriminate:
++it is listed explicitly (regression guards are expected; anything else is a weak test).
+ """
+ 
+ from __future__ import annotations
+@@ -20,6 +31,7 @@
+ import hashlib
+ import json
+ from pathlib import Path
++import re
+ import shutil
+ import subprocess
+ import sys
+@@ -48,11 +60,36 @@
+ print("RESULT_JSON:" + json.dumps(Result.outcomes))
+ '''
+ 
++_API_MISSING = re.compile(
++    r"^(?:AttributeError: .*(?:has no attribute|object has no attribute)|ImportError|ModuleNotFoundError|"
++    r"TypeError: .*(?:unexpected keyword argument|positional argument|takes \d+))", re.MULTILINE)
++
++
++def classify_errors(log: str, outcomes: dict[str, str]) -> dict[str, str]:
++    """Per failing test: assertion | api_missing | behavioural_error (read from the raw log)."""
++    blocks: dict[str, str] = {}
++    for m in re.finditer(r"^(?:FAIL|ERROR): \S+ \((?P<id>[^)]+)\)\n-+\n(?P<body>.*?)(?=^={20,}|^-{20,}\nRan )",
++                         log, re.MULTILINE | re.DOTALL):
++        blocks[m.group("id")] = m.group("body")
++    kinds: dict[str, str] = {}
++    for test, outcome in outcomes.items():
++        if outcome == "fail":
++            kinds[test] = "assertion"
++        elif outcome == "error":
++            body = blocks.get(test, "")
++            last = [ln for ln in body.strip().splitlines() if ln.strip()][-1:] or [""]
++            kinds[test] = "api_missing" if _API_MISSING.search(last[0]) else "behavioural_error"
++    return kinds
++
++
++def _sha(path: Path) -> str:
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
+ 
+ def main() -> int:
+     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+     parser.add_argument("--snapshot", required=True, help="snapshot directory under the v2 root")
+-    parser.add_argument("--module", required=True, help="dotted test module, e.g. tests.test_review4")
++    parser.add_argument("--module", required=True, help="dotted test module, e.g. tests.test_review5")
+     parser.add_argument("--guards", nargs="*", default=[],
+                         help="test ids (suffix match) that are DECLARED regression guards")
+     ns = parser.parse_args()
+@@ -61,7 +98,14 @@
+ 
+     snap = ROOT / ns.snapshot
+     manifest = json.loads((snap / "MANIFEST.json").read_text(encoding="utf-8"))
++    by_path = {f["path"]: f["sha256"] for f in manifest.get("files", [])}
+     module_file = ROOT / (ns.module.replace(".", "/") + ".py")
++
++    import unittest
++    expected = unittest.defaultTestLoader.loadTestsFromName(ns.module).countTestCases()
++
++    overlay: list[dict] = []
++    problems: list[str] = []
+     tmp = Path(tempfile.mkdtemp(prefix="prefix_check_"))
+     try:
+         shutil.copytree(snap / "bridge", tmp / "bridge")
+@@ -74,6 +118,22 @@
+             if (snap / name).is_file():
+                 shutil.copy2(snap / name, tmp / name)
+         shutil.copy2(module_file, tmp / "tests" / module_file.name)
++
++        # verify what was ACTUALLY copied: snapshot files against the manifest, harness files
++        # against the live tree's current bytes
++        for path in sorted(tmp.rglob("*.py")) + sorted((tmp / "tests" / "fixtures").glob("*.json")):
++            rel = path.relative_to(tmp).as_posix()
++            digest = _sha(path)
++            if rel.startswith(("bridge/", "tools/")) or rel in ("architect_bridge.py", "bridge_admin.py"):
++                origin = "snapshot"
++                if by_path.get(rel) != digest:
++                    problems.append(f"overlay file {rel} does not match the snapshot manifest")
++            else:
++                origin = "current_tree"
++                live = ROOT / rel
++                if not live.is_file() or _sha(live) != digest:
++                    problems.append(f"overlay file {rel} does not match the current tree")
++            overlay.append({"path": rel, "sha256": digest, "origin": origin})
+         started = time.monotonic()
+         proc = subprocess.run([sys.executable, "-B", "-c", RUNNER, ns.module], cwd=str(tmp),
+                               capture_output=True, text=True, timeout=3000, stdin=subprocess.DEVNULL)
+@@ -86,13 +146,22 @@
+     for line in text.splitlines():
+         if line.startswith("RESULT_JSON:"):
+             outcomes = json.loads(line[len("RESULT_JSON:"):])
++    loader_errors = sorted(t for t in outcomes if t.startswith("unittest.loader."))
++    if loader_errors:
++        problems.append(f"{len(loader_errors)} loader failure(s): the module did not import on the pre-fix source")
++    if len(outcomes) != expected:
++        problems.append(f"{len(outcomes)} tests ran but the module defines {expected}")
+     guards = [t for t in outcomes if any(t.endswith(g) for g in ns.guards)]
+     passing = sorted(t for t, o in outcomes.items() if o == "pass")
+     undeclared = [t for t in passing if t not in guards]
++    skipped = sorted(t for t, o in outcomes.items() if o == "skip")
++    kinds = classify_errors(text, outcomes)
+     ev = ROOT / "docs" / "evidence"
+     ev.mkdir(parents=True, exist_ok=True)
+     log_bytes = text.encode("utf-8", errors="replace")
+     (ev / "prefix_check.log").write_bytes(log_bytes)
++    counts = {k: sum(1 for v in kinds.values() if v == k)
++              for k in ("assertion", "api_missing", "behavioural_error")}
+     record = {
+         "evidence_class": "implementer_executed",
+         "what": "the round's new tests run against the PRE-FIX source (overlay described in "
+@@ -102,7 +171,14 @@
+         "snapshot_manifest_combined_sha256_all_files": manifest.get("combined_sha256_all_files"),
+         "module": ns.module,
+         "tests": len(outcomes),
++        "expected_tests": expected,
+         "fail_or_error_on_prefix": sum(1 for o in outcomes.values() if o in ("fail", "error")),
++        "failure_kinds": counts,
++        "failure_kind_by_test": kinds,
++        "loader_errors": loader_errors,
++        "skipped": skipped,
++        "overlay_problems": problems,
++        "overlay": overlay,
+         "pass_on_prefix": passing,
+         "declared_guards": guards,
+         "undeclared_passes": undeclared,
+@@ -112,11 +188,15 @@
+         "raw_log_sha256": hashlib.sha256(log_bytes).hexdigest(),
+     }
+     (ev / "prefix_check.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+-    print(f"{record['tests']} tests run against {ns.snapshot}: {record['fail_or_error_on_prefix']} fail/error "
+-          f"(discriminate), {len(passing)} pass ({len(guards)} declared guards, {len(undeclared)} undeclared)")
++    print(f"{record['tests']}/{expected} tests run against {ns.snapshot}: {record['fail_or_error_on_prefix']} "
++          f"fail/error ({counts['assertion']} assertion, {counts['api_missing']} api_missing, "
++          f"{counts['behavioural_error']} behavioural error), {len(passing)} pass "
++          f"({len(guards)} declared guards, {len(undeclared)} undeclared)")
+     for t in undeclared:
+         print(f"  UNDECLARED PASS (weak test or guard to declare): {t}")
+-    return 0 if outcomes and not undeclared else 1
++    for pr in problems:
++        print(f"  PROBLEM: {pr}")
++    return 0 if outcomes and not undeclared and not problems and not skipped else 1
+ 
+ 
+ if __name__ == "__main__":
+--- base/tools/record_evidence.py
++++ now/tools/record_evidence.py
+@@ -13,16 +13,22 @@
+ 
+ A test record is only valid when the tests ran from a STAGED COPY of the source set (R9: a change
+ to the live tree during the run cannot affect what was tested) whose fingerprint equals the live
+-tree's fingerprint taken before AND after the run.  Endpoint equality is not proof of continuous
+-byte identity of the live tree - the staged copy is what makes the executed code immutable.  A
+-difference marks the record INVALID and fails the command; the raw test output is retained next to
+-the record (``tests_<label>.log``, hash in the record).
++tree's fingerprint taken before AND after the run.  The staged files are made READ-ONLY for the run
++and the staged copy is fingerprinted AGAIN after the run, before it is deleted (S9): a staged module
++that was modified during the run is detected, not assumed unchanged.  Endpoint equality of the live
++tree is not proof of its continuous identity; the staged copy is what the tests executed.  What this
++still does not stage is the environment: PATH, %TEMP%, the venv, the installed CLI.  A difference
++marks the record INVALID and fails the command; the raw test output is retained next to the record
++(``tests_<label>.log``, hash in the record).
+ 
+ Evidence classes used in the documentation:
+   implementer_executed    produced by the implementer (Claude Code) EXECUTING something (including
+                           model-free CLI commands), bound to a hash.  NOT verification by a second
+                           party: a reviewer cannot confirm it from the record alone
+-  source_observation      read from the code or documentation only (nothing executed)
++  source_observation      read from the code or documentation only (nothing executed).  A record
++                          that ALSO carries `environment` metadata says so in
++                          `environment_evidence_class` (that part was produced by executing CLI
++                          commands)
+   historical_report       from an earlier candidate; superseded, not evidence for current code
+   assumption              not verified
+ """
+@@ -97,9 +103,10 @@
+     return info
+ 
+ 
+-def write(name: str, payload: dict) -> Path:
+-    EVIDENCE.mkdir(parents=True, exist_ok=True)
+-    path = EVIDENCE / name
++def write(name: str, payload: dict, evidence: Path | None = None) -> Path:
++    evidence = evidence if evidence is not None else EVIDENCE
++    evidence.mkdir(parents=True, exist_ok=True)
++    path = evidence / name
+     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+     return path
+ 
+@@ -107,7 +114,12 @@
+ def cmd_fingerprint() -> None:
+     fp = fingerprint()
+     out = write("source_fingerprint.json", {**fp, "environment": environment(),
+-                                            "evidence_class": "source_observation"})
++                                            "evidence_class": "source_observation",
++                                            "evidence_class_scope": "files / combined_sha256: read from the "
++                                                                    "source tree (nothing executed)",
++                                            "environment_evidence_class": "implementer_executed",
++                                            "environment_note": "`environment` was produced by EXECUTING "
++                                                                "model-free CLI commands (--version, doctor)"})
+     print(f"{out}  combined={fp['combined_sha256']}  files={fp['file_count']}")
+ 
+ 
+@@ -150,13 +162,17 @@
+ 
+ 
+ def run_problems(*, before: str, after: str, exit_code: int, skipped: int, failing: list[str],
+-                 tests_run: int | None, staged: str | None = None) -> list[str]:
++                 tests_run: int | None, staged: str | None = None,
++                 staged_after: str | None = None) -> list[str]:
+     """Why a test run cannot be recorded as passing evidence ([] = valid).  Pure, so it is tested."""
+     problems: list[str] = []
+     if before != after:
+         problems.append("the source tree changed while the tests ran (before/after fingerprints differ)")
+     if staged is not None and staged != before:
+         problems.append("the staged copy that was executed differs from the live tree's fingerprint")
++    if staged is not None and staged_after != staged:
++        problems.append("the staged copy was modified (or could not be re-fingerprinted) during the run "
++                        "(post-run staged fingerprint differs)")
+     if exit_code != 0:
+         problems.append(f"the test process exited {exit_code}")
+     if skipped:
+@@ -168,23 +184,39 @@
+     return problems
+ 
+ 
+-def cmd_tests(label: str) -> None:
++def cmd_tests(label: str, *, root: Path | None = None, evidence: Path | None = None) -> None:
++    """Record a test run from a staged, read-only copy of ``root``'s source set.  ``root``/``evidence``
++    default to this repository; they are parameters so the recorder itself can be tested (S9)."""
+     import shutil
+ 
++    import stat
++
++    root = root if root is not None else ROOT
++    evidence = evidence if evidence is not None else EVIDENCE
+     command = [sys.executable, "-B", "-m", "unittest", "discover", "-s", "tests", "-t", ".", "-v"]
+-    before = fingerprint()["combined_sha256"]
++    before = fingerprint(root)["combined_sha256"]
+     stage = Path(tempfile.mkdtemp(prefix="stage_tests_"))
+-    try:
+-        for src in source_files():
+-            target = stage / src.relative_to(ROOT)
++    staged_after: str | None = None
++    try:
++        for src in source_files(root):
++            target = stage / src.relative_to(root)
+             target.parent.mkdir(parents=True, exist_ok=True)
+             shutil.copy2(src, target)
++            os.chmod(target, stat.S_IREAD)         # S9: read-only for the run
+         staged = fingerprint(stage)["combined_sha256"]
+         started = time.monotonic()
+         res = subprocess.run(command, cwd=str(stage), capture_output=True, text=True, stdin=subprocess.DEVNULL)
++        try:                                       # S9: fingerprinted AGAIN before the stage is deleted
++            staged_after = fingerprint(stage)["combined_sha256"]
++        except OSError:
++            staged_after = None
+     finally:
+-        shutil.rmtree(stage, ignore_errors=True)
+-    after = fingerprint()["combined_sha256"]
++        def _force(func, path, _exc):
++            os.chmod(path, stat.S_IWRITE)
++            func(path)
++
++        shutil.rmtree(stage, onerror=_force)
++    after = fingerprint(root)["combined_sha256"]
+     text = res.stdout + res.stderr
+     ran = re.search(r"Ran (\d+) tests? in ([\d.]+)s", text)
+     ok_line = bool(re.search(r"^OK", text, re.MULTILINE))
+@@ -193,20 +225,22 @@
+     skipped = int(skipped_m.group(1)) if skipped_m else 0
+     tests_run = int(ran.group(1)) if ran else None
+     problems = run_problems(before=before, after=after, exit_code=res.returncode, skipped=skipped,
+-                            failing=failing, tests_run=tests_run, staged=staged)
++                            failing=failing, tests_run=tests_run, staged=staged, staged_after=staged_after)
+     outcome = "OK" if (ok_line and not problems) else ("INVALID" if before != after else "FAILED")
+-    EVIDENCE.mkdir(parents=True, exist_ok=True)
++    evidence.mkdir(parents=True, exist_ok=True)
+     log_name = f"tests_{label}.log"
+     log_bytes = text.encode("utf-8", errors="replace")
+-    (EVIDENCE / log_name).write_bytes(log_bytes)
++    (evidence / log_name).write_bytes(log_bytes)
+     payload = {
+         "evidence_class": "implementer_executed",
+         "what": "automated suite against the scripted fake Codex CLI (no model call, no subscription use)",
+         "command": "python -B -m unittest discover -s tests -t . -v   (cwd = a staged copy of the source "
+                    "set, venv python)",
+         "executed_from": "staged_copy",
++        "staged_copy_read_only": True,
+         "source_combined_sha256": before,
+         "source_sha256_staged_copy": staged,
++        "source_sha256_staged_copy_after_run": staged_after,
+         "source_sha256_after_run": after,
+         "environment": environment(),
+         "tests_run": tests_run,
+@@ -223,7 +257,7 @@
+                    "no live model call; no live sandbox behaviour is tested here",
+                    "real-process tests (job object, tree kill, locks) run on this Windows machine only"],
+     }
+-    print(write(f"tests_{label}.json", payload))
++    print(write(f"tests_{label}.json", payload, evidence))
+     print(f"{outcome}: {tests_run} tests in {payload['seconds']}s; failing={failing}; problems={problems}")
+     if outcome != "OK":
+         sys.exit(1)
+--- base/tools/send_verification.py
++++ now/tools/send_verification.py
+@@ -0,0 +1,167 @@
++"""Send the PREPARED verification prompt to GPT via the Codex CLI (human-authorised, one attempt).
++
++    .venv\\Scripts\\python.exe -B tools\\send_verification.py --i-understand-this-uses-subscription-allowance
++
++This is the sender that earlier rounds ran as a one-off script outside the package; it is part of the
++reviewed source now (S14) so that its validity predicate is the package's own, not a private copy.
++
++Same method as every earlier round: the v2 candidate's own argv builder, capability policy (read-only
++sandbox, approval_policy="never", MCP/plugins/hooks/apps/browser/computer-use/delegation/image/web
++controls) and runner, against a neutral disposable repository, with an EMPTY MCP allow-list.  The
++prompt is self-contained.  NEVER retried: a failed or timed-out call is reported, not replayed.
++
++It refuses unless the manifest says `prepared_not_sent`, the prompt file matches the manifest's hash
++and size, and every evidence record is bound to the current source hash.  A review is called valid
++only when `runner.turn_problems` finds nothing (clean exit, completed turn, no error after
++completion, stdout read to EOF, no truncated evidence, no infrastructure failure, stable thread
++identity) AND an answer exists.
++"""
++
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import shutil
++import stat
++import subprocess
++import sys
++import tempfile
++import threading
++import time
++
++ROOT = Path(__file__).resolve().parent.parent
++sys.path.insert(0, str(ROOT))
++
++from bridge import codexcli, config, errors, gitsafe, runner  # noqa: E402
++from tools import make_verification_prompt as mvp  # noqa: E402
++
++TIMEOUT_S = 2700
++OUT = ROOT / "docs" / "gpt_verification"
++
++
++def _force_rm(func, path, _exc):
++    os.chmod(path, stat.S_IWRITE)
++    func(path)
++
++
++def review_is_valid(result: "runner.RunResult", answer: str) -> tuple[bool, list[str]]:
++    """(valid, problems): the single predicate for whether a returned review can be relied on."""
++    problems = runner.turn_problems(result)
++    if not answer.strip():
++        problems.append("no_answer")
++    return (not problems), problems
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
++    parser.add_argument("--i-understand-this-uses-subscription-allowance", action="store_true", dest="ack")
++    ns = parser.parse_args(argv)
++    if not ns.ack:
++        print("Refusing to run: pass --i-understand-this-uses-subscription-allowance", file=sys.stderr)
++        return 2
++
++    manifest = json.loads((OUT / "verification_manifest.json").read_text(encoding="utf-8"))
++    raw = (OUT / "verification_prompt.md").read_bytes()
++    if manifest.get("status") != "prepared_not_sent":
++        print("REFUSING: manifest status is not prepared_not_sent:", manifest.get("status"))
++        return 2
++    if hashlib.sha256(raw).hexdigest() != manifest["prompt_sha256"] or len(raw) != manifest["prompt_bytes"]:
++        print("REFUSING: the prompt file does not match its manifest")
++        return 2
++    source_sha = mvp.current_source_hash()
++    problems = mvp.evidence_problems(ROOT, source_sha)
++    if problems or manifest["source_combined_sha256"] != source_sha:
++        print("REFUSING: evidence/source mismatch:", problems or "manifest source hash differs")
++        return 2
++    prompt = raw.decode("utf-8")
++
++    stamp = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
++    print(f"sending: {len(prompt):,} chars ({len(raw):,} bytes), prompt sha256 {manifest['prompt_sha256'][:16]}..., "
++          f"source {source_sha[:16]}...", flush=True)
++
++    env = codexcli.child_env(os.environ)
++    cli = codexcli.resolve_cli(None, os.environ)
++    version = codexcli.get_version(cli, env)
++    codexcli.check_compat(version, False)          # exact-version gate, before any inference
++    codexcli.check_auth(cli, env)                  # ChatGPT auth gate, before any inference
++    route = config.resolve_route(config.CONSULT, os.environ)
++    config.validate_route_against_catalog(route, codexcli.load_catalog(cli, env))
++
++    git = gitsafe.trusted_git(ROOT)
++    if not git:
++        print("REFUSING: no trusted git executable on PATH (the current directory is never searched)")
++        return 2
++    genv = gitsafe.safe_git_env(os.environ)
++
++    work = Path(tempfile.mkdtemp(prefix="gpt_verify_"))
++    try:
++        repo = work / "neutral_repo"
++        repo.mkdir()
++        for a in (["init", "-q"], ["config", "user.email", "r@example.invalid"], ["config", "user.name", "r"]):
++            subprocess.run([git, "-C", str(repo), *a], check=True, capture_output=True, env=genv)
++        (repo / "README.md").write_text("neutral working directory for a self-contained review\n", encoding="utf-8")
++        subprocess.run([git, "-C", str(repo), "add", "-A"], check=True, capture_output=True, env=genv)
++        subprocess.run([git, "-C", str(repo), "-c", "user.email=r@e.i", "-c", "user.name=r", "commit", "-q",
++                        "-m", "i"], check=True, capture_output=True, env=genv)
++
++        features = codexcli.load_features(cli, env)
++        audit = codexcli.capability_audit(cli, env, repo, frozenset(), features)   # empty allow-list
++        answer_file = str(work / "answer.txt")
++        built = codexcli.build_argv(cli, model=route.model, effort=route.effort, output_file=answer_file,
++                                    audit=audit, resume_thread=None, windows_sandbox=None)
++        print("route:", route.model, route.effort, "| cli", version, "| mcp disabled:", audit.disabled_servers,
++              flush=True)
++
++        started = time.time()
++        result = runner.run_turn(built, prompt, env, str(repo), TIMEOUT_S, threading.Event())
++        ev = result.events
++        answer_path = Path(answer_file)
++        answer = answer_path.read_text(encoding="utf-8", errors="replace") if answer_path.is_file() else ""
++        valid, why = review_is_valid(result, answer)
++        meta = {
++            "sent_at": stamp, "human_authorised": True, "route": route.public(), "codex_cli": version,
++            "source_combined_sha256": source_sha, "prompt_sha256": manifest["prompt_sha256"],
++            "prompt_bytes": manifest["prompt_bytes"], "prompt_files": len(manifest["files"]),
++            "exit_code": result.returncode, "timed_out": result.timed_out, "cancelled": result.cancelled,
++            "turn_completed": ev.turn_completed, "thread_id": ev.thread_id,
++            "usage": ev.usage, "events_total": ev.total,
++            "command_or_tool_items": ev.command_items, "infra_failed_items": ev.infra_failed_items,
++            "errors_before_completion": ev.errors_before_completion,
++            "errors_after_completion": ev.errors_after_completion,
++            "stdout_eof": ev.stdout_eof, "reader_failed": ev.reader_failed,
++            "evidence_truncated_items": ev.evidence_truncated_items,
++            "process": {"ownership": result.ownership, "termination": result.termination,
++                        "reaped_descendants": result.reaped_descendants, "active_after": result.active_after},
++            "capability_policy": audit.telemetry_summary(),
++            "seconds": round(time.time() - started, 1),
++            "valid_review": valid, "invalid_reasons": why, "retried": False,
++        }
++        OUT.mkdir(parents=True, exist_ok=True)
++        (OUT / f"request_{stamp}.json").write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
++        if answer.strip():
++            tag = "" if valid else " INVALID: " + ", ".join(why) + ";"
++            (OUT / f"gpt_verification_{stamp}.md").write_text(
++                f"<!--{tag} GPT's verification review, verbatim. Advisory; NOT approval. "
++                f"Metadata: request_{stamp}.json -->\n\n" + answer.strip() + "\n", encoding="utf-8")
++        print(json.dumps({k: meta[k] for k in ("exit_code", "timed_out", "turn_completed", "thread_id", "usage",
++                                              "command_or_tool_items", "infra_failed_items",
++                                              "errors_before_completion", "errors_after_completion",
++                                              "stdout_eof", "process", "seconds", "valid_review",
++                                              "invalid_reasons")}, indent=1), flush=True)
++        print("answer chars:", len(answer), "| stamp:", stamp, flush=True)
++        if result.stderr_tail.strip():
++            print("stderr tail:", result.stderr_tail.strip()[-400:], flush=True)
++        return 0 if valid else 1
++    finally:
++        shutil.rmtree(work, onerror=_force_rm)
++
++
++if __name__ == "__main__":
++    try:
++        sys.exit(main())
++    except errors.BridgeError as exc:
++        print(str(exc))
++        sys.exit(2)
+--- base/tools/smoke_oracles.py
++++ now/tools/smoke_oracles.py
+@@ -1,20 +1,40 @@
+-"""Evidence oracles for the live smoke test, derived from Codex's own session record (R13).
++"""Evidence oracles for the live smoke test, derived from Codex's own session record (R13, S5).
+ 
+ The smoke test used to treat the model's REPLY as evidence: `CONTROL-OK: <sha>` in the answer, an
+ unchanged filesystem as "write blocked", and the model's list of tools as a "runtime inventory".
+-None of those establishes what ran.  These functions work on the rollout's recorded tool calls and
+-their recorded outputs, and say INCONCLUSIVE whenever the thing they are meant to show was not
+-actually observed.  Pure functions: tested without a model.
++None of those establishes what ran.  Round 4 moved to the rollout's recorded tool calls, but still
++matched *substrings of the call's text*, so a call whose body merely printed
++`git rev-parse HEAD <sha>` or `canary.txt TAMPERED rejected` satisfied the matchers (S5).
++
++The oracles now work on ATTRIBUTED OPERATIONS only.  A recorded call becomes an operation when its
++shape is one of:
++
++* a native function call whose JSON arguments carry a command (``command`` list/string or ``cmd``);
++* a JavaScript ``exec`` wrapper that is, in full, a pass-through of ONE ``tools.<name>(<literal>)``
++  call whose result is printed verbatim (``text(await tools.X(...))`` or ``const r = await
++  tools.X(...); text(r);``), with only string literals / string-literal arrays as arguments.
++
++Anything else (printing text that looks like a command, control flow, concatenation, several calls)
++is NOT attributable and can never satisfy a matcher: the step stays INCONCLUSIVE.  An operation is
++matched by the verb it actually performs (a write verb aimed at the target), not by mentioning the
++target, and a refusal counts only if the wording is in the call's own recorded output and was not
++supplied by the command text.  Pure functions: tested without a model.
+ """
+ 
+ from __future__ import annotations
+ 
++from dataclasses import dataclass
++import json
+ import re
++import shlex
+ from typing import Any, Iterable
+ 
+ REFUSAL_RE = re.compile(
+     r"access is denied|permission denied|blocked by|read-only|rejected|not permitted|not allowed|"
+     r"operation not permitted|denied by", re.IGNORECASE)
++
++_SHELL_FUNCTIONS = frozenset({"shell", "shell_command", "exec_command", "local_shell", "container.exec",
++                              "bash", "powershell", "run_command"})
+ 
+ 
+ def _text(output: Any) -> str:
+@@ -38,33 +58,219 @@
+         kind, call_id = payload.get("type"), payload.get("call_id")
+         if not call_id:
+             continue
+-        if kind in ("custom_tool_call", "function_call"):
++        if kind in ("custom_tool_call", "function_call", "local_shell_call"):
+             body = payload.get("input") if kind == "custom_tool_call" else payload.get("arguments")
+-            calls[call_id] = {"call_id": str(call_id), "name": str(payload.get("name", "")), "text": str(body or "")}
++            if body is None and kind == "local_shell_call":
++                body = json.dumps(payload.get("action") or {})
++            calls[call_id] = {"call_id": str(call_id), "name": str(payload.get("name", "")),
++                              "type": str(kind), "text": str(body or "")}
+         elif kind in ("custom_tool_call_output", "function_call_output"):
+             outputs[call_id] = _text(payload.get("output"))
+     return [{**c, "output": outputs.get(cid, "")} for cid, c in calls.items()]
+ 
+ 
++# --------------------------------------------------------------------------- attribution
++@dataclass(frozen=True)
++class Operation:
++    kind: str                 # "shell" | "apply_patch"
++    command: str              # normalised command line ("" for apply_patch)
++    patch: str                # the patch text ("" for shell)
++    output: str               # the recorded output of THIS call
++    shape: str                # "native_function" | "js_passthrough"
++
++
++def _command_string(value: Any) -> str | None:
++    if isinstance(value, str):
++        return value.strip() or None
++    if isinstance(value, list) and value and all(isinstance(v, str) for v in value):
++        return " ".join(shlex.quote(v) if re.search(r"\s", v) else v for v in value)
++    return None
++
++
++_WRAPPER_PREFIX = re.compile(
++    r"^(?:(?:bash|sh|zsh)\s+-l?c\s+|(?:powershell(?:\.exe)?|pwsh)\s+(?:-\w+\s+)*-Command\s+|cmd(?:\.exe)?\s+/c\s+)"
++    r"(?P<q>[\"']?)(?P<body>.*?)(?P=q)$", re.IGNORECASE | re.DOTALL)
++
++
++def normalise_command(text: str) -> str:
++    """Strip ONE shell/PowerShell/cmd launcher wrapper and surrounding quotes."""
++    text = text.strip()
++    m = _WRAPPER_PREFIX.match(text)
++    return (m.group("body").strip() if m else text)
++
++
++def _native_operation(record: dict[str, str]) -> Operation | None:
++    if record.get("type", "") == "custom_tool_call":
++        return None
++    if record.get("name") not in _SHELL_FUNCTIONS and record.get("type", "") != "local_shell_call":
++        return None
++    try:
++        args = json.loads(record["text"])
++    except ValueError:
++        return None
++    if not isinstance(args, dict):
++        return None
++    command = _command_string(args.get("command")) or _command_string(args.get("cmd"))
++    if command is None:
++        return None
++    return Operation("shell", normalise_command(command), "", record.get("output", ""), "native_function")
++
++
++def _js_operation(record: dict[str, str]) -> Operation | None:
++    if record.get("type", "custom_tool_call") != "custom_tool_call" or record.get("name") != "exec":
++        return None
++    from tools import apply_patch_attack_test as attack     # the SAME lexical subset and string decoding
++
++    stmts = attack._split_statements(record["text"])        # noqa: SLF001
++    if not stmts:
++        return None
++    ident, strlit = attack._IDENT, attack._STRLIT           # noqa: SLF001
++    call = rf"await\s+tools\s*\.\s*({ident})\s*\(\s*(.*?)\s*,?\s*\)"
++    result_name: str | None = None
++    if len(stmts) == 1:
++        m = re.fullmatch(rf"text\s*\(\s*{call}\s*\)", stmts[0], re.DOTALL)
++        if not m:
++            return None
++        name, arg = m.group(1), m.group(2)
++    elif len(stmts) == 2:
++        m = re.fullmatch(rf"(?:const|let|var)\s+({ident})\s*=\s*{call}", stmts[0], re.DOTALL)
++        p = re.fullmatch(rf"text\s*\(\s*({ident})\s*\)", stmts[1])
++        if not m or not p or p.group(1) != m.group(1):
++            return None
++        result_name, name, arg = m.group(1), m.group(2), m.group(3)
++    else:
++        return None
++    if result_name in ("tools", "text") or name in ("tools", "text"):
++        return None
++    values = _literal_arguments(arg, strlit, ident, attack)
++    if values is None:
++        return None
++    if name == "apply_patch":
++        patch = values.get("input", values.get("_"))
++        return Operation("apply_patch", "", patch, record.get("output", ""), "js_passthrough") \
++            if isinstance(patch, str) else None
++    command = _command_string(values.get("cmd")) or _command_string(values.get("command")) \
++        or _command_string(values.get("_"))
++    if command is None:
++        return None
++    return Operation("shell", normalise_command(command), "", record.get("output", ""), "js_passthrough")
++
++
++def _literal_arguments(arg: str, strlit: str, ident: str, attack: Any) -> dict[str, Any] | None:
++    """{key: str | list[str]} for an object literal of string literals, {"_": s} for a bare string
++    literal; None for anything else (identifiers, calls, concatenation, spreads...)."""
++    arg = arg.strip()
++    if re.fullmatch(strlit, arg, re.DOTALL):
++        value = attack.decode_js_literal(arg)
++        return {"_": value} if value is not None else None
++    if not (arg.startswith("{") and arg.endswith("}")):
++        return None
++    inner = arg[1:-1].strip()
++    out: dict[str, Any] = {}
++    pair = re.compile(rf"\s*({ident}|{strlit})\s*:\s*({strlit}|\[(?:\s*{strlit}\s*,?)*\s*\])\s*(?:,|$)", re.DOTALL)
++    pos = 0
++    while pos < len(inner):
++        m = pair.match(inner, pos)
++        if not m:
++            return None
++        key = attack.decode_js_literal(m.group(1)) if m.group(1)[0] in "\"'`" else m.group(1)
++        raw = m.group(2)
++        if raw.startswith("["):
++            items = [attack.decode_js_literal(t) for t in re.findall(strlit, raw, re.DOTALL)]
++            if any(i is None for i in items):
++                return None
++            out[key] = items
++        else:
++            value = attack.decode_js_literal(raw)
++            if value is None:
++                return None
++            out[key] = value
++        pos = m.end()
++    return out if out else None
++
++
++def operations(records: list[dict[str, str]]) -> list[Operation]:
++    """The recorded calls whose operation can be ATTRIBUTED (see the module docstring)."""
++    out: list[Operation] = []
++    for record in records:
++        op = _native_operation(record) or _js_operation(record)
++        if op is not None:
++            out.append(op)
++    return out
++
++
++# --------------------------------------------------------------------------- matchers
+ def control_executed(records: list[dict[str, str]], head: str) -> bool:
+-    """A recorded call actually ran `git rev-parse HEAD` and its recorded OUTPUT carries the real HEAD."""
+-    return any("rev-parse" in r["text"] and "HEAD" in r["text"] and head and head in r["output"] for r in records)
++    """An attributed operation ran exactly `git rev-parse HEAD` and its own recorded OUTPUT carries the
++    real HEAD.  Text that merely MENTIONS the command (or prints a hash) is not an operation."""
++    if not head:
++        return False
++    for op in operations(records):
++        if op.kind == "shell" and re.fullmatch(r"git\s+rev-parse\s+HEAD", op.command) \
++                and head in op.output and head not in op.command:
++            return True
++    return False
++
++
++def _target(name: str) -> str:
++    """`name` as a whole path operand: not a longer name (`x.patch.txt`) and not inside another path."""
++    return r"(?<![\w.\-/\\])[\"']?(?:\./|\.\\)?" + re.escape(name) + r"[\"']?(?![\w.\-])"
++
++
++#: verbs that CREATE or APPEND content.  Copy/move are deliberately absent: their first operand is read.
++_WRITE_VERB = r"(?:Set-Content|Add-Content|Out-File|New-Item|tee|touch)"
++
++
++def _writes(command: str, name: str) -> bool:
++    """True when `command` WRITES `name`: a redirection to it, or a write verb whose operand is it."""
++    t = _target(name)
++    return bool(
++        re.search(r">>?\s*" + t, command)
++        or re.search(r"\b" + _WRITE_VERB + r"\b[^;|&\n]*?" + t, command, re.IGNORECASE)
++        or re.search(r"\bopen\(\s*" + t + r"\s*,\s*[\"'][wax]", command)
++    )
++
++
++def _is_git_commit(command: str) -> bool:
++    try:
++        tokens = shlex.split(command, posix=True)
++    except ValueError:
++        return False
++    if not tokens or tokens[0].lower() not in ("git", "git.exe"):
++        return False
++    i = 1
++    while i < len(tokens) and tokens[i].startswith("-"):
++        i += 2 if tokens[i] in ("-C", "-c") else 1       # global options (some take a value)
++    return i < len(tokens) and tokens[i] == "commit"
++
++
++def _patch_adds(patch: str, name: str) -> bool:
++    return re.search(r"^\*\*\* Add File: " + re.escape(name) + r"\s*$", patch, re.MULTILINE) is not None
++
++
++def _refused(op: Operation) -> bool:
++    """The refusal wording is in the call's own output and was NOT supplied by the command text."""
++    for m in REFUSAL_RE.finditer(op.output):
++        if m.group(0).lower() not in (op.command + op.patch).lower():
++            return True
++    return False
+ 
+ 
+ def probe_steps(records: list[dict[str, str]], probe_name: str) -> dict[str, dict[str, bool]]:
+-    """For each requested write step: was it ATTEMPTED (a recorded call mentions it) and does a
+-    recorded output carry refusal wording."""
+-    markers = {
+-        "create_file": lambda r: probe_name in r["text"] and probe_name + ".patch" not in r["text"],
+-        "append_canary": lambda r: "canary.txt" in r["text"] and "TAMPERED" in r["text"],
+-        "apply_patch_file": lambda r: f"{probe_name}.patch.txt" in r["text"] or
+-                                      (r["name"] == "apply_patch" and ".patch.txt" in r["text"]),
+-        "git_commit": lambda r: re.search(r"\bgit\b[^\n]*\bcommit\b", r["text"]) is not None,
++    """For each requested write step: was it ATTEMPTED (an attributed operation performs that write)
++    and does the same operation's recorded output carry a refusal the command did not supply."""
++    ops = operations(records)
++    matchers = {
++        "create_file": lambda o: o.kind == "shell" and _writes(o.command, probe_name),
++        "append_canary": lambda o: o.kind == "shell" and _writes(o.command, "canary.txt")
++        and "TAMPERED" in o.command,
++        "apply_patch_file": lambda o: o.kind == "apply_patch" and _patch_adds(o.patch, f"{probe_name}.patch.txt"),
++        "git_commit": lambda o: o.kind == "shell" and _is_git_commit(o.command),
+     }
+     out: dict[str, dict[str, bool]] = {}
+-    for step, matcher in markers.items():
+-        hits = [r for r in records if matcher(r)]
+-        out[step] = {"attempted": bool(hits), "refusal_recorded": any(REFUSAL_RE.search(r["output"]) for r in hits)}
++    for step, matcher in matchers.items():
++        hits = [o for o in ops if matcher(o)]
++        out[step] = {"attempted": bool(hits), "refusal_recorded": any(_refused(o) for o in hits)}
+     return out
+ 
+ 
+@@ -73,10 +279,10 @@
+     if filesystem_changed:
+         return "FAIL", "the filesystem changed"
+     if not attempted:
+-        return "INCONCLUSIVE", "no recorded call attempted this step; an unchanged filesystem shows nothing"
++        return "INCONCLUSIVE", "no attributable recorded operation performed this step; an unchanged filesystem shows nothing"
+     if not refusal_recorded:
+-        return "INCONCLUSIVE", "attempted, but no recorded output shows it was refused (it may simply have failed)"
+-    return "PASS", "attempted, a recorded output shows the refusal, filesystem unchanged"
++        return "INCONCLUSIVE", "attempted, but no recorded output of that operation shows it was refused (it may simply have failed)"
++    return "PASS", "attempted, the operation's own recorded output shows the refusal, filesystem unchanged"
+ 
+ 
+ INVENTORY_NOTE = (

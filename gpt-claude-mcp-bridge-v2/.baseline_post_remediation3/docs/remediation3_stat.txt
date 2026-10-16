@@ -1,0 +1,32 @@
+base snapshot .baseline_post_remediation2 combined sha256: 9036cc29d31f36d216ada4c5e69f5273a3baf40de3d94f404d2023df6c7a5447
+files changed/added/removed: 29
+
+README.md                                            modified  +116   -40
+REVIEW_PACKAGE.md                                    modified  +192   -274
+bridge/admin.py                                      modified  +65    -7
+bridge/codexcli.py                                   modified  +50    -17
+bridge/config.py                                     modified  +3     -3
+bridge/execpath.py                                   added     +135   -0
+bridge/fingerprint.py                                modified  +55    -13
+bridge/gitsafe.py                                    modified  +48    -23
+bridge/ids.py                                        modified  +1     -1
+bridge/runner.py                                     modified  +144   -63
+bridge/service.py                                    modified  +194   -78
+bridge/state.py                                      modified  +28    -7
+bridge/telemetry.py                                  modified  +29    -4
+docs/REMEDIATION_CHECKLIST_3.md                      added     +46    -0
+docs/gpt_verification/verification_manifest.json     modified  +456   -314
+docs/gpt_verification/verification_manifest_round2.json added     +337   -0
+docs/gpt_verification/verification_prompt.md         modified  +10286 -4404
+docs/v2_inventory.txt                                modified  +45    -24
+tests/test_apply_patch_attack.py                     modified  +23    -5
+tests/test_remediation.py                            modified  +22    -19
+tests/test_review2.py                                modified  +30    -14
+tests/test_review3.py                                added     +793   -0
+tests/test_service.py                                modified  +3     -1
+tools/apply_patch_attack_test.py                     modified  +233   -33
+tools/make_remediation_diff.py                       modified  +6     -0
+tools/make_telemetry_examples.py                     modified  +18    -0
+tools/make_verification_prompt.py                    modified  +251   -151
+tools/privacy.py                                     added     +36    -0
+tools/record_evidence.py                             modified  +187   -11

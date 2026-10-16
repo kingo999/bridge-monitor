@@ -1,0 +1,340 @@
+{
+  "declared_guards": [
+    "tests.test_review5.Also_TestSuiteHygiene.test_no_bare_git_launch_remains_in_any_tool_or_test",
+    "tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_a_directory_that_merely_holds_locks_is_not_an_established_registry",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_a_pure_thread_debt_record_is_still_removed_by_reset",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_genuine_attributed_writes_are_recognised",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_the_request_itself_is_still_not_evidence",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_unbounded_whitespace_cannot_make_the_scan_quadratic",
+    "tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_an_escaped_cr_is_still_a_cr"
+  ],
+  "evidence_class": "implementer_executed",
+  "expected_tests": 50,
+  "fail_or_error_on_prefix": 43,
+  "failure_kind_by_test": {
+    "tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_a_truncated_capture_is_not_a_complete_readout": "assertion",
+    "tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_allowed_servers_enabled_only_in_the_discovery_list_are_still_accumulated": "assertion",
+    "tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_mcp_listing_fails_closed_on_an_incomplete_capture": "api_missing",
+    "tests.test_review5.Also_UnchangedFilesAreListedNotRepeated.test_a_file_identical_to_the_verified_snapshot_is_hash_listed_unless_the_review_asked_for_it": "assertion",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_a_consistent_record_is_accepted": "api_missing",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_api_errors_are_kept_distinct_from_assertions": "api_missing",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_each_break_in_the_chain_is_rejected": "api_missing",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_the_gate_accounts_for_each_test_not_just_the_footer": "assertion",
+    "tests.test_review5.S11_NoExecutionRefusalsShareOneGuardedCleanup.test_a_cleanup_that_fails_completely_is_reported_and_does_not_replace_the_refusal": "assertion",
+    "tests.test_review5.S11_NoExecutionRefusalsShareOneGuardedCleanup.test_spawn_refusal_survives_a_marker_that_cannot_be_deleted": "assertion",
+    "tests.test_review5.S12_ErrorExitsCarryTheRecordedWarnings.test_an_unexpected_server_and_a_failing_turn_are_both_visible": "assertion",
+    "tests.test_review5.S12_ErrorExitsCarryTheRecordedWarnings.test_the_warning_block_appears_exactly_when_warnings_were_recorded": "assertion",
+    "tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_loss_after_a_single_successful_call_is_refused": "assertion",
+    "tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_the_lifecycle_journal_is_a_second_witness": "assertion",
+    "tests.test_review5.S14_TheSenderUsesThePackagesValidityPredicate.test_completion_and_an_answer_are_not_enough": "assertion",
+    "tests.test_review5.S14_TheSenderUsesThePackagesValidityPredicate.test_it_refuses_without_the_allowance_acknowledgement": "assertion",
+    "tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_forgotten_state_not_saved_code_is_not_hidden_by_a_real_persistence_banner": "assertion",
+    "tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_probe_failure_reports_a_retained_flag_too": "assertion",
+    "tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_retained_maintenance_flag_is_reported_when_the_action_raises": "assertion",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_a_settlement_that_cannot_be_persisted_is_reported": "assertion",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_adopt_keeps_a_raw_running_record_and_the_session_stays_blocked": "assertion",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_reset_keeps_a_raw_running_record_and_the_session_stays_blocked": "assertion",
+    "tests.test_review5.S2_ASettledDispositionStaysSettled.test_a_previously_bound_uncertain_call_is_not_rederived_after_the_pointer_is_retired": "assertion",
+    "tests.test_review5.S2_ASettledDispositionStaysSettled.test_reset_of_an_uncertain_fresh_call_is_not_rederived_by_reconcile": "assertion",
+    "tests.test_review5.S2_ASettledDispositionStaysSettled.test_thread_debt_honours_a_recorded_settlement_only_for_that_thread": "assertion",
+    "tests.test_review5.S3_ThePrimaryWriteIsCheckedBeforeMirroring.test_an_unpersisted_uncertainty_is_never_mirrored_into_a_pending_marker": "assertion",
+    "tests.test_review5.S3_ThePrimaryWriteIsCheckedBeforeMirroring.test_reset_after_an_unpersisted_conversion_cannot_make_the_call_runnable": "assertion",
+    "tests.test_review5.S4_AReaderThatDidNotFinishIsIncompleteEvidence.test_a_reader_still_alive_after_its_join_withholds_the_answer": "assertion",
+    "tests.test_review5.S4_AReaderThatDidNotFinishIsIncompleteEvidence.test_turn_problems_names_every_reason_a_review_cannot_be_relied_on": "assertion",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_command_that_supplies_the_refusal_wording_itself_proves_nothing": "assertion",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_printed_refusal_is_not_a_blocked_write": "assertion",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_read_that_is_denied_is_not_a_denied_write": "assertion",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_printing_a_command_and_a_hash_is_not_a_control": "assertion",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_wrappers_with_logic_or_several_calls_are_not_attributed": "assertion",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_json_whitespace_escapes_in_an_oversized_line_are_resolved": "assertion",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_request_named_keys_inside_returned_output_are_scanned": "assertion",
+    "tests.test_review5.S7_SystemToolsFailClosed.test_kill_tree_never_launches_a_path_built_from_the_environment": "assertion",
+    "tests.test_review5.S7_SystemToolsFailClosed.test_no_environment_fallback_when_the_os_query_fails": "assertion",
+    "tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_a_raw_carriage_return_inside_a_quoted_string_is_not_attested": "assertion",
+    "tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_reserved_words_cannot_be_binding_identifiers": "assertion",
+    "tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_a_test_that_rewrites_a_staged_module_invalidates_the_record": "api_missing",
+    "tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_an_unmodified_stage_records_equal_fingerprints_and_read_only_files": "api_missing",
+    "tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_run_problems_rejects_a_staged_copy_that_changed": "api_missing"
+  },
+  "failure_kinds": {
+    "api_missing": 7,
+    "assertion": 36,
+    "behavioural_error": 0
+  },
+  "loader_errors": [],
+  "module": "tests.test_review5",
+  "outcomes": {
+    "tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_a_truncated_capture_is_not_a_complete_readout": "fail",
+    "tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_allowed_servers_enabled_only_in_the_discovery_list_are_still_accumulated": "fail",
+    "tests.test_review5.Also_CompletenessOfConfigurationReadouts.test_mcp_listing_fails_closed_on_an_incomplete_capture": "error",
+    "tests.test_review5.Also_TestSuiteHygiene.test_no_bare_git_launch_remains_in_any_tool_or_test": "pass",
+    "tests.test_review5.Also_UnchangedFilesAreListedNotRepeated.test_a_file_identical_to_the_verified_snapshot_is_hash_listed_unless_the_review_asked_for_it": "fail",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_a_consistent_record_is_accepted": "error",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_api_errors_are_kept_distinct_from_assertions": "error",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_each_break_in_the_chain_is_rejected": "error",
+    "tests.test_review5.S10_PrefixEvidenceIsCheckableEndToEnd.test_the_gate_accounts_for_each_test_not_just_the_footer": "fail",
+    "tests.test_review5.S11_NoExecutionRefusalsShareOneGuardedCleanup.test_a_cleanup_that_fails_completely_is_reported_and_does_not_replace_the_refusal": "fail",
+    "tests.test_review5.S11_NoExecutionRefusalsShareOneGuardedCleanup.test_spawn_refusal_survives_a_marker_that_cannot_be_deleted": "fail",
+    "tests.test_review5.S12_ErrorExitsCarryTheRecordedWarnings.test_an_unexpected_server_and_a_failing_turn_are_both_visible": "fail",
+    "tests.test_review5.S12_ErrorExitsCarryTheRecordedWarnings.test_the_warning_block_appears_exactly_when_warnings_were_recorded": "fail",
+    "tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_a_directory_that_merely_holds_locks_is_not_an_established_registry": "pass",
+    "tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_loss_after_a_single_successful_call_is_refused": "fail",
+    "tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_the_lifecycle_journal_is_a_second_witness": "fail",
+    "tests.test_review5.S14_TheSenderUsesThePackagesValidityPredicate.test_completion_and_an_answer_are_not_enough": "fail",
+    "tests.test_review5.S14_TheSenderUsesThePackagesValidityPredicate.test_it_refuses_without_the_allowance_acknowledgement": "fail",
+    "tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_forgotten_state_not_saved_code_is_not_hidden_by_a_real_persistence_banner": "fail",
+    "tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_probe_failure_reports_a_retained_flag_too": "fail",
+    "tests.test_review5.S15_ExactBannersAndFlagReporting.test_a_retained_maintenance_flag_is_reported_when_the_action_raises": "fail",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_a_pure_thread_debt_record_is_still_removed_by_reset": "pass",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_a_settlement_that_cannot_be_persisted_is_reported": "fail",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_adopt_keeps_a_raw_running_record_and_the_session_stays_blocked": "fail",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_reset_keeps_a_raw_running_record_and_the_session_stays_blocked": "fail",
+    "tests.test_review5.S2_ASettledDispositionStaysSettled.test_a_previously_bound_uncertain_call_is_not_rederived_after_the_pointer_is_retired": "fail",
+    "tests.test_review5.S2_ASettledDispositionStaysSettled.test_reset_of_an_uncertain_fresh_call_is_not_rederived_by_reconcile": "fail",
+    "tests.test_review5.S2_ASettledDispositionStaysSettled.test_thread_debt_honours_a_recorded_settlement_only_for_that_thread": "fail",
+    "tests.test_review5.S3_ThePrimaryWriteIsCheckedBeforeMirroring.test_an_unpersisted_uncertainty_is_never_mirrored_into_a_pending_marker": "fail",
+    "tests.test_review5.S3_ThePrimaryWriteIsCheckedBeforeMirroring.test_reset_after_an_unpersisted_conversion_cannot_make_the_call_runnable": "fail",
+    "tests.test_review5.S4_AReaderThatDidNotFinishIsIncompleteEvidence.test_a_reader_still_alive_after_its_join_withholds_the_answer": "fail",
+    "tests.test_review5.S4_AReaderThatDidNotFinishIsIncompleteEvidence.test_turn_problems_names_every_reason_a_review_cannot_be_relied_on": "fail",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_command_that_supplies_the_refusal_wording_itself_proves_nothing": "fail",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_printed_refusal_is_not_a_blocked_write": "fail",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_a_read_that_is_denied_is_not_a_denied_write": "fail",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_genuine_attributed_writes_are_recognised": "pass",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_printing_a_command_and_a_hash_is_not_a_control": "fail",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_wrappers_with_logic_or_several_calls_are_not_attributed": "fail",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_json_whitespace_escapes_in_an_oversized_line_are_resolved": "fail",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_request_named_keys_inside_returned_output_are_scanned": "fail",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_the_request_itself_is_still_not_evidence": "pass",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_unbounded_whitespace_cannot_make_the_scan_quadratic": "pass",
+    "tests.test_review5.S7_SystemToolsFailClosed.test_kill_tree_never_launches_a_path_built_from_the_environment": "fail",
+    "tests.test_review5.S7_SystemToolsFailClosed.test_no_environment_fallback_when_the_os_query_fails": "fail",
+    "tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_a_raw_carriage_return_inside_a_quoted_string_is_not_attested": "fail",
+    "tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_an_escaped_cr_is_still_a_cr": "pass",
+    "tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_reserved_words_cannot_be_binding_identifiers": "fail",
+    "tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_a_test_that_rewrites_a_staged_module_invalidates_the_record": "error",
+    "tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_an_unmodified_stage_records_equal_fingerprints_and_read_only_files": "error",
+    "tests.test_review5.S9_StagedExecutionIsFingerprintedAfterTheRun.test_run_problems_rejects_a_staged_copy_that_changed": "error"
+  },
+  "overlay": [
+    {
+      "origin": "snapshot",
+      "path": "architect_bridge.py",
+      "sha256": "1c96f21e8060ffc56376b36350334b0e2347fb9c9145a759e00c7eb171a106c8"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/__init__.py",
+      "sha256": "9fd4de9f72e0afe11028c6ade1883faed6aaad3d24ecc666c01319df7030daad"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/admin.py",
+      "sha256": "e91749748f8d515997aedbd72403a3967c6cd4f57dbc7f406aeb0cc3b047db37"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/codexcli.py",
+      "sha256": "473c5adc3ff3b37350a3bba1d4ace91989a5f96c591207bc9ab861282d1661bd"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/config.py",
+      "sha256": "bba7969789e0a922a950aedb19ffb30fb7900d7a7f69d53f4bd4462198aa7bee"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/errors.py",
+      "sha256": "c461cf6f02b7d9ea4ae4090ad2ea4f1a0a12212041b3a41ad0947f36a253833c"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/execpath.py",
+      "sha256": "95f495d0fa93facc1064990178b1a30dcf1221c49189561f298813932bca8535"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/fingerprint.py",
+      "sha256": "cf08b9070fdeb965c285ee101f4ebc133c36bac5b2b424487478a6a7443cca63"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/gitsafe.py",
+      "sha256": "d57d1e0fd3ff7720a8b775e82dd6a0f1c00e99ccb541988040337658605dec5e"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/ids.py",
+      "sha256": "0250a796c8f8bc7749702ca5c6cf57460155d2f88d9dc458e5313a3948628ebf"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/jobobject.py",
+      "sha256": "bd06f34d8668e659c0a24db3e34bb97969dda0f4173044114cef14ad52e4cf00"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/redact.py",
+      "sha256": "a67a964840010ebfd21d0d9cebaf8bc30cdeaf32c040b923ffdbb34b85a27b6f"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/runner.py",
+      "sha256": "8818ebd9f8c9363dca3100341131338c6d5e6cfb8adc0d930f030283e7494d88"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/server.py",
+      "sha256": "30f513f8f8c484d3e07da396ae73ed092cc51e6a42382d12f9c4df704ee633dc"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/service.py",
+      "sha256": "d141ea8efd265c9a93c15d79d598c7269e28ff226e33a343d4d9d70ecf59a14a"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/state.py",
+      "sha256": "bf1c9b6a3fd4648fc8b404b127d252fb6017a939e62d894edbb2bb0f19becccb"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge/telemetry.py",
+      "sha256": "88e7494d70650964fa72e4b9fcb3d0450636613df5ac0d886d8fd1c0bf543247"
+    },
+    {
+      "origin": "snapshot",
+      "path": "bridge_admin.py",
+      "sha256": "2f1338751465367a9cb144912145d257a865e204588b73a057678c8184e8ac44"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/fake_codex.py",
+      "sha256": "abaf1f818738fea963ac87b5aae8d3d10bff2c0e7bcab6bd840cab77c44b1165"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/hard_kill_helper.py",
+      "sha256": "fb1f90d06760b48a3279449e8448f63b3cd6b6b728ded6780ad30920c4efb15c"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/helpers.py",
+      "sha256": "e438c78ab8ec3f7ef964588a3369b636b59cf422fb3a5d7d5a680197950e0b24"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/test_review5.py",
+      "sha256": "d5c1e567fcac415f1fc781d3469460dd6d19fd673d170483ba4e421e0493749b"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/apply_patch_attack_test.py",
+      "sha256": "020ff6fe07a7449c7d92a9e0466d31a71059919c0f9c202e12e8baf210c3f977"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/capture_v1_fixtures.py",
+      "sha256": "cfd5c4e820283934fd3f6286baa37b1eea644115e7f7f9525aa4ceafa7db88f8"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/live_smoke_test.py",
+      "sha256": "57072304c576eaad09c26dbe8a3e95a0c9c1d881d5f2dc230d66d0d41aa88fd9"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_lock.py",
+      "sha256": "ad7504b76444308e0d3847f72860cf5655dde45ed676795374f685f008ee7ffb"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_remediation_diff.py",
+      "sha256": "14ec02971a969b2fdcbe0a7860dec6d3e9f201cc1b6e6b5c77546774a719c3f9"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_telemetry_examples.py",
+      "sha256": "5e6855533be9953f95bd3848c7f3747ee88d52cf0b17917f6ae8c98f7569c575"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_v1_diff.py",
+      "sha256": "b4b07b1bf96c6c73aa647669b403852312fb47832346d52b05c5cea8193f3f11"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/make_verification_prompt.py",
+      "sha256": "283c2caacb739d5a5cc5ad8e69e5ecc38a7c762170afcbe59087498ea03f83dc"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/prefix_check.py",
+      "sha256": "4cc97932d6bbf674ca81af9e6e6bb8d82ed6661d5a58c850bc2f18217f563105"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/privacy.py",
+      "sha256": "c76c934089b7222cbb4a1d9b7c926bbdca6a955941417beeeaee9b3dfd392aad"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/record_evidence.py",
+      "sha256": "6b9a159a7a6cbe543d47cf076d67829b9f9663daa5698d03090349b8fbbeb72a"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/smoke_oracles.py",
+      "sha256": "58dd5a80bab02c93c203e3486af2db8bf33552620afb81f2426847d1ac569dd4"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/v1_manifest.py",
+      "sha256": "fc8d1a8916f2d56d54871a026816879c20f457dd79c31c2020f545a212671058"
+    },
+    {
+      "origin": "snapshot",
+      "path": "tools/verify_lock.py",
+      "sha256": "20ccb4187adc60935e9f10f4f76b33243632925b81e5bf1530a60a32873c17cf"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/fixtures/v1_subprocess_behavior.json",
+      "sha256": "7261b55c79040ca19293f22924a3e7c93e1843691ceceb44d6cfd467827c6842"
+    },
+    {
+      "origin": "current_tree",
+      "path": "tests/fixtures/v1_tool_schemas.json",
+      "sha256": "8e33cbc6123b1d5ab008f0ed806f2d2889e68e9c9603063251957440385a0b21"
+    }
+  ],
+  "overlay_problems": [],
+  "pass_on_prefix": [
+    "tests.test_review5.Also_TestSuiteHygiene.test_no_bare_git_launch_remains_in_any_tool_or_test",
+    "tests.test_review5.S13_OneCallRegistryLossIsStillLoss.test_a_directory_that_merely_holds_locks_is_not_an_established_registry",
+    "tests.test_review5.S1_DispositionCommandsNeverSettleProcessFacts.test_a_pure_thread_debt_record_is_still_removed_by_reset",
+    "tests.test_review5.S5_OraclesAttributeOperationsNotText.test_genuine_attributed_writes_are_recognised",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_the_request_itself_is_still_not_evidence",
+    "tests.test_review5.S6_OutputScanningHasNoSilentBlindSpots.test_unbounded_whitespace_cannot_make_the_scan_quadratic",
+    "tests.test_review5.S8_WrapperGrammarRejectsInvalidJavaScript.test_an_escaped_cr_is_still_a_cr"
+  ],
+  "raw_log": "prefix_check.log",
+  "raw_log_sha256": "d1a87229b88904e4119e44a8da95f7a27605688866ecd70742cbf1256ad1edfe",
+  "seconds": 30.5,
+  "skipped": [],
+  "snapshot": ".baseline_post_remediation4",
+  "snapshot_manifest_combined_sha256_all_files": "bffeffd9d9b922903be0d8b56b78f13f8e21c4c70daf0fe1b63577230af76499",
+  "source_combined_sha256": "f68b192cba158e44b104cc823789e9f2a821f170b4c8b0417e36eacb1fb7467a",
+  "tests": 50,
+  "undeclared_passes": [],
+  "what": "the round's new tests run against the PRE-FIX source (overlay described in tools/prefix_check.py)"
+}

@@ -1,0 +1,11 @@
+{
+  "raw_body_matches_parsed_data": true,
+  "raw_digest_matches_witness": true,
+  "normalized_digest_matches_witness": true,
+  "returned_source_matches_witness": true,
+  "candidate_exact_utf8_match": true,
+  "packet_hash_matches_request": true,
+  "raw_model_response_fenced": true,
+  "registered_not_replayed": true,
+  "candidate_sha256": "2b515cd59feeb13bb6ffac0f9fca12cb18c68e3c8a3d9d136d3bafc7c7a46525"
+}

@@ -1,0 +1,10 @@
+test_busy_resident_model_or_metadata_drift_never_generates (tests.test_local_worker_generation.Generation.test_busy_resident_model_or_metadata_drift_never_generates) ... ok
+test_malformed_length_clarification_and_metric_failures (tests.test_local_worker_generation.Generation.test_malformed_length_clarification_and_metric_failures) ... ok
+test_one_post_with_full_audit_and_idempotent_replay (tests.test_local_worker_generation.Generation.test_one_post_with_full_audit_and_idempotent_replay) ... ok
+test_prompt_count_contradiction_blocks_following_task (tests.test_local_worker_generation.Generation.test_prompt_count_contradiction_blocks_following_task) ... ok
+test_timeout_keeps_uncertainty_across_restart (tests.test_local_worker_generation.Generation.test_timeout_keeps_uncertainty_across_restart) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 9.993s
+
+OK

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "action": "record_validation",
+  "worker_id": "LOCAL-00",
+  "state": "incomplete_error",
+  "code": "supervisor_corrected",
+  "explanation": "",
+  "availability": "unavailable",
+  "coordination": "idle",
+  "validation": "unverifiable",
+  "next_actions": [],
+  "task_id": "local00-pilot-20261015-01",
+  "packet_hash": "50c1ee7e65fc75eddae0af01534b55955abbc529a9c8b2814fd541970b454145",
+  "request_id": "837b0975d4f847678ddf7a105777912f",
+  "attempt": 1,
+  "endpoint": "http://skynet.local:11434",
+  "peer_ip": "192.168.0.78",
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+  "result_digest": "5dd487709aa17294d4916d8855dc6c5283dd3a12cc7dc10f741fd856851a8e1f",
+  "response": "NEEDS_CONTEXT: What is the expected behavior of the `stable_unique` function when encountering non-integer values in the input list?",
+  "done": true,
+  "done_reason": "stop",
+  "metrics": {
+    "eval_count": 29,
+    "eval_duration": 432164000,
+    "eval_duration_s": 0.432164,
+    "load_duration": 22151313752,
+    "load_duration_s": 22.151313752,
+    "prompt_eval_cached_count": null,
+    "prompt_eval_count": 258,
+    "prompt_eval_duration": 185633000,
+    "prompt_eval_duration_s": 0.185633,
+    "total_duration": 22772959227,
+    "total_duration_s": 22.772959227
+  },
+  "timings": {
+    "client_elapsed_s": 23.453510999999708
+  },
+  "audit_refs": [
+    "audit/837b0975d4f847678ddf7a105777912f/request.json",
+    "audit/837b0975d4f847678ddf7a105777912f/response.json"
+  ],
+  "replayed_from_ledger": false,
+  "needs_context": true,
+  "evidence_origin": "supervisor_reported"
+}

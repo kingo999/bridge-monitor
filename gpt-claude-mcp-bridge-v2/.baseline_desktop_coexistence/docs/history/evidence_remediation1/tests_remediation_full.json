@@ -1,0 +1,26 @@
+{
+  "command": "python -B -m unittest discover -s tests -t . -v   (cwd = v2 root, venv python)",
+  "environment": {
+    "codex_cli_version": "0.162.1",
+    "codex_launcher": "node-script",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "python": "3.13.7",
+    "recorded_at": "2026-10-12T13:55:02Z",
+    "sandbox_backend": "elevated",
+    "sandbox_provisioning_at_record_time": "failed"
+  },
+  "evidence_class": "independently_verified",
+  "exit_code": 0,
+  "failing": [],
+  "limits": [
+    "fake CLI: event/tool shapes are fixtures, not captured live output",
+    "no live model call; no live sandbox behaviour is tested here",
+    "real-process tests (job object, tree kill, locks) run on this Windows machine only"
+  ],
+  "outcome": "OK",
+  "seconds": 233.169,
+  "skipped": 0,
+  "source_combined_sha256": "e2273c3d98b4f8fd2904138f02743bf3feeefc23b30b736250a27dd078fbde0e",
+  "tests_run": 162,
+  "what": "automated suite against the scripted fake Codex CLI (no model call, no subscription use)"
+}

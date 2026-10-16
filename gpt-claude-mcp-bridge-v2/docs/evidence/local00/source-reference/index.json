@@ -1,0 +1,27 @@
+[
+  {
+    "path": "tokenizer/bytepairencoding.go",
+    "revision": "0f047feef52c0c0d62c715cce94d7cac7c2a854b",
+    "sha256": "ce29b6bd35c71e27db7a800bfe9fdc767e35ce6a952e1e1a33e33fbabe152738"
+  },
+  {
+    "path": "x/tokenizer/tokenizer_bpe.go",
+    "revision": "0f047feef52c0c0d62c715cce94d7cac7c2a854b",
+    "sha256": "2b471f7ba3ec7f3366939f656b1fc4ea6c8ad214ea1922d4aed7aba0060bf795"
+  },
+  {
+    "path": "x/tokenizer/tokenizer_encode.go",
+    "revision": "0f047feef52c0c0d62c715cce94d7cac7c2a854b",
+    "sha256": "c616447bd4b3789c8df0e4342d3814acaa46e4107049a4a7202589abc8b52b6f"
+  },
+  {
+    "path": "server/prompt.go",
+    "revision": "0f047feef52c0c0d62c715cce94d7cac7c2a854b",
+    "sha256": "9048e83429878df6b76afeefbf7f4f9fe463726f4f0e90cad41f0e6f2da7437c"
+  },
+  {
+    "path": "template/template.go",
+    "revision": "0f047feef52c0c0d62c715cce94d7cac7c2a854b",
+    "sha256": "1d835d35f553441bd060c76270d50437f3e92be340ec5921e187ba4caab40008"
+  }
+]

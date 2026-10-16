@@ -1,0 +1,2130 @@
+--- baseline/bridge/admin.py
++++ bridge/admin.py
+@@ -644,6 +644,8 @@
+     parser = argparse.ArgumentParser(prog="bridge_admin.py", description=__doc__,
+                                      formatter_class=argparse.RawDescriptionHelpFormatter)
+     sub = parser.add_subparsers(dest="command", required=True)
++    from .local_worker.admin import register_local_worker_commands
++    register_local_worker_commands(sub)
+ 
+     def common(p: argparse.ArgumentParser) -> None:
+         p.add_argument("--repo", help="repository root (default: CLAUDE_PROJECT_DIR or cwd)")
+--- baseline/bridge/local_worker/__init__.py
++++ bridge/local_worker/__init__.py
+@@ -0,0 +1 @@
++"""Optional supervised LOCAL-00 worker. Importing this package performs no I/O."""
+--- baseline/bridge/local_worker/_baseline.py
++++ bridge/local_worker/_baseline.py
+@@ -0,0 +1,4 @@
++"""Reviewed installed baseline metadata; no dynamic download or alternate template."""
++METADATA = {'template': '{{- if .Suffix }}<|fim_prefix|>{{ .Prompt }}<|fim_suffix|>{{ .Suffix }}<|fim_middle|>\n{{- else if .Messages }}\n{{- if or .System .Tools }}<|im_start|>system\n{{- if .System }}\n{{ .System }}\n{{- end }}\n{{- if .Tools }}\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools>:\n<tools>\n{{- range .Tools }}\n{"type": "function", "function": {{ .Function }}}\n{{- end }}\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> with NO other text. Do not include any backticks or ```json.\n<tool_call>\n{"name": <function-name>, "arguments": <args-json-object>}\n</tool_call>\n{{- end }}<|im_end|>\n{{ end }}\n{{- range $i, $_ := .Messages }}\n{{- $last := eq (len (slice $.Messages $i)) 1 -}}\n{{- if eq .Role "user" }}<|im_start|>user\n{{ .Content }}<|im_end|>\n{{ else if eq .Role "assistant" }}<|im_start|>assistant\n{{ if .Content }}{{ .Content }}\n{{- else if .ToolCalls }}<tool_call>\n{{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}\n{{ end }}</tool_call>\n{{- end }}{{ if not $last }}<|im_end|>\n{{ end }}\n{{- else if eq .Role "tool" }}<|im_start|>user\n<tool_response>\n{{ .Content }}\n</tool_response><|im_end|>\n{{ end }}\n{{- if and (ne .Role "assistant") $last }}<|im_start|>assistant\n{{ end }}\n{{- end }}\n{{- else }}\n{{- if .System }}<|im_start|>system\n{{ .System }}<|im_end|>\n{{ end }}{{ if .Prompt }}<|im_start|>user\n{{ .Prompt }}<|im_end|>\n{{ end }}<|im_start|>assistant\n{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}', 'system': 'You are Qwen, created by Alibaba Cloud. You are a helpful assistant.', 'messages': [], 'capabilities': ['completion', 'tools', 'insert'], 'model_info': {'tokenizer.ggml.model': 'gpt2', 'tokenizer.ggml.pre': 'qwen2', 'tokenizer.ggml.add_bos_token': False, 'tokenizer.ggml.bos_token_id': 151643, 'tokenizer.ggml.eos_token_id': 151645}}
++VERSION = '0.30.9'
++REVISION = "0f047feef52c0c0d62c715cce94d7cac7c2a854b"
+--- baseline/bridge/local_worker/admin.py
++++ bridge/local_worker/admin.py
+@@ -0,0 +1,59 @@
++"""Local operator commands; no recovery authority is exposed over MCP."""
++import asyncio
++import json
++from .models import WorkerError,ReconnectRequest
++from .service import WorkerService
++
++
++def cmd_local_status(args,env):
++    try:
++        result=WorkerService(env).status()
++        print(result.model_dump_json(indent=2) if args.json else f'{result.availability}; {result.coordination}; {result.code}')
++        return 0
++    except (WorkerError,OSError,ValueError):
++        print('LOCAL-00 state unavailable; normal v2 architect workflow remains available.')
++        return 1
++
++
++def cmd_local_reconnect(args,env):
++    async def run():
++        service=WorkerService(env)
++        try:return await service.handle(ReconnectRequest(action='reconnect',address=args.address))
++        finally:await service.aclose()
++    result=asyncio.run(run())
++    print(result.model_dump_json(indent=2))
++    return 0 if result.availability=='available' else 1
++
++
++def cmd_local_resolve_uncertain(args,env):
++    if not args.confirmed_idle or not args.reason.strip() or not args.evidence_ref.strip():
++        print('Requires --confirmed-idle plus operator reason/evidence that the earlier server request ended.')
++        return 2
++    if len(args.request_id)!=32 or any(ch not in '0123456789abcdef' for ch in args.request_id):return 2
++    service=WorkerService(env)
++    try:
++        with service.store.try_lock():
++            if service.store.active() is None:
++                path=service.store.path(f'resolutions/{args.request_id}.json')
++                if path.exists():
++                    previous=service.store.read(f'resolutions/{args.request_id}.json',16384)
++                    if previous.get('reason')==args.reason and previous.get('evidence_ref')==args.evidence_ref:
++                        print('Resolution already recorded; no inference replayed.');return 0
++                raise WorkerError('request_conflict')
++            service.store.resolve_uncertain(args.request_id,True,args.reason,args.evidence_ref)
++        print('Uncertain request retired using operator confirmation; no inference replayed.')
++        return 0
++    except (WorkerError,OSError,ValueError):
++        print('LOCAL-00 recovery refused; inspect status and the exact pending request.')
++        return 1
++
++
++def register_local_worker_commands(subparsers):
++    group=subparsers.add_parser('local-worker',help='optional LOCAL-00 status, reconnect and deliberate recovery')
++    commands=group.add_subparsers(dest='local_command',required=True)
++    p=commands.add_parser('status');p.add_argument('--json',action='store_true');p.set_defaults(func=cmd_local_status)
++    p=commands.add_parser('reconnect');p.add_argument('--address');p.set_defaults(func=cmd_local_reconnect)
++    p=commands.add_parser('resolve-uncertain')
++    p.add_argument('--request-id',required=True);p.add_argument('--confirmed-idle',action='store_true')
++    p.add_argument('--reason',required=True);p.add_argument('--evidence-ref',required=True)
++    p.set_defaults(func=cmd_local_resolve_uncertain)
+--- baseline/bridge/local_worker/audit.py
++++ bridge/local_worker/audit.py
+@@ -0,0 +1,22 @@
++"""Approved content audit, kept separate from content-free architect telemetry."""
++from .models import WorkerError
++from ..state import utc_now
++
++
++class AuditWriter:
++    def __init__(self,store):self.store=store
++
++    def write_request(self,request_id,request,packet,prepared):
++        if not packet.approval.audit_content_approved:raise WorkerError('audit_approval_required')
++        path=f'audit/{request_id}/request.json'
++        self.store.write(path,{'schema_version':1,'created_at':utc_now(),'request':request,
++            'packet':packet.model_dump(mode='json'),'prepared':prepared.model_dump(mode='json')})
++        return path
++
++    def write_response(self,request_id,outcome):
++        path=f'audit/{request_id}/response.json'
++        self.store.write(path,{'schema_version':1,'received_at':utc_now(),'transport':outcome.model_dump(mode='json')})
++        return path
++
++    def write_metadata(self,request_id,metadata):
++        self.store.write(f'audit/{request_id}/metadata.json',{'schema_version':1,'recorded_at':utc_now(),**metadata})
+--- baseline/bridge/local_worker/generation.py
++++ bridge/local_worker/generation.py
+@@ -0,0 +1,145 @@
++"""One locked, audited POST; uncertain delivery never becomes an automatic retry."""
++from __future__ import annotations
++import asyncio
++from concurrent.futures import ThreadPoolExecutor
++from functools import partial
++import time
++import uuid
++from .models import *
++from .settings import MODEL,DIGEST,PROFILE,load_worker_settings
++from .prompts import PromptBudgeter,baseline_proof,verify_baseline
++from .audit import AuditWriter
++from .service import check_tags
++
++METRICS=('prompt_eval_count','eval_count','prompt_eval_cached_count','total_duration','load_duration','prompt_eval_duration','eval_duration')
++
++
++def completed_draft(data,prepared):
++    if not isinstance(data,dict):raise WorkerError('completion_incomplete')
++    for key in METRICS:
++        value=data.get(key)
++        if value is not None and (type(value) is not int or value<0):raise WorkerError('metrics_invalid')
++    if data.get('prompt_eval_count') is None:raise WorkerError('prompt_count_missing')
++    if data['prompt_eval_count']>prepared.upper_bound:raise WorkerError('prompt_budget_contradiction')
++    if data.get('model')!=MODEL or data.get('done') is not True or data.get('done_reason')!='stop' or not isinstance(data.get('response'),str) or not data['response'].strip():
++        raise WorkerError('completion_incomplete')
++    if data['response'].lstrip().startswith('NEEDS_CONTEXT:'):raise WorkerError('worker_clarification')
++
++
++class GenerationRunner:
++    def __init__(self,store,transport,budgeter=None,audit=None):
++        self.store=store;self.transport=transport
++        self.budgeter=budgeter or PromptBudgeter();self.audit=audit or AuditWriter(store)
++
++    async def run(self,request,endpoint,proof=None):
++        started=time.monotonic();request_id=uuid.uuid4().hex
++        executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='local00-store')
++        loop=asyncio.get_running_loop();lease=None;acquired=False;begun=False;post_possible=False;terminal=False;validated=False
++        refs=[];outcome=None;prepared=None
++        result=LocalWorkerResult(action='generate',state='unavailable',code='not_started',task_id=request.packet.task_id,
++            packet_hash=canonical_packet_hash(request.packet),request_id=request_id,attempt=request.attempt,endpoint=endpoint.base_url,model=MODEL)
++
++        async def io(fn,*args):
++            future=loop.run_in_executor(executor,partial(fn,*args))
++            try:return await asyncio.shield(future)
++            except asyncio.CancelledError:
++                await asyncio.shield(future)
++                raise
++
++        async def exchange(path,method='GET',body=None,timeout=5.0,limit=1048576):
++            return await self.transport.exchange(TransportRequest(endpoint=endpoint,method=method,path=path,body=body,timeout_s=timeout,max_bytes=limit))
++
++        try:
++            proof=proof or baseline_proof()
++            # A preliminary bound runs before the lease; retry preparation adds recorded feedback below.
++            self.budgeter.prepare(request.packet,proof)
++            lease=self.store.try_lock();await io(lease.__enter__);acquired=True
++            settings=await io(load_worker_settings,self.store.root)
++            task=await io(self.store.read_task,request.packet.task_id)
++            if task:
++                if task.packet_hash!=result.packet_hash:raise WorkerError('task_conflict')
++                previous=task.attempts.get(str(request.attempt))
++                if previous:
++                    if previous.result is not None:
++                        return previous.result.model_copy(update={'replayed_from_ledger':True})
++                    raise WorkerError('attempt_incomplete')
++            if await io(self.store.active):raise WorkerError('worker_uncertain')
++            snapshot=await io(self.store.read_snapshot)
++            if snapshot.budget_block:raise WorkerError('budget_blocked')
++            feedback=None;prior=None
++            if request.attempt==2 or (task and task.validations):
++                from .validation import retry_feedback
++                feedback=retry_feedback(task,request)
++                if feedback:prior=task.attempts['1'].result.response
++            prepared=self.budgeter.prepare(request.packet,proof,feedback,prior)
++            tags=await exchange('/api/tags',timeout=settings.discovery_timeout_s)
++            check_tags(tags);validated=True;result.digest=DIGEST;result.peer_ip=tags.peer_ip
++            version=await exchange('/api/version',timeout=settings.discovery_timeout_s)
++            metadata=await exchange('/api/show','POST',{'model':MODEL},settings.discovery_timeout_s)
++            if version.status!=200 or version.code!='ok' or metadata.status!=200 or metadata.code!='ok':raise WorkerError('budget_unverifiable')
++            current_proof=verify_baseline(metadata.data,version.data.get('version'))
++            if current_proof!=proof:raise WorkerError('budget_unverifiable')
++            prepared=self.budgeter.prepare(request.packet,current_proof,feedback,prior)
++            resident=await exchange('/api/ps',timeout=settings.discovery_timeout_s)
++            rows=resident.data.get('models') if resident.data else None
++            if resident.status!=200 or resident.code!='ok' or not isinstance(rows,list) or any(not isinstance(row,dict) for row in rows):raise WorkerError('resident_models_invalid')
++            if any(row.get('name')!=MODEL or row.get('digest')!=DIGEST for row in rows):raise WorkerError('resident_model_busy')
++            wire={**PROFILE,'options':dict(PROFILE['options']),'prompt':prepared.text}
++            await io(self.store.begin_attempt,request,prepared,request_id);begun=True
++            refs.append(await io(self.audit.write_request,request_id,wire,request.packet,prepared))
++            check_elapsed=time.monotonic()-started
++            post_possible=True
++            outcome=await exchange('/api/generate','POST',wire,settings.generation_timeout_s,4194304)
++            refs.append(await io(self.audit.write_response,request_id,outcome))
++            terminal=outcome.phase=='terminal_received' and outcome.data is not None and outcome.data.get('done') is True
++            if outcome.code!='ok' or outcome.status!=200:
++                raise WorkerError(outcome.code if outcome.code!='ok' else 'generation_http_error')
++            data=outcome.data or {}
++            # Preserve completed response and metrics even when semantic/format checks reject it.
++            result.peer_ip=outcome.peer_ip
++            if isinstance(data.get('response'),str):result.response=data['response']
++            result.done=data.get('done') if type(data.get('done')) is bool else None
++            result.done_reason=data.get('done_reason') if isinstance(data.get('done_reason'),str) else None
++            result.result_digest=content_hash(data)
++            result.metrics={key:data.get(key) if type(data.get(key)) is int else None for key in METRICS}
++            for key in METRICS:
++                if key.endswith('_duration'):
++                    value=result.metrics[key];result.metrics[key+'_s']=value/1_000_000_000 if value is not None else None
++            completed_draft(data,prepared)
++            result.state='draft_returned';result.code='draft_returned';result.availability='available'
++            result.timings={'checks_s':check_elapsed,'inference_s':outcome.elapsed_s,'client_elapsed_s':time.monotonic()-started}
++        except asyncio.CancelledError:
++            if acquired and begun:
++                try:await io(self.store.mark_uncertain,request_id,'cancelled_after_marker')
++                except (WorkerError,OSError):pass
++            raise
++        except (WorkerError,OSError,ValueError) as exc:
++            code=exc.code if isinstance(exc,WorkerError) else 'audit_or_state_error'
++            result.code=code
++            result.state='busy' if code in {'worker_busy','resident_model_busy'} else ('incomplete_error' if begun else 'unavailable')
++            result.needs_context=code=='worker_clarification'
++            result.coordination='uncertain' if code in {'worker_uncertain','attempt_incomplete'} or (begun and post_possible and not terminal) else ('busy' if result.state=='busy' else 'idle')
++            result.timings['client_elapsed_s']=time.monotonic()-started
++            if code in {'prompt_budget_contradiction','prompt_count_missing'} and acquired:
++                try:
++                    snapshot=await io(self.store.read_snapshot);snapshot.budget_block=code
++                    await io(self.store.write,'snapshot.json',snapshot)
++                except (OSError,WorkerError):pass
++        finally:
++            if acquired:
++                if begun:
++                    try:
++                        result.audit_refs=refs
++                        await io(self.audit.write_metadata,request_id,{'task_id':request.packet.task_id,'attempt':request.attempt,
++                            'state':result.state,'code':result.code,'timings':result.timings,'effort':request.effort.model_dump(mode='json'),
++                            'first_pass_acceptance':None,'retry_outcome':None,'supervisor_edits':None})
++                        if post_possible and not terminal:
++                            await io(self.store.mark_uncertain,request_id,result.code)
++                            result.coordination='uncertain'
++                        else:
++                            await io(self.store.finish_attempt,request_id,result)
++                    except (OSError,WorkerError,ValueError):
++                        result.state='incomplete_error';result.code='audit_or_state_error';result.coordination='uncertain'
++                await io(lease.__exit__,None,None,None)
++            executor.shutdown(wait=True)
++        return result
+--- baseline/bridge/local_worker/http_worker.py
++++ bridge/local_worker/http_worker.py
+@@ -0,0 +1,68 @@
++"""One private stdlib HTTP exchange; launched with Python -I, never MCP stdout."""
++import base64
++import http.client
++import ipaddress
++import json
++import socket
++import sys
++import time
++
++
++def allowed_peer(value):
++    address=ipaddress.ip_address(value)
++    if getattr(address,'ipv4_mapped',None):address=address.ipv4_mapped
++    return not (address.is_loopback or address.is_multicast or address.is_unspecified or address.is_link_local)
++
++
++def main():
++    request=json.loads(sys.stdin.buffer.read(262145))
++    started=time.monotonic()
++    outcome=dict(phase='not_sent',code='ok',status=None,peer_ip=None,body_b64='',data=None,truncated=False,elapsed_s=0.0)
++    conn=None
++    try:
++        host=request.get('dial_host') or request['host']
++        port=request.get('dial_port') or 11434
++        deadline=started+request['timeout_s']
++        addresses=socket.getaddrinfo(host,port,type=socket.SOCK_STREAM)
++        sock=None
++        for family,kind,proto,_,address in addresses:
++            if not request.get('test_dial') and not allowed_peer(address[0]):continue
++            trial=socket.socket(family,kind,proto)
++            try:
++                trial.settimeout(max(.001,deadline-time.monotonic()))
++                trial.connect(address);sock=trial;break
++            except OSError:
++                trial.close()
++        if sock is None:raise OSError('no reachable allowed address')
++        outcome['peer_ip']=sock.getpeername()[0]
++        conn=http.client.HTTPConnection(request['host'],11434)
++        conn.sock=sock
++        headers={'Host':f"[{request['host']}]:11434" if ':' in request['host'] else request['host']+':11434','Connection':'close'}
++        body=json.dumps(request['body'],ensure_ascii=False).encode() if request['body'] is not None else None
++        if body is not None:headers['Content-Type']='application/json'
++        outcome['phase']='may_have_started'
++        conn.request(request['method'],request['path'],body=body,headers=headers)
++        response=conn.getresponse()
++        raw=response.read(request['max_bytes']+1)
++        outcome['status']=response.status
++        outcome['truncated']=len(raw)>request['max_bytes']
++        raw=raw[:request['max_bytes']]
++        outcome['body_b64']=base64.b64encode(raw).decode('ascii')
++        if outcome['truncated']:
++            outcome['code']='response_too_large'
++        else:
++            outcome['phase']='terminal_received'
++            try:
++                data=json.loads(raw)
++                if not isinstance(data,dict):raise ValueError('object expected')
++                outcome['data']=data
++            except (ValueError,UnicodeError):outcome['code']='response_malformed'
++    except (OSError,ValueError,http.client.HTTPException):
++        outcome['code']='transport_error'
++    finally:
++        if conn is not None:conn.close()
++    outcome['elapsed_s']=time.monotonic()-started
++    sys.stdout.write(json.dumps(outcome,separators=(',',':'),allow_nan=False))
++
++
++if __name__=='__main__':main()
+--- baseline/bridge/local_worker/models.py
++++ bridge/local_worker/models.py
+@@ -0,0 +1,279 @@
++"""Strict wire contracts and durable records, independent of Codex sessions."""
++from __future__ import annotations
++
++import hashlib
++import json
++import math
++from typing import Annotated, Literal
++from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, field_validator, model_validator
++
++
++class WorkerError(Exception):
++    def __init__(self, code: str):
++        self.code = code
++        super().__init__(code)
++
++
++class StrictModel(BaseModel):
++    model_config = ConfigDict(extra='forbid', strict=True, validate_assignment=True)
++
++
++ID = Annotated[str, Field(pattern=r'^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$')]
++Text = Annotated[str, Field(min_length=1, max_length=8192)]
++Context = Annotated[str, Field(max_length=49152)]
++Hash = Annotated[str, Field(pattern=r'^[0-9a-f]{64}$')]
++
++
++class Versioned(StrictModel):
++    schema_version: Literal[1] = 1
++
++    @field_validator('schema_version', mode='before')
++    @classmethod
++    def integer_version(cls, value):
++        if type(value) is not int:
++            raise ValueError('schema version must be integer')
++        return value
++
++
++class Endpoint(StrictModel):
++    host: str
++    base_url: str
++
++
++class SourceApproval(StrictModel):
++    classification: Literal['synthetic', 'approved_repository']
++    approval_ref: Text
++    audit_content_approved: bool
++
++    @field_validator('audit_content_approved')
++    @classmethod
++    def approved(cls, value):
++        if not value:
++            raise ValueError('explicit content audit approval required')
++        return value
++
++
++class AcceptanceCheck(StrictModel):
++    check_id: ID
++    kind: Literal['compile', 'behaviour', 'source']
++    contract: Text
++    method: Text
++
++
++class TaskPacket(Versioned):
++    task_id: ID
++    category: Literal['isolated_repair', 'mechanical_transformation', 'supplied_code_explanation']
++    objective: Text
++    constraints: Text
++    source: Annotated[str, Field(min_length=1, max_length=49152)]
++    context: Context
++    diagnostic: Context = ''
++    versions: dict[ID, Text]
++    references: Annotated[list[Text], Field(max_length=32)] = Field(default_factory=list)
++    output_form: Text
++    context_id: ID
++    approval: SourceApproval
++    checks: Annotated[list[AcceptanceCheck], Field(min_length=1, max_length=32)]
++
++    @model_validator(mode='after')
++    def sufficient(self):
++        if not self.context.strip() or not self.source.strip():
++            raise ValueError('focused source and caller context required')
++        if len(self.versions) > 32 or len({c.check_id for c in self.checks}) != len(self.checks):
++            raise ValueError('bounded versions and unique checks required')
++        kinds = {c.kind for c in self.checks}
++        if self.category == 'supplied_code_explanation':
++            if 'source' not in kinds:
++                raise ValueError('independent source checks required')
++        elif not {'compile', 'behaviour'} <= kinds:
++            raise ValueError('independent compiler and behaviour checks required')
++        if len(self.model_dump_json().encode()) > 131072:
++            raise ValueError('packet too large')
++        return self
++
++
++class MeasuredEffort(StrictModel):
++    preparation_s: float | None = None
++    validation_s: float | None = None
++    review_s: float | None = None
++    human_active_s: float | None = None
++    human_measurement_ref: Text | None = None
++    premium_tokens: Annotated[int, Field(ge=0)] | None = None
++    receipt_ref: Text | None = None
++
++    @model_validator(mode='after')
++    def measured(self):
++        for name in ('preparation_s', 'validation_s', 'review_s', 'human_active_s'):
++            value = getattr(self, name)
++            if value is not None and (not math.isfinite(value) or value < 0):
++                raise ValueError('invalid interval')
++        if self.human_active_s is not None and not self.human_measurement_ref:
++            raise ValueError('human measurement reference required')
++        if self.premium_tokens is not None and not self.receipt_ref:
++            raise ValueError('receipt required')
++        return self
++
++
++class CheckObservation(StrictModel):
++    check_id: ID
++    passed: bool
++    evidence_ref: Text
++    observed: Text
++
++
++class ValidationReport(Versioned):
++    task_id: ID
++    attempt: Annotated[int, Field(ge=1, le=2)]
++    packet_hash: Hash
++    result_digest: Hash
++    verdict: Literal['accepted', 'failed', 'unverifiable']
++    observations: Annotated[list[CheckObservation], Field(max_length=32)]
++    diagnostics: Context = ''
++    toolchain_ref: Text | None = None
++    supervisor_edits: Context = ''
++    effort: MeasuredEffort = Field(default_factory=MeasuredEffort)
++
++
++class StatusRequest(Versioned):
++    action: Literal['status']
++
++
++class ReconnectRequest(Versioned):
++    action: Literal['reconnect']
++    address: Annotated[str, Field(max_length=253)] | None = None
++
++
++class ContinueWithoutRequest(Versioned):
++    action: Literal['continue_without']
++
++
++class GenerateRequest(Versioned):
++    action: Literal['generate']
++    packet: TaskPacket
++    attempt: Annotated[int, Field(ge=1, le=2)]
++    feedback_ref: Hash | None = None
++    effort: MeasuredEffort = Field(default_factory=MeasuredEffort)
++
++
++class RecordValidationRequest(Versioned):
++    action: Literal['record_validation']
++    report: ValidationReport
++
++
++LocalWorkerRequest = Annotated[StatusRequest | ReconnectRequest | ContinueWithoutRequest | GenerateRequest | RecordValidationRequest, Field(discriminator='action')]
++REQUEST_ADAPTER = TypeAdapter(LocalWorkerRequest)
++
++
++class LocalWorkerResult(Versioned):
++    action: str
++    worker_id: Literal['LOCAL-00'] = 'LOCAL-00'
++    state: Literal['status_returned', 'draft_returned', 'unavailable', 'busy', 'incomplete_error']
++    code: str
++    explanation: str = ''
++    availability: Literal['discovering', 'available', 'unavailable', 'disabled'] = 'unavailable'
++    coordination: Literal['idle', 'busy', 'uncertain'] = 'idle'
++    validation: Literal['pending', 'accepted', 'failed', 'unverifiable'] = 'pending'
++    next_actions: list[str] = Field(default_factory=list)
++    task_id: str | None = None
++    packet_hash: str | None = None
++    request_id: str | None = None
++    attempt: int | None = None
++    endpoint: str | None = None
++    peer_ip: str | None = None
++    model: str | None = None
++    digest: str | None = None
++    result_digest: str | None = None
++    response: str | None = None
++    done: bool | None = None
++    done_reason: str | None = None
++    metrics: dict[str, int | float | None] = Field(default_factory=dict)
++    timings: dict[str, float | None] = Field(default_factory=dict)
++    audit_refs: list[str] = Field(default_factory=list)
++    replayed_from_ledger: bool = False
++    needs_context: bool = False
++    evidence_origin: Literal['supervisor_reported'] | None = None
++
++
++class WorkerSnapshot(Versioned):
++    availability: Literal['discovering', 'available', 'unavailable'] = 'unavailable'
++    coordination: Literal['idle', 'busy', 'uncertain'] = 'idle'
++    endpoint: Endpoint | None = None
++    peer_ip: str | None = None
++    budget_block: str | None = None
++    connection_revision: int = 0
++    candidate_results: list[dict] = Field(default_factory=list)
++
++
++class AttemptRecord(Versioned):
++    request_id: str
++    attempt: int
++    result: LocalWorkerResult | None = None
++    retired: bool = False
++
++
++class TaskRecord(Versioned):
++    packet: TaskPacket
++    packet_hash: Hash
++    attempts: dict[str, AttemptRecord] = Field(default_factory=dict)
++    validations: list[ValidationReport] = Field(default_factory=list)
++
++
++class ActiveRequest(Versioned):
++    request_id: str
++    task_id: ID
++    attempt: int
++    code: str = 'active'
++
++
++class BudgetProof(Versioned):
++    model_digest: str
++    template_hash: Hash
++    metadata_hash: Hash
++    server_version: str
++    rendered_prefix: str
++    rendered_suffix: str
++    token_allowance: int
++    method: Literal['verified_utf8_bpe'] = 'verified_utf8_bpe'
++    provenance: str
++
++
++class PreparedPrompt(StrictModel):
++    text: str
++    prompt_hash: Hash
++    proof_hash: Hash
++    upper_bound: int
++    template_version: str = 'local00-v1'
++
++
++class TransportRequest(StrictModel):
++    endpoint: Endpoint
++    method: Literal['GET', 'POST']
++    path: str
++    body: dict | None = None
++    timeout_s: float = 5.0
++    max_bytes: int = 1048576
++
++
++class TransportOutcome(StrictModel):
++    phase: Literal['not_sent', 'may_have_started', 'terminal_received'] = 'not_sent'
++    code: str = 'ok'
++    status: int | None = None
++    peer_ip: str | None = None
++    body_b64: str = ''
++    data: dict | None = None
++    elapsed_s: float = 0.0
++    truncated: bool = False
++
++
++def canonical_json(value) -> str:
++    if isinstance(value, BaseModel):
++        value = value.model_dump(mode='json')
++    return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
++
++
++def content_hash(value) -> str:
++    return hashlib.sha256(canonical_json(value).encode('utf-8')).hexdigest()
++
++
++def canonical_packet_hash(packet: TaskPacket) -> str:
++    return content_hash(packet)
+--- baseline/bridge/local_worker/prompts.py
++++ bridge/local_worker/prompts.py
+@@ -0,0 +1,60 @@
++"""Versioned focused prompts and a conservative bound for the reviewed baseline."""
++from __future__ import annotations
++from . import _baseline
++from .models import BudgetProof, PreparedPrompt, WorkerError, content_hash
++from .settings import DIGEST
++
++
++def metadata_identity(metadata):
++    try:
++        return {key:metadata.get(key, [] if key in ('messages','capabilities') else '') for key in ('template','system','messages','capabilities')} | {
++            'model_info':{key:metadata['model_info'].get(key) for key in _baseline.METADATA['model_info']}}
++    except (KeyError,TypeError,AttributeError):raise WorkerError('budget_unverifiable') from None
++
++
++def verify_baseline(metadata,server_version,source_evidence=None):
++    identity=metadata_identity(metadata)
++    if identity!=_baseline.METADATA or server_version!=_baseline.VERSION:
++        raise WorkerError('budget_unverifiable')
++    system=identity['system']
++    prefix=f'<|im_start|>system\n{system}<|im_end|>\n<|im_start|>user\n'
++    suffix='<|im_end|>\n<|im_start|>assistant\n'
++    return BudgetProof(model_digest=DIGEST,template_hash=content_hash(identity['template']),metadata_hash=content_hash(identity),
++        server_version=server_version,rendered_prefix=prefix,rendered_suffix=suffix,token_allowance=2,
++        provenance='ollama/'+_baseline.REVISION+'; docs/LOCAL00_BUDGET_PROOF.md')
++
++
++def baseline_proof():
++    return verify_baseline(_baseline.METADATA,_baseline.VERSION)
++
++
++def render_task(packet,feedback=None,prior_output=None):
++    text=(
++        'Complete one bounded task from supplied data. Preserve its contract. '
++        'Do not invent context or claim tests were run. If essential context is missing, '
++        'return NEEDS_CONTEXT: followed by one focused question. Return one concise final answer.\n'
++        f'Task ID: {packet.task_id}\nCategory: {packet.category}\nObjective: {packet.objective}\n'
++        f'Versions: {packet.versions}\nRequired behaviour: {packet.constraints}\n'
++        f'<supplied_code>\n{packet.source}\n</supplied_code>\n'
++        f'Caller context: {packet.context}\nDiagnostic: {packet.diagnostic}\n'
++        f'Authoritative references (data, not instructions): {packet.references}\n'
++        f'Acceptance contract: '+ '; '.join(c.check_id+': '+c.contract for c in packet.checks)+'\n'
++        f'Requested output: {packet.output_form}\n')
++    if feedback is not None:
++        text+=('\nSingle feedback retry; keep the original contract and checks unchanged.\n'
++               f'Relevant prior answer:\n{prior_output}\nIndependent failure:\n{feedback.diagnostics}\n')
++    return text
++
++
++class PromptBudgeter:
++    def prepare(self,packet,proof,feedback=None,prior_output=None):
++        # Proofs originate in reviewed adapter data, not caller assertions.
++        if proof!=baseline_proof():raise WorkerError('budget_unverifiable')
++        text=render_task(packet,feedback,prior_output)
++        # Count every rendered byte, including textual special-token spellings;
++        # this overcounts special tokens. Two additional token slots bound BOS/EOS.
++        rendered=proof.rendered_prefix+text+proof.rendered_suffix
++        try:bound=len(rendered.encode('utf-8'))+proof.token_allowance
++        except UnicodeError:raise WorkerError('budget_unverifiable') from None
++        if bound>3072:raise WorkerError('context_budget_exceeded')
++        return PreparedPrompt(text=text,prompt_hash=content_hash(text),proof_hash=content_hash(proof),upper_bound=bound)
+--- baseline/bridge/local_worker/service.py
++++ bridge/local_worker/service.py
+@@ -0,0 +1,142 @@
++"""Optional session control and bounded discovery, isolated from ArchitectService."""
++from __future__ import annotations
++import asyncio
++import os
++from pathlib import Path
++from ..state import utc_now
++from .models import *
++from .settings import *
++from .storage import WorkerStore
++from .transport import WorkerTransport
++
++
++def check_tags(outcome):
++    if outcome.code!='ok' or outcome.status!=200 or not isinstance(outcome.data,dict):
++        raise WorkerError(outcome.code if outcome.code!='ok' else 'tags_http_error')
++    rows=outcome.data.get('models')
++    if not isinstance(rows,list) or any(not isinstance(row,dict) for row in rows):
++        raise WorkerError('tags_invalid')
++    matches=[row for row in rows if row.get('name')==MODEL]
++    if len(matches)!=1:raise WorkerError('model_missing_or_duplicate')
++    if matches[0].get('digest')!=DIGEST:raise WorkerError('model_digest_mismatch')
++
++
++class WorkerService:
++    def __init__(self,env=None,store=None,transport=None,runner=None,recorder=None):
++        self.env=dict(os.environ if env is None else env)
++        home=Path(self.env.get('USERPROFILE') or Path.home())
++        repos=(Path(self.env.get('CLAUDE_PROJECT_DIR') or Path.cwd()),)
++        self.store=store or WorkerStore(worker_root(self.env),repos,home)
++        self.transport=transport or WorkerTransport()
++        self.runner=runner
++        self.recorder=recorder
++        self.disabled=False
++        self._revision=0
++        self._started=False
++        self._discovering=False
++
++    def settings(self):
++        self.store.validate(self.store.root/'config.json')
++        return load_worker_settings(self.store.root)
++
++    def status(self,action='status',code='worker_status'):
++        snapshot=self.store.read_snapshot()
++        availability='disabled' if self.disabled else ('discovering' if self._discovering else snapshot.availability)
++        return LocalWorkerResult(action=action,state='status_returned',code=code,
++            availability=availability,coordination=snapshot.coordination,
++            endpoint=snapshot.endpoint.base_url if snapshot.endpoint else None,peer_ip=snapshot.peer_ip,
++            model=MODEL,digest=DIGEST if snapshot.endpoint else None,
++            explanation=CONTINUE if self.disabled else (RECOVERY if availability=='unavailable' else ''),
++            next_actions=CHOICES if availability in {'unavailable','disabled'} else [])
++
++    async def startup(self):
++        if self._started:return
++        self._started=True
++        try:await self.discover()
++        except (WorkerError,OSError,ValueError):pass  # optional worker never aborts MCP lifespan
++
++    async def discover(self,address=None):
++        revision=self._revision
++        settings=await asyncio.to_thread(self.settings)
++        candidates=[parse_address(address)] if address is not None else [parse_address(HOSTNAME)]
++        fallback=settings.last_validated_ip or settings.initial_ip
++        if address is None and fallback:candidates.append(parse_address(fallback))
++        def reserve():
++            with self.store.try_lock():
++                snapshot=self.store.read_snapshot()
++                snapshot.connection_revision+=1
++                self.store.write('snapshot.json',snapshot)
++                return snapshot.connection_revision
++        connection_revision=await asyncio.to_thread(reserve)
++        self._discovering=True
++        results=[];selected=None;peer=None
++        try:
++            for endpoint in candidates:
++                outcome=await self.transport.exchange(TransportRequest(endpoint=endpoint,method='GET',path='/api/tags',timeout_s=settings.discovery_timeout_s))
++                try:
++                    check_tags(outcome)
++                    # The actual connected peer, never an arbitrary resolver result.
++                    parse_address(outcome.peer_ip or '')
++                except WorkerError as exc:
++                    results.append({'candidate':endpoint.base_url,'code':exc.code})
++                else:
++                    results.append({'candidate':endpoint.base_url,'code':'validated','peer_ip':outcome.peer_ip})
++                    selected,peer=endpoint,outcome.peer_ip
++                    break
++            def persist():
++                with self.store.try_lock():
++                    snapshot=self.store.read_snapshot()
++                    if snapshot.connection_revision!=connection_revision:return False
++                    snapshot.availability='available' if selected else 'unavailable'
++                    snapshot.endpoint=selected
++                    snapshot.peer_ip=peer
++                    snapshot.candidate_results=results
++                    if selected:
++                        current=self.settings()
++                        current.last_validated_ip=peer
++                        current.validated_at=utc_now();current.provenance='validated_actual_peer'
++                        self.store.write('config.json',current)
++                    self.store.write('snapshot.json',snapshot)
++                    return True
++            current=await asyncio.to_thread(persist)
++            if address is not None and not selected:
++                explanation=f'LOCAL-00 could not be validated at {candidates[0].base_url}: {results[-1]["code"]}. Enter another address, retry discovery, or continue without LOCAL-00.'
++            else:explanation=RECOVERY
++        finally:self._discovering=False
++        if selected and revision==self._revision:self.disabled=False
++        result=await asyncio.to_thread(self.status,'reconnect','validated' if selected and current else 'worker_unavailable')
++        if not selected:result.explanation=explanation
++        return result
++
++    async def handle(self,request):
++        try:
++            if request.action=='status':return await asyncio.to_thread(self.status)
++            if request.action=='continue_without':
++                self._revision+=1;self.disabled=True
++                return await asyncio.to_thread(self.status,request.action,'continued_without')
++            if request.action=='reconnect':
++                self._revision+=1
++                return await self.discover(request.address)
++            if request.action=='record_validation':
++                if self.recorder is None:
++                    from .validation import ValidationRecorder
++                    self.recorder=ValidationRecorder(self.store)
++                return await asyncio.to_thread(self.recorder.record,request.report)
++            if request.action=='generate':
++                status=await asyncio.to_thread(self.status)
++                if status.availability!='available':
++                    return status.model_copy(update={'action':'generate','state':'busy' if status.availability=='discovering' else 'unavailable','code':'worker_'+status.availability})
++                if self.runner is None:
++                    from .generation import GenerationRunner
++                    self.runner=GenerationRunner(self.store,self.transport)
++                snapshot=await asyncio.to_thread(self.store.read_snapshot)
++                return await self.runner.run(request,snapshot.endpoint)
++            raise WorkerError('unknown_action')
++        except WorkerError as exc:
++            return LocalWorkerResult(action=request.action,state='busy' if exc.code=='worker_busy' else 'unavailable',code=exc.code,
++                explanation=RECOVERY,next_actions=CHOICES,availability='disabled' if self.disabled else 'unavailable')
++        except (OSError,ValueError):
++            return LocalWorkerResult(action=request.action,state='unavailable',code='worker_state_error',explanation=RECOVERY,next_actions=CHOICES)
++
++    async def aclose(self):
++        await self.transport.aclose()
+--- baseline/bridge/local_worker/settings.py
++++ bridge/local_worker/settings.py
+@@ -0,0 +1,103 @@
++"""Pilot constants and bounded independent configuration."""
++from __future__ import annotations
++import ipaddress
++import json
++import math
++import re
++from pathlib import Path
++from typing import Mapping
++from pydantic import Field, field_validator
++from .models import Endpoint, Versioned, WorkerError
++
++MODEL = 'qwen2.5-coder:14b-instruct-q4_K_M'
++DIGEST = '9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849'
++HOSTNAME = 'skynet.local'
++INITIAL_IP = '192.168.0.78'
++PORT = 11434
++PROFILE = dict(model=MODEL, stream=False, keep_alive='10m', options=dict(num_ctx=4096, num_predict=1024, temperature=0))
++RECOVERY = "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker."
++CONTINUE = 'Continuing with GPT/Claude; LOCAL-00 is unavailable for this session. You can reconnect later.'
++CHOICES = ['Enter address', 'Retry discovery', 'Continue without LOCAL-00']
++
++
++def valid_peer(host: str) -> bool:
++    try:
++        ip = ipaddress.ip_address(host)
++        if getattr(ip, 'ipv4_mapped', None):
++            ip = ip.ipv4_mapped
++        return not (ip.is_loopback or ip.is_multicast or ip.is_unspecified or ip.is_link_local)
++    except ValueError:
++        return False
++
++
++def parse_address(value: str) -> Endpoint:
++    value = value.strip()
++    if value.startswith('[') and value.endswith(']'):
++        value = value[1:-1]
++        if ':' not in value:
++            raise WorkerError('invalid_address')
++    try:
++        address = ipaddress.ip_address(value)
++    except ValueError:
++        if not value or len(value)>253 or any(ch in value for ch in '/:@?#%[]') or re.fullmatch(r'[0-9.]+',value):
++            raise WorkerError('invalid_address') from None
++        labels = value.split('.')
++        if any(not re.fullmatch(r'[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?', part) for part in labels):
++            raise WorkerError('invalid_address')
++        if value.lower() == 'localhost':
++            raise WorkerError('invalid_address')
++        host = value.lower()
++    else:
++        if not valid_peer(str(address)):
++            raise WorkerError('invalid_address')
++        host = str(address)
++    return Endpoint(host=host, base_url=f'http://[{host}]:{PORT}' if ':' in host else f'http://{host}:{PORT}')
++
++
++class WorkerSettings(Versioned):
++    preferred_hostname: str = HOSTNAME
++    initial_ip: str | None = INITIAL_IP
++    last_validated_ip: str | None = None
++    validated_at: str | None = None
++    provenance: str = 'supplied_candidate'
++    discovery_timeout_s: float = Field(default=5.0, ge=1, le=15)
++    generation_timeout_s: float = Field(default=180.0, ge=30, le=900)
++
++    @field_validator('discovery_timeout_s','generation_timeout_s', mode='before')
++    @classmethod
++    def finite(cls,value):
++        if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value):
++            raise ValueError('finite timeout required')
++        return float(value)
++
++    @field_validator('preferred_hostname')
++    @classmethod
++    def fixed_name(cls,value):
++        if value != HOSTNAME:
++            raise ValueError('preferred hostname is fixed')
++        return value
++
++    @field_validator('initial_ip','last_validated_ip')
++    @classmethod
++    def ip(cls,value):
++        if value is not None:
++            endpoint=parse_address(value)
++            ipaddress.ip_address(endpoint.host)
++            return endpoint.host
++        return value
++
++
++def worker_root(env: Mapping[str,str]) -> Path:
++    return Path(env.get('USERPROFILE') or str(Path.home())) / '.gpt-architect-bridge-local00'
++
++
++def load_worker_settings(root: Path) -> WorkerSettings:
++    path=root/'config.json'
++    try:
++        if not path.exists():
++            return WorkerSettings()
++        if path.is_symlink() or not path.is_file() or path.stat().st_size>16384:
++            raise ValueError('invalid config file')
++        return WorkerSettings.model_validate_json(path.read_bytes())
++    except (ValueError,OSError) as exc:
++        raise WorkerError('worker_config_invalid') from exc
+--- baseline/bridge/local_worker/storage.py
++++ bridge/local_worker/storage.py
+@@ -0,0 +1,204 @@
++"""Shared worker transactions. A durable active marker outlives the OS lock."""
++from __future__ import annotations
++from contextlib import contextmanager
++import hashlib
++import json
++import os
++from pathlib import Path
++import stat
++import threading
++from ..state import FileLock, LockTimeout, atomic_write_text, utc_now
++from .models import (WorkerError, WorkerSnapshot, TaskRecord, AttemptRecord,
++                     ActiveRequest, LocalWorkerResult, canonical_json, canonical_packet_hash)
++
++
++def overlaps(a: Path, b: Path) -> bool:
++    a,b = a.resolve(), b.resolve()
++    return a == b or a in b.parents or b in a.parents
++
++
++class WorkerStore:
++    def __init__(self, root: Path, repo_roots: tuple[Path,...], home: Path):
++        self.root=Path(root)
++        self.repo_roots=repo_roots
++        self.home=Path(home)
++        self._owner=None
++
++    def validate(self, path: Path | None = None):
++        target=path or self.root
++        for part in (target,*target.parents):
++            try:
++                info=part.lstat()
++            except FileNotFoundError:
++                continue
++            if stat.S_ISLNK(info.st_mode) or getattr(info,'st_file_attributes',0)&0x400:
++                raise WorkerError('worker_path_reparse')
++        if overlaps(self.root,self.home/'.gpt-architect-bridge') or any(overlaps(self.root,p) for p in self.repo_roots):
++            raise WorkerError('worker_path_overlap')
++        if target != self.root and self.root.resolve() not in target.resolve().parents:
++            raise WorkerError('worker_path_escape')
++
++    def path(self, relative: str) -> Path:
++        path=self.root/relative
++        self.validate(path)
++        return path
++
++    def read(self, relative: str, limit: int=33554432):
++        p=self.path(relative)
++        try:
++            if not p.is_file() or p.stat().st_size>limit:
++                raise ValueError('invalid bounded record')
++            return json.loads(p.read_text(encoding='utf-8'))
++        except (ValueError,OSError) as exc:
++            raise WorkerError('worker_state_invalid') from exc
++
++    def write(self, relative: str, data):
++        self.require_lease()
++        p=self.path(relative)
++        p.parent.mkdir(parents=True,exist_ok=True)
++        text=canonical_json(data)
++        if len(text.encode())>33554432:
++            raise WorkerError('worker_record_too_large')
++        atomic_write_text(p,text)
++
++    def require_lease(self):
++        if self._owner != threading.get_ident():
++            raise WorkerError('worker_lease_required')
++
++    def _establish(self):
++        witness=self.path('instance.json')
++        if not witness.exists():
++            # A partially initialized directory is never silently recycled.
++            if any(p.name!='worker.lock' for p in self.root.iterdir()):
++                raise WorkerError('worker_initialization_incomplete')
++            self.write('index.json',{'schema_version':1,'tasks':{}})
++            self.write('snapshot.json',WorkerSnapshot())
++            self.write('instance.json',{'schema_version':1,'established_at':utc_now()})
++        if self.read('instance.json',16384).get('schema_version')!=1:
++            raise WorkerError('worker_state_invalid')
++        self._index()
++
++    def _index(self):
++        data=self.read('index.json',1048576)
++        if not isinstance(data,dict) or set(data)!={'schema_version','tasks'} or data['schema_version']!=1 or not isinstance(data['tasks'],dict):
++            raise WorkerError('worker_state_invalid')
++        for key,name in data['tasks'].items():
++            if not isinstance(key,str) or len(key)!=64 or name!=f'tasks/{key}.json' or not self.path(name).is_file():
++                raise WorkerError('worker_ledger_missing')
++        return data
++
++    @contextmanager
++    def try_lock(self):
++        self.validate()
++        self.root.mkdir(parents=True,exist_ok=True)
++        lock=FileLock(self.path('worker.lock'))
++        try:
++            lock.acquire(0)
++        except LockTimeout:
++            raise WorkerError('worker_busy') from None
++        previous=self._owner
++        self._owner=threading.get_ident()
++        try:
++            self._establish()
++            yield self
++        finally:
++            self._owner=previous
++            lock.release()
++
++    def read_snapshot(self):
++        self.validate()
++        if not self.root.exists():
++            return WorkerSnapshot()
++        if not self.path('instance.json').exists():
++            raise WorkerError('worker_initialization_incomplete')
++        self._index()
++        try:
++            snapshot=WorkerSnapshot.model_validate(self.read('snapshot.json',262144))
++        except ValueError as exc:raise WorkerError('worker_state_invalid') from exc
++        if self.path('active.json').exists():
++            probe=FileLock(self.path('worker.lock'))
++            try:
++                probe.acquire(0)
++            except LockTimeout:
++                snapshot.coordination='busy'
++            else:
++                probe.release()
++                snapshot.coordination='uncertain'
++        return snapshot
++
++    def read_task(self,task_id):
++        if not self.root.exists():return None
++        key=hashlib.sha256(task_id.encode()).hexdigest()
++        index=self._index()
++        if key not in index['tasks']:return None
++        try:return TaskRecord.model_validate(self.read(index['tasks'][key]))
++        except ValueError as exc:raise WorkerError('worker_ledger_invalid') from exc
++
++    def save_task(self,task):
++        self.require_lease()
++        key=hashlib.sha256(task.packet.task_id.encode()).hexdigest()
++        relative=f'tasks/{key}.json'
++        index=self._index()
++        self.write(relative,task)
++        if key not in index['tasks']:
++            index['tasks'][key]=relative
++            self.write('index.json',index)
++
++    def active(self):
++        if not self.path('active.json').exists():return None
++        try:return ActiveRequest.model_validate(self.read('active.json',16384))
++        except ValueError as exc:raise WorkerError('worker_active_invalid') from exc
++
++    def begin_attempt(self,request,prepared,request_id):
++        self.require_lease()
++        if self.active():raise WorkerError('worker_uncertain')
++        task=self.read_task(request.packet.task_id)
++        packet_hash=canonical_packet_hash(request.packet)
++        if task and task.packet_hash!=packet_hash:raise WorkerError('task_conflict')
++        task=task or TaskRecord(packet=request.packet,packet_hash=packet_hash)
++        if str(request.attempt) in task.attempts:raise WorkerError('attempt_exists')
++        attempt=AttemptRecord(request_id=request_id,attempt=request.attempt)
++        task.attempts[str(request.attempt)]=attempt
++        self.save_task(task)
++        self.write('active.json',ActiveRequest(request_id=request_id,task_id=request.packet.task_id,attempt=request.attempt))
++        return attempt
++
++    def finish_attempt(self,request_id,result):
++        self.require_lease()
++        active=self.active()
++        if not active or active.request_id!=request_id:raise WorkerError('request_conflict')
++        task=self.read_task(active.task_id)
++        task.attempts[str(active.attempt)].result=result
++        self.save_task(task)
++        self.path('active.json').unlink()
++        snapshot=self.read_snapshot();snapshot.coordination='idle'
++        self.write('snapshot.json',snapshot)
++
++    def mark_uncertain(self,request_id,code):
++        active=self.active()
++        if not active or active.request_id!=request_id:raise WorkerError('request_conflict')
++        active.code=code
++        self.write('active.json',active)
++
++    def append_validation(self,report):
++        self.require_lease()
++        task=self.read_task(report.task_id)
++        if task is None:raise WorkerError('task_missing')
++        if report not in task.validations:
++            task.validations.append(report)
++            self.save_task(task)
++        return task
++
++    def resolve_uncertain(self,request_id,confirmed_idle,reason,evidence_ref):
++        self.require_lease()
++        if not confirmed_idle or not reason.strip() or not evidence_ref.strip():raise WorkerError('operator_confirmation_required')
++        active=self.active()
++        if not active or active.request_id!=request_id:raise WorkerError('request_conflict')
++        task=self.read_task(active.task_id)
++        attempt=task.attempts[str(active.attempt)]
++        attempt.retired=True
++        if attempt.result is None:
++            attempt.result=LocalWorkerResult(action='generate',state='incomplete_error',code='operator_retired',request_id=request_id,task_id=active.task_id,attempt=active.attempt)
++        self.save_task(task)
++        self.write(f'resolutions/{request_id}.json',{'request_id':request_id,'reason':reason,'evidence_ref':evidence_ref,'confirmed_at':utc_now()})
++        self.path('active.json').unlink()
+--- baseline/bridge/local_worker/transport.py
++++ bridge/local_worker/transport.py
+@@ -0,0 +1,79 @@
++"""Total-deadline HTTP through a killable, private helper process."""
++from __future__ import annotations
++import asyncio
++import json
++import math
++import os
++from pathlib import Path
++import subprocess
++import sys
++import time
++from .models import TransportRequest,TransportOutcome
++
++ALLOWED={('GET','/api/tags'),('GET','/api/ps'),('POST','/api/show'),('GET','/api/version'),('POST','/api/generate')}
++
++
++class WorkerTransport:
++    def __init__(self,*,helper_path: Path | None=None,dial_override: tuple | None=None):
++        self.helper_path=helper_path or Path(__file__).with_name('http_worker.py')
++        self.dial_override=dial_override
++        self.active_helpers=set()
++
++    async def exchange(self,request: TransportRequest) -> TransportOutcome:
++        if (request.method,request.path) not in ALLOWED or not math.isfinite(request.timeout_s) or request.timeout_s<=0 or not 1<=request.max_bytes<=4194304:
++            return TransportOutcome(code='transport_request_rejected')
++        payload=dict(host=request.endpoint.host,method=request.method,path=request.path,body=request.body,
++                     timeout_s=request.timeout_s,max_bytes=request.max_bytes,test_dial=bool(self.dial_override))
++        if self.dial_override:payload.update(dial_host=self.dial_override[0],dial_port=self.dial_override[1])
++        data=json.dumps(payload,ensure_ascii=False,allow_nan=False).encode()
++        if len(data)>262144:return TransportOutcome(code='transport_request_rejected')
++        started=time.monotonic();process=None
++        # Until the helper proves otherwise, a launched POST may have been delivered.
++        phase='may_have_started' if request.path=='/api/generate' else 'not_sent'
++        output_limit=12582912
++
++        async def bounded_read(stream,limit):
++            chunks=[];size=0
++            while chunk:=await stream.read(min(65536,limit-size+1)):
++                size+=len(chunk)
++                if size>limit:raise ValueError('helper output exceeded limit')
++                chunks.append(chunk)
++            return b''.join(chunks)
++
++        async def run():
++            nonlocal process
++            env={k:v for k,v in os.environ.items() if k.upper() in {'SYSTEMROOT','WINDIR','TEMP','TMP'}}
++            process=await asyncio.create_subprocess_exec(sys.executable,'-I','-B',str(self.helper_path.resolve()),
++                stdin=asyncio.subprocess.PIPE,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE,
++                env=env,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
++            self.active_helpers.add(process)
++            process.stdin.write(data);await process.stdin.drain();process.stdin.close()
++            out,err=await asyncio.gather(bounded_read(process.stdout,output_limit),bounded_read(process.stderr,65536))
++            await process.wait()
++            if process.returncode:raise ValueError('helper failed')
++            result=TransportOutcome.model_validate_json(out)
++            if result.body_b64 and len(result.body_b64)>((request.max_bytes+2)//3)*4:
++                raise ValueError('helper body exceeded limit')
++            return result
++
++        try:
++            result=await asyncio.wait_for(run(),request.timeout_s)
++        except asyncio.TimeoutError:
++            result=TransportOutcome(code='transport_timeout',phase=phase)
++        except (OSError,ValueError,RuntimeError):
++            result=TransportOutcome(code='helper_protocol_error',phase=phase)
++        finally:
++            if process is not None:
++                if process.returncode is None:
++                    try:process.kill()
++                    except ProcessLookupError:pass
++                await asyncio.shield(process.wait())
++                self.active_helpers.discard(process)
++        result.elapsed_s=time.monotonic()-started
++        return result
++
++    async def aclose(self):
++        for process in tuple(self.active_helpers):
++            if process.returncode is None:process.kill()
++            await process.wait()
++            self.active_helpers.discard(process)
+--- baseline/bridge/local_worker/validation.py
++++ bridge/local_worker/validation.py
+@@ -0,0 +1,57 @@
++"""Supervisor-reported evidence and durable single-feedback-retry eligibility."""
++from .models import WorkerError,canonical_packet_hash,content_hash
++from .audit import AuditWriter
++
++
++def retry_feedback(task,request):
++    if request.attempt==1:
++        if task and any(v.verdict=='accepted' for v in task.validations):raise WorkerError('task_closed')
++        return None
++    if task is None or task.packet_hash!=canonical_packet_hash(request.packet):raise WorkerError('retry_not_eligible')
++    if any(v.verdict=='accepted' for v in task.validations):raise WorkerError('retry_not_eligible')
++    first=task.attempts.get('1')
++    if not first or first.retired or not first.result or first.result.state!='draft_returned' or first.result.needs_context:
++        raise WorkerError('retry_not_eligible')
++    reports=[v for v in task.validations if v.attempt==1]
++    if not reports:raise WorkerError('retry_not_eligible')
++    failure=reports[-1]
++    if failure.verdict!='failed' or not failure.diagnostics.strip() or failure.supervisor_edits or request.feedback_ref!=first.result.result_digest:
++        raise WorkerError('retry_not_eligible')
++    return failure
++
++
++class ValidationRecorder:
++    def __init__(self,store):self.store=store
++
++    def record(self,report):
++        with self.store.try_lock():
++            task=self.store.read_task(report.task_id)
++            attempt=task.attempts.get(str(report.attempt)) if task else None
++            if not task or task.packet_hash!=report.packet_hash or not attempt or not attempt.result or attempt.result.result_digest!=report.result_digest:
++                raise WorkerError('validation_identity_conflict')
++            result=attempt.result
++            required={check.check_id:check for check in task.packet.checks}
++            observed={item.check_id:item for item in report.observations}
++            if len(observed)!=len(report.observations) or not set(observed)<=set(required):raise WorkerError('validation_evidence_incomplete')
++            if report.verdict=='accepted':
++                if result.state!='draft_returned' or result.needs_context or attempt.retired:
++                    raise WorkerError('validation_evidence_incomplete')
++                if set(observed)!=set(required) or not all(item.passed for item in observed.values()):raise WorkerError('validation_evidence_incomplete')
++                if task.packet.category!='supplied_code_explanation' and not report.toolchain_ref:
++                    raise WorkerError('validation_evidence_incomplete')
++            if report.verdict=='failed' and (not report.diagnostics.strip() or not any(not item.passed for item in observed.values())):
++                raise WorkerError('validation_evidence_incomplete')
++            if report not in task.validations:
++                task=self.store.append_validation(report)
++                self.store.write(f'audit/{attempt.request_id}/validation-{len(task.validations):04d}.json',report)
++            result=result.model_copy(update={'validation':report.verdict,'evidence_origin':'supervisor_reported'})
++            if report.supervisor_edits:result.code='supervisor_corrected'
++            task.attempts[str(report.attempt)].result=result
++            self.store.save_task(task)
++            AuditWriter(self.store).write_metadata(attempt.request_id,{'task_id':report.task_id,'attempt':report.attempt,
++                'first_pass_acceptance':report.attempt==1 and report.verdict=='accepted' and not report.supervisor_edits,
++                'retry_outcome':report.verdict if report.attempt==2 else None,'supervisor_edits':report.supervisor_edits,
++                'effort':report.effort.model_dump(mode='json'),'evidence_origin':'supervisor_reported',
++                'material_errors':report.diagnostics if report.verdict!='accepted' else None,
++                'escalation_reason':report.verdict if report.verdict=='unverifiable' or (report.attempt==2 and report.verdict!='accepted') else None})
++            return result.model_copy(update={'action':'record_validation'})
+--- baseline/bridge/server.py
++++ bridge/server.py
+@@ -1,4 +1,4 @@
+-"""MCP surface: exactly two tools, schemas identical to v1.
++"""MCP surface: two compatible architect tools and one optional LOCAL-00 tool.
+ 
+ Stdout is reserved for MCP protocol traffic.  Nothing in this package prints;
+ diagnostics go to the ``logging`` module configured onto stderr in ``main``.
+@@ -15,15 +15,32 @@
+ import logging
+ import sys
+ import threading
++from contextlib import asynccontextmanager
+ 
+ import anyio
+ from mcp.server.fastmcp import FastMCP
+ 
+ from . import config
+ from .service import ArchitectService
++from .local_worker.models import LocalWorkerRequest, LocalWorkerResult
++from .local_worker.service import WorkerService
+ 
+-mcp = FastMCP("GPT Architect via Codex")
++
++@asynccontextmanager
++async def _lifespan(app):
++    async with anyio.create_task_group() as tasks:
++        tasks.start_soon(_local_service.startup)
++        try:
++            yield {}
++        finally:
++            tasks.cancel_scope.cancel()
++            with anyio.CancelScope(shield=True):
++                await _local_service.aclose()
++
++
++mcp = FastMCP("GPT Architect via Codex", lifespan=_lifespan)
+ _service = ArchitectService()
++_local_service = WorkerService()
+ 
+ _CLEANUP_WAIT_S = 25.0
+ 
+@@ -65,6 +82,15 @@
+     return await _run(config.REVIEW, focus)
+ 
+ 
++@mcp.tool()
++async def local_worker(request: LocalWorkerRequest) -> LocalWorkerResult:
++    """Explicitly use optional LOCAL-00 for a bounded approved task or worker recovery.
++    Responses are unvalidated drafts. The supervisor owns independent checks,
++    one feedback retry, acceptance and final changes. No automatic delegation.
++    """
++    return await _local_service.handle(request)
++
++
+ def main() -> None:
+     logging.basicConfig(
+         stream=sys.stderr,
+--- baseline/tests/fixtures/local_worker/baseline_metadata.json
++++ tests/fixtures/local_worker/baseline_metadata.json
+@@ -0,0 +1,17 @@
++{
++  "template": "{{- if .Suffix }}<|fim_prefix|>{{ .Prompt }}<|fim_suffix|>{{ .Suffix }}<|fim_middle|>\n{{- else if .Messages }}\n{{- if or .System .Tools }}<|im_start|>system\n{{- if .System }}\n{{ .System }}\n{{- end }}\n{{- if .Tools }}\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools>:\n<tools>\n{{- range .Tools }}\n{\"type\": \"function\", \"function\": {{ .Function }}}\n{{- end }}\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> with NO other text. Do not include any backticks or ```json.\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call>\n{{- end }}<|im_end|>\n{{ end }}\n{{- range $i, $_ := .Messages }}\n{{- $last := eq (len (slice $.Messages $i)) 1 -}}\n{{- if eq .Role \"user\" }}<|im_start|>user\n{{ .Content }}<|im_end|>\n{{ else if eq .Role \"assistant\" }}<|im_start|>assistant\n{{ if .Content }}{{ .Content }}\n{{- else if .ToolCalls }}<tool_call>\n{{ range .ToolCalls }}{\"name\": \"{{ .Function.Name }}\", \"arguments\": {{ .Function.Arguments }}}\n{{ end }}</tool_call>\n{{- end }}{{ if not $last }}<|im_end|>\n{{ end }}\n{{- else if eq .Role \"tool\" }}<|im_start|>user\n<tool_response>\n{{ .Content }}\n</tool_response><|im_end|>\n{{ end }}\n{{- if and (ne .Role \"assistant\") $last }}<|im_start|>assistant\n{{ end }}\n{{- end }}\n{{- else }}\n{{- if .System }}<|im_start|>system\n{{ .System }}<|im_end|>\n{{ end }}{{ if .Prompt }}<|im_start|>user\n{{ .Prompt }}<|im_end|>\n{{ end }}<|im_start|>assistant\n{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}",
++  "system": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant.",
++  "messages": [],
++  "capabilities": [
++    "completion",
++    "tools",
++    "insert"
++  ],
++  "model_info": {
++    "tokenizer.ggml.model": "gpt2",
++    "tokenizer.ggml.pre": "qwen2",
++    "tokenizer.ggml.add_bos_token": false,
++    "tokenizer.ggml.bos_token_id": 151643,
++    "tokenizer.ggml.eos_token_id": 151645
++  }
++}--- baseline/tests/local_worker_helpers.py
++++ tests/local_worker_helpers.py
+@@ -0,0 +1,60 @@
++from pathlib import Path
++import tempfile
++
++
++def packet_data(task_id='sample'):
++    return dict(task_id=task_id, category='isolated_repair', objective='Stable unique values',
++                constraints='None becomes empty; preserve order and input; return fresh list',
++                source='def stable_unique(items): return sorted(set(items))',
++                context='Standalone Python function', diagnostic='None raises TypeError',
++                versions={'Python': '3.13'}, references=[], output_form='one replacement function',
++                context_id='synthetic-v1', approval=dict(classification='synthetic',
++                    approval_ref='user-approved-local00-pilot', audit_content_approved=True),
++                checks=[dict(check_id='compile', kind='compile', contract='py_compile succeeds', method='independent py_compile'),
++                        dict(check_id='behaviour', kind='behaviour', contract='None, empty, stable order, no mutation, fresh list', method='independent executable assertions')])
++
++
++class TempWorld:
++    def __init__(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.home = Path(self.temp.name) / 'home'
++        self.home.mkdir()
++        self.root = self.home / '.gpt-architect-bridge-local00'
++    def close(self):
++        self.temp.cleanup()
++
++
++class HTTPFixture:
++    def __init__(self, routes=None):
++        import http.server
++        import threading
++        import json
++        from bridge.local_worker.settings import MODEL,DIGEST
++        owner=self
++        self.requests=[]
++        self.routes=routes or {}
++        self.default_tags={'models':[{'name':MODEL,'digest':DIGEST}]}
++        class Handler(http.server.BaseHTTPRequestHandler):
++            def log_message(self,*args):pass
++            def do_GET(self):self.reply()
++            def do_POST(self):self.reply()
++            def reply(self):
++                import time
++                length=int(self.headers.get('Content-Length','0'))
++                body=json.loads(self.rfile.read(length)) if length else None
++                owner.requests.append((self.command,self.path,body))
++                status,data,delay=owner.routes.get(self.path,(200,owner.default_tags if self.path=='/api/tags' else {'models':[]},0))
++                if callable(data):data=data(body)
++                raw=data if isinstance(data,bytes) else json.dumps(data).encode()
++                time.sleep(delay)
++                try:
++                    self.send_response(status);self.send_header('Content-Length',str(len(raw)))
++                    self.send_header('Location','http://127.0.0.1/forbidden');self.end_headers();self.wfile.write(raw)
++                except (BrokenPipeError,ConnectionResetError,ConnectionAbortedError):pass
++        self.server=http.server.ThreadingHTTPServer(('127.0.0.1',0),Handler)
++        self.thread=threading.Thread(target=self.server.serve_forever,daemon=True);self.thread.start()
++    @property
++    def dial(self):return self.server.server_address
++    @property
++    def generation_count(self):return sum(path=='/api/generate' for _,path,_ in self.requests)
++    def close(self):self.server.shutdown();self.server.server_close();self.thread.join()
+--- baseline/tests/local_worker_server.py
++++ tests/local_worker_server.py
+@@ -0,0 +1,28 @@
++"""Test-only stdio launcher. No production environment hook selects this fixture."""
++import asyncio
++import os
++from pathlib import Path
++import sys
++sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
++
++from bridge import server
++from bridge.local_worker.service import WorkerService
++from bridge.local_worker.models import TransportOutcome
++from bridge.local_worker.settings import MODEL,DIGEST
++from bridge.local_worker import _baseline
++
++
++class SyntheticTransport:
++    async def exchange(self,request):
++        if len(sys.argv)>1:await asyncio.sleep(float(sys.argv[1]))
++        data={'models':[]}
++        if request.path=='/api/tags':data={'models':[{'name':MODEL,'digest':DIGEST}]}
++        elif request.path=='/api/show':data=_baseline.METADATA
++        elif request.path=='/api/version':data={'version':_baseline.VERSION}
++        elif request.path=='/api/generate':data=dict(model=MODEL,response='def stable_unique(items): return list(dict.fromkeys(items or []))',done=True,done_reason='stop',prompt_eval_count=100,eval_count=20)
++        return TransportOutcome(status=200,phase='terminal_received',peer_ip='192.168.0.78',data=data)
++    async def aclose(self):pass
++
++
++server._local_service=WorkerService(transport=SyntheticTransport())
++if __name__=='__main__':server.main()
+--- baseline/tests/test_config_argv_auth.py
++++ tests/test_config_argv_auth.py
+@@ -3,6 +3,7 @@
+ from __future__ import annotations
+ 
+ import json
++import tempfile
+ import unittest
+ 
+ from tests.helpers import FIXTURES, WorldCase
+@@ -117,7 +118,8 @@
+         codexcli.assert_read_only_argv(argv, skip=2)
+         self.assertEqual(config.load_settings({"GPT_ARCHITECT_WINDOWS_SANDBOX": "unelevated"}).windows_sandbox,
+                          "unelevated")
+-        self.assertIsNone(config.load_settings({}).windows_sandbox)
++        with tempfile.TemporaryDirectory() as isolated_settings:
++            self.assertIsNone(config.load_settings({"GPT_ARCHITECT_V2_STATE_DIR": isolated_settings}).windows_sandbox)
+         with self.assertRaises(errors.BridgeError):
+             config.load_settings({"GPT_ARCHITECT_WINDOWS_SANDBOX": "off"})
+ 
+--- baseline/tests/test_local_worker_admin.py
++++ tests/test_local_worker_admin.py
+@@ -0,0 +1,29 @@
++import json
++import unittest
++from pathlib import Path
++from bridge import admin
++from bridge.local_worker.models import *
++from bridge.local_worker.storage import WorkerStore
++from tests.local_worker_helpers import TempWorld,packet_data
++
++
++class Administration(unittest.TestCase):
++    def test_group_exists_and_confirmation_is_required(self):
++        parser=admin.build_parser()
++        self.assertIn('local-worker',parser.format_help(),'LOCAL-00 administration missing')
++        w=TempWorld();self.addCleanup(w.close)
++        store=WorkerStore(w.root,(),w.home)
++        request=GenerateRequest(action='generate',packet=TaskPacket(**packet_data()),attempt=1)
++        with store.try_lock():store.begin_attempt(request,PreparedPrompt(text='x',prompt_hash='0'*64,proof_hash='1'*64,upper_bound=10),'a'*32)
++        args=['local-worker','resolve-uncertain','--request-id','a'*32,'--reason','operator checked','--evidence-ref','operator observation']
++        env={'USERPROFILE':str(w.home)}
++        self.assertEqual(admin.main(args,env),2)
++        self.assertEqual(store.read_snapshot().coordination,'uncertain')
++        self.assertEqual(admin.main(args+['--confirmed-idle'],env),0)
++        self.assertEqual(store.read_snapshot().coordination,'idle')
++        self.assertEqual(admin.main(['local-worker','status','--json'],env),0)
++
++    def test_status_does_not_require_codex_auth_or_repository(self):
++        self.assertIn('local-worker',admin.build_parser().format_help(),'LOCAL-00 administration missing')
++        w=TempWorld();self.addCleanup(w.close)
++        self.assertEqual(admin.main(['local-worker','status','--json'],{'USERPROFILE':str(w.home),'GPT_ARCHITECT_MODEL':'INVALID MODEL'}),0)
+--- baseline/tests/test_local_worker_budget.py
++++ tests/test_local_worker_budget.py
+@@ -0,0 +1,44 @@
++import json
++from pathlib import Path
++import unittest
++from bridge.local_worker.models import TaskPacket,WorkerError,ValidationReport
++from tests.local_worker_helpers import packet_data
++
++
++class Budget(unittest.TestCase):
++    def api(self):
++        try:from bridge.local_worker import prompts
++        except ImportError:self.fail('verified baseline prompt budget missing')
++        return prompts
++
++    def test_verified_metadata_and_version_only(self):
++        p=self.api();data=json.loads((Path(__file__).parent/'fixtures/local_worker/baseline_metadata.json').read_text())
++        proof=p.verify_baseline(data,'0.30.9')
++        self.assertEqual(proof.method,'verified_utf8_bpe')
++        for changed,version in [(data,'different'),(data|{'system':'altered'},'0.30.9'),(data|{'template':'{{ custom }}'},'0.30.9')]:
++            with self.assertRaises(WorkerError):p.verify_baseline(changed,version)
++
++    def test_prompt_preserves_contract_and_bounds_utf8(self):
++        p=self.api();proof=p.baseline_proof()
++        packet=TaskPacket(**packet_data())
++        prepared=p.PromptBudgeter().prepare(packet,proof)
++        self.assertIn(packet.source,prepared.text)
++        self.assertIn('NEEDS_CONTEXT:',prepared.text)
++        self.assertLessEqual(prepared.upper_bound,3072)
++        changed=TaskPacket(**(packet_data()|{'source':'é'*2000}))
++        with self.assertRaises(WorkerError):p.PromptBudgeter().prepare(changed,proof)
++
++    def test_retry_includes_exact_failure_and_cannot_silently_truncate(self):
++        p=self.api();packet=TaskPacket(**packet_data())
++        report=ValidationReport(task_id='sample',attempt=1,packet_hash='0'*64,result_digest='1'*64,verdict='failed',observations=[],diagnostics='input None: expected [], actual TypeError')
++        text=p.render_task(packet,report,'bad code')
++        self.assertIn(report.diagnostics,text);self.assertIn(packet.constraints,text)
++        with self.assertRaises(WorkerError):p.PromptBudgeter().prepare(packet,p.baseline_proof(),report,'x'*3500)
++
++    def test_complete_3072_3073_boundary(self):
++        p=self.api();proof=p.baseline_proof();packet=TaskPacket(**packet_data())
++        current=p.PromptBudgeter().prepare(packet,proof).upper_bound
++        source=packet.source+'a'*(3072-current)
++        at_limit=packet.model_copy(update={'source':source})
++        self.assertEqual(p.PromptBudgeter().prepare(at_limit,proof).upper_bound,3072)
++        with self.assertRaises(WorkerError):p.PromptBudgeter().prepare(at_limit.model_copy(update={'source':source+'a'}),proof)
+--- baseline/tests/test_local_worker_generation.py
++++ tests/test_local_worker_generation.py
+@@ -0,0 +1,84 @@
++import asyncio
++import copy
++import unittest
++from bridge.local_worker.models import *
++from bridge.local_worker.settings import MODEL,DIGEST,parse_address
++from bridge.local_worker.storage import WorkerStore
++from bridge.local_worker.transport import WorkerTransport
++from bridge.local_worker import _baseline
++from tests.local_worker_helpers import TempWorld,HTTPFixture,packet_data
++
++
++class Generation(unittest.IsolatedAsyncioTestCase):
++    def setup_runner(self,reply=None):
++        try:from bridge.local_worker.generation import GenerationRunner
++        except ImportError:self.fail('audited generation transaction missing')
++        w=TempWorld();self.addCleanup(w.close)
++        store=WorkerStore(w.root,(),w.home)
++        reply=reply or dict(model=MODEL,response='def stable_unique(items): return list(dict.fromkeys(items or []))',done=True,done_reason='stop',prompt_eval_count=200,eval_count=20,total_duration=1000000000)
++        server=HTTPFixture({'/api/show':(200,_baseline.METADATA,0),'/api/version':(200,{'version':_baseline.VERSION},0),'/api/generate':(200,reply,0)})
++        self.addCleanup(server.close)
++        runner=GenerationRunner(store,WorkerTransport(dial_override=server.dial))
++        request=GenerateRequest(action='generate',packet=TaskPacket(**packet_data()),attempt=1)
++        return runner,store,server,request
++
++    async def test_one_post_with_full_audit_and_idempotent_replay(self):
++        runner,store,server,request=self.setup_runner()
++        first=await runner.run(request,parse_address('skynet.local'))
++        self.assertEqual(first.state,'draft_returned',first.model_dump())
++        self.assertEqual(first.validation,'pending')
++        self.assertEqual(first.metrics['total_duration_s'],1.0)
++        second=await runner.run(request,parse_address('192.168.0.78'))
++        self.assertEqual(server.generation_count,1);self.assertTrue(second.replayed_from_ledger)
++        self.assertEqual(first.result_digest,second.result_digest)
++        import json
++        sent=[body for method,path,body in server.requests if path=='/api/generate'][0]
++        self.assertEqual(sent['options'],dict(num_ctx=4096,num_predict=1024,temperature=0))
++        self.assertNotIn('system',sent);self.assertNotIn('raw',sent)
++        self.assertTrue(list((store.root/'audit').glob('*/request.json')))
++        self.assertTrue(list((store.root/'audit').glob('*/response.json')))
++        changed=request.model_copy(update={'packet':request.packet.model_copy(update={'source':'other'})})
++        result=await runner.run(changed,parse_address('skynet.local'))
++        self.assertEqual(result.code,'task_conflict');self.assertEqual(server.generation_count,1)
++
++    async def test_malformed_length_clarification_and_metric_failures(self):
++        base=dict(model=MODEL,response='answer',done=True,done_reason='stop',prompt_eval_count=50)
++        cases=[({'done_reason':'length'},'completion_incomplete'),({'response':''},'completion_incomplete'),({'model':'other'},'completion_incomplete'),({'prompt_eval_count':True},'metrics_invalid'),({'response':'NEEDS_CONTEXT: caller?'},'worker_clarification')]
++        for change,code in cases:
++            with self.subTest(change=change):
++                runner,store,server,request=self.setup_runner(base|change)
++                result=await runner.run(request,parse_address('skynet.local'))
++                self.assertEqual(result.state,'incomplete_error',result.model_dump())
++                self.assertEqual(result.code,code)
++
++    async def test_prompt_count_contradiction_blocks_following_task(self):
++        runner,store,server,request=self.setup_runner(dict(model=MODEL,response='answer',done=True,done_reason='stop',prompt_eval_count=99999))
++        result=await runner.run(request,parse_address('skynet.local'))
++        self.assertEqual(result.code,'prompt_budget_contradiction')
++        other=request.model_copy(update={'packet':TaskPacket(**packet_data('other'))})
++        again=await runner.run(other,parse_address('skynet.local'))
++        self.assertEqual(again.code,'budget_blocked');self.assertEqual(server.generation_count,1)
++
++    async def test_busy_resident_model_or_metadata_drift_never_generates(self):
++        runner,store,server,request=self.setup_runner()
++        server.routes['/api/ps']=(200,{'models':[{'name':'another','digest':'x'}]},0)
++        result=await runner.run(request,parse_address('skynet.local'))
++        self.assertEqual(result.state,'busy');self.assertEqual(server.generation_count,0)
++        server.routes['/api/ps']=(200,{'models':[]},0)
++        server.routes['/api/show']=(200,_baseline.METADATA|{'system':'drift'},0)
++        result=await runner.run(request,parse_address('skynet.local'))
++        self.assertEqual(result.code,'budget_unverifiable');self.assertEqual(server.generation_count,0)
++
++    async def test_timeout_keeps_uncertainty_across_restart(self):
++        runner,store,server,request=self.setup_runner()
++        from bridge.local_worker.models import TransportOutcome
++        original=runner.transport.exchange
++        async def dropped(req):
++            if req.path=='/api/generate':return TransportOutcome(code='transport_timeout',phase='may_have_started')
++            return await original(req)
++        runner.transport.exchange=dropped
++        result=await runner.run(request,parse_address('skynet.local'))
++        self.assertEqual(result.coordination,'uncertain')
++        other=request.model_copy(update={'packet':TaskPacket(**packet_data('other'))})
++        result=await runner.run(other,parse_address('skynet.local'))
++        self.assertEqual(result.code,'worker_uncertain')
+--- baseline/tests/test_local_worker_mcp.py
++++ tests/test_local_worker_mcp.py
+@@ -0,0 +1,49 @@
++import asyncio
++import json
++import os
++from pathlib import Path
++import sys
++import time
++import unittest
++from mcp import ClientSession,StdioServerParameters
++from mcp.client.stdio import stdio_client
++from tests.local_worker_helpers import TempWorld,packet_data
++
++
++class Mcp(unittest.IsolatedAsyncioTestCase):
++    async def test_exact_surface_and_real_roundtrip_all_five_actions(self):
++        from bridge.server import mcp
++        tools=await mcp.list_tools()
++        self.assertEqual(sorted(t.name for t in tools),['consult_architect','local_worker','review_implementation'])
++        w=TempWorld();self.addCleanup(w.close)
++        env=dict(os.environ,USERPROFILE=str(w.home))
++        launcher=Path(__file__).with_name('local_worker_server.py')
++        async with stdio_client(StdioServerParameters(command=sys.executable,args=['-B',str(launcher)],env=env)) as (read,write):
++            async with ClientSession(read,write) as session:
++                await session.initialize()
++                await session.send_ping()
++                for action in ['status','continue_without','reconnect']:
++                    result=await session.call_tool('local_worker',{'request':{'action':action}})
++                    self.assertFalse(result.isError,result.content)
++                result=await session.call_tool('local_worker',{'request':{'action':'generate','packet':packet_data(),'attempt':1}})
++                self.assertFalse(result.isError,result.content)
++                data=result.structuredContent
++                self.assertEqual(data['state'],'draft_returned',data)
++                report=dict(task_id='sample',attempt=1,packet_hash=data['packet_hash'],result_digest=data['result_digest'],verdict='accepted',toolchain_ref='candidate pycompile and behaviour tests',
++                    observations=[dict(check_id=k,passed=True,evidence_ref='executed synthetic checks',observed='passed') for k in ['compile','behaviour']])
++                checked=await session.call_tool('local_worker',{'request':{'action':'record_validation','report':report}})
++                self.assertEqual(checked.structuredContent['validation'],'accepted')
++                bad=await session.call_tool('local_worker',{'request':{'action':'status','raw':True}})
++                self.assertTrue(bad.isError)
++
++    async def test_initialization_ping_and_status_during_delayed_discovery(self):
++        from bridge.server import mcp
++        self.assertIn('local_worker',[t.name for t in await mcp.list_tools()])
++        w=TempWorld();self.addCleanup(w.close)
++        params=StdioServerParameters(command=sys.executable,args=['-B',str(Path(__file__).with_name('local_worker_server.py')),'2'],env=dict(os.environ,USERPROFILE=str(w.home)))
++        async with stdio_client(params) as (read,write):
++            async with ClientSession(read,write) as session:
++                await asyncio.wait_for(session.initialize(),2)
++                await asyncio.wait_for(session.send_ping(),1)
++                result=await asyncio.wait_for(session.call_tool('local_worker',{'request':{'action':'status'}}),1)
++                self.assertIn(result.structuredContent['availability'],['discovering','available','unavailable'])
+--- baseline/tests/test_local_worker_models.py
++++ tests/test_local_worker_models.py
+@@ -0,0 +1,42 @@
++import unittest
++from pydantic import ValidationError
++from tests.local_worker_helpers import packet_data
++
++
++class Contracts(unittest.TestCase):
++    def api(self):
++        try:
++            from bridge.local_worker import models, settings
++        except ImportError:
++            self.fail('local worker contracts are missing')
++        return models, settings
++
++    def test_addresses_and_fixed_settings(self):
++        m, s = self.api()
++        self.assertEqual(s.parse_address(' skynet.local ').base_url, 'http://skynet.local:11434')
++        self.assertEqual(s.parse_address('[2001:db8::78]').base_url, 'http://[2001:db8::78]:11434')
++        for value in ['http://x', 'x:11434', '0.0.0.0', '127.0.0.1', '::1', '::', '224.0.0.1', 'a/b', 'a@b', 'a?b', 'fe80::1%1', '123.456.0.1']:
++            with self.subTest(value=value), self.assertRaises(m.WorkerError): s.parse_address(value)
++        self.assertEqual(s.PROFILE['options'], dict(num_ctx=4096, num_predict=1024, temperature=0))
++
++    def test_strict_packets_and_action_union(self):
++        m, s = self.api()
++        p = m.TaskPacket(**packet_data())
++        for extra in [dict(attempt=True), dict(attempt=3), dict(attempt=1, raw=True),dict(attempt=1,schema_version=True)]:
++            with self.assertRaises(ValidationError):
++                m.REQUEST_ADAPTER.validate_python(dict(action='generate',packet=p,**extra))
++        self.assertEqual(m.REQUEST_ADAPTER.validate_python(dict(action='status')).action, 'status')
++        with self.assertRaises(ValidationError):m.REQUEST_ADAPTER.validate_python(dict(action='status', address='x'))
++        for change in [dict(category='architecture'),dict(checks=[]),dict(source=''),dict(task_id='../escape'),dict(objective='x'*9000),dict(approval={'classification':'synthetic','approval_ref':'x','audit_content_approved':False})]:
++            with self.subTest(change=list(change)),self.assertRaises(ValidationError):m.TaskPacket(**(packet_data()|change))
++        self.assertNotEqual(m.canonical_packet_hash(p),m.canonical_packet_hash(m.TaskPacket(**(packet_data()|{'source':'different'}))))
++
++    def test_settings_timeouts_and_shared_root(self):
++        m, s = self.api()
++        from tests.local_worker_helpers import TempWorld
++        import json
++        w=TempWorld(); self.addCleanup(w.close);w.root.mkdir()
++        for value in [True, float('nan'), 0, 16]:
++            (w.root/'config.json').write_text(json.dumps({'schema_version':1,'discovery_timeout_s':value}))
++            with self.assertRaises(m.WorkerError): s.load_worker_settings(w.root)
++        self.assertEqual(s.worker_root({'USERPROFILE':str(w.home),'GPT_ARCHITECT_V2_STATE_DIR':'a'}),s.worker_root({'USERPROFILE':str(w.home),'GPT_ARCHITECT_V2_STATE_DIR':'b'}))
+--- baseline/tests/test_local_worker_provenance.py
++++ tests/test_local_worker_provenance.py
+@@ -0,0 +1,24 @@
++import tempfile
++import unittest
++from pathlib import Path
++from tools.record_evidence import source_files, fingerprint
++from tools.make_verification_prompt import expand_full, _source_diff
++
++
++class Provenance(unittest.TestCase):
++    def test_nested_code_and_fixtures_are_hashed_and_reviewed(self):
++        with tempfile.TemporaryDirectory() as tmp:
++            root = Path(tmp)
++            code = root / 'bridge/local_worker/transport.py'
++            fixture = root / 'tests/fixtures/local_worker/tags.json'
++            for p, text in ((code, 'VALUE = 1\n'), (fixture, '{}')):
++                p.parent.mkdir(parents=True, exist_ok=True)
++                p.write_text(text)
++            names = [p.relative_to(root).as_posix() for p in source_files(root)]
++            self.assertIn('bridge/local_worker/transport.py', names)
++            self.assertIn('tests/fixtures/local_worker/tags.json', names)
++            before = fingerprint(root)['combined_sha256']
++            code.write_text('VALUE = 2\n')
++            self.assertNotEqual(before, fingerprint(root)['combined_sha256'])
++            self.assertIn('bridge/local_worker/transport.py', expand_full(root))
++            self.assertIn('VALUE = 2', _source_diff(root, root / 'empty'))
+--- baseline/tests/test_local_worker_service.py
++++ tests/test_local_worker_service.py
+@@ -0,0 +1,62 @@
++import asyncio
++import unittest
++from bridge.local_worker.models import *
++from bridge.local_worker.settings import MODEL,DIGEST
++from tests.local_worker_helpers import TempWorld
++
++
++class FakeTransport:
++    def __init__(self):self.calls=[];self.fail_hosts=set();self.gate=None
++    async def exchange(self,request):
++        self.calls.append(request)
++        if self.gate is not None:await self.gate.wait()
++        if request.endpoint.host in self.fail_hosts:return TransportOutcome(code='transport_error')
++        return TransportOutcome(status=200,phase='terminal_received',peer_ip='192.168.0.78',data={'models':[{'name':MODEL,'digest':DIGEST}]})
++    async def aclose(self):pass
++
++
++class Discovery(unittest.IsolatedAsyncioTestCase):
++    def service(self):
++        try:from bridge.local_worker.service import WorkerService
++        except ImportError:self.fail('optional worker service missing')
++        w=TempWorld();self.addCleanup(w.close)
++        transport=FakeTransport()
++        return WorkerService({'USERPROFILE':str(w.home)},transport=transport),transport,w
++
++    async def test_hostname_first_saved_peer_and_status_no_network(self):
++        service,t,w=self.service()
++        result=await service.discover()
++        self.assertEqual(result.availability,'available')
++        self.assertEqual(t.calls[0].endpoint.host,'skynet.local')
++        from bridge.local_worker.settings import load_worker_settings
++        self.assertEqual(load_worker_settings(w.root).last_validated_ip,'192.168.0.78')
++        count=len(t.calls);await service.handle(StatusRequest(action='status'));self.assertEqual(len(t.calls),count)
++
++    async def test_fallback_and_continue_after_both_fail(self):
++        service,t,w=self.service();t.fail_hosts={'skynet.local'}
++        result=await service.discover()
++        self.assertEqual([q.endpoint.host for q in t.calls],['skynet.local','192.168.0.78'])
++        t.fail_hosts.add('192.168.0.78')
++        result=await service.discover();self.assertEqual(result.availability,'unavailable')
++        self.assertEqual(len(result.next_actions),3)
++        result=await service.handle(ContinueWithoutRequest(action='continue_without'))
++        self.assertEqual(result.availability,'disabled')
++
++    async def test_late_discovery_cannot_reenable_disabled_session(self):
++        service,t,w=self.service();t.gate=asyncio.Event()
++        discovery=asyncio.create_task(service.startup())
++        await asyncio.sleep(.05)
++        await service.handle(ContinueWithoutRequest(action='continue_without'))
++        t.gate.set();await discovery
++        result=await service.handle(StatusRequest(action='status'))
++        self.assertEqual(result.availability,'disabled')
++        result=await service.handle(ReconnectRequest(action='reconnect'))
++        self.assertEqual(result.availability,'available')
++
++    async def test_invalid_address_and_corrupt_config_are_optional(self):
++        service,t,w=self.service()
++        result=await service.handle(ReconnectRequest(action='reconnect',address='x:80'))
++        self.assertEqual(result.state,'unavailable');self.assertFalse(t.calls)
++        await service.discover();(w.root/'config.json').write_text('{')
++        result=await service.handle(ReconnectRequest(action='reconnect'))
++        self.assertEqual(result.code,'worker_config_invalid')
+--- baseline/tests/test_local_worker_storage.py
++++ tests/test_local_worker_storage.py
+@@ -0,0 +1,79 @@
++import json
++import os
++from pathlib import Path
++import subprocess
++import sys
++import unittest
++from tests.local_worker_helpers import TempWorld, packet_data
++from bridge.local_worker.models import WorkerError, TaskPacket, GenerateRequest, PreparedPrompt, LocalWorkerResult
++
++
++class Storage(unittest.TestCase):
++    def setUp(self):
++        self.w=TempWorld();self.addCleanup(self.w.close)
++
++    def store(self):
++        try:
++            from bridge.local_worker.storage import WorkerStore
++        except ImportError:self.fail('shared worker store missing')
++        return WorkerStore(self.w.root,(),self.w.home)
++
++    def begin(self,store):
++        req=GenerateRequest(action='generate',packet=TaskPacket(**packet_data()),attempt=1)
++        prepared=PreparedPrompt(text='prompt',prompt_hash='0'*64,proof_hash='1'*64,upper_bound=20)
++        return store.begin_attempt(req,prepared,'a'*32)
++
++    def test_shared_lock_and_crash_marker_survive_restart(self):
++        store=self.store()
++        with store.try_lock():
++            with self.assertRaises(WorkerError) as caught:
++                with self.store().try_lock():pass
++            self.assertEqual(caught.exception.code,'worker_busy')
++            self.begin(store)
++        other=self.store()
++        self.assertEqual(other.read_snapshot().coordination,'uncertain')
++        with other.try_lock(),self.assertRaises(WorkerError):self.begin(other)
++
++    def test_cross_process_lock_is_released_on_hard_kill(self):
++        store=self.store()
++        with store.try_lock():
++            code='''from pathlib import Path
++from bridge.local_worker.storage import WorkerStore
++from bridge.local_worker.models import WorkerError
++import sys
++s=WorkerStore(Path(sys.argv[1]),(),Path(sys.argv[2]))
++try:
++ with s.try_lock(): print('WRONGLY_ENTERED')
++except WorkerError as e: print(e.code)
++'''
++            r=subprocess.run([sys.executable,'-B','-c',code,str(self.w.root),str(self.w.home)],capture_output=True,text=True,timeout=8)
++            self.assertEqual(r.stdout.strip(),'worker_busy',r.stderr)
++
++    def test_terminal_ledger_before_marker_retirement_and_replay(self):
++        store=self.store()
++        with store.try_lock():
++            self.begin(store)
++            store.finish_attempt('a'*32,LocalWorkerResult(action='generate',state='draft_returned',code='ok',response='answer'))
++        self.assertEqual(store.read_snapshot().coordination,'idle')
++        self.assertEqual(store.read_task('sample').attempts['1'].result.response,'answer')
++        taskpath=next((self.w.root/'tasks').glob('*.json'));taskpath.unlink()
++        with self.assertRaises(WorkerError):store.read_task('sample')
++
++    def test_corruption_and_repository_overlap_refuse(self):
++        store=self.store()
++        with store.try_lock():pass
++        (self.w.root/'snapshot.json').write_text('{')
++        with self.assertRaises(WorkerError):store.read_snapshot()
++        from bridge.local_worker.storage import WorkerStore
++        with self.assertRaises(WorkerError):
++            with WorkerStore(self.w.root,(self.w.home,),self.w.home).try_lock():pass
++
++    def test_operator_resolution_requires_matching_confirmation(self):
++        store=self.store()
++        with store.try_lock():
++            self.begin(store)
++            for request,ack in [('a'*32,False),('b'*32,True)]:
++                with self.assertRaises(WorkerError):store.resolve_uncertain(request,ack,'checked','operator-ref')
++            store.resolve_uncertain('a'*32,True,'server confirmed idle','operator-ref')
++        self.assertEqual(store.read_snapshot().coordination,'idle')
++        self.assertTrue(store.read_task('sample').attempts['1'].retired)
+--- baseline/tests/test_local_worker_transport.py
++++ tests/test_local_worker_transport.py
+@@ -0,0 +1,66 @@
++import asyncio
++from pathlib import Path
++import sys
++import time
++import unittest
++from tests.local_worker_helpers import HTTPFixture,TempWorld
++from bridge.local_worker.models import TransportRequest
++from bridge.local_worker.settings import parse_address
++
++
++class Transport(unittest.IsolatedAsyncioTestCase):
++    def transport(self,**kwargs):
++        try:from bridge.local_worker.transport import WorkerTransport
++        except ImportError:self.fail('bounded transport missing')
++        return WorkerTransport(**kwargs)
++
++    def request(self,**kwargs):
++        return TransportRequest(endpoint=parse_address('skynet.local'),method='GET',path='/api/tags',**kwargs)
++
++    async def test_http_peer_no_redirect_and_bounded_body(self):
++        server=HTTPFixture({'/api/ps':(302,{},0),'/api/show':(200,b'x'*5000,0)})
++        self.addCleanup(server.close)
++        transport=self.transport(dial_override=server.dial)
++        out=await transport.exchange(self.request())
++        self.assertEqual(out.peer_ip,'127.0.0.1');self.assertEqual(out.status,200)
++        out=await transport.exchange(TransportRequest(endpoint=parse_address('skynet.local'),method='GET',path='/api/ps'))
++        self.assertEqual(out.status,302);self.assertEqual(len(server.requests),2)
++        out=await transport.exchange(TransportRequest(endpoint=parse_address('skynet.local'),method='POST',path='/api/show',body={},max_bytes=100))
++        self.assertTrue(out.truncated);self.assertIsNone(out.data)
++
++    async def test_slow_header_timeout_kills_helper(self):
++        server=HTTPFixture({'/api/tags':(200,{},2)})
++        self.addCleanup(server.close)
++        transport=self.transport(dial_override=server.dial)
++        started=time.monotonic()
++        out=await transport.exchange(self.request(timeout_s=.25))
++        self.assertEqual(out.code,'transport_timeout');self.assertLess(time.monotonic()-started,1.25)
++        self.assertEqual(transport.active_helpers,set())
++
++    async def test_stalled_helper_dns_and_malformed_protocol(self):
++        w=TempWorld();self.addCleanup(w.close)
++        helper=w.home/'stall.py';helper.write_text('import time; time.sleep(30)')
++        transport=self.transport(helper_path=helper)
++        out=await transport.exchange(self.request(timeout_s=.2))
++        self.assertEqual(out.code,'transport_timeout');self.assertFalse(transport.active_helpers)
++        helper.write_text('print("not JSON")')
++        out=await transport.exchange(self.request())
++        self.assertEqual(out.code,'helper_protocol_error')
++
++    async def test_cancelled_post_has_no_replay_and_reaps(self):
++        server=HTTPFixture({'/api/generate':(200,{},3)})
++        self.addCleanup(server.close)
++        transport=self.transport(dial_override=server.dial)
++        request=TransportRequest(endpoint=parse_address('skynet.local'),method='POST',path='/api/generate',body={'prompt':'test'})
++        task=asyncio.create_task(transport.exchange(request))
++        for _ in range(100):
++            if server.generation_count:break
++            await asyncio.sleep(.01)
++        task.cancel()
++        with self.assertRaises(asyncio.CancelledError):await task
++        self.assertEqual(server.generation_count,1);self.assertFalse(transport.active_helpers)
++
++    async def test_unapproved_path_never_spawns(self):
++        transport=self.transport()
++        out=await transport.exchange(TransportRequest(endpoint=parse_address('skynet.local'),method='POST',path='/api/pull',body={}))
++        self.assertEqual(out.code,'transport_request_rejected');self.assertFalse(transport.active_helpers)
+--- baseline/tests/test_local_worker_validation.py
++++ tests/test_local_worker_validation.py
+@@ -0,0 +1,53 @@
++import unittest
++from bridge.local_worker.models import *
++from bridge.local_worker.settings import parse_address
++from tests import test_local_worker_generation as generation_tests
++
++
++class Validation(unittest.IsolatedAsyncioTestCase):
++    async def seed(self):
++        try:from bridge.local_worker.validation import ValidationRecorder
++        except ImportError:self.fail('supervisor validation and retry enforcement missing')
++        runner,store,server,request=generation_tests.Generation.setup_runner(self)
++        result=await runner.run(request,parse_address('skynet.local'))
++        return ValidationRecorder(store),runner,store,server,request,result
++
++    def report(self,result,verdict='accepted',**kwargs):
++        observations=[CheckObservation(check_id=key,passed=verdict=='accepted',evidence_ref='executed-tests',observed='passed' if verdict=='accepted' else 'None raised TypeError') for key in ['compile','behaviour']]
++        return ValidationReport(task_id=result.task_id,attempt=result.attempt,packet_hash=result.packet_hash,result_digest=result.result_digest,
++            verdict=verdict,observations=observations,toolchain_ref='Python 3.13 independent candidate tests',**kwargs)
++
++    async def test_compiler_only_cannot_accept_and_no_commands_execute(self):
++        recorder,runner,store,server,request,result=await self.seed()
++        report=self.report(result);report.observations=report.observations[:1]
++        with self.assertRaises(WorkerError) as caught:recorder.record(report)
++        self.assertEqual(caught.exception.code,'validation_evidence_incomplete')
++        accepted=recorder.record(self.report(result))
++        self.assertEqual(accepted.validation,'accepted');self.assertEqual(accepted.evidence_origin,'supervisor_reported')
++        recorder.record(self.report(result));self.assertEqual(len(store.read_task('sample').validations),1)
++        retry=request.model_copy(update={'attempt':2,'feedback_ref':result.result_digest})
++        rejected=await runner.run(retry,parse_address('skynet.local'))
++        self.assertEqual(rejected.code,'retry_not_eligible');self.assertEqual(server.generation_count,1)
++
++    async def test_one_exact_failure_retry_survives_restarts(self):
++        recorder,runner,store,server,request,result=await self.seed()
++        premature=await runner.run(request.model_copy(update={'attempt':2,'feedback_ref':result.result_digest}),parse_address('skynet.local'))
++        self.assertEqual(premature.code,'retry_not_eligible')
++        failed=self.report(result,'failed',diagnostics='input None: expected [], actual TypeError')
++        recorder.record(failed)
++        retry=request.model_copy(update={'attempt':2,'feedback_ref':result.result_digest})
++        retried=await runner.run(retry,parse_address('skynet.local'))
++        self.assertEqual(retried.state,'draft_returned',retried.model_dump())
++        self.assertEqual(server.generation_count,2)
++        replay=await runner.run(retry,parse_address('skynet.local'))
++        self.assertTrue(replay.replayed_from_ledger);self.assertEqual(server.generation_count,2)
++        sent=[body['prompt'] for method,path,body in server.requests if path=='/api/generate'][-1]
++        self.assertIn(failed.diagnostics,sent)
++
++    async def test_wrong_result_or_checks_cannot_change_verdict(self):
++        recorder,runner,store,server,request,result=await self.seed()
++        for report in [self.report(result).model_copy(update={'result_digest':'e'*64}),self.report(result).model_copy(update={'observations':[]})]:
++            with self.assertRaises(WorkerError):recorder.record(report)
++        accepted=recorder.record(self.report(result,supervisor_edits='fixed result manually'))
++        self.assertEqual(accepted.code,'supervisor_corrected')
++        self.assertEqual(server.generation_count,1)
+--- baseline/tests/test_server_admin.py
++++ tests/test_server_admin.py
+@@ -23,12 +23,14 @@
+ 
+ 
+ class McpSurface(unittest.TestCase):
+-    def test_exactly_two_tools_with_v1_schemas(self):
++    def test_three_tools_with_original_v1_schemas(self):
+         from bridge.server import mcp
+ 
+         tools = asyncio.run(mcp.list_tools())
+         got = sorted((_tool_dump(t) for t in tools), key=lambda d: d["name"])
+         expected = json.loads((FIXTURES / "v1_tool_schemas.json").read_text(encoding="utf-8"))
++        self.assertEqual([t["name"] for t in got], ["consult_architect", "local_worker", "review_implementation"])
++        got = [t for t in got if t["name"] != "local_worker"]
+         self.assertEqual([t["name"] for t in got], ["consult_architect", "review_implementation"])
+         self.assertEqual(got, expected, "tool names, descriptions and schemas must be byte-identical to v1")
+ 
+@@ -38,7 +40,7 @@
+         by_name = {t.name: t for t in asyncio.run(mcp.list_tools())}
+         self.assertEqual(by_name["consult_architect"].inputSchema["required"], ["question"])
+         self.assertEqual(by_name["review_implementation"].inputSchema["required"], ["focus"])
+-        for t in by_name.values():
++        for t in (by_name[name] for name in ("consult_architect", "review_implementation")):
+             self.assertEqual(len(t.inputSchema["properties"]), 1)
+ 
+ 
+@@ -56,7 +58,7 @@
+ 
+         async def scenario():
+             params = StdioServerParameters(
+-                command=sys.executable, args=[str(ROOT / "architect_bridge.py")], env=self._server_env()
++                command=sys.executable, args=[str(ROOT / "tests" / "local_worker_server.py")], env=self._server_env()
+             )
+             async with stdio_client(params) as (read, write):
+                 async with ClientSession(read, write) as session:
+@@ -68,7 +70,7 @@
+                     return listed, first, second, bad
+ 
+         listed, first, second, bad = asyncio.run(asyncio.wait_for(scenario(), 120))
+-        self.assertEqual(sorted(t.name for t in listed.tools), ["consult_architect", "review_implementation"])
++        self.assertEqual(sorted(t.name for t in listed.tools), ["consult_architect", "local_worker", "review_implementation"])
+         self.assertFalse(first.isError)
+         self.assertEqual(first.content[0].text, "FAKE ANSWER")
+         self.assertEqual(second.content[0].text, "FAKE ANSWER")
+@@ -79,7 +81,7 @@
+ 
+     def test_stdout_carries_only_json_rpc(self):
+         proc = subprocess.Popen(
+-            [sys.executable, str(ROOT / "architect_bridge.py")],
++            [sys.executable, str(ROOT / "tests" / "local_worker_server.py")],
+             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+             env=self._server_env(), cwd=str(self.w.tmp),
+         )
+@@ -123,7 +125,7 @@
+         pidfile, started = self.w.tmp / "mcp_child.pid", self.w.tmp / "mcp_started"
+         self.w.set(exec={"sleep": 120, "spawn_child": str(pidfile), "started_file": str(started)})
+         proc = subprocess.Popen(
+-            [sys.executable, str(ROOT / "architect_bridge.py")],
++            [sys.executable, str(ROOT / "tests" / "local_worker_server.py")],
+             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+             env=self._server_env(), cwd=str(self.w.tmp),
+         )
+--- baseline/tools/make_verification_prompt.py
++++ tools/make_verification_prompt.py
+@@ -105,7 +105,8 @@
+ ]
+ # Embedded in full, matched by pattern (the set varies by run).  Review / request files: newest only.
+ GLOB_FULL = (
+-    "tests/fixtures/*.json",
++    "tests/fixtures/**/*.json",
++    "bridge/local_worker/**/*.py",
+     "docs/evidence/source_fingerprint.json",
+     "docs/evidence/capability_policy_real_cli.json",
+     "docs/evidence/tests_*.json",
+@@ -573,7 +574,7 @@
+         for prefix in SRC_DIFF_PREFIXES:
+             d = base / prefix.rstrip("/")
+             if d.is_dir():
+-                names.update(p.relative_to(base).as_posix() for p in d.glob("*.py"))
++                names.update(p.relative_to(base).as_posix() for p in d.rglob("*.py"))
+     chunks: list[str] = []
+     for rel in sorted(names):
+         new_p, old_p = root / rel, snap / rel
+--- baseline/tools/record_evidence.py
++++ tools/record_evidence.py
+@@ -51,7 +51,7 @@
+ sys.path.insert(0, str(ROOT))
+ 
+ EVIDENCE = ROOT / "docs" / "evidence"
+-SOURCE_GLOBS = ("bridge/*.py", "tools/*.py", "tests/*.py", "tests/fixtures/*.json", "*.py",
++SOURCE_GLOBS = ("bridge/**/*.py", "tools/*.py", "tests/**/*.py", "tests/fixtures/**/*.json", "*.py",
+                 "requirements.in", "requirements.lock.txt", "README.md")
+ 
+ 
+@@ -236,7 +236,7 @@
+     (evidence / log_name).write_bytes(log_bytes)
+     payload = {
+         "evidence_class": "implementer_executed",
+-        "what": "automated suite against the scripted fake Codex CLI (no model call, no subscription use)",
++        "what": "model-free suite: fake Codex CLI and local HTTP/process fixtures (no model call)",
+         "command": "python -B -m unittest discover -s tests -t . -v   (cwd = a staged copy of the source "
+                    "set, venv python)",
+         "executed_from": "staged_copy",

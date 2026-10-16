@@ -1,0 +1,195 @@
+test_group_exists_and_confirmation_is_required (tests.test_local_worker_admin.Administration.test_group_exists_and_confirmation_is_required) ... ok
+test_status_does_not_require_codex_auth_or_repository (tests.test_local_worker_admin.Administration.test_status_does_not_require_codex_auth_or_repository) ... ok
+test_complete_3072_3073_boundary (tests.test_local_worker_budget.Budget.test_complete_3072_3073_boundary) ... ok
+test_prompt_preserves_contract_and_bounds_utf8 (tests.test_local_worker_budget.Budget.test_prompt_preserves_contract_and_bounds_utf8) ... ok
+test_retry_includes_exact_failure_and_cannot_silently_truncate (tests.test_local_worker_budget.Budget.test_retry_includes_exact_failure_and_cannot_silently_truncate) ... ok
+test_verified_metadata_and_version_only (tests.test_local_worker_budget.Budget.test_verified_metadata_and_version_only) ... ok
+test_anyio_cancellation_releases_lock_but_retains_uncertainty (tests.test_local_worker_generation.Generation.test_anyio_cancellation_releases_lock_but_retains_uncertainty) ... ok
+test_busy_resident_model_or_metadata_drift_never_generates (tests.test_local_worker_generation.Generation.test_busy_resident_model_or_metadata_drift_never_generates) ... ok
+test_malformed_length_clarification_and_metric_failures (tests.test_local_worker_generation.Generation.test_malformed_length_clarification_and_metric_failures) ... ok
+test_one_post_with_full_audit_and_idempotent_replay (tests.test_local_worker_generation.Generation.test_one_post_with_full_audit_and_idempotent_replay) ... ok
+test_prompt_count_contradiction_blocks_following_task (tests.test_local_worker_generation.Generation.test_prompt_count_contradiction_blocks_following_task) ... ok
+test_timeout_keeps_uncertainty_across_restart (tests.test_local_worker_generation.Generation.test_timeout_keeps_uncertainty_across_restart) ... ok
+test_default_is_metadata_only_and_no_candidate_exec (tests.test_local_worker_live_check.LiveRunner.test_default_is_metadata_only_and_no_candidate_exec) ... ok
+test_generation_requires_all_approvals_and_stable_task_id (tests.test_local_worker_live_check.LiveRunner.test_generation_requires_all_approvals_and_stable_task_id) ... usage: python.exe -m unittest [-h] [--metadata-only | --generate-synthetic]
+                              [--source-approved] [--audit-approved]
+                              [--task-id TASK_ID] [--output OUTPUT]
+python.exe -m unittest: error: generation requires --source-approved --audit-approved and a stable --task-id
+usage: python.exe -m unittest [-h] [--metadata-only | --generate-synthetic]
+                              [--source-approved] [--audit-approved]
+                              [--task-id TASK_ID] [--output OUTPUT]
+python.exe -m unittest: error: generation requires --source-approved --audit-approved and a stable --task-id
+usage: python.exe -m unittest [-h] [--metadata-only | --generate-synthetic]
+                              [--source-approved] [--audit-approved]
+                              [--task-id TASK_ID] [--output OUTPUT]
+python.exe -m unittest: error: generation requires --source-approved --audit-approved and a stable --task-id
+ok
+test_exact_surface_and_real_roundtrip_all_five_actions (tests.test_local_worker_mcp.Mcp.test_exact_surface_and_real_roundtrip_all_five_actions) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43784 running stdin=<_ProactorWritePipeTransport fd=1180 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=924 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+Processing request of type CallToolRequest
+<_WindowsSubprocessTransport pid=43784 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_initialization_ping_and_status_during_delayed_discovery (tests.test_local_worker_mcp.Mcp.test_initialization_ping_and_status_during_delayed_discovery) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=17936 running stdin=<_ProactorWritePipeTransport fd=1180 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1300 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+Processing request of type PingRequest
+Processing request of type CallToolRequest
+Processing request of type ListToolsRequest
+<_WindowsSubprocessTransport pid=17936 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_addresses_and_fixed_settings (tests.test_local_worker_models.Contracts.test_addresses_and_fixed_settings) ... ok
+test_settings_timeouts_and_shared_root (tests.test_local_worker_models.Contracts.test_settings_timeouts_and_shared_root) ... ok
+test_strict_packets_and_action_union (tests.test_local_worker_models.Contracts.test_strict_packets_and_action_union) ... ok
+test_nested_code_and_fixtures_are_hashed_and_reviewed (tests.test_local_worker_provenance.Provenance.test_nested_code_and_fixtures_are_hashed_and_reviewed) ... ok
+test_fallback_and_continue_after_both_fail (tests.test_local_worker_service.Discovery.test_fallback_and_continue_after_both_fail) ... ok
+test_hostname_first_saved_peer_and_status_no_network (tests.test_local_worker_service.Discovery.test_hostname_first_saved_peer_and_status_no_network) ... ok
+test_invalid_address_and_corrupt_config_are_optional (tests.test_local_worker_service.Discovery.test_invalid_address_and_corrupt_config_are_optional) ... ok
+test_late_discovery_cannot_reenable_disabled_session (tests.test_local_worker_service.Discovery.test_late_discovery_cannot_reenable_disabled_session) ... ok
+test_preconfigured_first_start_is_supported (tests.test_local_worker_service.Discovery.test_preconfigured_first_start_is_supported) ... ok
+test_corruption_and_repository_overlap_refuse (tests.test_local_worker_storage.Storage.test_corruption_and_repository_overlap_refuse) ... ok
+test_cross_process_lock_is_released_on_hard_kill (tests.test_local_worker_storage.Storage.test_cross_process_lock_is_released_on_hard_kill) ... ok
+test_operator_resolution_requires_matching_confirmation (tests.test_local_worker_storage.Storage.test_operator_resolution_requires_matching_confirmation) ... ok
+test_resolution_clears_persisted_busy_snapshot (tests.test_local_worker_storage.Storage.test_resolution_clears_persisted_busy_snapshot) ... ok
+test_shared_lock_and_crash_marker_survive_restart (tests.test_local_worker_storage.Storage.test_shared_lock_and_crash_marker_survive_restart) ... ok
+test_terminal_ledger_before_marker_retirement_and_replay (tests.test_local_worker_storage.Storage.test_terminal_ledger_before_marker_retirement_and_replay) ... ok
+test_cancelled_post_has_no_replay_and_reaps (tests.test_local_worker_transport.Transport.test_cancelled_post_has_no_replay_and_reaps) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=11624 running stdin=<_ProactorWritePipeTransport fd=1132 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1416 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1152 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=11624 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1416> stderr=<_ProactorReadPipeTransport closing fd=1152>> exited with return code 1
+ok
+test_http_peer_no_redirect_and_bounded_body (tests.test_local_worker_transport.Transport.test_http_peer_no_redirect_and_bounded_body) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=39468 running stdin=<_ProactorWritePipeTransport fd=1300 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1216 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1180 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=39468 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1216> stderr=<_ProactorReadPipeTransport closing fd=1180>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=44852 running stdin=<_ProactorWritePipeTransport fd=1300 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1376 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1104 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=44852 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1376> stderr=<_ProactorReadPipeTransport closing fd=1104>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=11568 running stdin=<_ProactorWritePipeTransport fd=1376 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1104 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1280 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=11568 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1104> stderr=<_ProactorReadPipeTransport closing fd=1280>> exited with return code 0
+ok
+test_slow_header_timeout_kills_helper (tests.test_local_worker_transport.Transport.test_slow_header_timeout_kills_helper) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=28244 running stdin=<_ProactorWritePipeTransport fd=620 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=816 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1180 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=28244 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport fd=816 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1180 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>>> exited with return code 1
+ok
+test_stalled_helper_dns_and_malformed_protocol (tests.test_local_worker_transport.Transport.test_stalled_helper_dns_and_malformed_protocol) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=16528 running stdin=<_ProactorWritePipeTransport fd=1272 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1016 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1184 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=16528 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport fd=1016 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1184 read=<_OverlappedFuture finished result=0 created at C:\Python313\Lib\asyncio\windows_events.py:507>>> exited with return code 1
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=46428 running stdin=<_ProactorWritePipeTransport fd=1184 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1016 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1048 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=46428 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_unapproved_path_never_spawns (tests.test_local_worker_transport.Transport.test_unapproved_path_never_spawns) ... ok
+test_compiler_only_cannot_accept_and_no_commands_execute (tests.test_local_worker_validation.Validation.test_compiler_only_cannot_accept_and_no_commands_execute) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43028 running stdin=<_ProactorWritePipeTransport fd=1196 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1132 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1360 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=43028 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1132> stderr=<_ProactorReadPipeTransport closing fd=1360>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=46276 running stdin=<_ProactorWritePipeTransport fd=1132 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1360 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1168 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=46276 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=9688 running stdin=<_ProactorWritePipeTransport fd=1168 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1360 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1072 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=9688 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1360> stderr=<_ProactorReadPipeTransport closing fd=1072>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=15256 running stdin=<_ProactorWritePipeTransport fd=1072 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1360 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=764 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=15256 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=37184 running stdin=<_ProactorWritePipeTransport fd=1436 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=784 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1196 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=37184 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_one_exact_failure_retry_survives_restarts (tests.test_local_worker_validation.Validation.test_one_exact_failure_retry_survives_restarts) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=42860 running stdin=<_ProactorWritePipeTransport fd=1072 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1052 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1196 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=42860 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=31304 running stdin=<_ProactorWritePipeTransport fd=1052 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1196 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1244 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=31304 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1196> stderr=<_ProactorReadPipeTransport closing fd=1244>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=43140 running stdin=<_ProactorWritePipeTransport fd=1316 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1440 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=896 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=43140 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=45904 running stdin=<_ProactorWritePipeTransport fd=1440 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=896 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1364 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=45904 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=2516 running stdin=<_ProactorWritePipeTransport fd=1216 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=992 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=948 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=2516 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=992> stderr=<_ProactorReadPipeTransport closing fd=948>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=31192 running stdin=<_ProactorWritePipeTransport fd=1448 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1440 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1432 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=31192 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1440> stderr=<_ProactorReadPipeTransport closing fd=1432>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=45800 running stdin=<_ProactorWritePipeTransport fd=1432 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1440 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1364 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=45800 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1440> stderr=<_ProactorReadPipeTransport closing fd=1364>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=8832 running stdin=<_ProactorWritePipeTransport fd=1440 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1364 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=896 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=8832 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1364> stderr=<_ProactorReadPipeTransport closing fd=896>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=4316 running stdin=<_ProactorWritePipeTransport fd=620 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1388 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1412 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=4316 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1388> stderr=<_ProactorReadPipeTransport closing fd=1412>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=32472 running stdin=<_ProactorWritePipeTransport fd=1020 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=620 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1380 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=32472 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+test_wrong_result_or_checks_cannot_change_verdict (tests.test_local_worker_validation.Validation.test_wrong_result_or_checks_cannot_change_verdict) ... execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=46860 running stdin=<_ProactorWritePipeTransport fd=1020 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1284 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1216 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=46860 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1284> stderr=<_ProactorReadPipeTransport closing fd=1216>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=44360 running stdin=<_ProactorWritePipeTransport fd=1072 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=856 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=900 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=44360 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=856> stderr=<_ProactorReadPipeTransport closing fd=900>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=11376 running stdin=<_ProactorWritePipeTransport fd=856 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=900 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1284 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=11376 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=900> stderr=<_ProactorReadPipeTransport closing fd=1284>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=18096 running stdin=<_ProactorWritePipeTransport fd=900 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=1284 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=620 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=18096 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closing fd=1284> stderr=<_ProactorReadPipeTransport closing fd=620>> exited with return code 0
+execute program 'C:\\AI\\gpt-claude-mcp-bridge-v2\\.venv\\Scripts\\python.exe': <_WindowsSubprocessTransport pid=36856 running stdin=<_ProactorWritePipeTransport fd=780 read=<_OverlappedFuture pending cb=[_ProactorWritePipeTransport._pipe_closed()] created at C:\Python313\Lib\asyncio\windows_events.py:494>> stdout=<_ProactorReadPipeTransport fd=856 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>> stderr=<_ProactorReadPipeTransport fd=1416 read=<_OverlappedFuture pending cb=[_ProactorReadPipeTransport._loop_reading()] created at C:\Python313\Lib\asyncio\windows_events.py:507>>>
+<_WindowsSubprocessTransport pid=36856 running stdin=<_ProactorWritePipeTransport closed> stdout=<_ProactorReadPipeTransport closed> stderr=<_ProactorReadPipeTransport closed>> exited with return code 0
+ok
+
+----------------------------------------------------------------------
+Ran 39 tests in 21.425s
+
+OK
+Requires --confirmed-idle plus operator reason/evidence that the earlier server request ended.
+Uncertain request retired using operator confirmation; no inference replayed.
+{
+  "schema_version": 1,
+  "action": "status",
+  "worker_id": "LOCAL-00",
+  "state": "status_returned",
+  "code": "worker_status",
+  "explanation": "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker.",
+  "availability": "unavailable",
+  "coordination": "idle",
+  "validation": "pending",
+  "next_actions": [
+    "Enter address",
+    "Retry discovery",
+    "Continue without LOCAL-00"
+  ],
+  "task_id": null,
+  "packet_hash": null,
+  "request_id": null,
+  "attempt": null,
+  "endpoint": null,
+  "peer_ip": null,
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": null,
+  "result_digest": null,
+  "response": null,
+  "done": null,
+  "done_reason": null,
+  "metrics": {},
+  "timings": {},
+  "audit_refs": [],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": null
+}
+{
+  "schema_version": 1,
+  "action": "status",
+  "worker_id": "LOCAL-00",
+  "state": "status_returned",
+  "code": "worker_status",
+  "explanation": "LOCAL-00 unavailable. Enter Skynet's hostname or LAN IP, retry discovery, or continue without the local worker.",
+  "availability": "unavailable",
+  "coordination": "idle",
+  "validation": "pending",
+  "next_actions": [
+    "Enter address",
+    "Retry discovery",
+    "Continue without LOCAL-00"
+  ],
+  "task_id": null,
+  "packet_hash": null,
+  "request_id": null,
+  "attempt": null,
+  "endpoint": null,
+  "peer_ip": null,
+  "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+  "digest": null,
+  "result_digest": null,
+  "response": null,
+  "done": null,
+  "done_reason": null,
+  "metrics": {},
+  "timings": {},
+  "audit_refs": [],
+  "replayed_from_ledger": false,
+  "needs_context": false,
+  "evidence_origin": null
+}

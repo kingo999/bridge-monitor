@@ -1,0 +1,13 @@
+test_compiler_only_cannot_accept_and_no_commands_execute (tests.test_local_worker_validation.Validation.test_compiler_only_cannot_accept_and_no_commands_execute) ... ok
+test_one_exact_failure_retry_survives_restarts (tests.test_local_worker_validation.Validation.test_one_exact_failure_retry_survives_restarts) ... ok
+test_wrong_result_or_checks_cannot_change_verdict (tests.test_local_worker_validation.Validation.test_wrong_result_or_checks_cannot_change_verdict) ... ok
+test_busy_resident_model_or_metadata_drift_never_generates (tests.test_local_worker_generation.Generation.test_busy_resident_model_or_metadata_drift_never_generates) ... ok
+test_malformed_length_clarification_and_metric_failures (tests.test_local_worker_generation.Generation.test_malformed_length_clarification_and_metric_failures) ... ok
+test_one_post_with_full_audit_and_idempotent_replay (tests.test_local_worker_generation.Generation.test_one_post_with_full_audit_and_idempotent_replay) ... ok
+test_prompt_count_contradiction_blocks_following_task (tests.test_local_worker_generation.Generation.test_prompt_count_contradiction_blocks_following_task) ... ok
+test_timeout_keeps_uncertainty_across_restart (tests.test_local_worker_generation.Generation.test_timeout_keeps_uncertainty_across_restart) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 14.173s
+
+OK

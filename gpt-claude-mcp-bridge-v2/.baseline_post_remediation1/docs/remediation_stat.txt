@@ -1,0 +1,30 @@
+pre-remediation snapshot combined sha256: cb02922b0c559a623b03430425f6d1c15daa43415aea5cc6efa1886f9bb4235f
+files changed/added/removed: 27
+
+README.md                                            modified  +244   -234
+bridge/admin.py                                      modified  +265   -36
+bridge/codexcli.py                                   modified  +228   -62
+bridge/config.py                                     modified  +6     -0
+bridge/errors.py                                     modified  +2     -0
+bridge/fingerprint.py                                added     +108   -0
+bridge/jobobject.py                                  added     +182   -0
+bridge/runner.py                                     modified  +187   -13
+bridge/service.py                                    modified  +323   -45
+bridge/state.py                                      modified  +314   -23
+bridge/telemetry.py                                  modified  +7     -0
+docs/PREFLIGHT_AND_CHECKLIST.md                      modified  +4     -0
+docs/REMEDIATION_CHECKLIST.md                        added     +36    -0
+docs/v2_inventory.txt                                modified  +77    -17
+tests/fake_codex.py                                  modified  +21    -3
+tests/hard_kill_helper.py                            added     +20    -0
+tests/helpers.py                                     modified  +11    -1
+tests/test_apply_patch_attack.py                     modified  +179   -31
+tests/test_remediation.py                            added     +640   -0
+tests/test_server_admin.py                           modified  +1     -1
+tests/test_service.py                                modified  +22    -9
+tools/apply_patch_attack_test.py                     modified  +133   -22
+tools/make_remediation_diff.py                       added     +66    -0
+tools/make_telemetry_examples.py                     modified  +113   -29
+tools/make_v1_diff.py                                modified  +1     -1
+tools/record_evidence.py                             added     +177   -0
+tools/v1_manifest.py                                 modified  +11    -0
