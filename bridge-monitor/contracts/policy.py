@@ -1,6 +1,7 @@
 import hashlib
 import json
-from typing import Any
+import re
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -26,15 +27,24 @@ class Limits(BaseModel):
 class Deployment(BaseModel):
     model_config = ConfigDict(extra="forbid")
     queue_deadline_seconds: int = Field(gt=0)
+    queue_poll_ms: int = Field(default=200, ge=10, le=5000)
     context_wait_seconds: int = Field(gt=0)
     fallback_allowance_tokens: int = Field(gt=0)
+    fallback_allowance_seconds: int = Field(default=60, gt=0)
     client_timeout_seconds: int = Field(gt=0)
     delivery_margin_seconds: int = Field(gt=0)
     payload_limit_bytes: int = Field(gt=0)
     spool_limit_bytes: int = Field(gt=0)
+    spool_overflow_policy: Literal["reject_new_work", "allow_with_gaps"] = "reject_new_work"
+    degraded_admission: Literal["reject_new_work", "allow_with_gaps"] = "reject_new_work"
     retention_days: int = Field(gt=0)
     postgres_dsn_ref: str
     qwen_endpoint: str
+    qwen_model_profile: str = ""
+    qwen_model_digest: str = ""
+    qwen_output_tokens: int = Field(default=2048, gt=0)
+    qwen_keep_alive: str = "10m"
+    qwen_temperature: float = Field(default=0.0, ge=0, le=2)
 
     @model_validator(mode="after")
     def check_refs(self):
@@ -42,6 +52,8 @@ class Deployment(BaseModel):
             raise ValueError("database secret must be an environment reference")
         if not self.qwen_endpoint.startswith(("http://", "https://")):
             raise ValueError("explicit Qwen endpoint required")
+        if self.qwen_model_profile and not re.fullmatch(r"[0-9a-f]{64}", self.qwen_model_digest):
+            raise ValueError("local model profile requires a pinned SHA-256 digest")
         if self.client_timeout_seconds <= self.delivery_margin_seconds:
             raise ValueError("delivery margin must fit client timeout")
         return self

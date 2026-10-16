@@ -1,0 +1,12 @@
+# Valid only with the project-local Codex CLI pilot command's 600-second MCP override.
+[claude]
+executable = "claude"
+context_tokens = 200000
+reported_models = ["claude-sonnet-5-5"]
+client_timeout_verified = true
+
+[qwen]
+context_tokens = 16384
+template_overhead_tokens = 128
+byte_upper_bound_validated = true
+client_timeout_verified = true

@@ -39,3 +39,5 @@ class DashboardSnapshot(BaseModel):
     as_of: datetime
     status: DashboardStatus
     work_items: list[dict] = Field(default_factory=list)
+    worker_executions: list[dict] = Field(default_factory=list)
+    capacity: dict[str, dict[str, int]] | None = None

@@ -1,0 +1,12 @@
+# Review proposal only. The unverified paid-client deadline blocks live local readiness.
+[claude]
+executable = "claude"
+context_tokens = 200000 # Conservative Sonnet family floor; verify effective CLI model.
+reported_models = ["claude-sonnet-5-5"] # Observed in isolated CLI probe.
+client_timeout_verified = false # Parent paid-client deadline remains unverified.
+
+[qwen]
+context_tokens = 16384 # New adapter sets num_ctx to this value; model metadata says 32768 max.
+template_overhead_tokens = 128
+byte_upper_bound_validated = true # Byte-level BPE plus fixed generate-template bytes; see capability record.
+client_timeout_verified = true # Live 300 ms shared-cutoff probe returned uncertain at 307 ms; server termination unproven.

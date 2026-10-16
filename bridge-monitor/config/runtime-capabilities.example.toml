@@ -1,0 +1,13 @@
+# Copy to a project-local runtime file. These values are independent observations
+# and must be verified before enabling local delegation in a live pilot.
+[claude]
+executable = "claude"
+context_tokens = 0 # REQUIRED: effective paid-model context capacity
+reported_models = [] # REQUIRED: exact observed model IDs compatible with in-owner continuation
+client_timeout_verified = false
+
+[qwen]
+context_tokens = 16384 # Existing bridge profile; verify this new bridge's effective setting
+template_overhead_tokens = 128 # Conservative allowance for the observed Ollama prompt template
+byte_upper_bound_validated = false
+client_timeout_verified = false

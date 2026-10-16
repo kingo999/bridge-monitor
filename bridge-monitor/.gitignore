@@ -8,4 +8,6 @@ var/
 dashboard/node_modules/
 dashboard/.next/
 dashboard/out/
+dashboard/test-results/
+dashboard/tsconfig.tsbuildinfo
 .superpowers/sdd/

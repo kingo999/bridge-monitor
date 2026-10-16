@@ -6,7 +6,10 @@ class TaskPacket(BaseModel):
     task_id: str
     work_item_id: str
     category: str
+    taxonomy_version: str = "phase1-v1"
     scope: list[str]
+    context: dict[str, str] = Field(default_factory=dict)
+    required_context_keys: list[str] = Field(default_factory=list)
     token_budget: int = Field(ge=0)
     call_budget: int = Field(ge=0)
 

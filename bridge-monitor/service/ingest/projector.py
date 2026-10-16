@@ -49,6 +49,13 @@ def validate_projectable_event(event: EventEnvelope) -> None:
     elif kind == EventType.MODEL_REPORTED:
         required("model_execution_id", event.model_execution_id)
         required("reported_model", event.reported_model)
+    elif kind == EventType.USAGE_REPORTED:
+        required("model_execution_id", event.model_execution_id)
+        required("observation_id", p.get("observation_id"))
+        for field in ("input_tokens", "output_tokens"):
+            value = p.get(field)
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError("usage tokens must be nonnegative integers")
     elif kind == EventType.RESPONSE_DELTA:
         required("message_id", p.get("message_id"))
         number = p.get("chunk_sequence")
@@ -98,6 +105,8 @@ def missing_references(conn, event: EventEnvelope) -> list[str]:
     elif event.event_type == EventType.MODEL_SELECTED:
         require("attempts", "attempt_id", event.attempt_id, "attempt")
     elif event.event_type == EventType.MODEL_REPORTED:
+        require("model_executions", "model_execution_id", event.model_execution_id, "model_execution")
+    elif event.event_type == EventType.USAGE_REPORTED:
         require("model_executions", "model_execution_id", event.model_execution_id, "model_execution")
     elif event.event_type == EventType.DISPOSITION_RECORDED:
         require("results", "result_id", p.get("result_id"), "result")
@@ -165,6 +174,13 @@ def project_domain(conn, event: EventEnvelope) -> None:
                      model_evidence=model_evidence || %s WHERE model_execution_id=%s""",
                      (event.reported_model, Jsonb(p.get("evidence", {})),
                       event.model_execution_id))
+    elif kind == EventType.USAGE_REPORTED:
+        conn.execute("""INSERT INTO usage_observations(observation_id,model_execution_id,scope,
+                     is_cumulative,input_tokens,output_tokens,provenance,price_basis)
+                     VALUES(%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(observation_id) DO NOTHING""",
+                     (p["observation_id"], event.model_execution_id, p.get("scope", "execution"),
+                      p.get("is_cumulative", True), p.get("input_tokens"), p.get("output_tokens"),
+                      p.get("provenance", "runtime_reported"), p.get("price_basis")))
     elif kind == EventType.DELEGATION_DECIDED:
         conn.execute("""INSERT INTO delegation_decisions
                      (decision_id,work_item_id,child_call_id,route,eligibility,reason,policy_version,

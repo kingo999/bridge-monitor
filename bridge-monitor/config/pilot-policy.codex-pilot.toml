@@ -1,0 +1,39 @@
+# Limited Codex CLI pilot, approved by the user's 2026-10-16 "go" in this chat.
+# Applies only to a project-local Codex MCP client with tool_timeout_sec = 600.
+[limits]
+claude_global_active = 1
+claude_per_root_active = 1
+claude_waiting = 8
+qwen_active = 1
+qwen_waiting = 4
+local_outstanding_per_claude = 1
+claude_execution_seconds = 540
+qwen_execution_seconds = 120
+
+[deployment]
+queue_deadline_seconds = 30
+queue_poll_ms = 200
+context_wait_seconds = 10
+fallback_allowance_tokens = 4096
+fallback_allowance_seconds = 60
+client_timeout_seconds = 600
+delivery_margin_seconds = 30
+payload_limit_bytes = 1048576
+spool_limit_bytes = 52428800
+spool_overflow_policy = "reject_new_work"
+degraded_admission = "reject_new_work"
+retention_days = 30
+postgres_dsn_ref = "env:BRIDGE_MONITOR_DSN"
+qwen_endpoint = "http://192.168.0.78:11434"
+qwen_model_profile = "qwen2.5-coder:14b-instruct-q4_K_M"
+qwen_model_digest = "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849"
+qwen_output_tokens = 2048
+qwen_keep_alive = "10m"
+qwen_temperature = 0.0
+
+[fallback]
+paid_model_profile = "sonnet"
+
+[review]
+reviewer = "user"
+approval_reference = "codex-chat-01a13ad6-06e9-7f51-8516-523406d011a4-2026-10-16-go"

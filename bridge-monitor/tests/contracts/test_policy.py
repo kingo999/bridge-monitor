@@ -43,3 +43,12 @@ def test_policy_rejects_inconsistent_capacity():
     policy = base_policy()
     policy["limits"]["claude_per_root_active"] = 3
     assert validate_policy(policy, {"claude-test": {"context_tokens": 200000}}).snapshot is None
+
+
+def test_local_model_choice_requires_a_pinned_digest():
+    policy = base_policy()
+    policy["deployment"]["qwen_model_profile"] = "qwen2.5-coder:14b-instruct-q4_K_M"
+    capabilities = {"claude-test": {"context_tokens": 200000}}
+    assert validate_policy(policy, capabilities).snapshot is None
+    policy["deployment"]["qwen_model_digest"] = "a" * 64
+    assert validate_policy(policy, capabilities).snapshot is not None

@@ -18,3 +18,18 @@ def test_dsn():
     if "bridge_monitor_test" not in dsn:
         pytest.fail("test DSN must name dedicated bridge_monitor_test database")
     return dsn
+
+
+@pytest.fixture
+def runtime_dsn(test_dsn):
+    """Isolate new operational-state tests in the dedicated test database."""
+    import psycopg
+    from database.migrate import migrate
+    migrate(test_dsn)
+    with psycopg.connect(test_dsn) as conn:
+        conn.execute("TRUNCATE runtime_completion_diagnostics, runtime_disposition_obligations, "
+                     "runtime_recovery_links, runtime_fallback_transitions, "
+                     "runtime_source_locks, runtime_reconciliations, runtime_jobs, "
+                     "runtime_task_budgets, runtime_pool_cursor, runtime_incarnations, "
+                     "runtime_policy_activations, runtime_active_policy")
+    return test_dsn

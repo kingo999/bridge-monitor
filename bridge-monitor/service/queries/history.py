@@ -10,15 +10,95 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
         raise ValueError("history page out of bounds")
     as_of = cutoff(query)
     with psycopg.connect(dsn) as conn:
-        rows = conn.execute("""SELECT work_item_id,task_id,category,origin,created_at
-            FROM work_items WHERE created_at<=%s AND (%s='all' OR origin=%s)
-            AND (%s::timestamptz IS NULL OR created_at >= %s)
-            AND (%s::timestamptz IS NULL OR created_at < %s)
-            ORDER BY created_at DESC, work_item_id DESC LIMIT %s OFFSET %s""",
-            (as_of, query.origin, query.origin, query.created_from, query.created_from,
-             query.created_until, query.created_until, limit, offset)).fetchall()
-    return [dict(zip(("work_item_id", "task_id", "category", "origin", "created_at"), row))
+        rows = conn.execute("""SELECT w.work_item_id,w.task_id,w.category,w.origin,w.created_at,
+            (SELECT r.outcome FROM work_resolutions r WHERE r.work_item_id=w.work_item_id
+                AND r.recorded_at<=%s ORDER BY r.recorded_at DESC,r.resolution_id DESC LIMIT 1) AS resolution,
+            w.resolved_at,
+            EXISTS (SELECT 1 FROM events e WHERE e.work_item_id=w.work_item_id
+                AND e.event_type='call.dispatched' AND e.payload->>'destination'='skynet'
+                AND e.occurred_at<=%s) AS routed,
+            EXISTS (SELECT 1 FROM delegation_decisions d WHERE d.work_item_id=w.work_item_id
+                AND d.route='paid' AND d.decided_at<=%s) AS paid_route,
+            (SELECT me.requested_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
+                JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
+                ORDER BY c.created_at DESC LIMIT 1) AS requested_model,
+            (SELECT me.reported_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
+                JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
+                ORDER BY c.created_at DESC LIMIT 1) AS reported_model,
+            (SELECT d.judgment FROM dispositions d JOIN results r ON r.result_id=d.result_id
+                JOIN calls c ON c.call_id=r.call_id WHERE c.work_item_id=w.work_item_id
+                AND d.stage=%s AND d.recorded_at<=%s
+                AND NOT EXISTS (SELECT 1 FROM dispositions newer WHERE newer.supersedes_id=d.disposition_id
+                    AND newer.recorded_at<=%s)
+                ORDER BY d.recorded_at DESC,d.disposition_id DESC LIMIT 1) AS disposition_judgment
+            FROM work_items w WHERE w.created_at<=%s AND (%s='all' OR w.origin=%s)
+            AND (%s::timestamptz IS NULL OR w.created_at >= %s)
+            AND (%s::timestamptz IS NULL OR w.created_at < %s)
+            AND (%s=false OR EXISTS (SELECT 1 FROM work_resolutions r WHERE r.work_item_id=w.work_item_id AND r.recorded_at<=%s))
+            ORDER BY w.created_at DESC, w.work_item_id DESC LIMIT %s OFFSET %s""",
+            (as_of, as_of, as_of, query.consumer_stage, as_of, as_of, as_of,
+             query.origin, query.origin, query.created_from, query.created_from,
+             query.created_until, query.created_until, query.completed_only, as_of, limit, offset)).fetchall()
+    return [dict(zip(("work_item_id", "task_id", "category", "origin", "created_at",
+                      "resolution", "resolved_at", "routed", "paid_route",
+                      "requested_model", "reported_model", "disposition_judgment"), row))
             for row in rows]
+
+
+def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
+    """Metadata and content references only; the browser fetches bodies on selection."""
+    from psycopg.rows import dict_row
+    with psycopg.connect(dsn, row_factory=dict_row) as conn:
+        with conn.transaction():
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            work = conn.execute("SELECT * FROM work_items WHERE work_item_id=%s", (work_item_id,)).fetchone()
+            if work is None:
+                return None
+            calls = conn.execute("""SELECT c.call_id,c.parent_call_id,c.requested_model,c.created_at,
+                EXISTS (SELECT 1 FROM events e WHERE e.call_id=c.call_id AND e.event_type='call.dispatched'
+                    AND e.payload->>'destination'='skynet') AS local_dispatch
+                FROM calls c WHERE c.work_item_id=%s ORDER BY c.created_at,c.call_id""",
+                (work_item_id,)).fetchall()
+            messages = conn.execute("""SELECT m.message_id,m.call_id,m.role,m.direction,
+                m.original_content_id,m.effective_content_id FROM messages m JOIN calls c ON c.call_id=m.call_id
+                WHERE c.work_item_id=%s ORDER BY c.created_at,m.message_id""", (work_item_id,)).fetchall()
+            results = conn.execute("""SELECT r.result_id,r.call_id,r.attempt_id,r.raw_content_id,
+                r.delivered_content_id,r.delivered_at FROM results r JOIN calls c ON c.call_id=r.call_id
+                WHERE c.work_item_id=%s ORDER BY r.delivered_at,r.result_id""", (work_item_id,)).fetchall()
+            models = conn.execute("""SELECT me.model_execution_id,me.attempt_id,a.call_id,me.requested_model,
+                me.reported_model,me.model_evidence,a.status FROM model_executions me
+                JOIN attempts a ON a.attempt_id=me.attempt_id JOIN calls c ON c.call_id=a.call_id
+                WHERE c.work_item_id=%s ORDER BY me.model_execution_id""", (work_item_id,)).fetchall()
+            decisions = conn.execute("""SELECT decision_id,route,eligibility,reason,policy_version,
+                guidance_manifest,gate_facts,decided_at FROM delegation_decisions
+                WHERE work_item_id=%s ORDER BY decided_at,decision_id""", (work_item_id,)).fetchall()
+            dispositions = conn.execute("""SELECT d.disposition_id,d.result_id,d.actor_id,d.stage,d.judgment,
+                d.reason,d.supersedes_id,d.recorded_at FROM dispositions d JOIN results r ON r.result_id=d.result_id
+                JOIN calls c ON c.call_id=r.call_id WHERE c.work_item_id=%s
+                ORDER BY d.recorded_at,d.disposition_id""", (work_item_id,)).fetchall()
+            resolutions = conn.execute("""SELECT resolution_id,outcome,final_result_id,recorded_at
+                FROM work_resolutions WHERE work_item_id=%s ORDER BY recorded_at,resolution_id""",
+                (work_item_id,)).fetchall()
+            events = conn.execute("""SELECT event_id,event_type,occurred_at,received_at,call_id,attempt_id,
+                worker_instance_id,requested_model,reported_model,capture_completeness,payload
+                FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 500""",
+                (work_item_id,)).fetchall()
+            ids = {identifier for row in messages for identifier in
+                   (row["original_content_id"], row["effective_content_id"]) if identifier}
+            ids.update(identifier for row in results for identifier in
+                       (row["raw_content_id"], row["delivered_content_id"]) if identifier)
+            content = conn.execute("""SELECT content_id,completeness,byte_length,content_type,
+                encoding FROM content_objects WHERE content_id=ANY(%s)""", (list(ids),)).fetchall()
+    work_data = dict(work)
+    if resolutions:
+        work_data["resolution"] = resolutions[-1]["outcome"]
+        work_data["resolved_at"] = resolutions[-1]["recorded_at"]
+    return {"work_item": work_data, "calls": list(map(dict, calls)),
+            "messages": list(map(dict, messages)), "results": list(map(dict, results)),
+            "models": list(map(dict, models)), "decisions": list(map(dict, decisions)),
+            "dispositions": list(map(dict, dispositions)),
+            "resolutions": list(map(dict, resolutions)), "events": list(map(dict, events)),
+            "content_states": {row["content_id"]: dict(row) for row in content}}
 
 
 def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:

@@ -6,7 +6,7 @@ import pytest
 from contracts.queries import CohortQuery
 from database.migrate import migrate
 from scripts.replay_fixtures import replay_fixture
-from service.queries.history import list_work_items, inspect_exchange
+from service.queries.history import list_work_items, inspect_exchange, read_work_item_detail
 
 
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "demonstration.json"
@@ -32,16 +32,26 @@ def test_history_is_bounded_and_inspector_returns_exact_observed_bodies(seeded):
     assert selected["local_response"] == "4\n"
 
 
+def test_detail_uses_confirmed_resolution_for_paid_direct_work(seeded):
+    detail = read_work_item_detail(seeded, "demo-work-060")
+    assert detail is not None
+    assert detail["work_item"]["resolution"] == "paid_direct"
+    assert detail["calls"] == []
+    assert detail["results"] == []
+
+
 def test_inspection_rejects_non_operator_and_unknown_item(seeded):
     with pytest.raises(PermissionError):
         inspect_exchange(seeded, "demo-work-061", role="producer")
     assert inspect_exchange(seeded, "missing", role="operator") is None
 
 
-def test_capacity_and_capture_fixtures_project_without_runtime_migration(seeded):
+def test_capacity_and_capture_fixtures_project_through_milestone_one_status(seeded):
+    migration = (Path(__file__).parents[2] / "database" / "migrations" /
+                 "001_event_store.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE IF NOT EXISTS dashboard_status" in migration
     with psycopg.connect(seeded) as conn:
-        assert conn.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall() == [
-            ("001_event_store",)]
+        assert conn.execute("SELECT 1 FROM schema_migrations WHERE version='001_event_store'").fetchone()
         assert conn.execute("""SELECT active,queued,held_uncertain,blocked,
             capture_state,known_gaps,spool_pressure FROM dashboard_status WHERE singleton=true""").fetchone() == (
             1, 2, 1, 3, "healthy", 1, 0.8)

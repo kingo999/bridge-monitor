@@ -12,15 +12,24 @@ qwen_execution_seconds = 180
 
 [deployment]
 queue_deadline_seconds = 0 # REQUIRED: choose for your client deadline
+queue_poll_ms = 200
 context_wait_seconds = 0 # REQUIRED
 fallback_allowance_tokens = 0 # REQUIRED
+fallback_allowance_seconds = 60
 client_timeout_seconds = 0 # REQUIRED
 delivery_margin_seconds = 0 # REQUIRED
 payload_limit_bytes = 0 # REQUIRED
 spool_limit_bytes = 0 # REQUIRED
+spool_overflow_policy = "reject_new_work"
+degraded_admission = "reject_new_work"
 retention_days = 0 # REQUIRED
 postgres_dsn_ref = "env:BRIDGE_MONITOR_DSN"
 qwen_endpoint = "REQUIRED"
+qwen_model_profile = "REQUIRED"
+qwen_model_digest = "REQUIRED"
+qwen_output_tokens = 2048
+qwen_keep_alive = "10m"
+qwen_temperature = 0.0
 
 [fallback]
 paid_model_profile = "REQUIRED"
