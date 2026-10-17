@@ -5,6 +5,7 @@ import ipaddress
 import json
 import os
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 
@@ -48,7 +49,28 @@ def main() -> None:
                      dashboard_dir=export,
                      session_ttl_seconds=int(operator["session_ttl_seconds"]),
                      secure_cookies=bool(cert))
-    uvicorn.run(app, host=host, port=int(listen["port"]), ssl_certfile=cert, ssl_keyfile=key)
+    pid_file = os.environ.get("BRIDGE_MONITOR_SERVER_PID_FILE")
+    record = None
+    if pid_file:
+        record = Path(pid_file).resolve()
+        if not record.is_relative_to(ROOT / "var" / "run"):
+            raise SystemExit("server PID receipt must stay inside project var/run")
+        record.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".tmp",
+                                         dir=record.parent, delete=False) as pending:
+            json.dump({"pid": os.getpid(), "config": str(args.config.resolve()),
+                       "script": str(Path(__file__).resolve())}, pending)
+            temporary = Path(pending.name)
+        os.replace(temporary, record)
+    try:
+        uvicorn.run(app, host=host, port=int(listen["port"]), ssl_certfile=cert, ssl_keyfile=key)
+    finally:
+        if record and record.is_file():
+            try:
+                if json.loads(record.read_text(encoding="utf-8")).get("pid") == os.getpid():
+                    record.unlink()
+            except (OSError, ValueError):
+                pass
 
 
 if __name__ == "__main__":

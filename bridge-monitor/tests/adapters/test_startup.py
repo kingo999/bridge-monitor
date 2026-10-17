@@ -79,13 +79,16 @@ def test_mcp_entrypoint_reserves_stdout_for_protocol(monkeypatch, capsys):
     from bridge import startup
     events = []
     monkeypatch.setenv("BRIDGE_MONITOR_RUNTIME_CONFIG", "C:/AI/bridge-monitor/config/runtime.toml")
-    monkeypatch.setattr(startup, "build_coordinator", lambda *args, **kwargs: "coordinator")
+    class FakeCoordinator:
+        def resume_queued_recoveries(self):
+            events.append("resumed")
+    monkeypatch.setattr(startup, "build_coordinator", lambda *args, **kwargs: FakeCoordinator())
     class FakeServer:
         def run(self, *, transport):
             events.append(transport)
     monkeypatch.setattr(mcp_server, "create_mcp", lambda *args, **kwargs: FakeServer())
     assert mcp_server.main(["--audience", "parent"]) == 0
-    assert events == ["stdio"]
+    assert events == ["resumed", "stdio"]
     assert capsys.readouterr().out == ""
 
 

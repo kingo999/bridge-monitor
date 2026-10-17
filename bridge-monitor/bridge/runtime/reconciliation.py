@@ -42,26 +42,34 @@ def reconcile_execution(dsn: str, call_id: str, evidence: dict, *,
         raise TypeError("structured evidence required")
     with psycopg.connect(dsn) as conn, conn.transaction():
         conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
-        row = conn.execute("SELECT state,lease_id,owner_incarnation,slot_held FROM runtime_jobs "
-                           "WHERE call_id=%s", (call_id,)).fetchone()
-        if not row or row[0] == "queued":
-            raise ValueError("no dispatched execution to reconcile")
-        if row[0] == "completed":
-            raise ValueError("completed execution cannot be reconciled as lost")
-        state = _state_from_evidence(call_id, row[1], row[2], evidence)
-        if row[0] == "terminated":
-            state = "terminated"
-        if state == "terminated":
-            conn.execute("UPDATE runtime_jobs SET state='terminated',slot_held=false "
-                         "WHERE call_id=%s", (call_id,))
-            conn.execute("DELETE FROM runtime_source_locks WHERE holder_call_id=%s", (call_id,))
-        elif state == "live" and row[0] != "terminated":
-            conn.execute("UPDATE runtime_jobs SET state='active' WHERE call_id=%s", (call_id,))
-            conn.execute("UPDATE runtime_incarnations SET state='live' WHERE incarnation_id=%s "
-                         "AND state='uncertain'", (row[2],))
-        elif row[0] != "terminated":
-            conn.execute("UPDATE runtime_jobs SET state='uncertain' WHERE call_id=%s", (call_id,))
-        conn.execute("INSERT INTO runtime_reconciliations(reconciliation_id,call_id,observed_state,"
-                     "evidence,actor_kind,actor_id) VALUES(%s,%s,%s,%s,%s,%s)",
-                     (str(uuid.uuid4()), call_id, state, Jsonb(evidence), actor_kind, actor_id))
+        state, _ = _reconcile_execution_in_tx(conn, call_id, evidence,
+                                              actor_kind=actor_kind, actor_id=actor_id)
         return state
+
+
+def _reconcile_execution_in_tx(conn, call_id, evidence, *, actor_kind, actor_id):
+    row = conn.execute("SELECT state,lease_id,owner_incarnation,slot_held FROM runtime_jobs "
+                       "WHERE call_id=%s", (call_id,)).fetchone()
+    if not row or row[0] == "queued":
+        raise ValueError("no dispatched execution to reconcile")
+    if row[0] == "completed":
+        raise ValueError("completed execution cannot be reconciled as lost")
+    state = _state_from_evidence(call_id, row[1], row[2], evidence)
+    if row[0] == "terminated":
+        state = "terminated"
+    if state == "terminated":
+        conn.execute("UPDATE runtime_jobs SET state='terminated',slot_held=false "
+                     "WHERE call_id=%s", (call_id,))
+        conn.execute("DELETE FROM runtime_source_locks WHERE holder_call_id=%s", (call_id,))
+    elif state == "live" and row[0] != "terminated":
+        if row[0] != "fallback":
+            conn.execute("UPDATE runtime_jobs SET state='active' WHERE call_id=%s", (call_id,))
+        conn.execute("UPDATE runtime_incarnations SET state='live' WHERE incarnation_id=%s "
+                     "AND state='uncertain'", (row[2],))
+    elif row[0] not in ("terminated", "fallback"):
+        conn.execute("UPDATE runtime_jobs SET state='uncertain' WHERE call_id=%s", (call_id,))
+    reconciliation_id = str(uuid.uuid4())
+    conn.execute("INSERT INTO runtime_reconciliations(reconciliation_id,call_id,observed_state,"
+                 "evidence,actor_kind,actor_id) VALUES(%s,%s,%s,%s,%s,%s)",
+                 (reconciliation_id, call_id, state, Jsonb(evidence), actor_kind, actor_id))
+    return state, reconciliation_id

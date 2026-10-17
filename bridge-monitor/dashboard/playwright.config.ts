@@ -7,7 +7,9 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: 'list',
-  use: { ...devices['Desktop Chrome'], baseURL: 'http://127.0.0.1:8874', trace: 'retain-on-failure' },
+  use: { ...devices['Desktop Chrome'],
+    channel: process.env.BRIDGE_MONITOR_PLAYWRIGHT_CHANNEL || undefined,
+    baseURL: 'http://127.0.0.1:8874', trace: 'retain-on-failure' },
   webServer: {
     command: '..\\.venv\\Scripts\\python.exe tests\\server.py',
     url: 'http://127.0.0.1:8874/',

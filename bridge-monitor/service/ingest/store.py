@@ -26,6 +26,15 @@ EVENT_COLUMNS = ("event_id,event_type,schema_version,producer_id,producer_incarn
                  "reported_model,config_version,payload")
 
 
+def _same_content(stored: tuple, incoming: tuple) -> bool:
+    if stored == incoming:
+        return True
+    # Replay cannot restore bytes removed by the configured retention policy.
+    return (stored[0] is None and stored[9] == "removed" and
+            incoming[9] == "complete" and stored[1:9] == incoming[1:9] and
+            stored[10:] == incoming[10:])
+
+
 def _reconcile_unresolved(conn) -> None:
     # Scan every pending page before deciding that the fixed point has stalled.
     while True:
@@ -94,7 +103,7 @@ def ingest_batch(dsn: str, authenticated_producer: str,
                 if old_content:
                     stored = ((bytes(old_content[0]) if old_content[0] is not None else None),
                               *old_content[1:])
-                    if stored != incoming:
+                    if not _same_content(stored, incoming):
                         raise ValueError("content ID conflict")
                     continue
                 inserted_content = conn.execute("""INSERT INTO content_objects
@@ -111,7 +120,7 @@ def ingest_batch(dsn: str, authenticated_producer: str,
                         FROM content_objects WHERE content_id=%s""", (item.content_id,)).fetchone()
                     stored = ((bytes(old_content[0]) if old_content[0] is not None else None),
                               *old_content[1:])
-                    if stored != incoming:
+                    if not _same_content(stored, incoming):
                         raise ValueError("content ID conflict")
             for event in events:
                 digest = _event_hash(event)

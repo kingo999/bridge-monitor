@@ -47,6 +47,8 @@ export type WorkDetail = {
   dispositions: Array<{ disposition_id: string; result_id: string; actor_id: string; stage: string; judgment: string; reason: string | null; supersedes_id: string | null; recorded_at: string; details?: Record<string, unknown>; part_id?: string | null; input_sha256?: string | null; output_result_id?: string | null }>;
   resolutions: Array<{ resolution_id: string; outcome: string; final_result_id: string | null; recorded_at: string }>;
   events: Array<{ event_id: string; event_type: string; occurred_at: string; received_at: string; call_id: string | null; worker_instance_id: string | null; capture_completeness: string; payload: Record<string, unknown> }>;
+  events_truncated?: boolean;
+  recovery_decisions?: Array<{ call_id: string; recorded_at: string; outcomes: Array<{ child_call_id: string; recovery_call_id: string; state: string; reason: string | null }> }>;
   content_states: Record<string, { content_id: string; completeness: string; byte_length: number; content_type: string; encoding: string }>;
   guidance_packs?: Array<{ pack_version_id: string; pack_id: string; version_label: string; sha256: string; items: Array<Record<string, unknown>> }>;
   example_reviews?: Array<{ review_id: string; pack_version_id: string; example_id: string; content_id: string; source_work_item_id: string | null; source_result_id: string | null; source_origin?: Origin | null; reviewer_id: string; status: string; permitted_use: string; exposure: string; scope: unknown; evidence: Record<string, unknown>; supersedes_id: string | null; reviewed_at: string }>;

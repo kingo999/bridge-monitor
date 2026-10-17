@@ -2,7 +2,7 @@ import psycopg
 
 from contracts.queries import CohortQuery
 from service.queries.cohorts import cutoff
-from service.queries.cohorts import leaf_work_items
+from service.queries.cohorts import page_leaf_work_items
 from service.queries.guidance import work_guidance, matches_guidance_filters
 from service.ingest.store import read_content
 
@@ -18,10 +18,25 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
                              query.repair_effort, query.example_reuse_status))
             eligible_ids = []
             if filtering:
-                cohort_ids = set(leaf_work_items(conn, query, as_of))
-                facts = work_guidance(conn, cohort_ids, as_of)
-                eligible_ids = [work_id for work_id in cohort_ids
-                                if matches_guidance_filters(facts[work_id], query)]
+                before = None
+                remaining_offset = offset
+                while len(eligible_ids) < limit:
+                    batch = page_leaf_work_items(conn, query, as_of, before)
+                    if not batch:
+                        break
+                    facts = work_guidance(conn, {row[0] for row in batch}, as_of)
+                    for work_id, _ in batch:
+                        if not matches_guidance_filters(facts[work_id], query):
+                            continue
+                        if remaining_offset:
+                            remaining_offset -= 1
+                        else:
+                            eligible_ids.append(work_id)
+                            if len(eligible_ids) == limit:
+                                break
+                    before = (batch[-1][1], batch[-1][0])
+                    if len(batch) < 100:
+                        break
             rows = conn.execute("""SELECT w.work_item_id,w.task_id,w.category,w.origin,w.created_at,
             (SELECT r.outcome FROM work_resolutions r WHERE r.work_item_id=w.work_item_id
                 AND r.recorded_at<=%s ORDER BY r.recorded_at DESC,r.resolution_id DESC LIMIT 1) AS resolution,
@@ -33,10 +48,10 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
                 AND d.route='paid' AND d.decided_at<=%s) AS paid_route,
             (SELECT me.requested_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
                 JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
-                ORDER BY c.created_at DESC LIMIT 1) AS requested_model,
+                ORDER BY c.created_at DESC,me.model_execution_id DESC LIMIT 1) AS requested_model,
             (SELECT me.reported_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
                 JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
-                ORDER BY c.created_at DESC LIMIT 1) AS reported_model,
+                ORDER BY c.created_at DESC,me.model_execution_id DESC LIMIT 1) AS reported_model,
             (SELECT d.judgment FROM dispositions d JOIN results r ON r.result_id=d.result_id
                 JOIN calls c ON c.call_id=r.call_id WHERE c.work_item_id=w.work_item_id
                 AND d.stage=%s AND d.recorded_at<=%s
@@ -52,7 +67,7 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
             (as_of, as_of, as_of, query.consumer_stage, as_of, as_of, as_of,
              query.origin, query.origin, query.created_from, query.created_from,
              query.created_until, query.created_until, query.completed_only, as_of,
-             filtering, eligible_ids, limit, offset)).fetchall()
+             filtering, eligible_ids, limit, 0 if filtering else offset)).fetchall()
             page_facts = work_guidance(conn, {row[0] for row in rows}, as_of)
     return [dict(zip(("work_item_id", "task_id", "category", "origin", "created_at",
                       "resolution", "resolved_at", "routed", "paid_route",
@@ -110,7 +125,7 @@ def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
                 (work_item_id,)).fetchall()
             events = conn.execute("""SELECT event_id,event_type,occurred_at,received_at,call_id,attempt_id,
                 worker_instance_id,requested_model,reported_model,capture_completeness,payload
-                FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 500""",
+                FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 501""",
                 (work_item_id,)).fetchall()
             pack_ids = sorted({d["guidance_manifest"].get("pack_version_id") for d in decisions
                                if d["guidance_manifest"].get("pack_version_id")})
@@ -135,6 +150,13 @@ def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
                   WHERE c.work_item_id=%s) OR l.to_result_id IN (
                   SELECT r.result_id FROM results r JOIN calls c ON c.call_id=r.call_id
                   WHERE c.work_item_id=%s)""", (work_item_id, work_item_id)).fetchall()
+            recoveries = conn.execute("""SELECT rr.call_id,rr.recorded_at,
+                rr.evidence->'recovery_outcomes' AS outcomes
+                FROM runtime_reconciliations rr
+                JOIN runtime_jobs j ON j.call_id=rr.call_id
+                WHERE j.work_item_id=%s AND rr.evidence ? 'recovery_outcomes'
+                ORDER BY rr.recorded_at,rr.reconciliation_id""",
+                (work_item_id,)).fetchall()
             ids = {identifier for row in messages for identifier in
                    (row["original_content_id"], row["effective_content_id"]) if identifier}
             ids.update(identifier for row in results for identifier in
@@ -150,9 +172,11 @@ def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
             "models": list(map(dict, models)), "decisions": list(map(dict, decisions)),
             "supplied_decision_ids": [row["decision_id"] for row in supplied_decisions],
             "dispositions": list(map(dict, dispositions)),
-            "resolutions": list(map(dict, resolutions)), "events": list(map(dict, events)),
+            "resolutions": list(map(dict, resolutions)), "events": list(map(dict, events[:500])),
+            "events_truncated": len(events) > 500,
             "guidance_packs": list(map(dict, packs)), "example_reviews": list(map(dict, reviews)),
             "evaluations": list(map(dict, evaluations)), "result_links": list(map(dict, links)),
+            "recovery_decisions": list(map(dict, recoveries)),
             "content_states": {row["content_id"]: dict(row) for row in content}}
 
 
@@ -180,7 +204,7 @@ def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:
                 AND dispatch.payload->>'destination'='skynet')
             ORDER BY r.delivered_at,r.result_id LIMIT 1""", (work_item_id,)).fetchone()
         event_rows = conn.execute("""SELECT event_id,event_type,occurred_at,payload
-            FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 200""",
+            FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 201""",
             (work_item_id,)).fetchall()
     original = read_content(dsn, prompt[0], role="operator") if prompt else None
     response = read_content(dsn, local[0], role="operator") if local and local[0] else None
@@ -190,4 +214,5 @@ def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:
             "original_prompt": original.decode("utf-8") if original else None,
             "local_response": response.decode("utf-8") if response else None,
             "events": [dict(zip(("event_id", "event_type", "occurred_at", "payload"), row))
-                       for row in event_rows]}
+                       for row in event_rows[:200]],
+            "events_truncated": len(event_rows) > 200}

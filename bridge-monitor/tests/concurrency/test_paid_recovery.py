@@ -294,3 +294,109 @@ def test_uncertain_owner_does_not_schedule_recovery(runtime_dsn, monkeypatch):
     with psycopg.connect(dsn) as conn:
         assert conn.execute("SELECT count(*) FROM runtime_recovery_links WHERE child_call_id=%s",
                             (child,)).fetchone()[0] == 0
+
+
+def test_owner_reconciliation_rolls_back_if_child_recovery_fails(runtime_dsn, monkeypatch):
+    from bridge.runtime import recovery as module
+
+    dsn = runtime_dsn
+    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "system-recovery-test")
+    owner, child, _ = _seed_chain(dsn, budget=3,
+                                  recipient_call_id=f"gpt-{uuid.uuid4()}")
+    with psycopg.connect(dsn) as conn:
+        before = conn.execute("SELECT state,lease_id,owner_incarnation FROM runtime_jobs "
+                              "WHERE call_id=%s", (owner,)).fetchone()
+    def fail_after_reconciliation(*args, **kwargs):
+        raise RuntimeError("simulated crash before child recovery commits")
+    monkeypatch.setattr(module, "_schedule_paid_recovery_in_tx", fail_after_reconciliation)
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        reconcile_owner_and_recover(dsn, owner, {
+            "kind": "process_exit_with_call_correlation", "call_id": owner,
+            "lease_id": before[1], "owner_incarnation": before[2], "terminated": True},
+            actor_kind="system", actor_id="coordinator",
+            auth_token="system-recovery-test")
+    with psycopg.connect(dsn) as conn:
+        assert conn.execute("SELECT state FROM runtime_jobs WHERE call_id=%s",
+                            (owner,)).fetchone()[0] == before[0]
+        assert conn.execute("SELECT count(*) FROM runtime_reconciliations WHERE call_id=%s",
+                            (owner,)).fetchone()[0] == 0
+        assert conn.execute("SELECT count(*) FROM runtime_recovery_links WHERE child_call_id=%s",
+                            (child,)).fetchone()[0] == 0
+
+
+def test_owner_recovery_rejection_is_durable_in_reconciliation(runtime_dsn, monkeypatch):
+    dsn = runtime_dsn
+    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "system-recovery-test")
+    owner, child, _ = _seed_chain(dsn, budget=2,
+                                  recipient_call_id=f"gpt-{uuid.uuid4()}")
+    with psycopg.connect(dsn) as conn:
+        lease, incarnation = conn.execute("SELECT lease_id,owner_incarnation FROM runtime_jobs "
+                                          "WHERE call_id=%s", (owner,)).fetchone()
+    outcome = reconcile_owner_and_recover(dsn, owner, {
+        "kind": "process_exit_with_call_correlation", "call_id": owner,
+        "lease_id": lease, "owner_incarnation": incarnation, "terminated": True},
+        actor_kind="system", actor_id="coordinator",
+        auth_token="system-recovery-test")
+    assert outcome["recoveries"][0]["state"] == "rejected"
+    assert outcome["recoveries"][0]["reason"] == "root_budget_exhausted"
+    with psycopg.connect(dsn) as conn:
+        stored = conn.execute("SELECT evidence->'recovery_outcomes' FROM runtime_reconciliations "
+                              "WHERE call_id=%s ORDER BY recorded_at DESC LIMIT 1",
+                              (owner,)).fetchone()[0]
+        assert stored == outcome["recoveries"]
+        assert stored[0]["child_call_id"] == child
+    from service.queries.history import read_work_item_detail
+    with psycopg.connect(dsn) as conn:
+        work_id = conn.execute("SELECT work_item_id FROM runtime_jobs WHERE call_id=%s",
+                               (owner,)).fetchone()[0]
+    detail = read_work_item_detail(dsn, work_id)
+    assert detail["recovery_decisions"][-1]["outcomes"] == outcome["recoveries"]
+
+
+def test_completed_local_child_still_needs_paid_recovery_when_owner_dies(
+        runtime_dsn, monkeypatch):
+    from tests.integration.test_dispositions import _local_result
+
+    dsn = runtime_dsn
+    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "system-recovery-test")
+    owner, child, bindings = _seed_chain(dsn, budget=3,
+                                          recipient_call_id=f"gpt-{uuid.uuid4()}")
+    assert _local_result(dsn, child, bindings[child]).answer.delivered
+    with psycopg.connect(dsn) as conn:
+        lease, incarnation = conn.execute("SELECT lease_id,owner_incarnation FROM runtime_jobs "
+                                          "WHERE call_id=%s", (owner,)).fetchone()
+    outcome = reconcile_owner_and_recover(dsn, owner, {
+        "kind": "process_exit_with_call_correlation", "call_id": owner,
+        "lease_id": lease, "owner_incarnation": incarnation, "terminated": True},
+        actor_kind="system", actor_id="coordinator",
+        auth_token="system-recovery-test")
+    assert outcome["recoveries"][0]["state"] == "queued"
+    with psycopg.connect(dsn) as conn:
+        assert conn.execute("SELECT state FROM runtime_jobs WHERE call_id=%s",
+                            (child,)).fetchone() == ("completed",)
+
+
+def test_expired_recovery_prompt_rejects_before_queuing_paid_work(runtime_dsn, monkeypatch):
+    dsn = runtime_dsn
+    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "system-recovery-test")
+    owner, child, _ = _seed_chain(dsn, budget=3,
+                                  recipient_call_id=f"gpt-{uuid.uuid4()}")
+    with psycopg.connect(dsn) as conn:
+        lease, incarnation = conn.execute("SELECT lease_id,owner_incarnation FROM runtime_jobs "
+                                          "WHERE call_id=%s", (owner,)).fetchone()
+    reconcile_execution(dsn, owner, {"kind": "adapter_termination_receipt",
+        "call_id": owner, "lease_id": lease, "owner_incarnation": incarnation,
+        "terminated": True}, actor_kind="system", actor_id="coordinator",
+        auth_token="system-recovery-test")
+    with psycopg.connect(dsn) as conn:
+        conn.execute("UPDATE content_objects SET raw_bytes=NULL,completeness='removed' "
+                     "WHERE content_id=%s", (f"prompt-{child}",))
+    recovery_id = f"recovery-{uuid.uuid4()}"
+    decision = schedule_paid_recovery(dsn, child, recovery_id,
+        actor_id="coordinator", auth_token="system-recovery-test",
+        reason="owner_terminated")
+    assert decision.state == "rejected"
+    assert decision.reason == "recovery_prompt_unavailable"
+    with psycopg.connect(dsn) as conn:
+        assert conn.execute("SELECT count(*) FROM runtime_jobs WHERE call_id=%s",
+                            (recovery_id,)).fetchone()[0] == 0

@@ -74,7 +74,12 @@ def _execute(index, coordinator, barrier, observations, dsn, paid_model):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approved-hash", required=True)
+    parser.add_argument("--output-stem", default="m4-two-claude-live")
     args = parser.parse_args()
+    if not args.output_stem or any(character not in
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+        for character in args.output_stem):
+        parser.error("output stem must be a simple filename")
     dsn = os.environ.get("BRIDGE_MONITOR_DSN")
     runtime = Path(os.environ.get("BRIDGE_MONITOR_RUNTIME_CONFIG", "")).resolve()
     if not dsn or not runtime.is_file() or not runtime.is_relative_to(PROJECT):
@@ -130,7 +135,7 @@ def main() -> int:
                "dashboard_showed_two_workers": dashboard_pair,
                "held_qwen_fallback_slots_after": held_qwen}
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    target = PROJECT / "var" / "reports" / f"m4-two-claude-live-{stamp}.json"
+    target = PROJECT / "var" / "reports" / f"{args.output_stem}-{stamp}.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"receipt": str(target), "states": [item["state"] for item in outcomes],

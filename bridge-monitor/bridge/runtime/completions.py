@@ -173,6 +173,8 @@ def record_completion(dsn: str, envelope: CompletionEnvelope, binding: Execution
         pool, job_state = _check_binding(conn, binding, envelope)
         late_only = job_state == "fallback"
         if pool == "qwen":
+            late_only |= conn.execute("SELECT 1 FROM runtime_fallback_transitions "
+                "WHERE child_call_id=%s LIMIT 1", (envelope.call_id,)).fetchone() is not None
             owner = conn.execute("SELECT j.state,c.parent_call_id FROM calls c "
                 "LEFT JOIN runtime_jobs j ON j.call_id=c.parent_call_id "
                 "WHERE c.call_id=%s", (envelope.call_id,)).fetchone()

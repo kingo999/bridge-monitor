@@ -8,17 +8,20 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import time
 import uuid
 from pathlib import Path
 
 import psycopg
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from bridge.runtime.policy_startup import active_policy
+
 
 PROJECT = Path(__file__).resolve().parents[1]
 PYTHON = PROJECT / ".venv" / "Scripts" / "python.exe"
 OUT = PROJECT / "var" / "probes"
-CLIENT_TIMEOUT_SECONDS = 600
 
 
 def main() -> int:
@@ -29,6 +32,12 @@ def main() -> int:
     args = parser.parse_args()
     if not os.environ.get("BRIDGE_MONITOR_DSN"):
         raise SystemExit("BRIDGE_MONITOR_DSN is required")
+    if not os.environ.get("BRIDGE_MONITOR_SYSTEM_TOKEN"):
+        raise SystemExit("BRIDGE_MONITOR_SYSTEM_TOKEN is required")
+    policy = active_policy(os.environ["BRIDGE_MONITOR_DSN"])
+    if not policy:
+        raise SystemExit("reviewed pilot policy is not active")
+    client_timeout_seconds = policy.deployment.client_timeout_seconds
     runtime = Path(os.environ.get("BRIDGE_MONITOR_RUNTIME_CONFIG", "")).resolve()
     if not runtime.is_file() or not runtime.is_relative_to(PROJECT):
         raise SystemExit("project-local BRIDGE_MONITOR_RUNTIME_CONFIG is required")
@@ -54,8 +63,9 @@ def main() -> int:
         "mcp_servers.bridge_monitor.command": str(PYTHON.resolve(strict=True)),
         "mcp_servers.bridge_monitor.args": ["-m", "bridge.mcp_server", "--audience", "parent"],
         "mcp_servers.bridge_monitor.env_vars": ["BRIDGE_MONITOR_DSN",
-                                                 "BRIDGE_MONITOR_RUNTIME_CONFIG"],
-        "mcp_servers.bridge_monitor.tool_timeout_sec": CLIENT_TIMEOUT_SECONDS,
+                                                 "BRIDGE_MONITOR_RUNTIME_CONFIG",
+                                                 "BRIDGE_MONITOR_SYSTEM_TOKEN"],
+        "mcp_servers.bridge_monitor.tool_timeout_sec": client_timeout_seconds,
         "mcp_servers.bridge_monitor.tools.delegate_claude.approval_mode": "approve",
     }
     command = ["codex", "exec", "--ignore-user-config", "--strict-config",
@@ -68,7 +78,7 @@ def main() -> int:
     started = time.monotonic()
     completed = subprocess.run(command, cwd=PROJECT, env=os.environ.copy(),
                                capture_output=True, text=True, encoding="utf-8",
-                               errors="replace", timeout=CLIENT_TIMEOUT_SECONDS + 60)
+                               errors="replace", timeout=client_timeout_seconds + 60)
     stem = args.output_stem or f"codex-{args.case}-flow"
     if not stem or any(character not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_" for character in stem):
         raise SystemExit("output stem must be a simple filename")
@@ -104,12 +114,14 @@ def main() -> int:
             "WHERE work_item_id=%s ORDER BY recorded_at DESC LIMIT 1",
             (task["work_item_id"],)).fetchone()
     route_names = [row[0] for row in routes]
+    effective_routes = [route for route in route_names if route in ("local", "paid")]
     receipt = {"case": args.case, "task": task, "worker_prompt": worker_prompt,
-               "client_tool_timeout_seconds": CLIENT_TIMEOUT_SECONDS,
+               "client_tool_timeout_seconds": client_timeout_seconds,
                "elapsed_seconds": round(time.monotonic() - started, 3),
                "exit_code": completed.returncode,
                "bridge_result": bridge_result,
-               "routes": route_names, "fallback": fallback,
+               "routes": route_names, "effective_routes": effective_routes,
+               "fallback": fallback,
                "resolution": resolution[0] if resolution else None,
                "calls": [{"server": item.get("server"), "tool": item.get("tool"),
                           "status": item.get("status"), "error": item.get("error"),
@@ -118,10 +130,10 @@ def main() -> int:
     (OUT / f"{stem}.receipt.json").write_text(
         json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(receipt, sort_keys=True))
-    expected_accounting = (route_names == ["local"] and fallback is None and
+    expected_accounting = (effective_routes == ["local"] and fallback is None and
                            receipt["resolution"] == "local_retained"
                            if args.case == "normal" else
-                           route_names == ["local", "paid"] and
+                           effective_routes == ["local", "paid"] and
                            fallback == ("completed", "execution", True) and
                            receipt["resolution"] == "paid_replaced")
     return 0 if (completed.returncode == 0 and len(calls) == 1 and

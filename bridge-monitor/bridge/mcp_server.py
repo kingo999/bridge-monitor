@@ -54,6 +54,8 @@ class BridgeCoordinator:
         self.incarnations = {pool: str(uuid.uuid4()) for pool in ("claude", "qwen")}
         self.workers = {pool: f"bridge-{pool}-{uuid.uuid4()}" for pool in ("claude", "qwen")}
         self.owned_calls = set()
+        self._recovery_threads = {}
+        self._recovery_threads_lock = threading.Lock()
         for pool in ("claude", "qwen"):
             register_incarnation(dsn, self.incarnations[pool], self.workers[pool])
 
@@ -512,6 +514,28 @@ class BridgeCoordinator:
                 return outcome
             time.sleep(min(poll_seconds, remaining))
 
+    def resume_queued_recoveries(self) -> list[str]:
+        """Resume only durable paid replacements after a parent MCP restart."""
+        if self.claude_adapter is None:
+            return []
+        with psycopg.connect(self.dsn) as conn:
+            rows = conn.execute("SELECT l.recovery_call_id FROM runtime_recovery_links l "
+                "JOIN runtime_jobs j ON j.call_id=l.recovery_call_id "
+                "WHERE j.pool='claude' AND j.state='queued' "
+                "ORDER BY j.admitted_at,l.recovery_call_id").fetchall()
+        started = []
+        with self._recovery_threads_lock:
+            for (call_id,) in rows:
+                prior = self._recovery_threads.get(call_id)
+                if prior and prior.is_alive():
+                    continue
+                worker = threading.Thread(target=self.run_recovery_until_terminal,
+                                          args=(call_id,), daemon=True)
+                self._recovery_threads[call_id] = worker
+                worker.start()
+                started.append(call_id)
+        return started
+
     def get_execution_status(self, call_id: str) -> dict:
         with psycopg.connect(self.dsn) as conn:
             row = conn.execute("SELECT state,pool,slot_held,policy_version,lease_id FROM runtime_jobs "
@@ -596,6 +620,8 @@ def main(argv: list[str] | None = None) -> int:
         from bridge.startup import build_coordinator
         coordinator = build_coordinator(config_path, audience=args.audience,
             parent_call_id=args.parent_call_id, parent_lease_id=args.parent_lease_id)
+        if args.audience == "parent":
+            coordinator.resume_queued_recoveries()
         create_mcp(coordinator, audience=args.audience).run(transport="stdio")
     except Exception as exc:
         print(f"bridge MCP startup failed: {type(exc).__name__}: {exc}", file=sys.stderr)
