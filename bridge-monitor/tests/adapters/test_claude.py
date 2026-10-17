@@ -1,5 +1,8 @@
 import json
 import sys
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 from contracts.events import EventType
 from contracts.work import DispatchLease, TaskPacket
@@ -70,6 +73,33 @@ def test_subprocess_runner_stops_active_process_on_cancellation(tmp_path):
     assert runner.cancelled is True
     assert runner.terminated is True
     assert runner.returncode != 0
+
+
+def test_subprocess_runner_cancellation_terminates_descendant(tmp_path):
+    marker = tmp_path / "descendant-survived.txt"
+    started = tmp_path / "descendant-started.txt"
+    descendant = ("import pathlib,sys,time; time.sleep(0.6); "
+                  "pathlib.Path(sys.argv[1]).write_text('survived'); time.sleep(1)")
+    parent = ("import pathlib,subprocess,sys,time; "
+              "subprocess.Popen([sys.executable,'-c',sys.argv[1],sys.argv[2]], "
+              "stdout=sys.stdout); "
+              "pathlib.Path(sys.argv[3]).write_text('started'); time.sleep(3)")
+    command = [sys.executable, "-c", parent, descendant, str(marker), str(started)]
+    cancel = threading.Event()
+    runner = SubprocessRunner(cwd=tmp_path, timeout_seconds=5,
+        client_tool_timeout_seconds=5, cancel_poll_seconds=0.02)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(lambda: list(runner.stream(command, "probe",
+            cancel_requested=cancel.is_set)))
+        deadline = time.monotonic() + 2
+        while not started.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert started.exists()
+        cancel.set()
+        assert future.result(timeout=4) == []
+    time.sleep(0.8)
+    assert runner.cancelled and runner.terminated
+    assert not marker.exists()
 
 
 def test_stream_captures_intermediate_text_tool_events_and_final_model(tmp_path):

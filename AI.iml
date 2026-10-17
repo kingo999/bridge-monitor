@@ -30,6 +30,21 @@
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-nodb/test_parent_config_is_project_0/bridge-monitor/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-unit/test_child_config_is_project_l0/bridge-monitor/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-unit/test_parent_config_is_project_0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-db-suite/test_child_config_is_project_l0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-db-suite/test_parent_config_is_project_0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-db-suite/test_parent_runtime_uses_activ0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-full/test_child_config_is_project_l0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-full/test_parent_config_is_project_0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-full/test_parent_runtime_uses_activ0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-review-full-final/test_child_config_is_project_l0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-review-full-final/test_parent_config_is_project_0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-review-full-final/test_parent_runtime_uses_activ0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-review-full/test_child_config_is_project_l0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-review-full/test_parent_config_is_project_0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-review-full/test_parent_runtime_uses_activ0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-reviewed-final/test_child_config_is_project_l0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-reviewed-final/test_parent_config_is_project_0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/pytest-m4-reviewed-final/test_parent_runtime_uses_activ0/bridge-monitor/.venv" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

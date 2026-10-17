@@ -25,12 +25,14 @@ def schedule_paid_recovery(dsn, child_call_id, recovery_call_id, *, actor_id, au
     with psycopg.connect(dsn) as conn, conn.transaction():
         conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
         child = conn.execute("SELECT j.task_id,j.work_item_id,j.request,j.source_snapshot,"
-                             "j.source_mode,c.parent_call_id,j.prompt_content_id FROM runtime_jobs j "
+                             "j.source_mode,c.parent_call_id,j.prompt_content_id,j.state,"
+                             "j.reserved_tokens FROM runtime_jobs j "
                              "JOIN calls c ON c.call_id=j.call_id "
                              "WHERE j.call_id=%s AND j.pool='qwen'", (child_call_id,)).fetchone()
         if not child or not child[5]:
             raise ValueError("managed child and owner call required")
-        task_id, work_id, child_request, source_snapshot, source_mode, owner_call, prompt_content_id = child
+        (task_id, work_id, child_request, source_snapshot, source_mode, owner_call,
+         prompt_content_id, child_state, child_reserved) = child
         owner = conn.execute("SELECT state,slot_held,source_snapshot,source_mode FROM runtime_jobs WHERE call_id=%s "
                              "AND pool='claude'", (owner_call,)).fetchone()
         termination = conn.execute("SELECT 1 FROM runtime_reconciliations "
@@ -76,6 +78,17 @@ def schedule_paid_recovery(dsn, child_call_id, recovery_call_id, *, actor_id, au
                         "AND evidence->>'kind'='cancellation_requested' LIMIT 1",
                         (owner_call,)).fetchone():
             return reject("parent_cancelled")
+        # The owner is gone: its local child must not dispatch or deliver to it,
+        # even if paid recovery cannot be admitted yet.
+        if child_state == "queued":
+            conn.execute("UPDATE runtime_jobs SET state='cancelled' WHERE call_id=%s",
+                         (child_call_id,))
+            conn.execute("UPDATE runtime_task_budgets SET calls_reserved=calls_reserved-1, "
+                         "tokens_reserved=tokens_reserved-%s WHERE task_id=%s",
+                         (child_reserved, task_id))
+        elif child_state in ("active", "uncertain"):
+            conn.execute("UPDATE runtime_jobs SET state='fallback' WHERE call_id=%s",
+                         (child_call_id,))
         waiting = conn.execute("SELECT count(*) FROM runtime_jobs WHERE pool='claude' "
                                "AND state='queued'").fetchone()[0]
         if waiting >= policy.limits.claude_waiting:
@@ -134,7 +147,7 @@ def reconcile_owner_and_recover(dsn, owner_call_id, evidence, *, actor_kind, act
             (owner_call_id,)).fetchone()
         children = conn.execute(
             "SELECT j.call_id FROM runtime_jobs j JOIN calls c ON c.call_id=j.call_id "
-            "WHERE c.parent_call_id=%s AND j.pool='qwen' AND j.state<>'cancelled' "
+            "WHERE c.parent_call_id=%s AND j.pool='qwen' "
             "ORDER BY j.admitted_at,j.call_id", (owner_call_id,)).fetchall()
     if cancelled:
         return {"state": state, "recoveries": []}

@@ -224,6 +224,9 @@ class BridgeCoordinator:
         if outcome and outcome.get("call_id") == child_id and outcome["state"] == "paid_continuation_required":
             return outcome
         if outcome and outcome.get("call_id") == child_id and outcome["state"] == "completed":
+            if not outcome.get("delivered", True):
+                return {**outcome, "state": "late_only", "route": "paid",
+                        "reason": "local_result_not_delivered"}
             with psycopg.connect(self.dsn) as conn:
                 row = conn.execute("SELECT c.sha256 FROM results r JOIN content_objects c "
                                    "ON c.content_id=r.delivered_content_id WHERE r.result_id=%s",
@@ -421,9 +424,13 @@ class BridgeCoordinator:
             return {"state": "uncertain", "call_id": lease.call_id,
                     "reason": "adapter_unavailable"}
         self.owned_calls.add(lease.call_id)
-        result = (adapter.run(lease, task, prompt, self.emitter, workspace=workspace) if pool == "claude"
-                  else adapter.run(lease, prompt, self.emitter, task=task,
-                                   deadline_at=local_cutoff_at))
+        if pool == "claude":
+            result = (adapter.run(lease, task, prompt, self.emitter)
+                      if workspace is None else
+                      adapter.run(lease, task, prompt, self.emitter, workspace=workspace))
+        else:
+            result = adapter.run(lease, prompt, self.emitter, task=task,
+                                 deadline_at=local_cutoff_at)
         if (pool == "qwen" and result.state == "denied" and
                 result.uncertainty == "local_cutoff_passed"):
             return self._commit_predispatch_fallback(lease,
@@ -442,8 +449,8 @@ class BridgeCoordinator:
                 response["recovery"] = recovery
                 for item in recovery["recoveries"]:
                     if item["state"] == "queued":
-                        threading.Thread(target=self.run_one, args=("claude",),
-                            kwargs={"call_id": item["recovery_call_id"]}, daemon=True).start()
+                        threading.Thread(target=self.run_recovery_until_terminal,
+                            args=(item["recovery_call_id"],), daemon=True).start()
             else:
                 mark_execution_uncertain(self.dsn, lease.call_id,
                                          reason=result.uncertainty or result.state)
@@ -467,17 +474,43 @@ class BridgeCoordinator:
                               if result.raw_answer is not None else None),
             claim_diagnostics=claim_diagnostics,
             consumer_stage="claude" if pool == "qwen" else None)
-        self.emitter.emit(EventType.RESULT_DELIVERED, attempt_id=attempt_id,
-                          payload={"result_id": result_id,
-                                   "raw_content_id": result.raw_content_id or content_id,
-                                   "delivered_content_id": content_id}, **common)
+        if completion.answer.delivered:
+            self.emitter.emit(EventType.RESULT_DELIVERED, attempt_id=attempt_id,
+                              payload={"result_id": result_id,
+                                       "raw_content_id": result.raw_content_id or content_id,
+                                       "delivered_content_id": content_id}, **common)
         self.emitter.emit(EventType.CALL_COMPLETED, attempt_id=attempt_id,
                           payload={"result_id": result_id}, **common)
         if source_mode:
             release_source(self.dsn, lease.call_id, task.context["source_id"])
         return {"state": "completed", "call_id": lease.call_id, "result_id": result_id,
-                "answer": result.answer, "reported_model": result.reported_model,
+                "answer": result.answer if completion.answer.delivered else None,
+                "delivered": completion.answer.delivered,
+                "reported_model": result.reported_model,
                 "accounting_complete": completion.accounting_complete}
+
+    def run_recovery_until_terminal(self, call_id: str) -> dict:
+        """Keep a paid recovery eligible while another paid call holds capacity."""
+        poll_seconds = self.policy.deployment.queue_poll_ms / 1000
+        while True:
+            with psycopg.connect(self.dsn) as conn:
+                row = conn.execute("SELECT state,queue_deadline_at FROM runtime_jobs "
+                                   "WHERE call_id=%s AND pool='claude'", (call_id,)).fetchone()
+            if not row:
+                return {"state": "unknown", "call_id": call_id}
+            state, queue_deadline = row
+            if state != "queued":
+                return self.get_execution_status(call_id)
+            remaining = (queue_deadline - datetime.now(timezone.utc)).total_seconds()
+            if remaining <= 0:
+                if cancel_queued(self.dsn, call_id):
+                    return {"state": "queue_expired", "call_id": call_id,
+                            "reason": "paid_recovery_queue_deadline_exceeded"}
+                return self.get_execution_status(call_id)
+            outcome = self.run_one("claude", call_id=call_id)
+            if outcome:
+                return outcome
+            time.sleep(min(poll_seconds, remaining))
 
     def get_execution_status(self, call_id: str) -> dict:
         with psycopg.connect(self.dsn) as conn:

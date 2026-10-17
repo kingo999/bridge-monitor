@@ -171,7 +171,17 @@ def record_completion(dsn: str, envelope: CompletionEnvelope, binding: Execution
     with psycopg.connect(dsn) as conn, conn.transaction():
         conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
         pool, job_state = _check_binding(conn, binding, envelope)
-        if job_state == "fallback":
+        late_only = job_state == "fallback"
+        if pool == "qwen":
+            owner = conn.execute("SELECT j.state,c.parent_call_id FROM calls c "
+                "LEFT JOIN runtime_jobs j ON j.call_id=c.parent_call_id "
+                "WHERE c.call_id=%s", (envelope.call_id,)).fetchone()
+            if owner and owner[1]:
+                late_only |= owner[0] in ("terminated", "completed", "cancelled")
+                late_only |= conn.execute("SELECT 1 FROM runtime_reconciliations "
+                    "WHERE call_id=%s AND evidence->>'kind'='cancellation_requested' "
+                    "LIMIT 1", (owner[1],)).fetchone() is not None
+        if late_only:
             envelope = envelope.model_copy(update={"result": envelope.result.model_copy(update={"delivered": False})})
         answer = _store_answer(conn, envelope, answer_bytes, raw_answer_bytes)
         if consumer_stage:
@@ -218,7 +228,7 @@ def record_completion(dsn: str, envelope: CompletionEnvelope, binding: Execution
                                  "outcome,final_result_id,recorded_at) "
                                  "VALUES(%s,%s,%s,%s,now()) ON CONFLICT(resolution_id) DO NOTHING",
                                  (resolution_id, fallback[4], outcome, answer.result_id))
-        if job_state in ("active", "uncertain"):
+        if job_state in ("active", "uncertain", "fallback"):
             conn.execute("UPDATE runtime_jobs SET state='completed',slot_held=false "
                          "WHERE call_id=%s", (binding.call_id,))
         if not _accounting_complete(conn, binding.call_id):

@@ -2,6 +2,7 @@
 
 import json
 import os
+import signal
 import subprocess
 import threading
 import uuid
@@ -63,6 +64,7 @@ class SubprocessRunner:
         self.last_stderr_path = None
         self.cancelled = False
         self.terminated = False
+        self.tree_terminated = False
 
     def fork(self, *, cwd: str | Path | None = None):
         """Give every concurrent call its own process state and receipt."""
@@ -82,7 +84,9 @@ class SubprocessRunner:
         with diagnostic.open("wb") as stderr_sink:
             process = subprocess.Popen(command, cwd=self.cwd, env=env, stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE, stderr=stderr_sink,
-                                       text=True, encoding="utf-8", errors="replace")
+                                       text=True, encoding="utf-8", errors="replace",
+                                       **({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+                                          if os.name == "nt" else {"start_new_session": True}))
             timer = threading.Timer(self.timeout_seconds, self._expire, args=(process,))
             timer.start()
             stop_monitor = threading.Event()
@@ -94,7 +98,7 @@ class SubprocessRunner:
                         continue
                     if requested and process.poll() is None:
                         self.cancelled = True
-                        process.kill()
+                        self._terminate_tree(process)
                         return
             watcher = None
             if cancel_requested is not None:
@@ -106,20 +110,40 @@ class SubprocessRunner:
                 for line in process.stdout:
                     yield line
                 self.returncode = process.wait()
-                self.terminated = True
+                self.terminated = (not (self.cancelled or self.timed_out) or
+                                   self.tree_terminated)
             finally:
                 timer.cancel()
+                timer.join()
                 stop_monitor.set()
                 if watcher is not None:
-                    watcher.join(timeout=1)
+                    watcher.join(timeout=6 if self.cancelled else 1)
                 if process.poll() is None:
-                    process.kill()
+                    self._terminate_tree(process)
                     self.returncode = process.wait()
-                self.terminated = process.poll() is not None
+                self.terminated = (process.poll() is not None and
+                    (not (self.cancelled or self.timed_out) or self.tree_terminated))
 
     def _expire(self, process):
         if process.poll() is None:
             self.timed_out = True
+            self._terminate_tree(process)
+
+    def _terminate_tree(self, process):
+        if process.poll() is not None:
+            return
+        try:
+            if os.name == "nt":
+                result = subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    timeout=5, check=False)
+                self.tree_terminated |= result.returncode == 0
+            else:
+                os.killpg(process.pid, signal.SIGKILL)
+                self.tree_terminated = True
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        if process.poll() is None:
             process.kill()
 
 
