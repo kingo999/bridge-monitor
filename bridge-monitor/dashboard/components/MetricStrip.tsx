@@ -23,7 +23,9 @@ export default function MetricStrip({ report, selected, onSelect, consumerStage 
           <span className="metric-detail">{consumerStage === 'gpt' &&
             report.coverage.disposition.numerator === 0
               ? 'No GPT acknowledgement captured; final use unknown'
-              : 'Valid disposition records; not independently quality-reviewed'}</span>}
+              : consumerStage === 'gpt'
+                ? 'Parent-reported; final Codex answer not independently observed'
+                : 'Valid disposition records; not independently quality-reviewed'}</span>}
       </button>;
     })}
   </section>;

@@ -70,6 +70,53 @@ def test_detail_retains_per_execution_usage_and_unknown_cache_counts(seeded):
     ]
 
 
+def test_parent_submitted_output_is_addressable_in_work_detail(runtime_dsn):
+    from tests.integration.test_dispositions import _seed_chain
+    from tests.integration.test_parent_acknowledgements import _ack, _paid_result
+
+    claude, _, bindings = _seed_chain(runtime_dsn, recipient_call_id="gpt")
+    paid = _paid_result(runtime_dsn, claude, bindings[claude])
+    receipt = _ack(runtime_dsn, claude, paid, answer="Parent answer Ω")
+    with psycopg.connect(runtime_dsn) as conn:
+        work_id = conn.execute("SELECT work_item_id FROM calls WHERE call_id=%s",
+                               (claude,)).fetchone()[0]
+    detail = read_work_item_detail(runtime_dsn, work_id)
+    output = next(row for row in detail["results"]
+                  if row["result_id"] == receipt.output_result_id)
+    assert output["delivered_at"] is None
+    assert output["raw_content_id"] in detail["content_states"]
+    assert any(d["stage"] == "gpt" and d["output_result_id"] == output["result_id"]
+               for d in detail["dispositions"])
+    page = list_work_items(runtime_dsn, CohortQuery(origin="synthetic",
+                           consumer_stage="gpt"), limit=100)
+    assert next(row for row in page if row["work_item_id"] == work_id)[
+        "disposition_judgment"] == "accepted"
+
+
+def test_conflicting_gpt_judgments_do_not_pick_an_arbitrary_work_list_value(runtime_dsn):
+    import uuid
+    from tests.integration.test_dispositions import _seed_chain
+    from tests.integration.test_parent_acknowledgements import _ack, _paid_result
+
+    claude, _, bindings = _seed_chain(runtime_dsn, recipient_call_id="gpt")
+    paid = _paid_result(runtime_dsn, claude, bindings[claude])
+    _ack(runtime_dsn, claude, paid)
+    with psycopg.connect(runtime_dsn) as conn:
+        work_id = conn.execute("SELECT work_item_id FROM calls WHERE call_id=%s",
+                               (claude,)).fetchone()[0]
+        root = conn.execute("SELECT task_id FROM work_items WHERE work_item_id=%s",
+                            (work_id,)).fetchone()[0]
+        conn.execute("INSERT INTO dispositions(disposition_id,result_id,actor_id,stage,"
+            "judgment,recorded_at,input_sha256) VALUES(%s,%s,%s,'gpt','replaced',"
+            "now(),%s)", (str(uuid.uuid4()), paid.answer.result_id,
+                          f"gpt-parent:gpt:{root}",
+                          paid.answer.sha256))
+    page = list_work_items(runtime_dsn, CohortQuery(origin="synthetic",
+                           consumer_stage="gpt"), limit=100)
+    assert next(row for row in page if row["work_item_id"] == work_id)[
+        "disposition_judgment"] is None
+
+
 def test_history_list_uses_recorded_resolution_timestamp(seeded):
     from datetime import timedelta
 

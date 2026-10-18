@@ -1,4 +1,6 @@
 from pathlib import Path
+import hashlib
+from datetime import datetime, timedelta, timezone
 
 import psycopg
 import pytest
@@ -78,6 +80,57 @@ def test_paid_result_after_local_dispatch_is_not_a_local_response(seeded):
     report = query_metrics(seeded, CohortQuery(origin="synthetic"))
     assert report.coverage["disposition"].denominator == 40
     assert report.metrics["confirmed_acceptance"].denominator == 40
+
+
+def test_gpt_stage_counts_delivered_claude_results_including_missing_ack(seeded):
+    delivered_at = datetime.now(timezone.utc) - timedelta(seconds=2)
+    acknowledged_at = delivered_at + timedelta(seconds=1)
+    parent = "gpt:demo-task-001"
+    with psycopg.connect(seeded) as conn:
+        conn.execute("INSERT INTO calls(call_id,work_item_id,created_at) "
+                     "VALUES(%s,'demo-work-061',%s) ON CONFLICT DO NOTHING",
+                     (parent, delivered_at))
+        for index in (1, 2):
+            call_id = f"gpt-metric-claude-{index}"
+            result_id = f"gpt-metric-result-{index}"
+            content_id = f"gpt-metric-content-{index}"
+            body = f"Claude answer {index}".encode()
+            digest = hashlib.sha256(body).hexdigest()
+            conn.execute("INSERT INTO calls(call_id,work_item_id,parent_call_id,"
+                "requested_model,created_at) VALUES(%s,'demo-work-061',%s,'sonnet',%s)",
+                (call_id, parent, delivered_at))
+            conn.execute("INSERT INTO content_objects(content_id,raw_bytes,byte_length,sha256,"
+                "role,direction,content_type,encoding,origin,capture_layer,completeness,"
+                "block_order) VALUES(%s,%s,%s,%s,'assistant','in','text/plain','utf-8',"
+                "'synthetic','test','complete',0)", (content_id, body, len(body), digest))
+            conn.execute("INSERT INTO results(result_id,call_id,raw_content_id,"
+                "delivered_content_id,delivered_at) VALUES(%s,%s,%s,%s,%s)",
+                (result_id, call_id, content_id, content_id, delivered_at))
+        conn.execute("INSERT INTO dispositions(disposition_id,result_id,actor_id,stage,"
+            "judgment,recorded_at,input_sha256) VALUES('gpt-metric-ack-1',"
+            "'gpt-metric-result-1',%s,'gpt','accepted',%s,%s)",
+            (f"gpt-parent:{parent}", acknowledged_at,
+             hashlib.sha256(b"Claude answer 1").hexdigest()))
+    before = query_metrics(seeded, CohortQuery(origin="synthetic", consumer_stage="gpt",
+        as_of=delivered_at + timedelta(milliseconds=500)))
+    after = query_metrics(seeded, CohortQuery(origin="synthetic", consumer_stage="gpt"))
+    claude = query_metrics(seeded, CohortQuery(origin="synthetic"))
+    assert before.coverage["disposition"].denominator == 2
+    assert before.coverage["disposition"].numerator == 0
+    assert after.coverage["disposition"].denominator == 2
+    assert after.coverage["disposition"].numerator == 1
+    assert after.metrics["confirmed_acceptance"].numerator == 1
+    assert claude.coverage["disposition"].denominator == 40
+    with psycopg.connect(seeded) as conn:
+        conn.execute("INSERT INTO dispositions(disposition_id,result_id,actor_id,stage,"
+            "judgment,supersedes_id,recorded_at,input_sha256) VALUES("
+            "'gpt-metric-revision-1','gpt-metric-result-1',%s,'gpt','revised',"
+            "'gpt-metric-ack-1',now(),%s)",
+            (f"gpt-parent:{parent}", hashlib.sha256(b"Claude answer 1").hexdigest()))
+    revised = query_metrics(seeded, CohortQuery(origin="synthetic", consumer_stage="gpt"))
+    assert revised.coverage["disposition"].numerator == 1
+    assert revised.metrics["confirmed_acceptance"].numerator == 0
+    assert revised.metrics["contribution"].numerator == 1
 
 
 def test_resolved_work_without_delegation_record_is_separate_from_pending(seeded):

@@ -62,6 +62,7 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
   }, [references, bodies]);
 
   const activeCalls = useMemo(() => detail ? detail.calls.filter(call =>
+    !call.call_id.startsWith('gpt:') &&
     !detail.results.some(result => result.call_id === call.call_id && result.delivered_at)) : [],
   [detail]);
   useEffect(() => {
@@ -84,7 +85,15 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
   const outputTime = agentStatus?.last_model_output_at ?
     new Date(agentStatus.last_model_output_at).toLocaleString() : null;
   const localResult = detail?.results.find(r => r.call_id === localCall?.call_id);
-  const paidResult = detail?.results.find(r => r.call_id !== localCall?.call_id && r.delivered_at);
+  const parentCall = detail?.calls.find(c => c.call_id.startsWith('gpt:') && !c.parent_call_id);
+  const paidResult = detail?.results.find(r => r.call_id !== localCall?.call_id &&
+    r.call_id !== parentCall?.call_id && r.delivered_at);
+  const effectiveGpt = detail?.dispositions.filter(d => d.stage === 'gpt' &&
+    d.result_id === paidResult?.result_id &&
+    !detail.dispositions.some(next => next.supersedes_id === d.disposition_id)) || [];
+  const gptDisposition = effectiveGpt.length === 1 ? effectiveGpt[0] : null;
+  const parentOutput = detail?.results.find(r => r.result_id === gptDisposition?.output_result_id) ||
+    detail?.results.find(r => r.call_id === parentCall?.call_id && !!r.raw_content_id);
   const claudeCall = detail?.calls.find(c => c.call_id === localCall?.parent_call_id) ||
     detail?.calls.find(c => c.call_id === paidResult?.call_id && !!c.requested_model) ||
     detail?.calls.find(c => !c.local_dispatch && !!c.requested_model);
@@ -158,6 +167,12 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
             downstreamModel={paidModel?.reported_model || paidModel?.requested_model || 'Paid model / unknown'} localState={fallback(localResult?.raw_content_id || localResult?.delivered_content_id)}
             downstreamState={fallback(paidResult?.delivered_content_id)} />
           <BodyCard title="Response delivered to caller" content={body(deliveredRef)} fallback={fallback(deliveredRef)} />
+          {gptDisposition && <>
+            <BodyCard title="Parent-submitted answer (reported)"
+              content={body(parentOutput?.raw_content_id)}
+              fallback={fallback(parentOutput?.raw_content_id)} />
+            <p className="coverage-note">Final Codex answer not independently observed</p>
+          </>}
           <section className="usage-section" aria-label="Model usage">
             <h3>Reported model usage</h3>
             {(detail.usage || []).length ? detail.usage.map(observation => {
@@ -187,12 +202,12 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
             <p>{d.reason || 'No reason recorded'}</p><small>Actor {d.actor_id} · result {d.result_id}</small></div>)}
           {detail.dispositions.length === 0 && <p className="muted">No disposition reported.</p>}
           <h3>Final resolution</h3>{detail.resolutions.length ? detail.resolutions.map(r => <p key={r.resolution_id}>{r.outcome} · {new Date(r.recorded_at).toLocaleString()}</p>) : <p className="muted">Unknown / pending</p>}
-          <p className="coverage-note">Text differences do not establish semantic acceptance. GPT final survival requires its own acknowledgement.</p>
+          <p className="coverage-note">Text differences do not establish semantic acceptance. GPT acknowledgements are parent-reported; final Codex delivery is not independently observed.</p>
         </div>}
         {tab === 'guidance' && <GuidanceDetails detail={detail} />}
         {tab === 'timeline' && <ExecutionTimeline detail={detail} />}
       </div>
-      <div className="inspector-footer">Claude disposition: <strong>{selectedDisposition?.judgment || 'Unreported'}</strong> · GPT disposition: <strong>{detail.dispositions.find(d => d.stage === 'gpt')?.judgment || 'Unknown'}</strong></div>
+      <div className="inspector-footer">Claude disposition: <strong>{selectedDisposition?.judgment || 'Unreported'}</strong> · GPT disposition: <strong>{gptDisposition?.judgment || 'Unknown'}</strong>{gptDisposition && ' (parent-reported)'}</div>
     </>}
   </aside>;
 }

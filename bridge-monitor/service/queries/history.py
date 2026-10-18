@@ -75,12 +75,16 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
             (SELECT me.reported_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
                 JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
                 ORDER BY c.created_at DESC,me.model_execution_id DESC LIMIT 1) AS reported_model,
-            (SELECT d.judgment FROM dispositions d JOIN results r ON r.result_id=d.result_id
+            (SELECT effective.judgment FROM (
+                SELECT d.result_id,d.part_id,min(d.judgment) AS judgment,
+                    max(d.recorded_at) AS latest FROM dispositions d
+                JOIN results r ON r.result_id=d.result_id
                 JOIN calls c ON c.call_id=r.call_id WHERE c.work_item_id=w.work_item_id
                 AND d.stage=%s AND d.recorded_at<=%s
                 AND NOT EXISTS (SELECT 1 FROM dispositions newer WHERE newer.supersedes_id=d.disposition_id
                     AND newer.recorded_at<=%s)
-                ORDER BY d.recorded_at DESC,d.disposition_id DESC LIMIT 1) AS disposition_judgment
+                GROUP BY d.result_id,d.part_id HAVING count(*)=1
+            ) effective ORDER BY effective.latest DESC,effective.result_id DESC LIMIT 1) AS disposition_judgment
             FROM work_items w WHERE w.created_at<=%s AND (%s='all' OR w.origin=%s)
             AND (%s::timestamptz IS NULL OR w.created_at >= %s)
             AND (%s::timestamptz IS NULL OR w.created_at < %s)

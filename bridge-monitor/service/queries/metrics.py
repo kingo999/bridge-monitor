@@ -7,7 +7,7 @@ from service.queries.cohorts import cutoff, leaf_work_items
 from service.queries.guidance import work_guidance, matches_guidance_filters, result_guidance_group
 
 
-DEFINITION_VERSION = "phase1-v1"
+DEFINITION_VERSION = "phase1-v2"
 
 
 def _metric(numerator: int, denominator: int) -> MetricValue:
@@ -34,19 +34,33 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
             decided = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM delegation_decisions
                 WHERE decided_at<=%s""", (as_of,)) if row[0] in work_ids}
             not_routed = paid_decisions - dispatched
-            result_rows = conn.execute("""SELECT r.result_id, c.work_item_id,c.call_id,r.delivered_at
-                FROM results r JOIN calls c ON c.call_id=r.call_id
-                WHERE r.delivered_at IS NOT NULL AND r.delivered_at<=%s
-                AND EXISTS (SELECT 1 FROM events dispatch
-                    WHERE dispatch.call_id=c.call_id AND dispatch.event_type='call.dispatched'
-                    AND dispatch.payload->>'destination'='skynet'
-                    AND dispatch.occurred_at<=%s)""", (as_of, as_of)).fetchall()
+            if query.consumer_stage == "gpt":
+                result_rows = conn.execute("""SELECT r.result_id,c.work_item_id,c.call_id,
+                    r.delivered_at FROM results r JOIN calls c ON c.call_id=r.call_id
+                    JOIN work_items w ON w.work_item_id=c.work_item_id
+                    WHERE r.delivered_at IS NOT NULL AND r.delivered_at<=%s
+                    AND r.delivered_content_id IS NOT NULL
+                    AND c.parent_call_id='gpt:' || w.task_id""", (as_of,)).fetchall()
+            else:
+                result_rows = conn.execute("""SELECT r.result_id, c.work_item_id,c.call_id,r.delivered_at
+                    FROM results r JOIN calls c ON c.call_id=r.call_id
+                    WHERE r.delivered_at IS NOT NULL AND r.delivered_at<=%s
+                    AND EXISTS (SELECT 1 FROM events dispatch
+                        WHERE dispatch.call_id=c.call_id AND dispatch.event_type='call.dispatched'
+                        AND dispatch.payload->>'destination'='skynet'
+                        AND dispatch.occurred_at<=%s)""", (as_of, as_of)).fetchall()
             pack_filter = (query.guidance_group and query.guidance_group not in
                            ("no_guidance", "unknown", "mixed", "not_dispatched"))
-            result_ids = {result_id for result_id, work_id, call_id, delivered_at in result_rows
-                          if (work_id in all_work_ids and
-                              (result_guidance_group(guidance[work_id], call_id, delivered_at) == query.guidance_group
-                               if pack_filter else work_id in dispatched))}
+            if query.consumer_stage == "gpt":
+                result_ids = {result_id for result_id, work_id, _, _ in result_rows
+                              if work_id in work_ids and
+                              (not pack_filter or
+                               guidance[work_id]["guidance_group"] == query.guidance_group)}
+            else:
+                result_ids = {result_id for result_id, work_id, call_id, delivered_at in result_rows
+                              if work_id in all_work_ids and
+                              (result_guidance_group(guidance[work_id], call_id, delivered_at)
+                               == query.guidance_group if pack_filter else work_id in dispatched)}
             disposition_rows = defaultdict(list)
             for disposition_id, result_id, judgment, supersedes_id in conn.execute("""SELECT
                 disposition_id,result_id,judgment,supersedes_id FROM dispositions
