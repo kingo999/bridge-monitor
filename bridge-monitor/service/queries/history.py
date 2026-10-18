@@ -15,6 +15,7 @@ def _gpt_work_judgments(conn, work_ids: list[str], as_of) -> dict[str, str]:
         JOIN calls c ON c.call_id=r.call_id
         JOIN work_items w ON w.work_item_id=c.work_item_id
         WHERE c.work_item_id=ANY(%s) AND c.parent_call_id='gpt:' || w.task_id
+          AND c.execution_mode='production'
           AND r.delivered_at IS NOT NULL AND r.delivered_at<=%s
           AND r.delivered_content_id IS NOT NULL""", (work_ids, as_of)).fetchall()
     by_work = {}
@@ -110,22 +111,27 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
                 AND r.recorded_at<=%s ORDER BY r.recorded_at DESC,r.resolution_id DESC LIMIT 1) AS resolution,
             (SELECT r.recorded_at FROM work_resolutions r WHERE r.work_item_id=w.work_item_id
                 AND r.recorded_at<=%s ORDER BY r.recorded_at DESC,r.resolution_id DESC LIMIT 1) AS resolved_at,
-            EXISTS (SELECT 1 FROM events e WHERE e.work_item_id=w.work_item_id
+            EXISTS (SELECT 1 FROM events e LEFT JOIN calls routed_call ON routed_call.call_id=e.call_id
+                WHERE e.work_item_id=w.work_item_id
                 AND e.event_type='call.dispatched' AND e.payload->>'destination'='skynet'
+                AND COALESCE(routed_call.execution_mode,e.payload->>'execution_mode','production')='production'
                 AND e.occurred_at<=%s) AS routed,
             EXISTS (SELECT 1 FROM delegation_decisions d WHERE d.work_item_id=w.work_item_id
-                AND d.route='paid' AND d.decided_at<=%s) AS paid_route,
+                AND d.route='paid' AND d.execution_mode='production' AND d.decided_at<=%s) AS paid_route,
             (SELECT me.requested_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
                 JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
+                AND c.execution_mode='production'
                 ORDER BY c.created_at DESC,me.model_execution_id DESC LIMIT 1) AS requested_model,
             (SELECT me.reported_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
                 JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
+                AND c.execution_mode='production'
                 ORDER BY c.created_at DESC,me.model_execution_id DESC LIMIT 1) AS reported_model,
             (SELECT effective.judgment FROM (
                 SELECT d.result_id,d.part_id,min(d.judgment) AS judgment,
                     max(d.recorded_at) AS latest FROM dispositions d
                 JOIN results r ON r.result_id=d.result_id
                 JOIN calls c ON c.call_id=r.call_id WHERE c.work_item_id=w.work_item_id
+                AND c.execution_mode='production'
                 AND d.stage=%s AND d.recorded_at<=%s
                 AND NOT EXISTS (SELECT 1 FROM dispositions newer WHERE newer.supersedes_id=d.disposition_id
                     AND newer.recorded_at<=%s)
@@ -356,7 +362,8 @@ def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:
             return None
         prompt = conn.execute("""SELECT m.original_content_id FROM messages m
             JOIN calls c ON c.call_id=m.call_id
-            WHERE c.work_item_id=%s AND m.original_content_id IS NOT NULL
+            WHERE c.work_item_id=%s AND c.execution_mode='production'
+            AND m.original_content_id IS NOT NULL
             AND m.role='user' AND m.direction='out'
             AND EXISTS (SELECT 1 FROM events dispatch WHERE dispatch.call_id=c.call_id
                 AND dispatch.event_type='call.dispatched'
@@ -364,7 +371,8 @@ def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:
             ORDER BY c.created_at,m.message_id LIMIT 1""", (work_item_id,)).fetchone()
         local = conn.execute("""SELECT r.delivered_content_id FROM results r
             JOIN calls c ON c.call_id=r.call_id
-            WHERE c.work_item_id=%s AND r.delivered_at IS NOT NULL
+            WHERE c.work_item_id=%s AND c.execution_mode='production'
+            AND r.delivered_at IS NOT NULL
             AND EXISTS (SELECT 1 FROM events dispatch WHERE dispatch.call_id=c.call_id
                 AND dispatch.event_type='call.dispatched'
                 AND dispatch.payload->>'destination'='skynet')

@@ -47,15 +47,19 @@ def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> Dashboard
                 (SELECT r.outcome FROM work_resolutions r WHERE r.work_item_id=w.work_item_id
                     ORDER BY r.recorded_at DESC,r.resolution_id DESC LIMIT 1) AS resolution,
                 w.resolved_at,
-                EXISTS (SELECT 1 FROM events e WHERE e.work_item_id=w.work_item_id
-                    AND e.event_type='call.dispatched' AND e.payload->>'destination'='skynet') AS routed,
+                EXISTS (SELECT 1 FROM events e LEFT JOIN calls routed_call ON routed_call.call_id=e.call_id
+                    WHERE e.work_item_id=w.work_item_id AND e.event_type='call.dispatched'
+                    AND e.payload->>'destination'='skynet'
+                    AND COALESCE(routed_call.execution_mode,e.payload->>'execution_mode','production')='production') AS routed,
                 EXISTS (SELECT 1 FROM delegation_decisions d WHERE d.work_item_id=w.work_item_id
-                    AND d.route='paid') AS paid_route,
+                    AND d.route='paid' AND d.execution_mode='production') AS paid_route,
                 (SELECT me.requested_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
                     JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
+                    AND c.execution_mode='production'
                     ORDER BY c.created_at DESC LIMIT 1) AS requested_model,
                 (SELECT me.reported_model FROM model_executions me JOIN attempts a ON a.attempt_id=me.attempt_id
                     JOIN calls c ON c.call_id=a.call_id WHERE c.work_item_id=w.work_item_id
+                    AND c.execution_mode='production'
                     ORDER BY c.created_at DESC LIMIT 1) AS reported_model
                 FROM work_items w WHERE (%s='all' OR w.origin=%s)
                 ORDER BY w.created_at DESC,w.work_item_id DESC LIMIT %s""",

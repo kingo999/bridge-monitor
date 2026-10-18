@@ -9,14 +9,16 @@ def work_guidance(conn, work_ids: set[str], as_of) -> dict[str, dict]:
     ids = sorted(work_ids)
     attempts: dict[str, list[dict]] = defaultdict(list)
     rows = conn.execute("""SELECT e.work_item_id,e.call_id,e.occurred_at,d.guidance_manifest
-        FROM events e LEFT JOIN LATERAL (
+        FROM events e LEFT JOIN calls c ON c.call_id=e.call_id LEFT JOIN LATERAL (
             SELECT guidance_manifest FROM delegation_decisions d
             WHERE d.child_call_id=e.call_id AND d.route='local'
+              AND d.execution_mode='production'
               AND d.decided_at<=e.occurred_at
             ORDER BY d.decided_at DESC,d.decision_id DESC LIMIT 1
         ) d ON true
         WHERE e.work_item_id=ANY(%s) AND e.event_type='call.dispatched'
           AND e.payload->>'destination'='skynet' AND e.occurred_at<=%s
+          AND COALESCE(c.execution_mode,e.payload->>'execution_mode','production')='production'
         ORDER BY e.occurred_at,e.event_id""", (ids, as_of)).fetchall()
     attempt_groups: dict[str, dict[str, list[tuple]]] = defaultdict(lambda: defaultdict(list))
     for work_id, call_id, dispatched_at, manifest in rows:
@@ -64,6 +66,7 @@ def work_guidance(conn, work_ids: set[str], as_of) -> dict[str, dict]:
         WHERE c.work_item_id=ANY(%s) AND d.recorded_at<=%s
           AND NOT EXISTS (SELECT 1 FROM dispositions newer
               WHERE newer.supersedes_id=d.disposition_id AND newer.recorded_at<=%s)
+          AND c.execution_mode='production'
           AND EXISTS (SELECT 1 FROM events e WHERE e.call_id=c.call_id
               AND e.event_type='call.dispatched' AND e.payload->>'destination'='skynet'
               AND e.occurred_at<=%s)""", (ids, as_of, as_of, as_of)):

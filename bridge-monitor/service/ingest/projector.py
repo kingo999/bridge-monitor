@@ -28,14 +28,22 @@ def validate_projectable_event(event: EventEnvelope) -> None:
     elif kind == EventType.CALL_RECEIVED:
         required("call_id", event.call_id or p.get("call_id"))
         required("work_item_id", event.work_item_id)
+        if p.get("execution_mode", "production") not in ("production", "shadow"):
+            raise ValueError("invalid execution_mode")
     elif kind == EventType.CALL_DISPATCHED:
         required("call_id", event.call_id or p.get("call_id"))
         required("work_item_id", event.work_item_id)
         required("destination", p.get("destination"))
+        if p.get("execution_mode", "production") not in ("production", "shadow"):
+            raise ValueError("invalid execution_mode")
     elif kind == EventType.DELEGATION_DECIDED:
         required("decision_id", p.get("decision_id"))
         required("route", p.get("route"))
         required("work_item_id", event.work_item_id)
+        if p.get("execution_mode", "production") not in ("production", "shadow"):
+            raise ValueError("invalid execution_mode")
+        if p.get("decision_stage", "legacy") not in ("legacy", "parent_router", "claude_child"):
+            raise ValueError("invalid decision_stage")
     elif kind == EventType.ATTEMPT_STARTED:
         required("attempt_id", event.attempt_id or p.get("attempt_id"))
         required("call_id", event.call_id or p.get("call_id"))
@@ -155,10 +163,12 @@ def project_domain(conn, event: EventEnvelope) -> None:
                      (event.work_item_id or p["work_item_id"], event.task_id or p.get("task_id"),
                       p.get("parent_work_item_id"), event.origin, p.get("category"), event.occurred_at))
     elif kind == EventType.CALL_RECEIVED:
-        conn.execute("""INSERT INTO calls(call_id,work_item_id,parent_call_id,parent_attempt_id,requested_model,created_at)
-                     VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(call_id) DO NOTHING""",
+        conn.execute("""INSERT INTO calls(call_id,work_item_id,parent_call_id,parent_attempt_id,
+                     requested_model,created_at,execution_mode)
+                     VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(call_id) DO NOTHING""",
                      (event.call_id or p["call_id"], event.work_item_id, p.get("parent_call_id"),
-                      p.get("parent_attempt_id"), event.requested_model, event.occurred_at))
+                      p.get("parent_attempt_id"), event.requested_model, event.occurred_at,
+                      p.get("execution_mode", "production")))
     elif kind == EventType.ATTEMPT_STARTED:
         conn.execute("""INSERT INTO attempts(attempt_id,call_id,attempt_number,status)
                      VALUES (%s,%s,%s,'started') ON CONFLICT(attempt_id) DO NOTHING""",
@@ -188,13 +198,14 @@ def project_domain(conn, event: EventEnvelope) -> None:
     elif kind == EventType.DELEGATION_DECIDED:
         conn.execute("""INSERT INTO delegation_decisions
                      (decision_id,work_item_id,child_call_id,route,eligibility,reason,policy_version,
-                      guidance_manifest,gate_facts,decided_at)
-                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                      guidance_manifest,gate_facts,decided_at,decision_stage,execution_mode)
+                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                      ON CONFLICT(decision_id) DO NOTHING""",
                      (p["decision_id"], event.work_item_id, event.call_id,
                       p["route"], p.get("eligibility", "unknown"), p.get("reason"),
                       event.config_version, Jsonb(p.get("guidance_manifest", {"state": "no_guidance"})),
-                      Jsonb(p.get("gate_facts", {})), event.occurred_at))
+                      Jsonb(p.get("gate_facts", {})), event.occurred_at,
+                      p.get("decision_stage", "legacy"), p.get("execution_mode", "production")))
     elif kind in (EventType.MESSAGE_SENT, EventType.MESSAGE_RECEIVED):
         message_id = p.get("message_id")
         if message_id:

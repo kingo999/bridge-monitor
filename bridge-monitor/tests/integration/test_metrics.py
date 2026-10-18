@@ -8,6 +8,8 @@ import pytest
 from contracts.queries import CohortQuery
 from database.migrate import migrate
 from service.queries.metrics import query_metrics
+from service.queries.history import list_work_items
+from service.queries.snapshot import read_snapshot
 from scripts.replay_fixtures import replay_fixture
 
 
@@ -48,6 +50,44 @@ def test_replay_is_idempotent_and_synthetic_excluded_by_default(seeded):
     ordinary = query_metrics(seeded, CohortQuery())
     assert ordinary.metrics["routed"].denominator == 0
     assert ordinary.metrics["routed"].percent is None
+
+
+def test_shadow_dispatch_on_same_work_item_does_not_change_production_metrics(seeded):
+    before = query_metrics(seeded, CohortQuery(origin="synthetic"))
+    occurred = datetime.now(timezone.utc) - timedelta(seconds=1)
+    before_cutoff = query_metrics(seeded, CohortQuery(origin="synthetic",
+                                                     as_of=occurred - timedelta(milliseconds=1)))
+    with psycopg.connect(seeded) as conn:
+        conn.execute("INSERT INTO calls(call_id,work_item_id,requested_model,created_at,execution_mode) "
+                     "VALUES('shadow-metric-call','demo-work-061','qwen',%s,'shadow')", (occurred,))
+        conn.execute("INSERT INTO delegation_decisions(decision_id,work_item_id,child_call_id,"
+                     "route,eligibility,reason,policy_version,decided_at,decision_stage,execution_mode) "
+                     "VALUES('shadow-metric-decision','demo-work-061','shadow-metric-call',"
+                     "'local','eligible','candidate','router-v1',%s,'parent_router','shadow')",
+                     (occurred,))
+        conn.execute("INSERT INTO events(event_id,event_type,schema_version,producer_id,"
+                     "producer_incarnation,producer_sequence,occurred_at,received_at,origin,"
+                     "observation_layer,capture_completeness,task_id,work_item_id,call_id,payload,"
+                     "payload_hash) VALUES('shadow-metric-dispatch','call.dispatched',1,'metric-test',"
+                     "'metric-test-1',1,%s,%s,'synthetic','test','complete','demo-task-001',"
+                     "'demo-work-061','shadow-metric-call',%s,'shadow-metric-hash')",
+                     (occurred, occurred, psycopg.types.json.Jsonb({"destination": "skynet",
+                                                               "execution_mode": "shadow"})))
+        conn.execute("INSERT INTO results(result_id,call_id,delivered_at) "
+                     "VALUES('shadow-metric-result','shadow-metric-call',NULL)")
+    after = query_metrics(seeded, CohortQuery(origin="synthetic"))
+    for key in ("routed", "not_routed", "pending", "takeover", "confirmed_acceptance",
+                "reported_acceptance", "contribution"):
+        assert after.metrics[key] == before.metrics[key]
+    assert after.coverage["disposition"] == before.coverage["disposition"]
+    assert after.definition_version == "phase1-v3"
+    assert before_cutoff.metrics["routed"] == before.metrics["routed"]
+    page = list_work_items(seeded, CohortQuery(origin="synthetic"), limit=100)
+    row = next(item for item in page if item["work_item_id"] == "demo-work-061")
+    assert row["routed"] is True
+    snapshot = read_snapshot(seeded, CohortQuery(origin="synthetic"), limit=100)
+    item = next(item for item in snapshot.work_items if item["work_item_id"] == "demo-work-061")
+    assert item["routed"] is True
 
 
 def test_as_of_cutoff_does_not_gain_later_dispositions(seeded):

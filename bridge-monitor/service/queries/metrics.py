@@ -7,7 +7,7 @@ from service.queries.cohorts import cutoff, leaf_work_items
 from service.queries.guidance import work_guidance, matches_guidance_filters, result_guidance_group
 
 
-DEFINITION_VERSION = "phase1-v2"
+DEFINITION_VERSION = "phase1-v3"
 
 
 def _metric(numerator: int, denominator: int) -> MetricValue:
@@ -24,27 +24,29 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
             guidance = work_guidance(conn, all_work_ids, as_of)
             work_ids = {work_id for work_id in all_work_ids
                         if matches_guidance_filters(guidance[work_id], query)}
-            dispatched = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM events
-                WHERE event_type='call.dispatched' AND payload->>'destination'='skynet'
-                AND occurred_at<=%s AND work_item_id IS NOT NULL""", (as_of,)) if row[0] in work_ids}
+            dispatched = {row[0] for row in conn.execute("""SELECT DISTINCT e.work_item_id
+                FROM events e LEFT JOIN calls c ON c.call_id=e.call_id
+                WHERE e.event_type='call.dispatched' AND e.payload->>'destination'='skynet'
+                AND COALESCE(c.execution_mode,e.payload->>'execution_mode','production')='production'
+                AND e.occurred_at<=%s AND e.work_item_id IS NOT NULL""", (as_of,)) if row[0] in work_ids}
             paid_decisions = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM delegation_decisions
-                WHERE route='paid' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
+                WHERE route='paid' AND execution_mode='production' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
             eligible = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM delegation_decisions
-                WHERE eligibility='eligible' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
+                WHERE eligibility='eligible' AND execution_mode='production' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
             decided = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM delegation_decisions
-                WHERE decided_at<=%s""", (as_of,)) if row[0] in work_ids}
+                WHERE execution_mode='production' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
             not_routed = paid_decisions - dispatched
             if query.consumer_stage == "gpt":
                 result_rows = conn.execute("""SELECT r.result_id,c.work_item_id,c.call_id,
                     r.delivered_at FROM results r JOIN calls c ON c.call_id=r.call_id
                     JOIN work_items w ON w.work_item_id=c.work_item_id
-                    WHERE r.delivered_at IS NOT NULL AND r.delivered_at<=%s
+                    WHERE c.execution_mode='production' AND r.delivered_at IS NOT NULL AND r.delivered_at<=%s
                     AND r.delivered_content_id IS NOT NULL
                     AND c.parent_call_id='gpt:' || w.task_id""", (as_of,)).fetchall()
             else:
                 result_rows = conn.execute("""SELECT r.result_id, c.work_item_id,c.call_id,r.delivered_at
                     FROM results r JOIN calls c ON c.call_id=r.call_id
-                    WHERE r.delivered_at IS NOT NULL AND r.delivered_at<=%s
+                    WHERE c.execution_mode='production' AND r.delivered_at IS NOT NULL AND r.delivered_at<=%s
                     AND EXISTS (SELECT 1 FROM events dispatch
                         WHERE dispatch.call_id=c.call_id AND dispatch.event_type='call.dispatched'
                         AND dispatch.payload->>'destination'='skynet'
