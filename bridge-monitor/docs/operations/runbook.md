@@ -61,7 +61,7 @@ tasks are disabled. Do not run them alongside active tasks on the same ports.
 1. Start the project-local PostgreSQL cluster with `pg_ctl start -D
    C:\AI\bridge-monitor\var\postgres -l
    C:\AI\bridge-monitor\var\logs\postgres.log -o "-h 127.0.0.1 -p
-   55481" -w`. Verify the DSN names the intended pilot database.
+   45481" -w`. Verify the DSN names the intended pilot database.
 2. Run `scripts\start-monitor.ps1 -ConfigPath
    C:\AI\bridge-monitor\config\dashboard-service.example.toml`. It accepts
    only a config inside the project, launches the dashboard hidden, and writes

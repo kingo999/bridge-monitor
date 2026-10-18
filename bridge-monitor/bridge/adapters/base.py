@@ -12,6 +12,7 @@ class AdapterResult:
     raw_answer: str | None = None
     raw_content_id: str | None = None
     completion_claim: dict | None = None
+    local_tool_attempts: int | None = None
     terminated: bool = False
     cancelled: bool = False
 

@@ -156,7 +156,9 @@ def test_bridge_operation_captures_prompt_and_delivered_answer(runtime_dsn, tmp_
                             "AND event_type='result.delivered'", (outcome["call_id"],)).fetchone()[0] == 1
 
 
-def test_structured_claude_reply_retains_raw_and_delivered_bodies(runtime_dsn, tmp_path):
+@pytest.mark.parametrize("local_tool_attempts", [0, 1, None])
+def test_structured_claude_reply_retains_raw_and_delivered_bodies(runtime_dsn, tmp_path,
+                                                                   local_tool_attempts):
     dsn = runtime_dsn
     policy, version = _setup(dsn)
     emitter = TelemetryEmitter(DurableSpool(tmp_path / "spool.sqlite", limit_bytes=100000),
@@ -164,10 +166,24 @@ def test_structured_claude_reply_retains_raw_and_delivered_bodies(runtime_dsn, t
 
     class StructuredClaude:
         def run(self, lease, task, prompt, sink):
-            raw = '{"answer":"Useful answer","local_results":[],"work_resolution":"resolved"}'
-            return AdapterResult(state="completed", answer="Useful answer", raw_answer=raw,
-                                 raw_content_id=str(uuid.uuid4()), completion_claim={
+            if local_tool_attempts == 1:
+                collector = sink.collector
+                class OfflineCollector:
+                    def ingest_batch(self, producer, events, content):
+                        raise ConnectionError("collector temporarily unavailable")
+                sink.collector = OfflineCollector()
+                assert sink.emit(EventType.TOOL_STARTED, call_id=lease.call_id,
+                    task_id=task.task_id, work_item_id=task.work_item_id,
+                    payload={"tool_id": "validation-denied", "tool_name":
+                             "mcp__bridge_monitor__delegate_local_analysis"})
+                assert sink.spool.pending_count() == 1
+                sink.collector = collector
+            raw_reply = '{"answer":"Useful answer","local_results":[],"route_choice":"paid_direct","work_resolution":"resolved"}'
+            return AdapterResult(state="completed", answer="Useful answer", raw_answer=raw_reply,
+                                 raw_content_id=str(uuid.uuid4()),
+                                 local_tool_attempts=local_tool_attempts, completion_claim={
                                      "answer": "Useful answer", "local_results": [],
+                     "route_choice": "paid_direct",
                                      "work_resolution": "resolved"})
 
     service = BridgeCoordinator(dsn, policy, version, emitter,
@@ -184,11 +200,19 @@ def test_structured_claude_reply_retains_raw_and_delivered_bodies(runtime_dsn, t
         assert raw != delivered
         bodies = conn.execute("SELECT content_id,raw_bytes FROM content_objects "
             "WHERE content_id IN (%s,%s)", (raw, delivered)).fetchall()
-        assert dict(bodies) == {raw: b'{"answer":"Useful answer","local_results":[],"work_resolution":"resolved"}',
+        assert dict(bodies) == {raw: b'{"answer":"Useful answer","local_results":[],"route_choice":"paid_direct","work_resolution":"resolved"}',
                                 delivered: b"Useful answer"}
         assert conn.execute("SELECT outcome,final_result_id FROM work_resolutions "
             "WHERE work_item_id=%s", (task.work_item_id,)).fetchone() == (
             "paid_direct", outcome["result_id"])
+        direct_route = conn.execute("SELECT route,eligibility,reason,child_call_id,"
+                            "gate_facts->>'provenance' FROM delegation_decisions "
+                            "WHERE work_item_id=%s", (task.work_item_id,)).fetchone()
+        assert direct_route == (("paid", "unknown", "worker_chose_paid_direct", None,
+                                 "claude_final_report") if local_tool_attempts == 0 else None)
+        if local_tool_attempts == 1:
+            assert conn.execute("SELECT count(*) FROM events WHERE call_id=%s "
+                "AND event_type='tool.started'", (outcome["call_id"],)).fetchone()[0] == 1
     later = CompletionEnvelope.model_validate({"call_id": outcome["call_id"],
         "attempt_id": f"{outcome['call_id']}:attempt:1",
         "result": {"result_id": outcome["result_id"], "content_id": delivered,
@@ -306,12 +330,16 @@ def test_claude_can_delegate_scoped_local_check_and_acknowledge_result(runtime_d
                 "completed" if verified and not timeout and not drift and
                 paid_timeout_verified and not cutoff_before_post and not aged_client
                 else "paid_continuation_required")
+            if auto_claim:
+                self.extra = child.delegate_local_analysis("Check this Java method again")
+                assert self.extra["state"] == "already_delivered"
             claim = None
             if auto_claim:
                 claim = {"answer": "Claude reviewed the null risk",
                     "local_results": [{"result_id": self.local["result_id"],
                         "input_sha256": self.local["content_sha256"],
                         "judgment": "accepted", "reason": "confirmed in source"}],
+                    "route_choice": "paid_direct",
                     "work_resolution": "resolved"}
             elif timeout:
                 claim = {"answer": "Claude handled the timed-out check",
@@ -392,6 +420,12 @@ def test_claude_can_delegate_scoped_local_check_and_acknowledge_result(runtime_d
         assert conn.execute("SELECT route FROM delegation_decisions WHERE child_call_id=%s",
                             (claude.local["call_id"],)).fetchone()[0] == "local"
         if auto_claim:
+            assert conn.execute("SELECT count(*) FROM delegation_decisions "
+                "WHERE work_item_id=%s AND reason='root_budget_exhausted'",
+                (task.work_item_id,)).fetchone()[0] == 0
+            assert conn.execute("SELECT count(*) FROM delegation_decisions "
+                "WHERE work_item_id=%s AND reason='worker_chose_paid_direct'",
+                (task.work_item_id,)).fetchone()[0] == 0
             assert claude.local["input_sha256"] == claude.local["content_sha256"]
             assert conn.execute("SELECT judgment FROM dispositions WHERE result_id=%s",
                 (local[0],)).fetchone()[0] == "accepted"

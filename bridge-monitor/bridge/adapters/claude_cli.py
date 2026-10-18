@@ -80,9 +80,11 @@ def worker_system_prompt(task) -> str:
         "paid_continuation_required, continue the work yourself without asking for approval. "
         "If the caller limits you to one local delegation, call that tool at most once; "
         "do not make a test or retry call after a result is delivered. "
+        "If the tool returns already_delivered, use its earlier result and do not retry. "
         "Your entire final reply must be exactly one JSON object, with no prose before "
         "or after it. Put all caller-facing text in its answer string. The object has "
-        "keys answer (string), local_results (array), "
+        "keys answer (string), local_results (array), route_choice "
+        "(paid_direct, local_requested, or unknown), "
         "fallback_child_call_id (string or null), and work_resolution "
         "(resolved, unresolved, or unknown). For every Qwen result actually delivered to you, "
         "include one local_results item containing result_id, input_sha256, judgment "
@@ -95,6 +97,10 @@ def worker_system_prompt(task) -> str:
         "unused means you incorporate none of it. Judge the answer you actually deliver. "
         "Report what you actually used; do not invent a disposition or result ID. "
         "Use an empty local_results array when no local result was delivered. "
+        "Set route_choice to paid_direct only if you chose to answer without calling "
+        "the local delegation tool. Set it to local_requested if you called that "
+        "tool, even if the call was denied or fell back to paid work. Use unknown "
+        "if you cannot tell. This is your reported choice, not a quality score. "
         "Set fallback_child_call_id to the tool's child_call_id only when its "
         "response includes fallback_state; otherwise set it to null, even if "
         "paid_continuation_required includes a child_call_id. "
@@ -238,6 +244,7 @@ class ClaudeCLIAdapter:
         message_id = str(uuid.uuid4())
         chunk_number = 0
         tool_by_index = {}
+        local_tool_ids = set()
         runner = self.runner.fork(cwd=workspace) if isinstance(self.runner, SubprocessRunner) else self.runner
         try:
             config_path = (self.mcp_config_factory(lease) if self.mcp_config_factory
@@ -262,6 +269,13 @@ class ClaudeCLIAdapter:
                     message = frame.get("message") or {}
                     if isinstance(message.get("model"), str):
                         frame_model = message["model"]
+                    content = message.get("content")
+                    if isinstance(content, list):
+                        for block in content:
+                            if (isinstance(block, dict) and block.get("type") == "tool_use"
+                                    and block.get("name") == LOCAL_TOOL):
+                                local_tool_ids.add(block.get("id") or
+                                                   f"assistant-tool:{len(local_tool_ids)}")
                 if frame_model:
                     if reported and frame_model != reported:
                         raise ValueError("Claude reported a different model within one execution")
@@ -289,6 +303,7 @@ class ClaudeCLIAdapter:
                             if name != LOCAL_TOOL:
                                 raise ValueError("Claude emitted a tool outside its granted capability")
                             tool_by_index[event.get("index")] = (block.get("id"), name)
+                            local_tool_ids.add(block.get("id") or f"stream-tool:{event.get('index')}")
                             emitter.emit(EventType.TOOL_STARTED, payload={"tool_id": block.get("id"),
                                           "tool_name": name}, **common)
                     elif event_type == "content_block_stop":
@@ -340,4 +355,5 @@ class ClaudeCLIAdapter:
         return AdapterResult(state="completed", answer=answer, reported_model=reported,
                              usage=usage, raw_answer=raw_answer,
                              raw_content_id=raw_content_id,
-                             completion_claim=completion_claim)
+                             completion_claim=completion_claim,
+                             local_tool_attempts=len(local_tool_ids))

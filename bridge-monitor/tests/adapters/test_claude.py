@@ -119,6 +119,7 @@ def test_stream_captures_intermediate_text_tool_events_and_final_model(tmp_path)
                               mcp_config_path=tmp_path / "mcp.json").run(
                                   _lease(), _task(), "Exact user prompt", sink)
     assert result.state == "completed" and result.answer == "Final answer"
+    assert result.local_tool_attempts == 1
     assert result.reported_model == "claude-opus-4"
     kinds = [kind for kind, _ in sink.events]
     assert EventType.RESPONSE_DELTA in kinds and EventType.TOOL_STARTED in kinds
@@ -238,6 +239,9 @@ def test_worker_system_prompt_requires_explicit_local_result_accounting(tmp_path
     assert original == "Exact GPT prompt"
     system_prompt = command[command.index("--system-prompt") + 1]
     assert "local_results" in system_prompt
+    assert "route_choice" in system_prompt
+    assert "paid_direct" in system_prompt and "local_requested" in system_prompt
+    assert "already_delivered" in system_prompt
     assert "accepted" in system_prompt and "revised" in system_prompt
     assert "formatting only" in system_prompt
     assert "substantive explanation" in system_prompt

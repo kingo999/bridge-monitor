@@ -122,6 +122,16 @@ class BridgeCoordinator:
             raise PermissionError("parent execution is not the live owner")
         parent_request = CallRequest.model_validate(parent[0])
         task = parent_request.task
+        with psycopg.connect(self.dsn) as conn:
+            budget = conn.execute("SELECT call_budget,calls_reserved "
+                "FROM runtime_task_budgets WHERE task_id=%s", (task.task_id,)).fetchone()
+            delivered = conn.execute("SELECT 1 FROM runtime_disposition_obligations "
+                "WHERE consumer_call_id=%s AND stage='claude' LIMIT 1",
+                (self.parent_call_id,)).fetchone()
+        if budget and budget[0] <= budget[1] and delivered:
+            return {"state": "already_delivered",
+                    "reason": "local_result_already_delivered",
+                    "route": "local", "not_routed": False}
         child_id = str(uuid.uuid4())
         local_model = self.policy.deployment.qwen_model_profile
         child = CallRequest(call_id=child_id, task=task, requested_model=local_model,
@@ -289,6 +299,8 @@ class BridgeCoordinator:
         fallback_child = None
         work_resolution = None
         if isinstance(claim, dict):
+            if claim.get("route_choice") not in (None, "paid_direct", "local_requested", "unknown"):
+                diagnostics.append("invalid route_choice")
             claimed_results = claim.get("local_results", [])
             if not isinstance(claimed_results, list):
                 diagnostics.append("local_results must be an array")
@@ -344,6 +356,35 @@ class BridgeCoordinator:
             dispositions=dispositions, contributions=contributions,
             fallback_child_call_id=fallback_child, work_resolution=work_resolution)
         return envelope, diagnostics
+
+    def _record_reported_direct_route(self, lease, task, result_id: str,
+                                      claim: dict | None, accounting_complete: bool,
+                                      local_tool_attempts: int | None) -> None:
+        """Record an explicit paid choice only when no local attempt is observed."""
+        if (not accounting_complete or local_tool_attempts != 0 or
+                not isinstance(claim, dict) or
+                claim.get("route_choice") != "paid_direct"):
+            return
+        with psycopg.connect(self.dsn) as conn:
+            attempted = conn.execute("""SELECT
+                EXISTS (SELECT 1 FROM events WHERE call_id=%s AND event_type='tool.started'
+                    AND payload->>'tool_name'='mcp__bridge_monitor__delegate_local_analysis')
+                OR EXISTS (SELECT 1 FROM calls WHERE parent_call_id=%s)
+                OR EXISTS (SELECT 1 FROM delegation_decisions WHERE work_item_id=%s)""",
+                (lease.call_id, lease.call_id, task.work_item_id)).fetchone()[0]
+        if attempted:
+            return
+        self.emitter.emit(EventType.DELEGATION_DECIDED,
+            task_id=task.task_id, work_item_id=task.work_item_id,
+            config_version=lease.policy_version,
+            payload={"decision_id": str(uuid.uuid5(uuid.NAMESPACE_URL,
+                f"bridge-monitor:{lease.call_id}:reported-paid-direct")),
+                "route": "paid", "eligibility": "unknown",
+                "reason": "worker_chose_paid_direct",
+                "guidance_manifest": {"state": "not_selected"},
+                "gate_facts": {"provenance": "claude_final_report",
+                               "parent_call_id": lease.call_id,
+                               "result_id": result_id}})
 
     def _commit_predispatch_fallback(self, lease, reason: str, *,
                                      confirmed_not_sent: bool = False) -> dict:
@@ -478,6 +519,11 @@ class BridgeCoordinator:
                               if result.raw_answer is not None else None),
             claim_diagnostics=claim_diagnostics,
             consumer_stage="claude" if pool == "qwen" else None)
+        if pool == "claude" and completion.answer.delivered:
+            self._record_reported_direct_route(lease, task, result_id,
+                                               result.completion_claim,
+                                               completion.accounting_complete,
+                                               result.local_tool_attempts)
         if completion.answer.delivered:
             self.emitter.emit(EventType.RESULT_DELIVERED, attempt_id=attempt_id,
                               payload={"result_id": result_id,
