@@ -1,0 +1,28 @@
+# Merge this [router] section into a reviewed Bridge Monitor policy proposal.
+# It is disabled by default; this example does not activate the router.
+[router]
+mode = "disabled"
+categories = ["single_file_python_fix"]
+scopes = ["analysis"]
+output_contract = "complete_python_module_v1"
+prompt_version = "complete-module-v1"
+sample_percent = 100
+queue_deadline_seconds = 30
+execution_seconds = 120
+shadow_reserve_tokens = 2048
+max_context_tokens = 8192
+max_prompt_bytes = 16384
+max_source_bytes = 16384
+worker_poll_ms = 1000
+retention_days = 30
+withdrawn_refs = []
+
+[router.verifier]
+image = "python@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf52ea5da5bb8d929a"
+daemon_endpoint = "npipe:////./pipe/dockerDesktopLinuxEngine"
+timeout_seconds = 12
+memory_mb = 256
+cpus = 1
+pids_limit = 64
+max_source_bytes = 16384
+max_test_bytes = 16384

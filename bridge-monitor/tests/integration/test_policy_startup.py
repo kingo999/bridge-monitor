@@ -46,6 +46,7 @@ def test_placeholder_review_and_unknown_capability_rejected(runtime_dsn):
 def test_reactivation_keeps_original_policy_review_snapshot(runtime_dsn):
     dsn = runtime_dsn
     proposed = _policy().model_dump()
+    proposed["deployment"]["qwen_endpoint"] += "/" + str(uuid.uuid4())
     caps = {"claude-test": {"context_tokens": 10000}}
     digest = validate_policy(proposed, caps).snapshot.source_hash
     first = activate_policy(dsn, proposed, caps, approved_hash=digest, operator_id="operator-1")

@@ -1,4 +1,7 @@
-from contracts.policy import validate_policy
+import hashlib
+import json
+
+from contracts.policy import PolicyInput, validate_policy
 
 
 def base_policy():
@@ -69,3 +72,36 @@ def test_agent_route_requires_token_reference_and_consistent_deadlines():
     assert validate_policy(policy, capability).snapshot is not None
     policy["deployment"]["qwen_first_output_seconds"] = 121
     assert validate_policy(policy, capability).snapshot is None
+
+
+def test_router_policy_is_disabled_by_default_and_shadow_requires_verifier():
+    capability = {"claude-test": {"context_tokens": 200000}}
+    old = validate_policy(base_policy(), capability)
+    assert old.snapshot is not None
+    assert old.snapshot.router.mode == "disabled"
+    proposed = base_policy()
+    proposed["router"] = {"mode": "shadow"}
+    assert validate_policy(proposed, capability).snapshot is None
+    proposed["router"]["verifier"] = {
+        "image": "python@sha256:" + "a" * 64,
+        "daemon_endpoint": "npipe:////./pipe/dockerDesktopLinuxEngine",
+    }
+    assert validate_policy(proposed, capability).snapshot is None
+    proposed["deployment"].update(qwen_model_profile="qwen-test", qwen_model_digest="b" * 64,
+                                  qwen_agent_endpoint="http://skynet:8874",
+                                  qwen_agent_token_ref="env:SKYNET_AGENT_TOKEN")
+    approved = validate_policy(proposed, capability)
+    assert approved.snapshot is not None
+    assert approved.snapshot.router.mode == "shadow"
+    assert approved.snapshot.source_hash != old.snapshot.source_hash
+
+
+def test_old_policy_without_router_keeps_its_existing_hash():
+    proposed = base_policy()
+    parsed = PolicyInput.model_validate(proposed)
+    prior_canonical = json.dumps(parsed.model_dump(exclude={"review", "router"}),
+                                 sort_keys=True, separators=(",", ":"))
+    prior_hash = hashlib.sha256(prior_canonical.encode()).hexdigest()
+    current = validate_policy(proposed, {"claude-test": {"context_tokens": 200000}})
+    assert current.snapshot is not None
+    assert current.snapshot.source_hash == prior_hash

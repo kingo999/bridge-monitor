@@ -5,6 +5,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from contracts.router import RouterPolicy
+
 
 class Limits(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -110,6 +112,7 @@ class PolicyInput(BaseModel):
     fallback: Fallback
     review: Review
     guidance: GuidancePolicy = Field(default_factory=GuidancePolicy)
+    router: RouterPolicy = Field(default_factory=RouterPolicy)
 
     @model_validator(mode="after")
     def check_agent_deadlines(self):
@@ -117,6 +120,12 @@ class PolicyInput(BaseModel):
             if max(self.deployment.qwen_first_output_seconds,
                    self.deployment.qwen_idle_output_seconds) >= self.limits.qwen_execution_seconds:
                 raise ValueError("agent progress deadlines must fit Qwen execution limit")
+        if self.router.mode == "shadow":
+            if not (self.deployment.qwen_agent_endpoint and
+                    self.deployment.qwen_model_profile and self.deployment.qwen_model_digest):
+                raise ValueError("shadow router requires pinned Skynet agent model")
+            if self.router.execution_seconds > self.limits.qwen_execution_seconds:
+                raise ValueError("router execution limit exceeds Qwen execution limit")
         return self
 
 
@@ -128,6 +137,7 @@ class PolicySnapshot(BaseModel):
     fallback: Fallback
     review: Review
     guidance: GuidancePolicy = Field(default_factory=GuidancePolicy)
+    router: RouterPolicy = Field(default_factory=RouterPolicy)
 
 
 class PolicyValidation(BaseModel):
@@ -141,7 +151,10 @@ def validate_policy(proposed: dict[str, Any], capabilities: dict[str, dict]) -> 
         profile = capabilities.get(parsed.fallback.paid_model_profile)
         if not profile or not isinstance(profile.get("context_tokens"), int) or profile["context_tokens"] <= 0:
             raise ValueError("fallback profile has no validated context capability")
-        canonical = json.dumps(parsed.model_dump(exclude={"review"}), sort_keys=True, separators=(",", ":"))
+        # Preserve historical policy hashes when an older proposal has no router section.
+        excluded = {"review", "router"} if "router" not in proposed else {"review"}
+        canonical = json.dumps(parsed.model_dump(exclude=excluded), sort_keys=True,
+                               separators=(",", ":"))
         digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         return PolicyValidation(snapshot=PolicySnapshot(version=digest[:16], source_hash=digest,
                                                        **parsed.model_dump()))
