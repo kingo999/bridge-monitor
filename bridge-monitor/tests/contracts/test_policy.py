@@ -52,3 +52,20 @@ def test_local_model_choice_requires_a_pinned_digest():
     assert validate_policy(policy, capabilities).snapshot is None
     policy["deployment"]["qwen_model_digest"] = "a" * 64
     assert validate_policy(policy, capabilities).snapshot is not None
+
+
+def test_agent_route_requires_token_reference_and_consistent_deadlines():
+    policy = base_policy()
+    policy["deployment"].update(qwen_model_profile="qwen", qwen_model_digest="a" * 64,
+                                 qwen_agent_endpoint="http://skynet:8874")
+    capability = {"claude-test": {"context_tokens": 200000}}
+    assert validate_policy(policy, capability).snapshot is None
+    policy["deployment"]["qwen_agent_token_ref"] = "literal-secret"
+    assert validate_policy(policy, capability).snapshot is None
+    policy["deployment"]["qwen_agent_token_ref"] = "env:SKYNET_AGENT_TOKEN"
+    policy["deployment"]["qwen_first_output_seconds"] = 45
+    policy["deployment"]["qwen_idle_output_seconds"] = 20
+    policy["limits"]["qwen_execution_seconds"] = 120
+    assert validate_policy(policy, capability).snapshot is not None
+    policy["deployment"]["qwen_first_output_seconds"] = 121
+    assert validate_policy(policy, capability).snapshot is None

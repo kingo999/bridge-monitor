@@ -31,6 +31,8 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
                 WHERE route='paid' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
             eligible = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM delegation_decisions
                 WHERE eligibility='eligible' AND decided_at<=%s""", (as_of,)) if row[0] in work_ids}
+            decided = {row[0] for row in conn.execute("""SELECT DISTINCT work_item_id FROM delegation_decisions
+                WHERE decided_at<=%s""", (as_of,)) if row[0] in work_ids}
             not_routed = paid_decisions - dispatched
             result_rows = conn.execute("""SELECT r.result_id, c.work_item_id,c.call_id,r.delivered_at
                 FROM results r JOIN calls c ON c.call_id=r.call_id
@@ -70,6 +72,8 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
     C = sum(value in ("accepted", "revised") for value in judgments.values())
     takeover = sum("paid_replaced" in resolution[work_id] for work_id in dispatched)
     local_resolution = sum("local_retained" in resolution[work_id] for work_id in work_ids)
+    resolved_without_delegation_record = sum(bool(resolution[work_id]) and work_id not in decided
+        and work_id not in dispatched for work_id in work_ids)
     final_resolution = sum(bool(resolution[work_id] & {"local_retained", "paid_revision_with_contribution", "paid_replaced"})
                            for work_id in dispatched)
     return MetricSet(definition_version=DEFINITION_VERSION, cohort=query, as_of=as_of,
@@ -89,4 +93,6 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
                      },
                      coverage={"disposition": _metric(K, R),
                                "eligibility": _metric(len(eligible), W),
+                               "resolved_without_delegation_record": _metric(
+                                   resolved_without_delegation_record, W),
                                "final_resolution": _metric(final_resolution, D)})

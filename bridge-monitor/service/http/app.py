@@ -14,7 +14,10 @@ from service.ingest.store import read_content
 
 def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str,
                payload_limit_bytes: int, dashboard_dir: str | Path | None = None,
-               session_ttl_seconds: int = 3600, secure_cookies: bool = False) -> FastAPI:
+               session_ttl_seconds: int = 3600, secure_cookies: bool = False,
+               preview_max_chunks: int = 80, preview_max_bytes: int = 16384,
+               timeline_head_events: int = 100, timeline_tail_events: int = 400,
+               work_item_max_limit: int = 100) -> FastAPI:
     if payload_limit_bytes <= 0:
         raise ValueError("a positive configured payload limit is required")
     if (not isinstance(operator_token, str) or not operator_token.strip()
@@ -27,6 +30,12 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
         raise ValueError("producer and operator credentials must be distinct")
     if session_ttl_seconds <= 0:
         raise ValueError("session TTL must be positive")
+    if not (1 <= preview_max_chunks <= 500 and 1 <= preview_max_bytes <= 65536):
+        raise ValueError("output preview limits out of bounds")
+    if timeline_head_events < 1 or timeline_tail_events < 1 or timeline_head_events + timeline_tail_events > 2000:
+        raise ValueError("timeline event window out of bounds")
+    if not 100 <= work_item_max_limit <= 2000:
+        raise ValueError("work-item query limit out of bounds")
     app = FastAPI(title="Bridge Monitor Capture", version="0.1.0")
     sessions: dict[str, float] = {}
 
@@ -50,7 +59,8 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
         identifier = create_session(sessions, session_ttl_seconds)
         response.set_cookie(COOKIE_NAME, identifier, httponly=True, secure=secure_cookies,
                             samesite="strict", max_age=session_ttl_seconds, path="/")
-        return {"authenticated": True, "expires_in_seconds": session_ttl_seconds}
+        return {"authenticated": True, "expires_in_seconds": session_ttl_seconds,
+                "work_item_max_limit": work_item_max_limit}
 
     @app.get("/api/v1/session")
     def session_status(request: Request):
@@ -58,7 +68,7 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
             require_browser_operator(request, None, operator_token, sessions)
         except HTTPException:
             return {"authenticated": False}
-        return {"authenticated": True}
+        return {"authenticated": True, "work_item_max_limit": work_item_max_limit}
 
     @app.post("/api/v1/session/logout", status_code=204)
     def logout(request: Request, response: Response):
@@ -67,7 +77,12 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
             sessions.pop(identifier, None)
         response.delete_cookie(COOKIE_NAME, path="/")
 
-    app.include_router(query_router(dsn, operator_token, sessions))
+    app.include_router(query_router(dsn, operator_token, sessions,
+                                    preview_max_chunks=preview_max_chunks,
+                                    preview_max_bytes=preview_max_bytes,
+                                    timeline_head_events=timeline_head_events,
+                                    timeline_tail_events=timeline_tail_events,
+                                    work_item_max_limit=work_item_max_limit))
     app.include_router(stream_router(dsn, operator_token, sessions))
 
     if dashboard_dir is not None:

@@ -1,4 +1,4 @@
-import type { MetricSet, Origin, Snapshot, WorkDetail, WorkItem } from './contracts.generated';
+import type { MetricSet, Origin, OutputPreview, Snapshot, WorkDetail, WorkItem } from './contracts.generated';
 
 export class AuthenticationRequired extends Error {}
 
@@ -15,6 +15,8 @@ export type CohortFilters = {
   repairEffort: string; exampleReuseStatus: string;
 };
 
+export type OperatorSession = { authenticated: boolean; work_item_max_limit?: number };
+
 export function queryString(filters: CohortFilters): string {
   const params = new URLSearchParams({ origin: filters.origin, consumer_stage: filters.consumerStage });
   if (filters.createdFrom) params.set('created_from', new Date(filters.createdFrom).toISOString());
@@ -28,16 +30,18 @@ export function queryString(filters: CohortFilters): string {
 }
 
 export const api = {
-  session: () => request<{authenticated: boolean}>('/api/v1/session'),
-  login: (operatorToken: string) => request<{authenticated: boolean}>('/api/v1/session', {
+  session: () => request<OperatorSession>('/api/v1/session'),
+  login: (operatorToken: string) => request<OperatorSession>('/api/v1/session', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ operator_token: operatorToken }),
   }),
   logout: () => fetch('/api/v1/session/logout', { method: 'POST', credentials: 'same-origin' }),
   snapshot: (origin: Origin) => request<Snapshot>(`/api/v1/snapshot?origin=${origin}`),
   metrics: (filters: CohortFilters) => request<MetricSet>(`/api/v1/metrics?${queryString(filters)}`),
-  workItems: (filters: CohortFilters, offset = 0) => request<WorkItem[]>(`/api/v1/work-items?${queryString(filters)}&limit=100&offset=${offset}`),
+  workItems: (filters: CohortFilters, offset = 0, limit = 100) => request<WorkItem[]>(`/api/v1/work-items?${queryString(filters)}&limit=${limit}&offset=${offset}`),
   detail: (id: string) => request<WorkDetail>(`/api/v1/work-items/${encodeURIComponent(id)}`),
+  outputPreview: (workId: string, callId: string) =>
+    request<OutputPreview>(`/api/v1/work-items/${encodeURIComponent(workId)}/calls/${encodeURIComponent(callId)}/output-preview`),
   content: async (id: string) => {
     const response = await fetch(`/api/v1/content/${encodeURIComponent(id)}`, { credentials: 'same-origin', cache: 'no-store' });
     if (response.status === 401) throw new AuthenticationRequired('Operator session required');

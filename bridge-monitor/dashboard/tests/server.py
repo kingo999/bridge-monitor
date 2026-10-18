@@ -27,7 +27,8 @@ def main() -> None:
     replay_fixture(dsn, ROOT / "tests" / "fixtures" / "demonstration.json")
     app = create_app(dsn, producer_tokens={"seed": "producer-secret"},
                      operator_token="operator-secret", payload_limit_bytes=1048576,
-                     dashboard_dir=ROOT / "dashboard" / "out")
+                     dashboard_dir=ROOT / "dashboard" / "out",
+                     work_item_max_limit=1000)
     uvicorn.run(app, host="127.0.0.1", port=8874, log_level="warning")
 
 

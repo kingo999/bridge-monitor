@@ -1,6 +1,7 @@
 import sys
 import os
 import asyncio
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 import pytest
@@ -92,8 +93,7 @@ def test_mcp_entrypoint_reserves_stdout_for_protocol(monkeypatch, capsys):
     assert capsys.readouterr().out == ""
 
 
-def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, tmp_path,
-                                                          monkeypatch):
+def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, monkeypatch):
     from mcp import ClientSession
     from mcp.client.stdio import StdioServerParameters, stdio_client
     from bridge.runtime.policy_startup import activate_policy
@@ -107,22 +107,26 @@ def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, tmp_path,
     digest = validate_policy(proposed, capabilities).snapshot.source_hash
     activate_policy(runtime_dsn, proposed, capabilities,
         approved_hash=digest, operator_id="operator-1")
-    config = _runtime_file(tmp_path)
-    monkeypatch.setenv("BRIDGE_MONITOR_DSN", runtime_dsn)
-    monkeypatch.setenv("BRIDGE_MONITOR_RUNTIME_CONFIG", str(config))
-    monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "test-system-token")
+    project = Path(__file__).parents[2]
+    scratch = project / "var" / "tmp"
+    scratch.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory(dir=scratch) as temporary:
+        config = _runtime_file(Path(temporary))
+        monkeypatch.setenv("BRIDGE_MONITOR_DSN", runtime_dsn)
+        monkeypatch.setenv("BRIDGE_MONITOR_RUNTIME_CONFIG", str(config))
+        monkeypatch.setenv("BRIDGE_MONITOR_SYSTEM_TOKEN", "test-system-token")
 
-    async def listed(audience):
-        args = ["-m", "bridge.mcp_server", "--audience", audience]
-        if audience == "claude":
-            args += ["--parent-call-id", "parent-call", "--parent-lease-id", "parent-lease"]
-        params = StdioServerParameters(command=sys.executable, args=args,
-            env=os.environ.copy(), cwd=str(Path(__file__).parents[2]))
-        async with stdio_client(params) as (reader, writer):
-            async with ClientSession(reader, writer) as session:
-                await session.initialize()
-                return {item.name for item in (await session.list_tools()).tools}
+        async def listed(audience):
+            args = ["-m", "bridge.mcp_server", "--audience", audience]
+            if audience == "claude":
+                args += ["--parent-call-id", "parent-call", "--parent-lease-id", "parent-lease"]
+            params = StdioServerParameters(command=sys.executable, args=args,
+                env=os.environ.copy(), cwd=str(project))
+            async with stdio_client(params) as (reader, writer):
+                async with ClientSession(reader, writer) as session:
+                    await session.initialize()
+                    return {item.name for item in (await session.list_tools()).tools}
 
-    assert asyncio.run(listed("parent")) == {
-        "delegate_claude", "complete_work", "get_execution_status", "cancel_work"}
-    assert asyncio.run(listed("claude")) == {"delegate_local_analysis"}
+        assert asyncio.run(listed("parent")) == {
+            "delegate_claude", "complete_work", "get_execution_status", "cancel_work"}
+        assert asyncio.run(listed("claude")) == {"delegate_local_analysis"}

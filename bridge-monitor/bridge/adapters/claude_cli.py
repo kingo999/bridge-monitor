@@ -39,13 +39,26 @@ def worker_system_prompt(task) -> str:
         "The only delegated operation is mcp__bridge_monitor__delegate_local_analysis. "
         "Use it for a simple bounded check when useful. If it returns "
         "paid_continuation_required, continue the work yourself without asking for approval. "
-        "Return exactly one JSON object with keys answer (string), local_results (array), "
+        "If the caller limits you to one local delegation, call that tool at most once; "
+        "do not make a test or retry call after a result is delivered. "
+        "Your entire final reply must be exactly one JSON object, with no prose before "
+        "or after it. Put all caller-facing text in its answer string. The object has "
+        "keys answer (string), local_results (array), "
         "fallback_child_call_id (string or null), and work_resolution "
         "(resolved, unresolved, or unknown). For every Qwen result actually delivered to you, "
         "include one local_results item containing result_id, input_sha256, judgment "
         "(accepted, revised, replaced, or unused), and reason. Add repair_effort only if known. "
+        "Accepted means Qwen's substance is unchanged (formatting only). Revised means you "
+        "retain useful Qwen substance but add a substantive explanation, correction, caveat, "
+        "or integration. If you keep Qwen's code line but add a substantive explanation "
+        "or caveat in answer, choose revised, not accepted. Replaced means you supply a "
+        "substitute without its substance; "
+        "unused means you incorporate none of it. Judge the answer you actually deliver. "
         "Report what you actually used; do not invent a disposition or result ID. "
         "Use an empty local_results array when no local result was delivered. "
+        "Set fallback_child_call_id to the tool's child_call_id only when its "
+        "response includes fallback_state; otherwise set it to null, even if "
+        "paid_continuation_required includes a child_call_id. "
         "Put the useful response to the caller in answer. Do not add Markdown fences.")
 
 
@@ -282,7 +295,8 @@ class ClaudeCLIAdapter:
         except (ValueError, TypeError):
             pass
         usage = final.get("usage") if isinstance(final.get("usage"), dict) else {}
-        usage = {name: usage[name] for name in ("input_tokens", "output_tokens")
+        usage = {name: usage[name] for name in ("input_tokens", "output_tokens",
+                 "cache_read_input_tokens", "cache_creation_input_tokens")
                  if type(usage.get(name)) is int and usage[name] >= 0}
         if usage:
             emitter.emit(EventType.USAGE_REPORTED, model_execution_id=model_execution_id,

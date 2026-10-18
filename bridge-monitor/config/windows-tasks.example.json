@@ -1,0 +1,16 @@
+{
+  "postgres_task": "BridgeMonitor-Postgres",
+  "dashboard_task": "BridgeMonitor-Dashboard",
+  "postgres_executable": "C:\\Program Files\\PostgreSQL\\18\\bin\\postgres.exe",
+  "pg_isready_executable": "C:\\Program Files\\PostgreSQL\\18\\bin\\pg_isready.exe",
+  "data_dir": "var\\postgres",
+  "postgres_log": "var\\logs\\postgres-task.log",
+  "postgres_host": "127.0.0.1",
+  "postgres_port": 55481,
+  "postgres_probe_user": "bridge_monitor",
+  "dashboard_config": "config\\dashboard-service.example.toml",
+  "dashboard_secrets": "var\\secrets\\dashboard.json",
+  "desktop_secrets": "var\\secrets\\desktop-mcp.json",
+  "database_ready_seconds": 45,
+  "dashboard_restart_delay_seconds": 5
+}

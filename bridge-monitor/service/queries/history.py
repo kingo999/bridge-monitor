@@ -7,8 +7,30 @@ from service.queries.guidance import work_guidance, matches_guidance_filters
 from service.ingest.store import read_content
 
 
-def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: int = 0) -> list[dict]:
-    if not (1 <= limit <= 100) or offset < 0:
+def derive_agent_statuses(events: list[dict]) -> list[dict]:
+    agent_calls = {row["call_id"] for row in events
+                   if row["event_type"] == "attempt.status" and row["call_id"]}
+    statuses = {call_id: {"call_id": call_id, "agent_state": None,
+                          "agent_reachable": None, "last_model_output_at": None,
+                          "timeout_reason": None} for call_id in agent_calls}
+    for row in events:
+        state = statuses.get(row["call_id"])
+        if state is None:
+            continue
+        if row["event_type"] == "attempt.status":
+            payload = row["payload"]
+            state["agent_state"] = payload.get("agent_state", state["agent_state"])
+            state["agent_reachable"] = payload.get("agent_reachable", state["agent_reachable"])
+        elif row["event_type"] == "response.delta":
+            state["last_model_output_at"] = row["occurred_at"]
+        elif row["event_type"] == "attempt.uncertain":
+            state["timeout_reason"] = row["payload"].get("reason")
+    return [statuses[call_id] for call_id in sorted(statuses)]
+
+
+def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: int = 0,
+                    max_limit: int = 100) -> list[dict]:
+    if not (1 <= limit <= max_limit <= 2000) or offset < 0:
         raise ValueError("history page out of bounds")
     as_of = cutoff(query)
     with psycopg.connect(dsn) as conn:
@@ -40,7 +62,8 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
             rows = conn.execute("""SELECT w.work_item_id,w.task_id,w.category,w.origin,w.created_at,
             (SELECT r.outcome FROM work_resolutions r WHERE r.work_item_id=w.work_item_id
                 AND r.recorded_at<=%s ORDER BY r.recorded_at DESC,r.resolution_id DESC LIMIT 1) AS resolution,
-            w.resolved_at,
+            (SELECT r.recorded_at FROM work_resolutions r WHERE r.work_item_id=w.work_item_id
+                AND r.recorded_at<=%s ORDER BY r.recorded_at DESC,r.resolution_id DESC LIMIT 1) AS resolved_at,
             EXISTS (SELECT 1 FROM events e WHERE e.work_item_id=w.work_item_id
                 AND e.event_type='call.dispatched' AND e.payload->>'destination'='skynet'
                 AND e.occurred_at<=%s) AS routed,
@@ -64,7 +87,7 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
             AND (%s=false OR EXISTS (SELECT 1 FROM work_resolutions r WHERE r.work_item_id=w.work_item_id AND r.recorded_at<=%s))
             AND (%s=false OR w.work_item_id=ANY(%s))
             ORDER BY w.created_at DESC, w.work_item_id DESC LIMIT %s OFFSET %s""",
-            (as_of, as_of, as_of, query.consumer_stage, as_of, as_of, as_of,
+            (as_of, as_of, as_of, as_of, query.consumer_stage, as_of, as_of, as_of,
              query.origin, query.origin, query.created_from, query.created_from,
              query.created_until, query.created_until, query.completed_only, as_of,
              filtering, eligible_ids, limit, 0 if filtering else offset)).fetchall()
@@ -79,9 +102,13 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
             for row in rows]
 
 
-def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
+def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100,
+                          tail_events: int = 400) -> dict | None:
     """Metadata and content references only; the browser fetches bodies on selection."""
     from psycopg.rows import dict_row
+    if head_events < 1 or tail_events < 1 or head_events + tail_events > 2000:
+        raise ValueError("timeline event window out of bounds")
+    event_window = head_events + tail_events
     with psycopg.connect(dsn, row_factory=dict_row) as conn:
         with conn.transaction():
             conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
@@ -103,6 +130,15 @@ def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
                 me.reported_model,me.model_evidence,a.status FROM model_executions me
                 JOIN attempts a ON a.attempt_id=me.attempt_id JOIN calls c ON c.call_id=a.call_id
                 WHERE c.work_item_id=%s ORDER BY me.model_execution_id""", (work_item_id,)).fetchall()
+            usage = conn.execute("""SELECT u.observation_id,u.model_execution_id,u.scope,
+                u.is_cumulative,u.input_tokens,u.output_tokens,u.cache_read_input_tokens,
+                u.cache_creation_input_tokens,u.provenance,u.price_basis
+                FROM usage_observations u
+                JOIN model_executions me ON me.model_execution_id=u.model_execution_id
+                JOIN attempts a ON a.attempt_id=me.attempt_id
+                JOIN calls c ON c.call_id=a.call_id
+                WHERE c.work_item_id=%s ORDER BY c.created_at,u.observation_id""",
+                (work_item_id,)).fetchall()
             decisions = conn.execute("""SELECT decision_id,route,eligibility,reason,policy_version,
                 child_call_id,guidance_manifest,gate_facts,decided_at FROM delegation_decisions
                 WHERE work_item_id=%s ORDER BY decided_at,decision_id""", (work_item_id,)).fetchall()
@@ -125,7 +161,21 @@ def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
                 (work_item_id,)).fetchall()
             events = conn.execute("""SELECT event_id,event_type,occurred_at,received_at,call_id,attempt_id,
                 worker_instance_id,requested_model,reported_model,capture_completeness,payload
-                FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 501""",
+                FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT %s""",
+                (work_item_id, event_window + 1)).fetchall()
+            events_truncated = len(events) > event_window
+            if events_truncated:
+                latest_events = conn.execute("""SELECT event_id,event_type,occurred_at,received_at,
+                    call_id,attempt_id,worker_instance_id,requested_model,reported_model,
+                    capture_completeness,payload FROM events WHERE work_item_id=%s
+                    ORDER BY occurred_at DESC,event_id DESC LIMIT %s""",
+                    (work_item_id, tail_events)).fetchall()
+                events = events[:head_events] + list(reversed(latest_events))
+            agent_events = conn.execute("""SELECT DISTINCT ON (call_id,event_type)
+                call_id,event_type,occurred_at,payload
+                FROM events WHERE work_item_id=%s AND event_type IN
+                    ('attempt.status','attempt.uncertain','response.delta')
+                ORDER BY call_id,event_type,occurred_at DESC,event_id DESC""",
                 (work_item_id,)).fetchall()
             pack_ids = sorted({d["guidance_manifest"].get("pack_version_id") for d in decisions
                                if d["guidance_manifest"].get("pack_version_id")})
@@ -169,15 +219,61 @@ def read_work_item_detail(dsn: str, work_item_id: str) -> dict | None:
         work_data["resolved_at"] = resolutions[-1]["recorded_at"]
     return {"work_item": work_data, "calls": list(map(dict, calls)),
             "messages": list(map(dict, messages)), "results": list(map(dict, results)),
-            "models": list(map(dict, models)), "decisions": list(map(dict, decisions)),
+            "models": list(map(dict, models)), "usage": list(map(dict, usage)),
+            "decisions": list(map(dict, decisions)),
             "supplied_decision_ids": [row["decision_id"] for row in supplied_decisions],
             "dispositions": list(map(dict, dispositions)),
-            "resolutions": list(map(dict, resolutions)), "events": list(map(dict, events[:500])),
-            "events_truncated": len(events) > 500,
+            "resolutions": list(map(dict, resolutions)), "events": list(map(dict, events)),
+            "agent_statuses": derive_agent_statuses(sorted(map(dict, agent_events),
+                key=lambda row: row["occurred_at"])),
+            "events_truncated": events_truncated,
+            "events_gap_after": head_events if events_truncated else None,
             "guidance_packs": list(map(dict, packs)), "example_reviews": list(map(dict, reviews)),
             "evaluations": list(map(dict, evaluations)), "result_links": list(map(dict, links)),
             "recovery_decisions": list(map(dict, recoveries)),
             "content_states": {row["content_id"]: dict(row) for row in content}}
+
+
+def read_output_preview(dsn: str, work_item_id: str, call_id: str, *,
+                        role: str, max_chunks: int = 80,
+                        max_bytes: int = 16384) -> dict | None:
+    """Return a bounded tail of captured text for one selected call."""
+    if role != "operator":
+        raise PermissionError("operator access required for output preview")
+    if not (1 <= max_chunks <= 500 and 1 <= max_bytes <= 65536):
+        raise ValueError("output preview limits out of bounds")
+    with psycopg.connect(dsn) as conn:
+        with conn.transaction():
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            call = conn.execute("SELECT 1 FROM calls WHERE work_item_id=%s AND call_id=%s",
+                                (work_item_id, call_id)).fetchone()
+            if not call:
+                return None
+            latest = conn.execute("""SELECT payload->>'message_id',occurred_at
+                FROM events WHERE work_item_id=%s AND call_id=%s
+                  AND event_type='response.delta'
+                ORDER BY received_at DESC,producer_sequence DESC,event_id DESC LIMIT 1""",
+                (work_item_id, call_id)).fetchone()
+            rows = conn.execute("""SELECT mc.chunk_sequence,
+                    substring(c.raw_bytes FROM greatest(1,octet_length(c.raw_bytes)-%s+1)),
+                    c.content_type,c.byte_length
+                FROM message_chunks mc LEFT JOIN content_objects c ON c.content_id=mc.content_id
+                WHERE mc.message_id=%s
+                ORDER BY mc.chunk_sequence DESC LIMIT %s""",
+                (max_bytes, latest[0], max_chunks + 1)).fetchall() if latest else []
+    selected = rows[:max_chunks]
+    visible = [bytes(raw) for _, raw, content_type, _ in reversed(selected)
+               if raw is not None and content_type and content_type.startswith("text/")]
+    joined = b"".join(visible)
+    original_bytes = sum(byte_length for _, raw, content_type, byte_length in selected
+                         if raw is not None and content_type and content_type.startswith("text/"))
+    truncated = len(rows) > max_chunks or original_bytes > max_bytes
+    if len(joined) > max_bytes:
+        joined = joined[-max_bytes:]
+    return {"call_id": call_id, "text": joined.decode("utf-8", errors="replace"),
+            "chunks_shown": len(visible), "missing_chunks": len(selected) - len(visible),
+            "truncated": truncated,
+            "last_event_at": latest[1] if latest else None}
 
 
 def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:

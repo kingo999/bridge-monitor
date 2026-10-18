@@ -52,7 +52,8 @@ def validate_projectable_event(event: EventEnvelope) -> None:
     elif kind == EventType.USAGE_REPORTED:
         required("model_execution_id", event.model_execution_id)
         required("observation_id", p.get("observation_id"))
-        for field in ("input_tokens", "output_tokens"):
+        for field in ("input_tokens", "output_tokens", "cache_read_input_tokens",
+                      "cache_creation_input_tokens"):
             value = p.get(field)
             if value is not None and (type(value) is not int or value < 0):
                 raise ValueError("usage tokens must be nonnegative integers")
@@ -176,10 +177,13 @@ def project_domain(conn, event: EventEnvelope) -> None:
                       event.model_execution_id))
     elif kind == EventType.USAGE_REPORTED:
         conn.execute("""INSERT INTO usage_observations(observation_id,model_execution_id,scope,
-                     is_cumulative,input_tokens,output_tokens,provenance,price_basis)
-                     VALUES(%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(observation_id) DO NOTHING""",
+                     is_cumulative,input_tokens,output_tokens,cache_read_input_tokens,
+                     cache_creation_input_tokens,provenance,price_basis)
+                     VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                     ON CONFLICT(observation_id) DO NOTHING""",
                      (p["observation_id"], event.model_execution_id, p.get("scope", "execution"),
                       p.get("is_cumulative", True), p.get("input_tokens"), p.get("output_tokens"),
+                      p.get("cache_read_input_tokens"), p.get("cache_creation_input_tokens"),
                       p.get("provenance", "runtime_reported"), p.get("price_basis")))
     elif kind == EventType.DELEGATION_DECIDED:
         conn.execute("""INSERT INTO delegation_decisions

@@ -45,6 +45,14 @@ class Deployment(BaseModel):
     qwen_output_tokens: int = Field(default=2048, gt=0)
     qwen_keep_alive: str = "10m"
     qwen_temperature: float = Field(default=0.0, ge=0, le=2)
+    qwen_agent_endpoint: str = ""
+    qwen_agent_token_ref: str = ""
+    qwen_ack_seconds: float = Field(default=5, gt=0)
+    qwen_poll_seconds: float = Field(default=2, gt=0)
+    qwen_poll_timeout_seconds: float = Field(default=3, gt=0)
+    qwen_poll_failures: int = Field(default=2, ge=1)
+    qwen_first_output_seconds: float = Field(default=45, gt=0)
+    qwen_idle_output_seconds: float = Field(default=20, gt=0)
 
     @model_validator(mode="after")
     def check_refs(self):
@@ -54,6 +62,15 @@ class Deployment(BaseModel):
             raise ValueError("explicit Qwen endpoint required")
         if self.qwen_model_profile and not re.fullmatch(r"[0-9a-f]{64}", self.qwen_model_digest):
             raise ValueError("local model profile requires a pinned SHA-256 digest")
+        if self.qwen_agent_endpoint:
+            if not self.qwen_agent_endpoint.startswith(("http://", "https://")):
+                raise ValueError("agent endpoint must be HTTP(S)")
+            if not self.qwen_agent_token_ref.startswith("env:") or len(self.qwen_agent_token_ref) <= 4:
+                raise ValueError("agent token must be an environment reference")
+            if not self.qwen_model_profile:
+                raise ValueError("agent route requires pinned model")
+        elif self.qwen_agent_token_ref:
+            raise ValueError("agent token reference requires agent endpoint")
         if self.client_timeout_seconds <= self.delivery_margin_seconds:
             raise ValueError("delivery margin must fit client timeout")
         return self
@@ -93,6 +110,14 @@ class PolicyInput(BaseModel):
     fallback: Fallback
     review: Review
     guidance: GuidancePolicy = Field(default_factory=GuidancePolicy)
+
+    @model_validator(mode="after")
+    def check_agent_deadlines(self):
+        if self.deployment.qwen_agent_endpoint:
+            if max(self.deployment.qwen_first_output_seconds,
+                   self.deployment.qwen_idle_output_seconds) >= self.limits.qwen_execution_seconds:
+                raise ValueError("agent progress deadlines must fit Qwen execution limit")
+        return self
 
 
 class PolicySnapshot(BaseModel):

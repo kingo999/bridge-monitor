@@ -16,6 +16,38 @@ if (-not $output.StartsWith($backups.TrimEnd('\') + '\',
     throw 'Backup output must stay under bridge-monitor\var\backups.'
 }
 if (Test-Path -LiteralPath $output) { throw 'Backup output already exists.' }
+
+# Dumps contain retained prompts and responses. Check the effective ACL of each
+# directory in the output path before allowing pg_dump to create a file there.
+$allowedSids = @(
+    [Security.Principal.WindowsIdentity]::GetCurrent().User.Value,
+    'S-1-5-18',     # SYSTEM
+    'S-1-5-32-544'  # Administrators
+)
+$outputParent = Split-Path -Parent $output
+$directory = $backups
+$directories = @($backups)
+$relativeParent = $outputParent.Substring($backups.Length).TrimStart('\')
+if ($relativeParent) {
+    foreach ($part in $relativeParent.Split('\')) {
+        $directory = Join-Path $directory $part
+        $directories += $directory
+    }
+}
+foreach ($directory in $directories) {
+    if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+        throw 'Backup output directory does not exist.'
+    }
+    $acl = Get-Acl -LiteralPath $directory
+    if (($directory -eq $backups -and -not $acl.AreAccessRulesProtected) -or
+        @($acl.Access | Where-Object {
+            $_.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and
+            $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -notin $allowedSids
+        }).Count -gt 0) {
+        throw 'Backup directory access is not private.'
+    }
+}
+
 $dsn = [Environment]::GetEnvironmentVariable($DsnEnvName)
 if (-not $dsn) { throw 'Named database secret environment reference is missing.' }
 if ($dsn -match '(?i)(password\s*=|://[^@/]+:[^@/]+@)') {

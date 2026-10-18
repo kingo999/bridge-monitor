@@ -1,7 +1,8 @@
 import type { WorkItem } from '@/lib/contracts.generated';
 
 function route(item: WorkItem): string {
-  return item.routed ? 'Routed' : item.paid_route ? 'Not routed' : 'Pending';
+  return item.routed ? 'Routed' : item.paid_route ? 'Not routed'
+    : item.resolution ? 'No route record' : 'Pending';
 }
 
 export default function WorkList({ items, selectedId, onSelect, search, onSearch, loading, more, onMore }: {

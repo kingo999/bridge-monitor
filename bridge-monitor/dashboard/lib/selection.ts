@@ -3,9 +3,10 @@ import type { MetricValue, WorkItem } from './contracts.generated';
 export type MetricKey = 'routed' | 'not_routed' | 'pending' | 'confirmed_acceptance' |
   'contribution' | 'takeover' | 'local_resolution' | 'disposition';
 
-export function metricLabel(key: MetricKey): string {
+export function metricLabel(key: MetricKey, consumerStage = 'claude'): string {
   return ({ routed: 'Routed to Skynet', not_routed: 'Not routed', pending: 'Routing pending',
-    confirmed_acceptance: 'Confirmed acceptance', contribution: 'Local contribution',
+    confirmed_acceptance: `${consumerStage === 'gpt' ? 'GPT' : 'Claude'}-reported acceptance`,
+    contribution: 'Local contribution',
     takeover: 'Paid takeover', local_resolution: 'Locally resolved',
     disposition: 'Disposition coverage' })[key];
 }

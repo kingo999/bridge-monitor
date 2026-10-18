@@ -1,0 +1,16 @@
+[Unit]
+Description=Bridge Monitor request-scoped Skynet agent
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/bridge-monitor-agent/current
+EnvironmentFile=%h/.config/bridge-monitor-agent/token.env
+ExecStart=%h/.local/share/bridge-monitor-agent/venv/bin/python %h/.local/share/bridge-monitor-agent/current/scripts/start-skynet-agent.py --config %h/.config/bridge-monitor-agent/agent.toml
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

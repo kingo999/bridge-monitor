@@ -80,6 +80,29 @@ def test_paid_result_after_local_dispatch_is_not_a_local_response(seeded):
     assert report.metrics["confirmed_acceptance"].denominator == 40
 
 
+def test_resolved_work_without_delegation_record_is_separate_from_pending(seeded):
+    from datetime import datetime, timezone
+
+    created = datetime(2026, 10, 16, 11, 0, tzinfo=timezone.utc)
+    resolved = datetime(2026, 10, 16, 11, 1, tzinfo=timezone.utc)
+    with psycopg.connect(seeded) as conn:
+        conn.execute("INSERT INTO tasks(task_id,origin,created_at) VALUES(%s,%s,%s)",
+                     ("no-route-task", "synthetic", created))
+        conn.execute("INSERT INTO work_items(work_item_id,task_id,origin,category,created_at) "
+                     "VALUES(%s,%s,%s,%s,%s)",
+                     ("no-route-work", "no-route-task", "synthetic", "analysis", created))
+        conn.execute("INSERT INTO work_resolutions(resolution_id,work_item_id,outcome,recorded_at) "
+                     "VALUES(%s,%s,%s,%s)",
+                     ("no-route-resolution", "no-route-work", "paid_direct", resolved))
+
+    before = query_metrics(seeded, CohortQuery(origin="synthetic", as_of=created))
+    after = query_metrics(seeded, CohortQuery(origin="synthetic", as_of=resolved))
+    assert before.coverage["resolved_without_delegation_record"].numerator == 0
+    assert after.coverage["resolved_without_delegation_record"].numerator == 1
+    assert after.metrics["pending"].numerator == before.metrics["pending"].numerator
+    assert after.metrics["not_routed"].numerator == before.metrics["not_routed"].numerator
+
+
 def test_supersession_and_conflicting_dispositions_do_not_invent_a_judgment(seeded):
     from datetime import datetime, timezone
     from contracts.events import EventEnvelope, EventType

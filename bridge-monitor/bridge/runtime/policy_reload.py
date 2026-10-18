@@ -20,6 +20,9 @@ class PolicyReloadResult:
 
 _RESTART_DEPLOYMENT = ("postgres_dsn_ref", "qwen_endpoint", "qwen_model_profile",
     "qwen_model_digest", "qwen_output_tokens", "qwen_keep_alive", "qwen_temperature",
+    "qwen_agent_endpoint", "qwen_agent_token_ref", "qwen_ack_seconds",
+    "qwen_poll_seconds", "qwen_poll_timeout_seconds", "qwen_poll_failures",
+    "qwen_first_output_seconds", "qwen_idle_output_seconds",
     "client_timeout_seconds", "payload_limit_bytes", "spool_limit_bytes", "retention_days")
 _RESTART_LIMITS = ("claude_execution_seconds", "qwen_execution_seconds")
 

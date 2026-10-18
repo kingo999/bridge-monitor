@@ -2,12 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/lib/api';
-import type { WorkDetail } from '@/lib/contracts.generated';
+import type { OutputPreview, WorkDetail } from '@/lib/contracts.generated';
 import ExecutionTimeline from './ExecutionTimeline';
 import GuidanceDetails from './GuidanceDetails';
 import ResponseComparison from './ResponseComparison';
 
 type Tab = 'exchange' | 'decision' | 'guidance' | 'timeline';
+
+function tokenCount(value: number | null): string {
+  return value === null ? 'Not reported' : value.toLocaleString('en-US');
+}
 
 function BodyCard({ title, content, fallback }: { title: string; content: string | null; fallback: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -20,13 +24,21 @@ function BodyCard({ title, content, fallback }: { title: string; content: string
     <pre className={expanded ? 'expanded' : ''}>{display ?? fallback}</pre></div>;
 }
 
-export default function ExchangeInspector({ id, refreshKey }: { id: string | null; refreshKey: number }) {
+export default function ExchangeInspector({ id, refreshKey, paused }: { id: string | null; refreshKey: number; paused: boolean }) {
   const [loadedDetail, setDetail] = useState<WorkDetail | null>(null);
   const detail = loadedDetail?.work_item.work_item_id === id ? loadedDetail : null;
   const [bodies, setBodies] = useState<Record<string, string | null>>({});
+  const [previews, setPreviews] = useState<Record<string, OutputPreview | null>>({});
   const [tab, setTab] = useState<Tab>('exchange');
   const [loading, setLoading] = useState(false);
+  const [clockNow, setClockNow] = useState(Date.now());
   const pendingBodies = useRef(new Set<string>());
+  useEffect(() => {
+    if (paused) return;
+    setClockNow(Date.now());
+    const timer = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [paused]);
   useEffect(() => {
     if (!id) { setDetail(null); return; }
     let cancelled = false;
@@ -49,11 +61,42 @@ export default function ExchangeInspector({ id, refreshKey }: { id: string | nul
     }
   }, [references, bodies]);
 
+  const activeCalls = useMemo(() => detail ? detail.calls.filter(call =>
+    !detail.results.some(result => result.call_id === call.call_id && result.delivered_at)) : [],
+  [detail]);
+  useEffect(() => {
+    if (!id || !detail) return;
+    let cancelled = false;
+    for (const call of activeCalls) {
+      const key = `${id}:${call.call_id}`;
+      api.outputPreview(id, call.call_id)
+        .then(value => { if (!cancelled) setPreviews(old => ({ ...old, [key]: value })); })
+        .catch(() => { if (!cancelled) setPreviews(old => ({ ...old, [key]: null })); });
+    }
+    return () => { cancelled = true; };
+  }, [id, detail, activeCalls]);
+
   const localCall = detail?.calls.find(c => c.local_dispatch);
+  const agentStatus = detail?.agent_statuses?.find(s => s.call_id === localCall?.call_id);
+  const outputAge = agentStatus?.last_model_output_at ?
+    Math.max(0, Math.floor((clockNow - new Date(agentStatus.last_model_output_at).getTime()) / 1000)) : null;
+  const jobActive = !agentStatus?.timeout_reason && ['accepted', 'ollama_connecting', 'streaming'].includes(agentStatus?.agent_state || '');
+  const outputTime = agentStatus?.last_model_output_at ?
+    new Date(agentStatus.last_model_output_at).toLocaleString() : null;
   const localResult = detail?.results.find(r => r.call_id === localCall?.call_id);
   const paidResult = detail?.results.find(r => r.call_id !== localCall?.call_id && r.delivered_at);
-  const promptCallId = localCall?.call_id || paidResult?.call_id || detail?.calls[0]?.call_id;
-  const original = detail?.messages.find(m => m.call_id === promptCallId && m.role === 'user');
+  const claudeCall = detail?.calls.find(c => c.call_id === localCall?.parent_call_id) ||
+    detail?.calls.find(c => c.call_id === paidResult?.call_id && !!c.requested_model) ||
+    detail?.calls.find(c => !c.local_dispatch && !!c.requested_model);
+  const claudeInbound = detail?.messages.find(m => m.call_id === claudeCall?.call_id &&
+    m.role === 'user' && m.direction === 'in');
+  const claudeOutbound = detail?.messages.find(m => m.call_id === claudeCall?.call_id &&
+    m.role === 'user' && m.direction === 'out');
+  const claudeSystem = detail?.messages.find(m => m.call_id === claudeCall?.call_id &&
+    m.role === 'system' && m.direction === 'out');
+  const localPrompt = detail?.messages.find(m => m.call_id === localCall?.call_id &&
+    m.role === 'user' && m.direction === 'out') ||
+    detail?.messages.find(m => m.call_id === localCall?.call_id && m.role === 'user');
   const localModel = detail?.models.find(m => m.call_id === localCall?.call_id);
   const paidModel = detail?.models.find(m => m.call_id === paidResult?.call_id);
   const primaryModel = localModel || paidModel;
@@ -69,20 +112,71 @@ export default function ExchangeInspector({ id, refreshKey }: { id: string | nul
     {!id && <p className="empty-state">Select a row to inspect prompts, responses and decisions.</p>}
     {id && loading && !detail && <p className="empty-state">Loading exchange…</p>}
     {detail && <><div className="inspector-summary"><h3>{detail.work_item.category || detail.work_item.work_item_id}</h3>
-      <p>Requested: {primaryModel?.requested_model || 'Unknown'} · Reported: {primaryModel?.reported_model || 'Unknown'}</p></div>
+      <p>Requested: {primaryModel?.requested_model || 'Unknown'} · Reported: {primaryModel?.reported_model || 'Unknown'}</p>
+      {agentStatus && <p>Last bridge observation · Skynet job: {agentStatus.agent_state || 'Unknown'} · Agent: {agentStatus.agent_reachable === true ? 'reachable' : agentStatus.agent_reachable === false ? 'unreachable' : 'unverified'} · Last Qwen output {outputAge === null ? 'not observed' : jobActive ? `${outputAge}s ago` : outputTime}{agentStatus.timeout_reason ? ` · ${agentStatus.timeout_reason}` : ''}</p>}</div>
       <div className="inspector-tabs" role="tablist" aria-label="Inspector views">
         {(['exchange', 'decision', 'guidance', 'timeline'] as Tab[]).map(value => <button key={value} type="button"
           role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{value}</button>)}</div>
       <div className="inspector-content">
         {tab === 'exchange' && <>
-          <BodyCard title="Original prompt" content={body(original?.original_content_id)} fallback={fallback(original?.original_content_id)} />
-          <BodyCard title="Effective prompt sent" content={body(original?.effective_content_id)} fallback={fallback(original?.effective_content_id)} />
+          {claudeCall && <>
+            <BodyCard title="GPT → Claude original prompt"
+              content={body(claudeInbound?.original_content_id || claudeOutbound?.original_content_id)}
+              fallback={fallback(claudeInbound?.original_content_id || claudeOutbound?.original_content_id)} />
+            <BodyCard title="Prompt sent to Claude"
+              content={body(claudeOutbound?.effective_content_id || claudeInbound?.effective_content_id)}
+              fallback={fallback(claudeOutbound?.effective_content_id || claudeInbound?.effective_content_id)} />
+            {claudeSystem && <details className="instruction-details"><summary>Claude worker instructions</summary>
+              <BodyCard title="Worker instruction content"
+                content={body(claudeSystem.effective_content_id || claudeSystem.original_content_id)}
+                fallback={fallback(claudeSystem.effective_content_id || claudeSystem.original_content_id)} />
+            </details>}
+          </>}
+          {localCall && <>
+            <BodyCard title="Claude → Skynet original prompt"
+              content={body(localPrompt?.original_content_id)} fallback={fallback(localPrompt?.original_content_id)} />
+            <BodyCard title="Effective prompt sent to Skynet"
+              content={body(localPrompt?.effective_content_id)} fallback={fallback(localPrompt?.effective_content_id)} />
+          </>}
+          {!claudeCall && !localCall && <p className="muted">No prompt chain captured.</p>}
+          {activeCalls.map(call => {
+            const preview = previews[`${id}:${call.call_id}`];
+            return <div key={call.call_id}>
+              <BodyCard title={`${call.local_dispatch ? 'Qwen' : 'Claude'} live output (partial)`}
+                content={preview?.text || null}
+                fallback={preview ? 'No output captured yet.' : 'Loading captured output…'} />
+              {preview && (preview.truncated || preview.missing_chunks > 0) &&
+                <p className="coverage-note">Recent output preview: {preview.chunks_shown} chunk(s) shown
+                  {preview.truncated ? ' · earlier captured text omitted from preview' : ''}
+                  {preview.missing_chunks > 0 ? ` · ${preview.missing_chunks} chunk(s) unavailable` : ''}.
+                </p>}
+            </div>;
+          })}
           <ResponseComparison local={body(localResult?.raw_content_id || localResult?.delivered_content_id)}
             downstream={body(paidResult?.delivered_content_id)}
             localModel={localModel?.reported_model || localModel?.requested_model || 'Unknown model'}
             downstreamModel={paidModel?.reported_model || paidModel?.requested_model || 'Paid model / unknown'} localState={fallback(localResult?.raw_content_id || localResult?.delivered_content_id)}
             downstreamState={fallback(paidResult?.delivered_content_id)} />
           <BodyCard title="Response delivered to caller" content={body(deliveredRef)} fallback={fallback(deliveredRef)} />
+          <section className="usage-section" aria-label="Model usage">
+            <h3>Reported model usage</h3>
+            {(detail.usage || []).length ? detail.usage.map(observation => {
+              const model = detail.models.find(item =>
+                item.model_execution_id === observation.model_execution_id);
+              return <div className="fact-card" key={observation.observation_id}>
+                <strong>Requested: {model?.requested_model || 'Unknown'}</strong>
+                <p>Reported: {model?.reported_model || 'Unknown'}</p>
+                <small>{observation.scope} · {observation.is_cumulative ? 'Cumulative' : 'Incremental'} · {observation.provenance}</small>
+                <div className="usage-values">
+                  <span>Input: {tokenCount(observation.input_tokens)}</span>
+                  <span>Cache-read input: {tokenCount(observation.cache_read_input_tokens)}</span>
+                  <span>Cache-creation input: {tokenCount(observation.cache_creation_input_tokens)}</span>
+                  <span>Output: {tokenCount(observation.output_tokens)}</span>
+                </div>
+              </div>;
+            }) : <p className="muted">No usage reported.</p>}
+            <p className="coverage-note">Provider-reported counters are shown per observation; cumulative and incremental rows are not summed. Missing values are unknown, not zero.</p>
+          </section>
         </>}
         {tab === 'decision' && <div className="decision-list">
           <h3>Routing and disposition</h3>

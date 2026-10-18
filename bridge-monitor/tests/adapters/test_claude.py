@@ -172,6 +172,23 @@ def test_structured_claude_final_preserves_raw_body_and_reports_disposition(tmp_
                for kind, kw in sink.events)
 
 
+def test_claude_usage_keeps_cache_input_counters(tmp_path):
+    sink = Sink()
+    result = ClaudeCLIAdapter(Runner([{"type": "result", "result": "answer",
+        "is_error": False, "usage": {"input_tokens": 4,
+        "cache_read_input_tokens": 2440, "cache_creation_input_tokens": 12,
+        "output_tokens": 80}}]), executable="claude", model="sonnet",
+        mcp_config_path=tmp_path / "mcp.json").run(_lease(), _task(), "prompt", sink)
+
+    expected = {"input_tokens": 4, "cache_read_input_tokens": 2440,
+                "cache_creation_input_tokens": 12, "output_tokens": 80}
+    assert result.usage == expected
+    usage_events = [fields["payload"] for kind, fields in sink.events
+                    if kind == EventType.USAGE_REPORTED]
+    assert len(usage_events) == 1
+    assert all(usage_events[0][key] == value for key, value in expected.items())
+
+
 def test_worker_system_prompt_requires_explicit_local_result_accounting(tmp_path):
     runner, sink = Runner([{"type": "result", "result": "plain answer",
                             "is_error": False}]), Sink()
@@ -183,6 +200,8 @@ def test_worker_system_prompt_requires_explicit_local_result_accounting(tmp_path
     system_prompt = command[command.index("--system-prompt") + 1]
     assert "local_results" in system_prompt
     assert "accepted" in system_prompt and "revised" in system_prompt
+    assert "formatting only" in system_prompt
+    assert "substantive explanation" in system_prompt
     assert "paid_continuation_required" in system_prompt
     assert "source-read" in system_prompt
     assert any(kind == EventType.MESSAGE_SENT and kw["role"] == "system"

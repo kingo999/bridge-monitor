@@ -21,6 +21,7 @@ class EventType(str, Enum):
     CALL_CANCELLED = "call.cancelled"
     ATTEMPT_STARTED = "attempt.started"
     ATTEMPT_WAITING = "attempt.waiting"
+    ATTEMPT_STATUS = "attempt.status"
     ATTEMPT_RESUMED = "attempt.resumed"
     ATTEMPT_COMPLETED = "attempt.completed"
     ATTEMPT_FAILED = "attempt.failed"

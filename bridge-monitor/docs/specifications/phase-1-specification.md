@@ -130,7 +130,7 @@ Each family has a versioned payload schema. Lifecycle terminal outcomes are mutu
 
 Delegation decisions describe intent. **Actual dispatch is the evidence for the routed statistic.** A queued or rejected local request has not yet been routed. Preserve the sequence of decisions if a task is reconsidered.
 
-Usage observations identify whether values are deltas or cumulative totals, their measurement scope, and whether they are reported or estimated. Avoid double-counting cumulative updates. Unknown token counts or prices remain unknown. Monetary estimates require a versioned price basis and are not evidence of counterfactual savings.
+Usage observations identify whether values are deltas or cumulative totals, their measurement scope, and whether they are reported or estimated. Avoid double-counting cumulative updates. Unknown token counts or prices remain unknown. Monetary estimates require a versioned price basis and are not evidence of counterfactual savings. For Claude CLI usage, retain cache-read and cache-creation input token counts separately from ordinary input tokens when reported; a small ordinary input count alone is not the full context or a comparable cost measure.
 
 ### Reliability and validation
 
@@ -331,7 +331,11 @@ At a specified consumer stage, R is the set of local result units delivered for 
 | Paid takeover | Delegated work items with confirmed final paid replacement / D |
 | Local resolution | Work items with local output retained and no substantive downstream paid rework / W |
 
+Here, a confirmed acceptance is a valid effective disposition recorded by the consuming model, not independent verification of answer quality or of the model's accepted/revised judgment. Label this distinction in the dashboard while retaining the A/R definition.
+
 Open cohorts need three routing states; do not display `100% − routed` as explicitly not routed when work is undecided. A work item initially kept paid but later dispatched locally belongs to D. Paid takeover is a subset of delegated work, not a second category of never-routed work.
+
+As a diagnostic within routing pending/unknown, show resolved work items that have neither an actual local dispatch nor a delegation decision by the reporting cutoff. This count does not change the three routing-state definitions or imply those resolved items are still executing.
 
 Takeover includes replacement after a local failure without a usable response. Paid revision with retained local contribution is tracked separately. Missing downstream acknowledgements prevent a confirmed final local-resolution claim. Distinguish infrastructure failure, invalid output, correctness failure, and task irrelevance. Report empty denominators as N/A rather than zero.
 

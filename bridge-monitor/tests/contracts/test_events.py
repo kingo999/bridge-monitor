@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from contracts.events import EventEnvelope, EventType, DashboardStatus
 from contracts.content import ContentObject
 from contracts.outcomes import DispositionRecord
+from service.ingest.projector import validate_projectable_event
 
 
 def event(**changes):
@@ -65,3 +66,13 @@ def test_invalid_disposition_is_rejected():
     with pytest.raises(ValidationError):
         DispositionRecord(disposition_id="d-1", result_id="r-1", actor_id="claude-1",
                           stage="claude", judgment="maybe")
+
+
+def test_usage_rejects_invalid_cache_token_counts():
+    for invalid in (-1, True, "5"):
+        item = event(event_type=EventType.USAGE_REPORTED,
+                     model_execution_id="model-1", payload={
+                         "observation_id": "observation-1", "input_tokens": 4,
+                         "cache_read_input_tokens": invalid})
+        with pytest.raises(ValueError, match="usage tokens"):
+            validate_projectable_event(item)

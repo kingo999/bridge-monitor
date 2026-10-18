@@ -48,7 +48,12 @@ def main() -> None:
                      payload_limit_bytes=int(capture["payload_limit_bytes"]),
                      dashboard_dir=export,
                      session_ttl_seconds=int(operator["session_ttl_seconds"]),
-                     secure_cookies=bool(cert))
+                     secure_cookies=bool(cert),
+                     preview_max_chunks=int(settings["dashboard"].get("preview_max_chunks", 80)),
+                     preview_max_bytes=int(settings["dashboard"].get("preview_max_bytes", 16384)),
+                     timeline_head_events=int(settings["dashboard"].get("timeline_head_events", 100)),
+                     timeline_tail_events=int(settings["dashboard"].get("timeline_tail_events", 400)),
+                     work_item_max_limit=int(settings["dashboard"].get("work_item_max_limit", 100)))
     pid_file = os.environ.get("BRIDGE_MONITOR_SERVER_PID_FILE")
     record = None
     if pid_file:

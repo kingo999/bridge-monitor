@@ -33,6 +33,8 @@ def test_in_owner_paid_continuation_uses_same_execution_and_keeps_uncertain_loca
         attempt_id=bindings[claude].attempt_id, model_execution_id=f"{claude}:model:1",
         payload={"observation_id": str(uuid.uuid4()), "scope": "execution",
                  "is_cumulative": True, "input_tokens": 120, "output_tokens": 33,
+                 "cache_read_input_tokens": 2400,
+                 "cache_creation_input_tokens": 300,
                  "provenance": "claude_cli_result"})
     assert ingest_batch(dsn, producer_id, [event], []) == ["committed"]
     with psycopg.connect(dsn) as conn:
@@ -42,8 +44,10 @@ def test_in_owner_paid_continuation_uses_same_execution_and_keeps_uncertain_loca
                             "WHERE child_call_id=%s", (qwen,)).fetchone() == ("completed", f"paid-{claude}")
         assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
                             (qwen,)).fetchone() == ("fallback", True)
-        assert conn.execute("SELECT input_tokens,output_tokens FROM usage_observations "
-                            "WHERE model_execution_id=%s", (f"{claude}:model:1",)).fetchone() == (120, 33)
+        assert conn.execute("SELECT input_tokens,output_tokens,cache_read_input_tokens,"
+                            "cache_creation_input_tokens FROM usage_observations "
+                            "WHERE model_execution_id=%s", (f"{claude}:model:1",)).fetchone() == (
+                                120, 33, 2400, 300)
         assert conn.execute("SELECT count(*) FROM work_resolutions WHERE work_item_id=(SELECT work_item_id "
                             "FROM runtime_jobs WHERE call_id=%s)", (claude,)).fetchone()[0] == 0
 

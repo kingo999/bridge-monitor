@@ -32,9 +32,21 @@ if (-not $server.HasExited) {
     throw 'Dashboard did not stop; receipt retained.'
 }
 $launcher = Get-Process -Id $record.launcher_pid -ErrorAction SilentlyContinue
-if ($launcher -and $launcher.Id -ne $record.server_pid -and
-    $launcher.StartTime.ToUniversalTime().Ticks -eq [long]$record.launcher_started_at_utc_ticks -and
-    $launcher.Path -eq $expectedPython) {
+$launcherIsRecordedProcess = $false
+if ($launcher -and $launcher.Id -ne $record.server_pid) {
+    try {
+        $started = $launcher.StartTime
+        $path = $launcher.Path
+        if ($started -and $path) {
+            $launcherIsRecordedProcess = $started.ToUniversalTime().Ticks -eq
+                [long]$record.launcher_started_at_utc_ticks -and $path -eq $expectedPython
+        }
+    } catch {
+        if (Get-Process -Id $record.launcher_pid -ErrorAction SilentlyContinue) { throw }
+        # The launcher exited between Get-Process and reading its properties.
+    }
+}
+if ($launcherIsRecordedProcess) {
     Stop-Process -Id $launcher.Id -ErrorAction Stop
 }
 $stopped = [ordered]@{ server_pid = $record.server_pid;

@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from bridge.adapters.claude_cli import ClaudeCLIAdapter, SubprocessRunner
 from bridge.adapters.qwen_runtime import QwenAdapter
+from bridge.adapters.qwen_agent import QwenAgentAdapter
 from bridge.launch import create_child_mcp_config
 from bridge.mcp_server import BridgeCoordinator
 from bridge.runtime.policy_startup import active_policy
@@ -110,7 +111,8 @@ def build_coordinator(runtime_config_path: str | Path, *,
             mcp_config_factory=lambda lease: create_child_mcp_config(
                 project, lease, python_executable=executable))
     else:
-        qwen_adapter = QwenAdapter(httpx.Client(),
+        deployment = policy.deployment
+        common = dict(
             endpoint=policy.deployment.qwen_endpoint,
             model=policy.deployment.qwen_model_profile,
             expected_digest=policy.deployment.qwen_model_digest,
@@ -119,8 +121,23 @@ def build_coordinator(runtime_config_path: str | Path, *,
             timeout_seconds=policy.limits.qwen_execution_seconds,
             keep_alive=policy.deployment.qwen_keep_alive,
             temperature=policy.deployment.qwen_temperature,
-            cancellation_probe=lambda call_id: cancellation_requested(dsn, call_id),
-            cancel_poll_seconds=capabilities.cancellation_poll_ms / 1000)
+            cancellation_probe=lambda call_id: cancellation_requested(dsn, call_id))
+        if deployment.qwen_agent_endpoint:
+            secret_name = deployment.qwen_agent_token_ref.removeprefix("env:")
+            token = os.environ.get(secret_name)
+            if not token:
+                raise ValueError("configured Skynet agent token is unavailable")
+            qwen_adapter = QwenAgentAdapter(httpx.Client(),
+                **{**common, "endpoint": deployment.qwen_agent_endpoint},
+                token=token, first_output_seconds=deployment.qwen_first_output_seconds,
+                idle_output_seconds=deployment.qwen_idle_output_seconds,
+                ack_seconds=deployment.qwen_ack_seconds,
+                poll_seconds=deployment.qwen_poll_seconds,
+                poll_timeout_seconds=deployment.qwen_poll_timeout_seconds,
+                poll_failures=deployment.qwen_poll_failures)
+        else:
+            qwen_adapter = QwenAdapter(httpx.Client(), **common,
+                cancel_poll_seconds=capabilities.cancellation_poll_ms / 1000)
     return BridgeCoordinator(dsn, policy, policy.version, emitter,
         claude_adapter=claude_adapter, qwen_adapter=qwen_adapter,
         source_roots=capabilities.sources,

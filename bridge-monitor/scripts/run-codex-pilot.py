@@ -59,12 +59,17 @@ def main() -> int:
                             "requested_model": "sonnet", "reserve_tokens": 5000})
               + ". Do not edit files or call any other tool. Return the tool result and "
                 "state whether you accept the worker's answer.")
+    env_vars = ["BRIDGE_MONITOR_DSN", "BRIDGE_MONITOR_RUNTIME_CONFIG",
+                "BRIDGE_MONITOR_SYSTEM_TOKEN"]
+    if policy.deployment.qwen_agent_endpoint:
+        agent_token_name = policy.deployment.qwen_agent_token_ref.removeprefix("env:")
+        if not os.environ.get(agent_token_name):
+            raise SystemExit(f"{agent_token_name} is required for the agent route")
+        env_vars.append(agent_token_name)
     config = {
         "mcp_servers.bridge_monitor.command": str(PYTHON.resolve(strict=True)),
         "mcp_servers.bridge_monitor.args": ["-m", "bridge.mcp_server", "--audience", "parent"],
-        "mcp_servers.bridge_monitor.env_vars": ["BRIDGE_MONITOR_DSN",
-                                                 "BRIDGE_MONITOR_RUNTIME_CONFIG",
-                                                 "BRIDGE_MONITOR_SYSTEM_TOKEN"],
+        "mcp_servers.bridge_monitor.env_vars": env_vars,
         "mcp_servers.bridge_monitor.tool_timeout_sec": client_timeout_seconds,
         "mcp_servers.bridge_monitor.tools.delegate_claude.approval_mode": "approve",
     }

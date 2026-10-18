@@ -4,12 +4,15 @@ from fastapi import APIRouter, Header, HTTPException, Request
 
 from contracts.queries import CohortQuery
 from service.http.auth import require_browser_operator
-from service.queries.history import list_work_items, read_work_item_detail
+from service.queries.history import list_work_items, read_output_preview, read_work_item_detail
 from service.queries.metrics import query_metrics
 from service.queries.snapshot import read_snapshot
 
 
-def query_router(dsn: str, operator_token: str, sessions: dict) -> APIRouter:
+def query_router(dsn: str, operator_token: str, sessions: dict, *,
+                 preview_max_chunks: int = 80, preview_max_bytes: int = 16384,
+                 timeline_head_events: int = 100, timeline_tail_events: int = 400,
+                 work_item_max_limit: int = 100) -> APIRouter:
     router = APIRouter(prefix="/api/v1")
 
     def cohort(origin: str, consumer_stage: str, created_from: datetime | None,
@@ -47,7 +50,8 @@ def query_router(dsn: str, operator_token: str, sessions: dict) -> APIRouter:
                                                created_until, as_of, completed_only,
                                                guidance_group, failure_category, repair_effort,
                                                example_reuse_status),
-                                   limit=limit, offset=offset)
+                                   limit=limit, offset=offset,
+                                   max_limit=work_item_max_limit)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
 
@@ -55,10 +59,24 @@ def query_router(dsn: str, operator_token: str, sessions: dict) -> APIRouter:
     def work_item(work_item_id: str, request: Request,
                   authorization: str | None = Header(default=None)):
         require_browser_operator(request, authorization, operator_token, sessions)
-        detail = read_work_item_detail(dsn, work_item_id)
+        detail = read_work_item_detail(dsn, work_item_id,
+                                       head_events=timeline_head_events,
+                                       tail_events=timeline_tail_events)
         if detail is None:
             raise HTTPException(404, "work item not found")
         return detail
+
+    @router.get("/work-items/{work_item_id}/calls/{call_id}/output-preview")
+    def output_preview(work_item_id: str, call_id: str, request: Request,
+                       authorization: str | None = Header(default=None)):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        preview = read_output_preview(dsn, work_item_id, call_id,
+                                      role="operator",
+                                      max_chunks=preview_max_chunks,
+                                      max_bytes=preview_max_bytes)
+        if preview is None:
+            raise HTTPException(404, "call not found in selected work item")
+        return preview
 
     @router.get("/metrics")
     def metrics(request: Request, authorization: str | None = Header(default=None),

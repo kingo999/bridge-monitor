@@ -15,3 +15,8 @@ payload_limit_bytes = 1048576
 
 [dashboard]
 export_dir = "dashboard/out"
+preview_max_chunks = 80
+preview_max_bytes = 16384
+timeline_head_events = 100
+timeline_tail_events = 400
+work_item_max_limit = 1000
