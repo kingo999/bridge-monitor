@@ -172,6 +172,45 @@ def test_structured_claude_final_preserves_raw_body_and_reports_disposition(tmp_
                for kind, kw in sink.events)
 
 
+def test_trailing_completion_object_after_prose_keeps_raw_reply(tmp_path):
+    claim = {"answer": "37 × 14 = 518", "local_results": [{
+        "result_id": "local-result-1", "input_sha256": "a" * 64,
+        "judgment": "accepted", "reason": "checked arithmetic"}],
+        "fallback_child_call_id": None, "work_resolution": "resolved"}
+    raw = "Qwen's calculation checks out.\n\n" + json.dumps(claim)
+    sink = Sink()
+    result = ClaudeCLIAdapter(Runner([{"type": "result", "result": raw,
+        "is_error": False}]), executable="claude", model="sonnet",
+        mcp_config_path=tmp_path / "mcp.json").run(_lease(), _task(), "Check", sink)
+    assert result.answer == claim["answer"]
+    assert result.completion_claim == claim
+    assert result.raw_answer == raw
+    assert any(kind == EventType.RESPONSE_COMPLETED and kw["body"] == raw.encode()
+               for kind, kw in sink.events)
+
+
+def test_multiple_completion_objects_are_not_silently_selected(tmp_path):
+    claim = {"answer": "first", "local_results": [],
+             "fallback_child_call_id": None, "work_resolution": "resolved"}
+    raw = json.dumps(claim) + "\n\n" + json.dumps({**claim, "answer": "second"})
+    result = ClaudeCLIAdapter(Runner([{"type": "result", "result": raw,
+        "is_error": False}]), executable="claude", model="sonnet",
+        mcp_config_path=tmp_path / "mcp.json").run(_lease(), _task(), "Check", Sink())
+    assert result.answer == raw
+    assert result.completion_claim is None
+
+
+def test_completion_object_followed_by_more_prose_is_unaccounted(tmp_path):
+    raw = (json.dumps({"answer": "first", "local_results": [],
+                       "fallback_child_call_id": None, "work_resolution": "resolved"})
+           + "\nI changed my mind.")
+    result = ClaudeCLIAdapter(Runner([{"type": "result", "result": raw,
+        "is_error": False}]), executable="claude", model="sonnet",
+        mcp_config_path=tmp_path / "mcp.json").run(_lease(), _task(), "Check", Sink())
+    assert result.answer == raw
+    assert result.completion_claim is None
+
+
 def test_claude_usage_keeps_cache_input_counters(tmp_path):
     sink = Sink()
     result = ClaudeCLIAdapter(Runner([{"type": "result", "result": "answer",

@@ -15,6 +15,45 @@ from bridge.adapters.base import AdapterResult, ensure_lease
 LOCAL_TOOL = "mcp__bridge_monitor__delegate_local_analysis"
 
 
+def _completion_reply(raw_answer: str) -> tuple[str, dict | None]:
+    """Accept one final completion object while retaining the entire raw reply."""
+    def shaped(value, *, embedded=False):
+        return (isinstance(value, dict) and isinstance(value.get("answer"), str)
+                and isinstance(value.get("local_results", []), list)
+                and (not embedded or (
+                    "local_results" in value
+                    and (value.get("fallback_child_call_id") is None or
+                         isinstance(value.get("fallback_child_call_id"), str))
+                    and value.get("work_resolution") in ("resolved", "unresolved", "unknown")
+                    and "fallback_child_call_id" in value)))
+
+    try:
+        parsed = json.loads(raw_answer)
+    except (ValueError, TypeError):
+        parsed = None
+    if shaped(parsed):
+        return parsed["answer"], parsed
+
+    decoder = json.JSONDecoder()
+    candidates = []
+    for offset, char in enumerate(raw_answer):
+        if char != "{":
+            continue
+        try:
+            value, end = decoder.raw_decode(raw_answer, offset)
+        except ValueError:
+            continue
+        if shaped(value, embedded=True):
+            candidates.append((value, offset, end))
+            if len(candidates) > 1:
+                return raw_answer, None
+    if len(candidates) == 1:
+        value, offset, end = candidates[0]
+        if raw_answer[:offset].strip() and not raw_answer[end:].strip():
+            return value["answer"], value
+    return raw_answer, None
+
+
 def build_claude_command(executable: str, model: str, mcp_config_path: str | Path,
                          *, system_prompt: str | None = None) -> list[str]:
     if not executable or not model:
@@ -284,16 +323,7 @@ class ClaudeCLIAdapter:
             return AdapterResult(state="failed", reported_model=reported,
                                  terminated=getattr(runner, "terminated", False))
         raw_answer = final["result"]
-        answer = raw_answer
-        completion_claim = None
-        try:
-            parsed = json.loads(raw_answer)
-            if (isinstance(parsed, dict) and isinstance(parsed.get("answer"), str)
-                    and isinstance(parsed.get("local_results", []), list)):
-                answer = parsed["answer"]
-                completion_claim = parsed
-        except (ValueError, TypeError):
-            pass
+        answer, completion_claim = _completion_reply(raw_answer)
         usage = final.get("usage") if isinstance(final.get("usage"), dict) else {}
         usage = {name: usage[name] for name in ("input_tokens", "output_tokens",
                  "cache_read_input_tokens", "cache_creation_input_tokens")

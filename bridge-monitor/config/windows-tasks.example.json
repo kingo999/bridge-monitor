@@ -6,7 +6,7 @@
   "data_dir": "var\\postgres",
   "postgres_log": "var\\logs\\postgres-task.log",
   "postgres_host": "127.0.0.1",
-  "postgres_port": 55481,
+  "postgres_port": 45481,
   "postgres_probe_user": "bridge_monitor",
   "dashboard_config": "config\\dashboard-service.example.toml",
   "dashboard_secrets": "var\\secrets\\dashboard.json",
