@@ -34,3 +34,22 @@ The updated dashboard passed TypeScript typecheck, static build and all eight
 isolated browser tests. Its project-owned serving process was refreshed; the
 live page returned HTTP 200 and the exported client bundle contains the new
 label. No model call was made for this UI clarification.
+
+## 18 October follow-up
+
+Three further observed `accepted` Qwen-to-Claude pairs were compared read-only
+with the original five. All six delivered response content objects for these
+three items were complete and matched their stored SHA-256 hashes.
+
+| Work item | Comparison with recorded `accepted` judgment |
+| --- | --- |
+| `8ddb8025-856e-4068-9dd3-f1c0889d854d` | Qwen returned `56`; Claude restated `7 × 8 = 56` and identified Qwen as the source. No substantive change apparent. |
+| `e02ad7bf-0bea-4afa-b738-9b3ce9b02b8e` | Qwen returned `63`; Claude restated `9 × 7 = 63` and identified Qwen as the source. No substantive change apparent. |
+| `7e77b80e-628c-439d-9a1f-06f51a2e4edd` | Qwen gave `518` with a distributive check; Claude retained the answer and check while shortening and reformatting the explanation. Formatting-only acceptance is supported. |
+
+Eight observed accepted records have now been compared. The earlier clear
+`revised` candidate and one possible candidate remain unresolved; these
+three additions do not overturn them. This is a small, selected pilot sample,
+so the dashboard's Claude-reported acceptance percentage remains telemetry,
+not an independently established quality or savings rate. No stored
+disposition, metric formula, guidance gate or routing policy was changed.
