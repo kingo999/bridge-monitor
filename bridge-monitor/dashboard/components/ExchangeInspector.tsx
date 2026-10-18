@@ -86,14 +86,19 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
     new Date(agentStatus.last_model_output_at).toLocaleString() : null;
   const localResult = detail?.results.find(r => r.call_id === localCall?.call_id);
   const parentCall = detail?.calls.find(c => c.call_id.startsWith('gpt:') && !c.parent_call_id);
-  const paidResult = detail?.results.find(r => r.call_id !== localCall?.call_id &&
-    r.call_id !== parentCall?.call_id && r.delivered_at);
+  const paidResults = detail?.results.filter(r => r.call_id !== localCall?.call_id &&
+    r.call_id !== parentCall?.call_id && r.delivered_at) || [];
+  const paidResult = paidResults.length === 1 ? paidResults[0] : null;
   const effectiveGpt = detail?.dispositions.filter(d => d.stage === 'gpt' &&
+    d.valid_parent_report === true &&
     d.result_id === paidResult?.result_id &&
-    !detail.dispositions.some(next => next.supersedes_id === d.disposition_id)) || [];
+    !detail.dispositions.some(next => next.valid_parent_report === true &&
+      next.supersedes_id === d.disposition_id)) || [];
   const gptDisposition = effectiveGpt.length === 1 ? effectiveGpt[0] : null;
-  const parentOutput = detail?.results.find(r => r.result_id === gptDisposition?.output_result_id) ||
-    detail?.results.find(r => r.call_id === parentCall?.call_id && !!r.raw_content_id);
+  const parentOutputId = gptDisposition?.output_result_id ||
+    (typeof gptDisposition?.details?.parent_output_result_id === 'string' ?
+      gptDisposition.details.parent_output_result_id : null);
+  const parentOutput = parentOutputId ? detail?.results.find(r => r.result_id === parentOutputId) : null;
   const claudeCall = detail?.calls.find(c => c.call_id === localCall?.parent_call_id) ||
     detail?.calls.find(c => c.call_id === paidResult?.call_id && !!c.requested_model) ||
     detail?.calls.find(c => !c.local_dispatch && !!c.requested_model);
@@ -109,7 +114,8 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
   const localModel = detail?.models.find(m => m.call_id === localCall?.call_id);
   const paidModel = detail?.models.find(m => m.call_id === paidResult?.call_id);
   const primaryModel = localModel || paidModel;
-  const deliveredRef = paidResult?.delivered_content_id || localResult?.delivered_content_id;
+  const deliveredRef = paidResults.length > 1 ? null :
+    paidResult?.delivered_content_id || localResult?.delivered_content_id;
   const selectedDisposition = detail?.dispositions.find(d => d.result_id === localResult?.result_id && !detail.dispositions.some(next => next.supersedes_id === d.disposition_id));
   const body = (ref: string | null | undefined) => ref ? bodies[ref] ?? null : null;
   const fallback = (ref: string | null | undefined) => ref ?
@@ -166,8 +172,9 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
             localModel={localModel?.reported_model || localModel?.requested_model || 'Unknown model'}
             downstreamModel={paidModel?.reported_model || paidModel?.requested_model || 'Paid model / unknown'} localState={fallback(localResult?.raw_content_id || localResult?.delivered_content_id)}
             downstreamState={fallback(paidResult?.delivered_content_id)} />
+          {paidResults.length > 1 && <p className="coverage-note">Multiple Claude results were delivered. See the timeline for their individual flows; this comparison has no single paid response.</p>}
           <BodyCard title="Response delivered to caller" content={body(deliveredRef)} fallback={fallback(deliveredRef)} />
-          {gptDisposition && <>
+          {gptDisposition && parentOutput && <>
             <BodyCard title="Parent-submitted answer (reported)"
               content={body(parentOutput?.raw_content_id)}
               fallback={fallback(parentOutput?.raw_content_id)} />

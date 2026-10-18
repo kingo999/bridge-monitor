@@ -3,13 +3,16 @@
 import hashlib
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 import psycopg
 from psycopg.types.json import Jsonb
 
 from bridge.runtime.admission import ARBITRATION_LOCK
 from contracts.outcomes import ParentAcknowledgement
+from contracts.events import EventEnvelope, EventType
 from service.ingest.lineage import would_create_cycle
+from service.ingest.store import ingest_batch
 
 
 @dataclass(frozen=True)
@@ -59,11 +62,14 @@ def record_parent_acknowledgement(dsn: str, *, call_id: str, producer_id: str,
         prior = conn.execute("SELECT result_id,actor_id,stage,judgment,reason,supersedes_id,"
             "input_sha256,output_result_id,details FROM dispositions WHERE disposition_id=%s",
             (report.acknowledgement_id,)).fetchone()
-        details = {"provenance": "parent_mcp_report", "producer_id": producer_id}
+        details = {"provenance": "parent_mcp_report", "producer_id": producer_id,
+                   "parent_output_result_id": output_result_id}
         expected = (report.result_id, actor_id, "gpt", report.judgment, report.reason,
                     report.supersedes_id, report.input_sha256, disposition_output_id, details)
         if prior:
-            if prior != expected:
+            if (prior[:8] != expected[:8] or
+                    prior[8].get("provenance") != "parent_mcp_report" or
+                    prior[8].get("parent_output_result_id") != output_result_id):
                 raise ValueError("acknowledgement ID conflicts with different report")
             return ParentAcknowledgementReceipt(report.acknowledgement_id,
                                                 output_result_id, report.judgment, False)
@@ -104,6 +110,17 @@ def record_parent_acknowledgement(dsn: str, *, call_id: str, producer_id: str,
             (report.acknowledgement_id, report.result_id, actor_id, report.judgment,
              report.reason, report.supersedes_id, report.input_sha256, disposition_output_id,
              Jsonb(details)))
+        if report.supersedes_id:
+            previous = conn.execute("SELECT judgment,output_result_id FROM dispositions "
+                "WHERE disposition_id=%s", (report.supersedes_id,)).fetchone()
+            if previous and previous[1]:
+                previous_relation = {"accepted": "accepted_contribution",
+                                     "revised": "revised_contribution",
+                                     "replaced": "replacement"}.get(previous[0])
+                if previous_relation:
+                    conn.execute("DELETE FROM result_links WHERE from_result_id=%s "
+                        "AND to_result_id=%s AND relation=%s",
+                        (report.result_id, previous[1], previous_relation))
         if output_result_id is not None and report.judgment != "unused":
             relation = {"accepted": "accepted_contribution",
                         "revised": "revised_contribution",
@@ -113,5 +130,22 @@ def record_parent_acknowledgement(dsn: str, *, call_id: str, producer_id: str,
             conn.execute("INSERT INTO result_links(from_result_id,to_result_id,relation) "
                 "VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
                 (report.result_id, output_result_id, relation))
+        event = EventEnvelope(
+            event_id=str(uuid.uuid5(uuid.NAMESPACE_URL,
+                f"bridge-monitor:parent-disposition:{report.acknowledgement_id}")),
+            event_type=EventType.DISPOSITION_RECORDED, schema_version=1,
+            producer_id=producer_id,
+            producer_incarnation=f"parent-report:{report.acknowledgement_id}",
+            producer_sequence=1, occurred_at=datetime.now(timezone.utc),
+            origin="observed", observation_layer="bridge", capture_completeness="complete",
+            task_id=owner[2], work_item_id=owner[1], call_id=call_id,
+            payload={"disposition_id": report.acknowledgement_id,
+                     "result_id": report.result_id, "actor_id": actor_id,
+                     "stage": "gpt", "judgment": report.judgment, "reason": report.reason,
+                     "supersedes_id": report.supersedes_id,
+                     "input_sha256": report.input_sha256,
+                     "output_result_id": disposition_output_id})
+        if ingest_batch(dsn, producer_id, [event], [], connection=conn) != ["committed"]:
+            raise RuntimeError("parent disposition event was not published")
         return ParentAcknowledgementReceipt(report.acknowledgement_id,
                                             output_result_id, report.judgment, True)

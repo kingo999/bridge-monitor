@@ -7,6 +7,52 @@ from service.queries.guidance import work_guidance, matches_guidance_filters
 from service.ingest.store import read_content
 
 
+def _gpt_work_judgments(conn, work_ids: list[str], as_of) -> dict[str, str]:
+    """Show one judgment only when the work has one delivered Claude result."""
+    if not work_ids:
+        return {}
+    deliveries = conn.execute("""SELECT c.work_item_id,r.result_id FROM results r
+        JOIN calls c ON c.call_id=r.call_id
+        JOIN work_items w ON w.work_item_id=c.work_item_id
+        WHERE c.work_item_id=ANY(%s) AND c.parent_call_id='gpt:' || w.task_id
+          AND r.delivered_at IS NOT NULL AND r.delivered_at<=%s
+          AND r.delivered_content_id IS NOT NULL""", (work_ids, as_of)).fetchall()
+    by_work = {}
+    for work_id, result_id in deliveries:
+        by_work.setdefault(work_id, []).append(result_id)
+    result_ids = [result_id for _, result_id in deliveries]
+    if not result_ids:
+        return {}
+    candidates = conn.execute("""SELECT d.disposition_id,d.result_id,d.judgment,
+        d.supersedes_id FROM dispositions d
+        JOIN results r ON r.result_id=d.result_id
+        JOIN calls c ON c.call_id=r.call_id
+        JOIN work_items w ON w.work_item_id=c.work_item_id
+        JOIN content_objects content ON content.content_id=r.delivered_content_id
+        LEFT JOIN runtime_disposition_obligations o ON o.result_id=r.result_id
+          AND o.consumer_call_id=c.parent_call_id AND o.stage='gpt' AND o.part_id IS NULL
+        WHERE d.result_id=ANY(%s) AND d.stage='gpt' AND d.recorded_at<=%s
+          AND d.actor_id='gpt-parent:' || c.parent_call_id
+          AND d.input_sha256=content.sha256
+          AND (w.origin<>'observed' OR
+               (o.content_sha256=content.sha256 AND
+                d.details->>'provenance'='parent_mcp_report'))""",
+        (result_ids, as_of)).fetchall()
+    by_result = {}
+    for disposition_id, result_id, judgment, supersedes_id in candidates:
+        by_result.setdefault(result_id, []).append((disposition_id, judgment, supersedes_id))
+    selected = {}
+    for work_id, delivered in by_work.items():
+        if len(delivered) != 1:
+            continue
+        rows = by_result.get(delivered[0], [])
+        superseded = {target for _, _, target in rows if target}
+        effective = [judgment for identifier, judgment, _ in rows if identifier not in superseded]
+        if len(effective) == 1:
+            selected[work_id] = effective[0]
+    return selected
+
+
 def derive_agent_statuses(events: list[dict]) -> list[dict]:
     agent_calls = {row["call_id"] for row in events
                    if row["event_type"] == "attempt.status" and row["call_id"]}
@@ -96,9 +142,13 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
              query.created_until, query.created_until, query.completed_only, as_of,
              filtering, eligible_ids, limit, 0 if filtering else offset)).fetchall()
             page_facts = work_guidance(conn, {row[0] for row in rows}, as_of)
+            gpt_judgments = (_gpt_work_judgments(conn, [row[0] for row in rows], as_of)
+                             if query.consumer_stage == "gpt" else {})
     return [dict(zip(("work_item_id", "task_id", "category", "origin", "created_at",
                       "resolution", "resolved_at", "routed", "paid_route",
                       "requested_model", "reported_model", "disposition_judgment"), row),
+                 **({"disposition_judgment": gpt_judgments.get(row[0])}
+                    if query.consumer_stage == "gpt" else {}),
                  guidance_group=page_facts[row[0]]["guidance_group"],
                  failure_categories=page_facts[row[0]]["failure_categories"],
                  repair_efforts=page_facts[row[0]]["repair_efforts"],
@@ -157,8 +207,24 @@ def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100
                   AND e.payload->>'destination'='skynet'""", (work_item_id,)).fetchall()
             dispositions = conn.execute("""SELECT d.disposition_id,d.result_id,d.actor_id,d.stage,d.judgment,
                 d.reason,d.supersedes_id,d.recorded_at,d.details,d.part_id,d.input_sha256,
-                d.output_result_id FROM dispositions d JOIN results r ON r.result_id=d.result_id
-                JOIN calls c ON c.call_id=r.call_id WHERE c.work_item_id=%s
+                d.output_result_id,
+                CASE WHEN d.stage='gpt' THEN COALESCE(
+                    d.actor_id='gpt-parent:' || c.parent_call_id
+                    AND c.parent_call_id='gpt:' || w.task_id
+                    AND r.delivered_at IS NOT NULL
+                    AND d.input_sha256=content.sha256
+                    AND (w.origin<>'observed' OR
+                         (o.content_sha256=content.sha256 AND
+                          d.details->>'provenance'='parent_mcp_report')),false)
+                ELSE NULL END AS valid_parent_report
+                FROM dispositions d JOIN results r ON r.result_id=d.result_id
+                JOIN calls c ON c.call_id=r.call_id
+                JOIN work_items w ON w.work_item_id=c.work_item_id
+                LEFT JOIN content_objects content ON content.content_id=r.delivered_content_id
+                LEFT JOIN runtime_disposition_obligations o ON o.result_id=r.result_id
+                  AND o.consumer_call_id=c.parent_call_id AND o.stage='gpt'
+                  AND o.part_id IS NULL
+                WHERE c.work_item_id=%s
                 ORDER BY d.recorded_at,d.disposition_id""", (work_item_id,)).fetchall()
             resolutions = conn.execute("""SELECT resolution_id,outcome,final_result_id,recorded_at
                 FROM work_resolutions WHERE work_item_id=%s ORDER BY recorded_at,resolution_id""",

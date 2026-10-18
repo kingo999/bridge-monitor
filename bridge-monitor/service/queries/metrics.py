@@ -62,9 +62,28 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
                               (result_guidance_group(guidance[work_id], call_id, delivered_at)
                                == query.guidance_group if pack_filter else work_id in dispatched)}
             disposition_rows = defaultdict(list)
-            for disposition_id, result_id, judgment, supersedes_id in conn.execute("""SELECT
-                disposition_id,result_id,judgment,supersedes_id FROM dispositions
-                WHERE stage=%s AND recorded_at<=%s""", (query.consumer_stage, as_of)):
+            if query.consumer_stage == "gpt":
+                dispositions = conn.execute("""SELECT d.disposition_id,d.result_id,
+                    d.judgment,d.supersedes_id FROM dispositions d
+                    JOIN results r ON r.result_id=d.result_id
+                    JOIN calls c ON c.call_id=r.call_id
+                    JOIN work_items w ON w.work_item_id=c.work_item_id
+                    JOIN content_objects content ON content.content_id=r.delivered_content_id
+                    LEFT JOIN runtime_disposition_obligations o ON o.result_id=r.result_id
+                      AND o.consumer_call_id=c.parent_call_id AND o.stage='gpt'
+                      AND o.part_id IS NULL
+                    WHERE d.stage='gpt' AND d.recorded_at<=%s
+                      AND d.actor_id='gpt-parent:' || c.parent_call_id
+                      AND d.input_sha256=content.sha256
+                      AND (w.origin<>'observed' OR
+                           (o.content_sha256=content.sha256 AND
+                            d.details->>'provenance'='parent_mcp_report'))""",
+                    (as_of,))
+            else:
+                dispositions = conn.execute("""SELECT disposition_id,result_id,judgment,
+                    supersedes_id FROM dispositions WHERE stage=%s AND recorded_at<=%s""",
+                    (query.consumer_stage, as_of))
+            for disposition_id, result_id, judgment, supersedes_id in dispositions:
                 if result_id in result_ids:
                     disposition_rows[result_id].append((disposition_id, judgment, supersedes_id))
             judgments = {}

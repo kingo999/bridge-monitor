@@ -52,6 +52,8 @@ def test_parent_mcp_reports_owned_result_and_publishes_once(runtime_dsn, tmp_pat
     assert rows == [(report["acknowledgement_id"],)]
 
     unrelated = _coordinator(runtime_dsn, tmp_path)
+    assert service.get_execution_status(claude)["result_sha256"] == paid.answer.sha256
+    assert unrelated.get_execution_status(claude)["result_sha256"] is None
     with pytest.raises(PermissionError):
         unrelated.acknowledge_claude_result(claude, report)
     invalid = {**report, "acknowledgement_id": str(uuid.uuid4()),
@@ -61,6 +63,30 @@ def test_parent_mcp_reports_owned_result_and_publishes_once(runtime_dsn, tmp_pat
     with psycopg.connect(runtime_dsn) as conn:
         assert conn.execute("SELECT count(*) FROM dispositions WHERE disposition_id=%s",
                             (invalid["acknowledgement_id"],)).fetchone()[0] == 0
+
+
+def test_parent_report_event_commits_with_disposition_without_emitter(runtime_dsn, tmp_path):
+    claude, _, bindings = _seed_chain(runtime_dsn, recipient_call_id="gpt")
+    paid = _paid_result(runtime_dsn, claude, bindings[claude])
+    service = _coordinator(runtime_dsn, tmp_path)
+    service.owned_calls.add(claude)
+    report = {"acknowledgement_id": str(uuid.uuid4()),
+              "result_id": paid.answer.result_id, "input_sha256": paid.answer.sha256,
+              "judgment": "accepted", "answer_text": "518"}
+
+    def unavailable(*args, **kwargs):
+        raise RuntimeError("emitter unavailable after DB commit")
+
+    service.emitter.emit = unavailable
+    receipt = service.acknowledge_claude_result(claude, report)
+    assert receipt["acknowledgement_id"] == report["acknowledgement_id"]
+    with psycopg.connect(runtime_dsn) as conn:
+        assert conn.execute("SELECT count(*) FROM events WHERE event_type=%s "
+            "AND payload->>'disposition_id'=%s", (EventType.DISPOSITION_RECORDED.value,
+            report["acknowledgement_id"])).fetchone()[0] == 1
+        assert conn.execute("SELECT count(*) FROM publication_stream p JOIN events e "
+            "ON e.event_id=p.event_id WHERE e.payload->>'disposition_id'=%s",
+            (report["acknowledgement_id"],)).fetchone()[0] == 1
 
 
 def test_acknowledgement_tool_exists_only_for_parent_audience(runtime_dsn, tmp_path):

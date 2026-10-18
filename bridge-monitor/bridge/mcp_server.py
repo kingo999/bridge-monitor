@@ -490,6 +490,8 @@ class BridgeCoordinator:
         return {"state": "completed", "call_id": lease.call_id, "result_id": result_id,
                 "answer": result.answer if completion.answer.delivered else None,
                 "delivered": completion.answer.delivered,
+                "result_sha256": (completion.answer.sha256
+                                  if completion.answer.delivered else None),
                 "reported_model": result.reported_model,
                 "accounting_complete": completion.accounting_complete}
 
@@ -542,13 +544,17 @@ class BridgeCoordinator:
         with psycopg.connect(self.dsn) as conn:
             row = conn.execute("SELECT state,pool,slot_held,policy_version,lease_id FROM runtime_jobs "
                                "WHERE call_id=%s", (call_id,)).fetchone()
-            result = conn.execute("SELECT result_id,delivered_at FROM results WHERE call_id=%s "
-                                  "ORDER BY delivered_at DESC NULLS LAST LIMIT 1", (call_id,)).fetchone()
+            result = conn.execute("SELECT r.result_id,r.delivered_at,content.sha256 "
+                "FROM results r LEFT JOIN content_objects content "
+                "ON content.content_id=r.delivered_content_id WHERE r.call_id=%s "
+                "ORDER BY r.delivered_at DESC NULLS LAST LIMIT 1", (call_id,)).fetchone()
         if not row:
             return {"state": "unknown", "call_id": call_id, "capture": self.emitter.health()}
         return {"state": row[0], "pool": row[1], "slot_held": row[2],
                 "policy_version": row[3], "lease_id": row[4], "call_id": call_id,
                 "result_id": result[0] if result else None,
+                "result_sha256": (result[2] if result and result[1] and
+                                  call_id in self.owned_calls else None),
                 "delivered": bool(result and result[1]), "capture": self.emitter.health()}
 
     def cancel_work(self, call_id: str, *, reason: str) -> dict:
@@ -576,21 +582,6 @@ class BridgeCoordinator:
         claim = ParentAcknowledgement.model_validate(report)
         receipt = record_parent_acknowledgement(self.dsn, call_id=call_id,
             producer_id=self.emitter.producer_id, report=claim)
-        if receipt.created:
-            with psycopg.connect(self.dsn) as conn:
-                parent_id, work_id, task_id = conn.execute(
-                    "SELECT c.parent_call_id,c.work_item_id,w.task_id FROM calls c "
-                    "JOIN work_items w ON w.work_item_id=c.work_item_id WHERE c.call_id=%s",
-                    (call_id,)).fetchone()
-            self.emitter.emit(EventType.DISPOSITION_RECORDED, call_id=call_id,
-                task_id=task_id, work_item_id=work_id,
-                payload={"disposition_id": claim.acknowledgement_id,
-                         "result_id": claim.result_id, "actor_id": f"gpt-parent:{parent_id}",
-                         "stage": "gpt", "judgment": claim.judgment, "reason": claim.reason,
-                         "supersedes_id": claim.supersedes_id,
-                         "input_sha256": claim.input_sha256,
-                         "output_result_id": (receipt.output_result_id
-                                              if claim.judgment != "unused" else None)})
         return {"acknowledgement_id": receipt.acknowledgement_id,
                 "output_result_id": receipt.output_result_id,
                 "judgment": receipt.judgment}

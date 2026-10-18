@@ -1,3 +1,5 @@
+import hashlib
+import uuid
 from pathlib import Path
 
 import psycopg
@@ -87,10 +89,44 @@ def test_parent_submitted_output_is_addressable_in_work_detail(runtime_dsn):
     assert output["raw_content_id"] in detail["content_states"]
     assert any(d["stage"] == "gpt" and d["output_result_id"] == output["result_id"]
                for d in detail["dispositions"])
+    assert next(d for d in detail["dispositions"] if d["stage"] == "gpt")[
+        "valid_parent_report"] is True
     page = list_work_items(runtime_dsn, CohortQuery(origin="synthetic",
                            consumer_stage="gpt"), limit=100)
     assert next(row for row in page if row["work_item_id"] == work_id)[
         "disposition_judgment"] == "accepted"
+    with psycopg.connect(runtime_dsn) as conn:
+        conn.execute("UPDATE dispositions SET input_sha256=%s WHERE result_id=%s "
+                     "AND stage='gpt'", ("0" * 64, paid.answer.result_id))
+    invalid_detail = read_work_item_detail(runtime_dsn, work_id)
+    assert next(d for d in invalid_detail["dispositions"] if d["stage"] == "gpt")[
+        "valid_parent_report"] is False
+    invalid = list_work_items(runtime_dsn, CohortQuery(origin="synthetic",
+                              consumer_stage="gpt"), limit=100)
+    assert next(row for row in invalid if row["work_item_id"] == work_id)[
+        "disposition_judgment"] is None
+    with psycopg.connect(runtime_dsn) as conn:
+        conn.execute("UPDATE dispositions SET input_sha256=%s WHERE result_id=%s "
+                     "AND stage='gpt'", (paid.answer.sha256, paid.answer.result_id))
+        parent = conn.execute("SELECT parent_call_id FROM calls WHERE call_id=%s",
+                              (claude,)).fetchone()[0]
+        sibling = f"sibling-history-{uuid.uuid4()}"
+        content_id = f"sibling-history-content-{uuid.uuid4()}"
+        result_id = f"sibling-history-result-{uuid.uuid4()}"
+        conn.execute("INSERT INTO calls(call_id,work_item_id,parent_call_id,created_at) "
+                     "VALUES(%s,%s,%s,now())", (sibling, work_id, parent))
+        conn.execute("INSERT INTO content_objects(content_id,raw_bytes,byte_length,sha256,"
+                     "role,direction,content_type,encoding,origin,capture_layer,completeness,"
+                     "block_order) VALUES(%s,%s,7,%s,'assistant','in',"
+                     "'text/plain','utf-8','synthetic','test','complete',0)",
+                     (content_id, b'sibling', hashlib.sha256(b'sibling').hexdigest()))
+        conn.execute("INSERT INTO results(result_id,call_id,raw_content_id,"
+                     "delivered_content_id,delivered_at) VALUES(%s,%s,%s,%s,now())",
+                     (result_id, sibling, content_id, content_id))
+    siblings = list_work_items(runtime_dsn, CohortQuery(origin="synthetic",
+                               consumer_stage="gpt"), limit=100)
+    assert next(row for row in siblings if row["work_item_id"] == work_id)[
+        "disposition_judgment"] is None
 
 
 def test_conflicting_gpt_judgments_do_not_pick_an_arbitrary_work_list_value(runtime_dsn):

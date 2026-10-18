@@ -21,7 +21,8 @@ from tests.integration.test_admission import _policy
 def test_silent_agent_job_returns_paid_continuation_and_retains_qwen_slot(runtime_dsn, tmp_path):
     dsn = runtime_dsn
     proposed = _policy().model_dump()
-    proposed["limits"]["qwen_execution_seconds"] = 2
+    # Allow database setup under full-suite load before testing silent polling.
+    proposed["limits"]["qwen_execution_seconds"] = 8
     proposed["deployment"].update(qwen_model_profile="qwen-test",
                                   qwen_model_digest="a" * 64,
                                   qwen_output_tokens=20)
@@ -58,7 +59,7 @@ def test_silent_agent_job_returns_paid_continuation_and_retains_qwen_slot(runtim
     qwen = QwenAgentAdapter(httpx.Client(transport=httpx.MockTransport(agent)),
         endpoint="http://agent", token="test-token", model="qwen-test",
         expected_digest="a" * 64, context_tokens=1000, output_tokens=20,
-        timeout_seconds=2, first_output_seconds=0.5, idle_output_seconds=0.5,
+        timeout_seconds=8, first_output_seconds=0.5, idle_output_seconds=0.5,
         ack_seconds=0.1, poll_seconds=0.01, poll_timeout_seconds=0.1,
         poll_failures=2, keep_alive="10m", temperature=0.0)
 

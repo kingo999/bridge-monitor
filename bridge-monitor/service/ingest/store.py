@@ -1,4 +1,5 @@
 import hashlib
+from contextlib import nullcontext
 from datetime import timezone
 
 import psycopg
@@ -78,7 +79,8 @@ def _reconcile_unresolved(conn) -> None:
 
 
 def ingest_batch(dsn: str, authenticated_producer: str,
-                 events: list[EventEnvelope], content: list[ContentObject]) -> list[str]:
+                 events: list[EventEnvelope], content: list[ContentObject],
+                 *, connection: psycopg.Connection | None = None) -> list[str]:
     if not authenticated_producer:
         raise PermissionError("authenticated producer required")
     if any(e.producer_id != authenticated_producer for e in events):
@@ -86,7 +88,7 @@ def ingest_batch(dsn: str, authenticated_producer: str,
     for event in events:
         validate_projectable_event(event)
     receipts: list[str] = []
-    with psycopg.connect(dsn) as conn:
+    with (nullcontext(connection) if connection is not None else psycopg.connect(dsn)) as conn:
         with conn.transaction():
             seen_content = set()
             for item in content:

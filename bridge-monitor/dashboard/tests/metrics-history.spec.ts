@@ -88,6 +88,26 @@ test('GPT acknowledgement shows parent-submitted answer with capture boundary', 
   await expect(page.locator('.inspector-footer')).toContainText('GPT disposition: accepted');
   await expect(page.getByText('Final Codex answer not independently observed',
     { exact: true })).toBeVisible();
+
+  const sibling = `parent-claude-sibling-${nonce}`;
+  const siblingContent = `parent-paid-sibling-content-${nonce}`;
+  const second = await request.post('/api/v1/events/batch', {
+    headers: { Authorization: 'Bearer producer-secret' },
+    data: { events: [
+      event(8, 'call.received', { call_id: sibling, requested_model: 'sonnet-seed',
+        payload: { parent_call_id: parent } }),
+      event(9, 'result.delivered', { call_id: sibling,
+        payload: { result_id: `parent-paid-sibling-${nonce}`,
+          raw_content_id: siblingContent, delivered_content_id: siblingContent } }),
+    ], content: [content(siblingContent, 'Sibling Claude answer')] },
+  });
+  expect(second.ok()).toBe(true);
+  await page.reload();
+  await page.getByLabel('Origin').selectOption('imported');
+  await page.getByLabel('Consumer').selectOption('gpt');
+  await page.getByRole('button', { name: new RegExp(work) }).first().click();
+  await expect(page.locator('.inspector-footer')).toContainText('GPT disposition: Unknown');
+  await expect(page.getByText('Parent-submitted answer (reported)')).toHaveCount(0);
 });
 
 test('resolved work without a delegation record is visible separately from pending routing', async ({ page, request }) => {

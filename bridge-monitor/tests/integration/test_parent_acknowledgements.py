@@ -46,7 +46,8 @@ def test_undelivered_claude_result_has_no_gpt_obligation(runtime_dsn):
 
 
 def _ack(dsn, claude, paid, *, judgment="accepted", answer="GPT retained 518",
-         acknowledgement_id=None, supersedes_id=None, input_sha256=None):
+         acknowledgement_id=None, supersedes_id=None, input_sha256=None,
+         producer_id="test-parent-producer"):
     module = importlib.import_module("bridge.runtime.parent_acknowledgements")
     contract = importlib.import_module("contracts.outcomes").ParentAcknowledgement
     report = contract.model_validate({
@@ -56,7 +57,7 @@ def _ack(dsn, claude, paid, *, judgment="accepted", answer="GPT retained 518",
         "judgment": judgment, "reason": "parent assessment",
         "answer_text": answer, "supersedes_id": supersedes_id})
     return module.record_parent_acknowledgement(dsn, call_id=claude,
-        producer_id="test-parent-producer", report=report)
+        producer_id=producer_id, report=report)
 
 
 def test_parent_acceptance_retains_exact_output_and_replays_once(runtime_dsn):
@@ -66,7 +67,7 @@ def test_parent_acceptance_retains_exact_output_and_replays_once(runtime_dsn):
     first = _ack(runtime_dsn, claude, paid, answer="Résumé: 518 ✨",
                  acknowledgement_id=report_id)
     replay = _ack(runtime_dsn, claude, paid, answer="Résumé: 518 ✨",
-                  acknowledgement_id=report_id)
+                  acknowledgement_id=report_id, producer_id="retry-producer")
     assert first.created and not replay.created
     assert first.output_result_id == replay.output_result_id
     with psycopg.connect(runtime_dsn) as conn:
@@ -110,10 +111,16 @@ def test_unused_parent_answer_is_retained_without_claiming_output_contribution(r
     paid = _paid_result(runtime_dsn, claude, bindings[claude])
     receipt = _ack(runtime_dsn, claude, paid, judgment="unused", answer="Different topic")
     with psycopg.connect(runtime_dsn) as conn:
-        output = conn.execute("SELECT output_result_id FROM dispositions WHERE "
-                              "disposition_id=%s", (receipt.acknowledgement_id,)).fetchone()[0]
+        output, details = conn.execute("SELECT output_result_id,details FROM dispositions WHERE "
+                              "disposition_id=%s", (receipt.acknowledgement_id,)).fetchone()
     assert receipt.output_result_id is not None
     assert output is None
+    assert details["parent_output_result_id"] == receipt.output_result_id
+    assert not _ack(runtime_dsn, claude, paid, judgment="unused", answer="Different topic",
+                    acknowledgement_id=receipt.acknowledgement_id).created
+    with pytest.raises(ValueError, match="conflicts with different report"):
+        _ack(runtime_dsn, claude, paid, judgment="unused", answer="Changed topic",
+             acknowledgement_id=receipt.acknowledgement_id)
 
 
 def test_parent_report_rejects_wrong_call_hash_and_conflicting_replay(runtime_dsn):
@@ -135,6 +142,27 @@ def test_parent_report_rejects_wrong_call_hash_and_conflicting_replay(runtime_ds
         count = conn.execute("SELECT count(*) FROM dispositions WHERE result_id=%s "
                              "AND stage='gpt'", (paid.answer.result_id,)).fetchone()[0]
     assert count == 1
+
+
+def test_event_publication_failure_rolls_back_parent_report(runtime_dsn, monkeypatch):
+    module = importlib.import_module("bridge.runtime.parent_acknowledgements")
+    claude, _, bindings = _seed_chain(runtime_dsn, recipient_call_id="gpt")
+    paid = _paid_result(runtime_dsn, claude, bindings[claude])
+    report_id = str(uuid.uuid4())
+
+    def fail_publication(*args, **kwargs):
+        raise RuntimeError("event transaction failed")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(module, "ingest_batch", fail_publication)
+        with pytest.raises(RuntimeError, match="event transaction failed"):
+            _ack(runtime_dsn, claude, paid, acknowledgement_id=report_id)
+    with psycopg.connect(runtime_dsn) as conn:
+        assert conn.execute("SELECT count(*) FROM dispositions WHERE disposition_id=%s",
+                            (report_id,)).fetchone()[0] == 0
+        assert conn.execute("SELECT count(*) FROM result_links WHERE from_result_id=%s",
+                            (paid.answer.result_id,)).fetchone()[0] == 0
+    assert _ack(runtime_dsn, claude, paid, acknowledgement_id=report_id).created
 
 
 def test_parent_contract_rejects_actor_claim_and_missing_answer():
@@ -164,6 +192,23 @@ def test_changed_parent_judgment_requires_supersession(runtime_dsn):
                                  "(SELECT 1 FROM dispositions s WHERE s.supersedes_id=d.disposition_id)",
                                  (paid.answer.result_id,)).fetchall()
     assert effective == [(second.acknowledgement_id,)]
+
+
+@pytest.mark.parametrize("new_judgment,new_answer,new_relation", [
+    ("revised", "corrected", "revised_contribution"),
+    ("unused", "solved separately", None),
+])
+def test_supersession_replaces_effective_parent_lineage(runtime_dsn,
+        new_judgment, new_answer, new_relation):
+    claude, _, bindings = _seed_chain(runtime_dsn, recipient_call_id="gpt")
+    paid = _paid_result(runtime_dsn, claude, bindings[claude])
+    first = _ack(runtime_dsn, claude, paid, judgment="accepted", answer="kept")
+    second = _ack(runtime_dsn, claude, paid, judgment=new_judgment,
+                  answer=new_answer, supersedes_id=first.acknowledgement_id)
+    with psycopg.connect(runtime_dsn) as conn:
+        links = conn.execute("SELECT to_result_id,relation FROM result_links "
+            "WHERE from_result_id=%s", (paid.answer.result_id,)).fetchall()
+    assert links == ([(second.output_result_id, new_relation)] if new_relation else [])
 
 
 def test_sibling_claude_results_have_separate_judgments_and_shared_parent_output(runtime_dsn):

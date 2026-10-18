@@ -52,7 +52,7 @@ export type WorkDetail = {
     provenance: string; price_basis: string | null }>;
   decisions: Array<{ decision_id: string; route: string; eligibility: string; reason: string | null; policy_version: string | null; child_call_id: string | null; guidance_manifest: Record<string, unknown>; gate_facts: Record<string, unknown>; decided_at: string }>;
   supplied_decision_ids?: string[];
-  dispositions: Array<{ disposition_id: string; result_id: string; actor_id: string; stage: string; judgment: string; reason: string | null; supersedes_id: string | null; recorded_at: string; details?: Record<string, unknown>; part_id?: string | null; input_sha256?: string | null; output_result_id?: string | null }>;
+  dispositions: Array<{ disposition_id: string; result_id: string; actor_id: string; stage: string; judgment: string; reason: string | null; supersedes_id: string | null; recorded_at: string; details?: Record<string, unknown>; part_id?: string | null; input_sha256?: string | null; output_result_id?: string | null; valid_parent_report?: boolean | null }>;
   resolutions: Array<{ resolution_id: string; outcome: string; final_result_id: string | null; recorded_at: string }>;
   events: Array<{ event_id: string; event_type: string; occurred_at: string; received_at: string; call_id: string | null; worker_instance_id: string | null; capture_completeness: string; payload: Record<string, unknown> }>;
   events_truncated?: boolean;

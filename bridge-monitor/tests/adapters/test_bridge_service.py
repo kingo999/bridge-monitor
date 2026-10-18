@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 import threading
 import time
@@ -145,6 +146,9 @@ def test_bridge_operation_captures_prompt_and_delivered_answer(runtime_dsn, tmp_
     outcome = service.delegate_claude(task, "Exact GPT prompt", requested_model="claude-test",
                                       reserve_tokens=100)
     assert outcome["state"] == "completed" and outcome["answer"] == "Claude answer"
+    assert outcome["result_sha256"] == hashlib.sha256(b"Claude answer").hexdigest()
+    assert service.get_execution_status(outcome["call_id"])["result_sha256"] == outcome[
+        "result_sha256"]
     with psycopg.connect(dsn) as conn:
         assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
                             (outcome["call_id"],)).fetchone() == ("completed", False)
@@ -173,6 +177,7 @@ def test_structured_claude_reply_retains_raw_and_delivered_bodies(runtime_dsn, t
     outcome = service.delegate_claude(task, "Exact GPT prompt", requested_model="claude-test",
                                       reserve_tokens=100)
     assert outcome["state"] == "completed"
+    assert outcome["result_sha256"] == hashlib.sha256(b"Useful answer").hexdigest()
     with psycopg.connect(dsn) as conn:
         raw, delivered = conn.execute("SELECT r.raw_content_id,r.delivered_content_id "
             "FROM results r WHERE r.result_id=%s", (outcome["result_id"],)).fetchone()

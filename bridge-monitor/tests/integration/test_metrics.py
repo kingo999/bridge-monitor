@@ -111,6 +111,10 @@ def test_gpt_stage_counts_delivered_claude_results_including_missing_ack(seeded)
             "'gpt-metric-result-1',%s,'gpt','accepted',%s,%s)",
             (f"gpt-parent:{parent}", acknowledged_at,
              hashlib.sha256(b"Claude answer 1").hexdigest()))
+        conn.execute("INSERT INTO dispositions(disposition_id,result_id,actor_id,stage,"
+            "judgment,recorded_at,input_sha256) VALUES('gpt-metric-bad-hash',"
+            "'gpt-metric-result-2',%s,'gpt','accepted',%s,%s)",
+            (f"gpt-parent:{parent}", acknowledged_at, "0" * 64))
     before = query_metrics(seeded, CohortQuery(origin="synthetic", consumer_stage="gpt",
         as_of=delivered_at + timedelta(milliseconds=500)))
     after = query_metrics(seeded, CohortQuery(origin="synthetic", consumer_stage="gpt"))
