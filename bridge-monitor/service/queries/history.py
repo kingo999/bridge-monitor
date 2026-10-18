@@ -176,8 +176,10 @@ def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100
             if work is None:
                 return None
             calls = conn.execute("""SELECT c.call_id,c.parent_call_id,c.requested_model,c.created_at,
+                c.execution_mode,
                 EXISTS (SELECT 1 FROM events e WHERE e.call_id=c.call_id AND e.event_type='call.dispatched'
-                    AND e.payload->>'destination'='skynet') AS local_dispatch
+                    AND e.payload->>'destination'='skynet'
+                    AND c.execution_mode='production') AS local_dispatch
                 FROM calls c WHERE c.work_item_id=%s ORDER BY c.created_at,c.call_id""",
                 (work_item_id,)).fetchall()
             messages = conn.execute("""SELECT m.message_id,m.call_id,m.role,m.direction,

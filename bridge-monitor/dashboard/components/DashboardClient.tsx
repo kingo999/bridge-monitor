@@ -1,29 +1,33 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api, AuthenticationRequired, type CohortFilters } from '@/lib/api';
+import { api, AuthenticationRequired, type CohortFilters, type RouterFilters } from '@/lib/api';
 import { connectEvents, type StreamState } from '@/lib/events';
-import type { MetricSet, Snapshot, WorkItem } from '@/lib/contracts.generated';
+import type { MetricSet, ShadowCohort as ShadowCohortReport, Snapshot, WorkItem } from '@/lib/contracts.generated';
 import { matchesMetric, metricLabel, type MetricKey } from '@/lib/selection';
 import CohortControls from './CohortControls';
 import ExchangeInspector from './ExchangeInspector';
 import FlowGraph from './FlowGraph';
 import MetricStrip from './MetricStrip';
 import WorkList from './WorkList';
+import ShadowCohort from './ShadowCohort';
 
 const initialFilters: CohortFilters = {
   origin: 'observed', consumerStage: 'claude', createdFrom: '', createdUntil: '', completedOnly: false,
   guidanceGroup: '', failureCategory: '', repairEffort: '', exampleReuseStatus: '',
 };
+const initialRouterFilters: RouterFilters = { modelProfile: '', promptVersion: '', verifierRef: '' };
 
 export default function DashboardClient() {
   const [auth, setAuth] = useState<'checking' | 'login' | 'ready'>('checking');
   const [operatorToken, setOperatorToken] = useState('');
   const [loginError, setLoginError] = useState('');
   const [filters, setFilters] = useState<CohortFilters>(initialFilters);
+  const [routerFilters, setRouterFilters] = useState<RouterFilters>(initialRouterFilters);
   const [mode, setMode] = useState<'live' | 'history'>('live');
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [metrics, setMetrics] = useState<MetricSet | null>(null);
+  const [shadowCohort, setShadowCohort] = useState<ShadowCohortReport | null>(null);
   const [items, setItems] = useState<WorkItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedMetric, setSelectedMetric] = useState<MetricKey | null>(null);
@@ -45,6 +49,7 @@ export default function DashboardClient() {
   const expandedListTail = useRef<string | null>(null);
   const workItemMaxLimit = useRef(100);
   const filtersRef = useRef(filters);
+  const routerFiltersRef = useRef(routerFilters);
   const latestOffset = useRef(0);
   const reloadSequence = useRef(0);
   const toggleExpanded = useCallback(() => setExpanded(value => !value), []);
@@ -54,6 +59,7 @@ export default function DashboardClient() {
   useEffect(() => { pausedRef.current = paused; }, [paused]);
   useEffect(() => { selectedRef.current = selectedId; }, [selectedId]);
   useEffect(() => { filtersRef.current = filters; }, [filters]);
+  useEffect(() => { routerFiltersRef.current = routerFilters; }, [routerFilters]);
 
   useEffect(() => {
     api.session().then(value => {
@@ -70,8 +76,9 @@ export default function DashboardClient() {
       const firstLimit = expandedListTail.current ?
         Math.min(workItemMaxLimit.current, Math.max(100, latestOffset.current + 100)) : 100;
       const nextSnapshot = includeSnapshot ? await api.snapshot('all') : null;
-      const [nextMetrics, firstPage] = await Promise.all([
+      const [nextMetrics, firstPage, nextShadow] = await Promise.all([
         api.metrics(cohort), api.workItems(cohort, 0, firstLimit),
+        api.routerCohort(cohort, routerFiltersRef.current),
       ]);
       const nextItems = [...firstPage];
       let page = firstPage;
@@ -85,6 +92,7 @@ export default function DashboardClient() {
       if (sequence !== reloadSequence.current) return;
       if (nextSnapshot) { setSnapshot(nextSnapshot); cursorRef.current = Math.max(cursorRef.current, nextSnapshot.cursor.position); }
       setMetrics(nextMetrics);
+      setShadowCohort(nextShadow);
       setItems(nextItems);
       setMore(page.length === pageLimit);
       latestOffset.current = nextItems.length;
@@ -169,6 +177,12 @@ export default function DashboardClient() {
     setFilters(next);
   }
 
+  function changeRouterFilters(next: RouterFilters) {
+    routerFiltersRef.current = next;
+    setRouterFilters(next);
+    void reload(filters);
+  }
+
   const visibleItems = items.filter(item => matchesMetric(item, selectedMetric) &&
     `${item.work_item_id} ${item.category || ''} ${item.reported_model || ''}`.toLowerCase().includes(search.toLowerCase()));
   const liveItems = snapshot?.work_items || [];
@@ -198,6 +212,7 @@ export default function DashboardClient() {
         {!!snapshot?.status.known_gaps && <span>{snapshot.status.known_gaps} known capture gap(s). </span>}</div>}
     <MetricStrip report={metrics} selected={selectedMetric} onSelect={setSelectedMetric}
       consumerStage={filters.consumerStage} />
+    <ShadowCohort report={shadowCohort} filters={routerFilters} onChange={changeRouterFilters} />
     {selectedMetric && <p className="filter-note">Loaded work list filtered by {metricLabel(selectedMetric, filters.consumerStage)}. Numerator/denominator and coverage come from the service; result-unit metrics may map several results to one work item.</p>}
     <div className="dashboard-grid"><div className="left-column">
       <FlowGraph status={snapshot?.status || null} capacity={snapshot?.capacity || null} items={liveItems} executions={snapshot?.worker_executions || []} selectedId={selectedId}

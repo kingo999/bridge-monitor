@@ -7,6 +7,8 @@ from service.http.auth import require_browser_operator
 from service.queries.history import list_work_items, read_output_preview, read_work_item_detail
 from service.queries.metrics import query_metrics
 from service.queries.snapshot import read_snapshot
+from service.queries.router import (RouterCohortFilter, query_shadow_cohort,
+                                    read_router_audit)
 
 
 def query_router(dsn: str, operator_token: str, sessions: dict, *,
@@ -90,5 +92,30 @@ def query_router(dsn: str, operator_token: str, sessions: dict, *,
                                          created_until, as_of, completed_only,
                                          guidance_group, failure_category, repair_effort,
                                          example_reuse_status))
+
+    @router.get("/router/cohort")
+    def router_cohort(request: Request, authorization: str | None = Header(default=None),
+                      origin: str = "observed", created_from: datetime | None = None,
+                      created_until: datetime | None = None,
+                      model_profile: str | None = None, prompt_version: str | None = None,
+                      verifier_ref: str | None = None, work_item_id: str | None = None):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        try:
+            filters = RouterCohortFilter(origin=origin, created_from=created_from,
+                created_until=created_until, model_profile=model_profile,
+                prompt_version=prompt_version, verifier_ref=verifier_ref,
+                work_item_id=work_item_id)
+            return query_shadow_cohort(dsn, filters)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @router.get("/router/audit/{work_item_id}")
+    def router_audit(work_item_id: str, request: Request,
+                     authorization: str | None = Header(default=None)):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        audit = read_router_audit(dsn, work_item_id)
+        if audit is None:
+            raise HTTPException(404, "work item not found")
+        return audit
 
     return router

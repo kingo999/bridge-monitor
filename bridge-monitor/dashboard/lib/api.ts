@@ -1,4 +1,4 @@
-import type { MetricSet, Origin, OutputPreview, Snapshot, WorkDetail, WorkItem } from './contracts.generated';
+import type { MetricSet, Origin, OutputPreview, RouterAudit, ShadowCohort, Snapshot, WorkDetail, WorkItem } from './contracts.generated';
 
 export class AuthenticationRequired extends Error {}
 
@@ -16,6 +16,7 @@ export type CohortFilters = {
 };
 
 export type OperatorSession = { authenticated: boolean; work_item_max_limit?: number };
+export type RouterFilters = { modelProfile: string; promptVersion: string; verifierRef: string };
 
 export function queryString(filters: CohortFilters): string {
   const params = new URLSearchParams({ origin: filters.origin, consumer_stage: filters.consumerStage });
@@ -38,6 +39,14 @@ export const api = {
   logout: () => fetch('/api/v1/session/logout', { method: 'POST', credentials: 'same-origin' }),
   snapshot: (origin: Origin) => request<Snapshot>(`/api/v1/snapshot?origin=${origin}`),
   metrics: (filters: CohortFilters) => request<MetricSet>(`/api/v1/metrics?${queryString(filters)}`),
+  routerCohort: (filters: CohortFilters, router: RouterFilters) => {
+    const params = new URLSearchParams(queryString(filters));
+    if (router.modelProfile) params.set('model_profile', router.modelProfile);
+    if (router.promptVersion) params.set('prompt_version', router.promptVersion);
+    if (router.verifierRef) params.set('verifier_ref', router.verifierRef);
+    return request<ShadowCohort>(`/api/v1/router/cohort?${params}`);
+  },
+  routerAudit: (id: string) => request<RouterAudit>(`/api/v1/router/audit/${encodeURIComponent(id)}`),
   workItems: (filters: CohortFilters, offset = 0, limit = 100) => request<WorkItem[]>(`/api/v1/work-items?${queryString(filters)}&limit=${limit}&offset=${offset}`),
   detail: (id: string) => request<WorkDetail>(`/api/v1/work-items/${encodeURIComponent(id)}`),
   outputPreview: (workId: string, callId: string) =>

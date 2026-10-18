@@ -6,8 +6,9 @@ import type { OutputPreview, WorkDetail } from '@/lib/contracts.generated';
 import ExecutionTimeline from './ExecutionTimeline';
 import GuidanceDetails from './GuidanceDetails';
 import ResponseComparison from './ResponseComparison';
+import RouterAudit from './RouterAudit';
 
-type Tab = 'exchange' | 'decision' | 'guidance' | 'timeline';
+type Tab = 'exchange' | 'decision' | 'guidance' | 'timeline' | 'router';
 
 function tokenCount(value: number | null): string {
   return value === null ? 'Not reported' : value.toLocaleString('en-US');
@@ -62,7 +63,7 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
   }, [references, bodies]);
 
   const activeCalls = useMemo(() => detail ? detail.calls.filter(call =>
-    !call.call_id.startsWith('gpt:') &&
+    call.execution_mode !== 'shadow' && !call.call_id.startsWith('gpt:') &&
     !detail.results.some(result => result.call_id === call.call_id && result.delivered_at)) : [],
   [detail]);
   useEffect(() => {
@@ -130,7 +131,7 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
       <p>Requested: {primaryModel?.requested_model || 'Unknown'} · Reported: {primaryModel?.reported_model || 'Unknown'}</p>
       {agentStatus && <p>Last bridge observation · Skynet job: {agentStatus.agent_state || 'Unknown'} · Agent: {agentStatus.agent_reachable === true ? 'reachable' : agentStatus.agent_reachable === false ? 'unreachable' : 'unverified'} · Last Qwen output {outputAge === null ? 'not observed' : jobActive ? `${outputAge}s ago` : outputTime}{agentStatus.timeout_reason ? ` · ${agentStatus.timeout_reason}` : ''}</p>}</div>
       <div className="inspector-tabs" role="tablist" aria-label="Inspector views">
-        {(['exchange', 'decision', 'guidance', 'timeline'] as Tab[]).map(value => <button key={value} type="button"
+        {(['exchange', 'decision', 'guidance', 'timeline', 'router'] as Tab[]).map(value => <button key={value} type="button"
           role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{value}</button>)}</div>
       <div className="inspector-content">
         {tab === 'exchange' && <>
@@ -213,6 +214,7 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
         </div>}
         {tab === 'guidance' && <GuidanceDetails detail={detail} />}
         {tab === 'timeline' && <ExecutionTimeline detail={detail} />}
+        {tab === 'router' && id && <RouterAudit id={id} refreshKey={refreshKey} />}
       </div>
       <div className="inspector-footer">Claude disposition: <strong>{selectedDisposition?.judgment || 'Unreported'}</strong> · GPT disposition: <strong>{gptDisposition?.judgment || 'Unknown'}</strong>{gptDisposition && ' (parent-reported)'}</div>
     </>}
