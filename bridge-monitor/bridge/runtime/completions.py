@@ -20,10 +20,10 @@ class CompletionReceipt:
     diagnostics: tuple[str, ...]
 
 
-def _check_binding(conn, binding: ExecutionBinding, envelope: CompletionEnvelope) -> tuple[str, str]:
+def _check_binding(conn, binding: ExecutionBinding, envelope: CompletionEnvelope) -> tuple[str, str, str]:
     if binding.call_id != envelope.call_id or binding.attempt_id != envelope.attempt_id:
         raise PermissionError("completion binding mismatch")
-    row = conn.execute("SELECT state,owner_incarnation,worker_instance_id,pool FROM runtime_jobs "
+    row = conn.execute("SELECT state,owner_incarnation,worker_instance_id,pool,execution_mode FROM runtime_jobs "
                        "WHERE call_id=%s", (binding.call_id,)).fetchone()
     if not row or row[0] not in ("active", "uncertain", "fallback", "completed"):
         raise PermissionError("no owned execution for completion")
@@ -33,7 +33,7 @@ def _check_binding(conn, binding: ExecutionBinding, envelope: CompletionEnvelope
                            (binding.attempt_id,)).fetchone()
     if not attempt or attempt[0] != binding.call_id:
         raise PermissionError("attempt is not bound to call")
-    return row[3], row[0]
+    return row[3], row[0], row[4]
 
 
 def _store_answer(conn, envelope: CompletionEnvelope, answer_bytes: bytes | None,
@@ -170,7 +170,11 @@ def record_completion(dsn: str, envelope: CompletionEnvelope, binding: Execution
     diagnostics = list(claim_diagnostics or [])
     with psycopg.connect(dsn) as conn, conn.transaction():
         conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
-        pool, job_state = _check_binding(conn, binding, envelope)
+        pool, job_state, execution_mode = _check_binding(conn, binding, envelope)
+        if execution_mode == "shadow" and (envelope.result.delivered or consumer_stage or
+                                            envelope.dispositions or envelope.contributions or
+                                            envelope.work_resolution or envelope.fallback_child_call_id):
+            raise PermissionError("shadow result cannot be delivered or enter production accounting")
         late_only = job_state == "fallback"
         if pool == "qwen":
             late_only |= conn.execute("SELECT 1 FROM runtime_fallback_transitions "

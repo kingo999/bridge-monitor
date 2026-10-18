@@ -58,7 +58,7 @@ class DirectCollector:
 
 
 def build_coordinator(runtime_config_path: str | Path, *,
-                      audience: Literal["parent", "claude"],
+                      audience: Literal["parent", "claude", "shadow"],
                       parent_call_id: str | None = None,
                       parent_lease_id: str | None = None,
                       project_root: str | Path | None = None,
@@ -89,7 +89,7 @@ def build_coordinator(runtime_config_path: str | Path, *,
         raise ValueError("bridge Python executable must be inside project")
     if audience == "claude" and (not parent_call_id or not parent_lease_id):
         raise ValueError("Claude child requires a bound parent call and lease")
-    key = ("parent" if audience == "parent" else
+    key = ("parent" if audience == "parent" else "shadow-worker" if audience == "shadow" else
            "child-" + hashlib.sha256(f"{parent_call_id}:{parent_lease_id}".encode()).hexdigest()[:24])
     spool = DurableSpool(project / "var" / "spool" / f"{key}.sqlite",
                          limit_bytes=policy.deployment.spool_limit_bytes)
@@ -118,7 +118,8 @@ def build_coordinator(runtime_config_path: str | Path, *,
             expected_digest=policy.deployment.qwen_model_digest,
             context_tokens=capabilities.qwen.context_tokens,
             output_tokens=policy.deployment.qwen_output_tokens,
-            timeout_seconds=policy.limits.qwen_execution_seconds,
+            timeout_seconds=(policy.router.execution_seconds if audience == "shadow"
+                             else policy.limits.qwen_execution_seconds),
             keep_alive=policy.deployment.qwen_keep_alive,
             temperature=policy.deployment.qwen_temperature,
             cancellation_probe=lambda call_id: cancellation_requested(dsn, call_id))
@@ -146,3 +147,8 @@ def build_coordinator(runtime_config_path: str | Path, *,
         parent_call_id=parent_call_id, parent_lease_id=parent_lease_id,
         local_capability=capabilities.qwen.model_dump(),
         paid_capability=capabilities.claude.model_dump())
+
+
+def build_shadow_coordinator(runtime_config_path: str | Path) -> BridgeCoordinator:
+    """Separate Qwen-only process; no parent or Claude child MCP surface."""
+    return build_coordinator(runtime_config_path, audience="shadow")

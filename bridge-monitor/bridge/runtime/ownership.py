@@ -42,12 +42,15 @@ def _existing_lease(row) -> DispatchLease:
 
 
 def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id: str,
-                   call_id: str | None = None) -> DispatchLease | None:
+                   call_id: str | None = None,
+                   execution_mode: Literal["production", "shadow"] = "production") -> DispatchLease | None:
     """One serializable arbitration path across all bridge processes.
 
     A repeated claim for the same active lease is an acknowledgement retry only;
     it never launches another inference. The caller must deduplicate its launch by lease_id.
     """
+    if execution_mode == "shadow" and pool != "qwen":
+        raise ValueError("shadow dispatch is Qwen-only")
     with psycopg.connect(dsn) as conn, conn.transaction():
         conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
         incarnation = conn.execute("SELECT worker_instance_id,state FROM runtime_incarnations "
@@ -56,8 +59,9 @@ def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id:
             raise ValueError("live registered incarnation required")
         if call_id:
             prior = conn.execute("SELECT call_id,lease_id,owner_incarnation,fencing_token,policy_version "
-                                 "FROM runtime_jobs WHERE call_id=%s AND pool=%s AND state='active'",
-                                 (call_id, pool)).fetchone()
+                                 "FROM runtime_jobs WHERE call_id=%s AND pool=%s "
+                                 "AND execution_mode=%s AND state='active'",
+                                 (call_id, pool, execution_mode)).fetchone()
             if prior and prior[2] == incarnation_id:
                 return _existing_lease(prior)
             if prior:
@@ -68,6 +72,8 @@ def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id:
         if not policy_row:
             raise ValueError("reviewed policy has not been activated")
         policy = PolicySnapshot.model_validate(policy_row[0])
+        if execution_mode == "shadow" and policy.router.mode != "shadow":
+            return None
         active_limit = policy.limits.claude_global_active if pool == "claude" else policy.limits.qwen_active
         held = conn.execute("SELECT count(*) FROM runtime_jobs WHERE pool=%s AND slot_held", (pool,)).fetchone()[0]
         if held >= active_limit:
@@ -77,9 +83,10 @@ def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id:
         # All candidates are read while the global transaction lock is held.
         candidates = conn.execute("SELECT call_id,task_id,policy_version,source_mode,"
                                   "source_snapshot,request FROM runtime_jobs "
-                                  "WHERE pool=%s AND state='queued' AND queue_deadline_at>now() "
+                                  "WHERE pool=%s AND execution_mode=%s AND state='queued' "
+                                  "AND queue_deadline_at>now() "
                                   "AND (local_cutoff_at IS NULL OR local_cutoff_at>now()) "
-                                  "ORDER BY admitted_at,call_id", (pool,)).fetchall()
+                                  "ORDER BY admitted_at,call_id", (pool, execution_mode)).fetchall()
         by_task = {}
         for candidate in candidates:
             by_task.setdefault(candidate[1], candidate)
@@ -104,7 +111,7 @@ def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id:
                                          "AND pool='claude' AND slot_held", (task_id,)).fetchone()[0]
                 if root_held >= policy.limits.claude_per_root_active:
                     continue
-            else:
+            elif execution_mode == "production":
                 selected = conn.execute("SELECT guidance_manifest FROM delegation_decisions "
                     "WHERE child_call_id=%s AND route='local' "
                     "ORDER BY decided_at DESC,decision_id DESC LIMIT 1", (candidate[0],)).fetchone()
@@ -138,6 +145,7 @@ def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id:
         chosen_call, root_task, governing_version = winner[:3]
         lease_id = str(uuid.uuid4())
         deadline_seconds = (policy.limits.claude_execution_seconds if pool == "claude"
+                            else policy.router.execution_seconds if execution_mode == "shadow"
                             else policy.limits.qwen_execution_seconds)
         row = conn.execute("UPDATE runtime_jobs SET state='active',owner_incarnation=%s,"
                            "worker_instance_id=%s,lease_id=%s,fencing_token=fencing_token+1,"
