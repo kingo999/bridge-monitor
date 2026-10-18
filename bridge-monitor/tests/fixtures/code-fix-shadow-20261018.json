@@ -1,0 +1,25 @@
+[
+  {
+    "id": "historical-answer-normalization",
+    "task": "Normalize a valid JSON answer by trimming surrounding whitespace; reject empty and malformed answers.",
+    "baseline_source": "import json\n\ndef parse_answer(raw):\n    if not isinstance(raw, str):\n        return None\n    try:\n        value = json.loads(raw)\n    except ValueError:\n        return None\n    if not isinstance(value, dict) or set(value) != {'answer'} or not isinstance(value['answer'], str) or not value['answer'].strip():\n        return None\n    return value['answer']\n",
+    "reference_source": "import json\n\ndef parse_answer(raw):\n    if not isinstance(raw, str):\n        return None\n    try:\n        value = json.loads(raw)\n    except ValueError:\n        return None\n    if not isinstance(value, dict) or set(value) != {'answer'} or not isinstance(value['answer'], str) or not value['answer'].strip():\n        return None\n    return value['answer'].strip()\n",
+    "tests": [
+      {"function": "parse_answer", "args": ["{\"answer\":\" 42\\n\"}"], "expected": "42"},
+      {"function": "parse_answer", "args": ["{\"answer\":\"x\"}"], "expected": "x"},
+      {"function": "parse_answer", "args": ["{\"answer\":\"   \"}"], "expected": null},
+      {"function": "parse_answer", "args": ["not json"], "expected": null}
+    ]
+  },
+  {
+    "id": "historical-paid-fallback-format",
+    "task": "Return only a completed paid reply's valid JSON answer string. Malformed text or a failed reply must produce None, never raw error text.",
+    "baseline_source": "import json\n\ndef paid_answer(state, raw):\n    if state != 'completed':\n        return None\n    try:\n        value = json.loads(raw)\n    except ValueError:\n        value = None\n    parsed = value['answer'] if isinstance(value, dict) and set(value) == {'answer'} and isinstance(value['answer'], str) else None\n    return parsed if parsed is not None else raw\n",
+    "reference_source": "import json\n\ndef paid_answer(state, raw):\n    if state != 'completed':\n        return None\n    try:\n        value = json.loads(raw)\n    except ValueError:\n        value = None\n    parsed = value['answer'] if isinstance(value, dict) and set(value) == {'answer'} and isinstance(value['answer'], str) else None\n    return parsed\n",
+    "tests": [
+      {"function": "paid_answer", "args": ["completed", "{\"answer\":\"42\"}"], "expected": "42"},
+      {"function": "paid_answer", "args": ["completed", "an internal error"], "expected": null},
+      {"function": "paid_answer", "args": ["failed", "{\"answer\":\"42\"}"], "expected": null}
+    ]
+  }
+]

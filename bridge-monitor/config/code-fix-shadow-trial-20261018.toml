@@ -1,0 +1,20 @@
+# Explicit retrospective shadow trial. The live bridge never reads this file.
+mode = "shadow"
+cohort = "retrospective_shadow"
+max_cases = 2
+parent_model = "gpt-6.1-sol"
+parent_timeout_seconds = 120
+local_output_tokens = 2048
+local_timeout_seconds = 120
+paid_timeout_seconds = 120
+paid_max_budget_usd = 0.10
+
+[verifier]
+image = "python@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf52ea5da5bb8d929a"
+daemon_endpoint = "npipe:////./pipe/dockerDesktopLinuxEngine"
+timeout_seconds = 12
+memory_mb = 256
+cpus = 1
+pids_limit = 64
+max_source_bytes = 16384
+max_test_bytes = 16384

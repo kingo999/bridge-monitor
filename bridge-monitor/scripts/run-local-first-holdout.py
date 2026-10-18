@@ -3,80 +3,22 @@
 import argparse
 import hashlib
 import json
-import os
-import subprocess
 import sys
-import time
 import tomllib
-import uuid
 from pathlib import Path
-from types import SimpleNamespace
+
+import subprocess  # shared module object used by the existing CLI regression test
 
 import httpx
 
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
 
-from bridge.adapters.qwen_agent import QwenAgentAdapter  # noqa: E402
-from bridge.local_first import ModelReply, load_settings  # noqa: E402
+from bridge.experiment_transports import (make_qwen_adapter, qwen_call,  # noqa: E402
+                                          sonnet_call)
+from bridge.local_first import load_settings  # noqa: E402
 from bridge.local_first_runner import run_cases  # noqa: E402
 from contracts.policy import PolicyInput  # noqa: E402
-
-
-class Sink:
-    def emit(self, *_args, **_kwargs):
-        return True
-
-
-def sonnet_call(prompt: str, *, model: str, settings) -> ModelReply:
-    command = ["claude", "--print", "--output-format", "json", "--model", model,
-        "--no-session-persistence", "--restricted", "--strict-mcp-config",
-        "--settings", '{"disableAllHooks":true}', "--disable-slash-commands",
-        "--permission-mode", "dontAsk", "--permission-prompts", "none", "--tools", "",
-        "--disallowedTools", "Bash", "PowerShell", "Edit", "Write", "NotebookEdit",
-        "Agent", "Task", "ToolSearch", "WebFetch", "--max-budget-usd",
-        str(settings.paid_max_budget_usd)]
-    env = os.environ.copy()
-    env.pop("CLAUDECODE", None)
-    started = time.monotonic()
-    try:
-        process = subprocess.run(command, input=prompt, text=True, capture_output=True,
-            encoding="utf-8", errors="replace", cwd=PROJECT, env=env,
-            timeout=settings.paid_timeout_seconds)
-        elapsed = round(time.monotonic() - started, 3)
-        if process.returncode:
-            return ModelReply(state="failed", requested_model=model,
-                uncertainty=f"claude_cli_exit_{process.returncode}", elapsed_seconds=elapsed)
-        frame = json.loads(process.stdout)
-        model_usage = frame.get("modelUsage") or {}
-        reported = next(iter(model_usage)) if len(model_usage) == 1 else None
-        usage = frame.get("usage") or {}
-        counts = {key: usage[key] for key in ("input_tokens", "cache_read_input_tokens",
-                  "cache_creation_input_tokens", "output_tokens")
-                  if isinstance(usage.get(key), int) and usage[key] >= 0}
-        model_record = model_usage.get(reported, {}) if reported else {}
-        list_cost = frame.get("total_cost_usd")
-        return ModelReply(state="failed" if frame.get("is_error") else "completed",
-            raw=frame.get("result"), requested_model=model, reported_model=reported,
-            usage=counts, elapsed_seconds=elapsed,
-            list_cost_usd=list_cost if isinstance(list_cost, (int, float)) else None,
-            cost_basis=model_record.get("costBasis"))
-    except (subprocess.TimeoutExpired, ValueError, OSError) as exc:
-        return ModelReply(state="uncertain", requested_model=model,
-            uncertainty=type(exc).__name__,
-            elapsed_seconds=round(time.monotonic() - started, 3))
-
-
-def qwen_call(prompt: str, *, adapter: QwenAgentAdapter) -> ModelReply:
-    call_id = str(uuid.uuid4())
-    lease = SimpleNamespace(call_id=call_id, lease_id=str(uuid.uuid4()),
-                            fencing_token=1, policy_version="offline-local-first")
-    started = time.monotonic()
-    result = adapter.run(lease, prompt, Sink())
-    return ModelReply(state=result.state, raw=result.answer,
-        requested_model=adapter.model, reported_model=result.reported_model,
-        usage=result.usage, uncertainty=result.uncertainty,
-        elapsed_seconds=round(time.monotonic() - started, 3))
 
 
 def main() -> int:
@@ -120,30 +62,10 @@ def main() -> int:
                           "paid_model": policy.fallback.paid_model_profile,
                           "receipt": str(args.receipt)}, sort_keys=True))
         return 0
-    token = os.environ.get(policy.deployment.qwen_agent_token_ref.removeprefix("env:"))
-    if not token:
-        token = (PROJECT / "var" / "secrets" / "skynet-agent-token").read_text(
-            encoding="utf-8").strip()
-    if not token:
-        raise SystemExit("agent credential unavailable")
-    deployment = policy.deployment
     with httpx.Client() as client:
-        adapter = QwenAgentAdapter(client, endpoint=deployment.qwen_agent_endpoint,
-            token=token, model=deployment.qwen_model_profile,
-            expected_digest=deployment.qwen_model_digest,
-            context_tokens=capabilities["qwen"]["context_tokens"],
-            output_tokens=min(settings.local_output_tokens, deployment.qwen_output_tokens),
-            timeout_seconds=min(settings.max_local_seconds, policy.limits.qwen_execution_seconds),
-            first_output_seconds=min(deployment.qwen_first_output_seconds,
-                                     settings.max_local_seconds / 2),
-            idle_output_seconds=min(deployment.qwen_idle_output_seconds,
-                                    settings.max_local_seconds / 2),
-            ack_seconds=deployment.qwen_ack_seconds,
-            poll_seconds=deployment.qwen_poll_seconds,
-            poll_timeout_seconds=deployment.qwen_poll_timeout_seconds,
-            poll_failures=deployment.qwen_poll_failures,
-            keep_alive=deployment.qwen_keep_alive,
-            temperature=deployment.qwen_temperature)
+        adapter = make_qwen_adapter(client, policy=policy, capabilities=capabilities,
+            output_tokens=settings.local_output_tokens,
+            max_seconds=settings.max_local_seconds)
         preflight = adapter.preflight()
         if not preflight.ready:
             raise SystemExit("Skynet preflight failed: " + preflight.reason)
