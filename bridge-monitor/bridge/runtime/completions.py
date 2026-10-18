@@ -192,6 +192,12 @@ def record_completion(dsn: str, envelope: CompletionEnvelope, binding: Execution
             if not parent or not parent[0]:
                 raise ValueError("consumer stage requires a parent call")
             _create_obligation(conn, answer, parent[0], consumer_stage)
+        if pool == "claude":
+            caller = conn.execute("SELECT c.parent_call_id,w.task_id FROM calls c "
+                                  "JOIN work_items w ON w.work_item_id=c.work_item_id "
+                                  "WHERE c.call_id=%s", (envelope.call_id,)).fetchone()
+            if caller and caller[0] == f"gpt:{caller[1]}":
+                _create_obligation(conn, answer, caller[0], "gpt")
         for disposition in envelope.dispositions:
             try:
                 with conn.transaction():

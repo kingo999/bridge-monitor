@@ -15,6 +15,8 @@ from tests.integration.test_ownership import _setup
 def _seed_chain(dsn, *, dispatch_qwen=True, budget=2, recipient_call_id=None):
     policy, version = _setup(dsn)
     root = f"root-{uuid.uuid4()}"
+    if recipient_call_id == "gpt":
+        recipient_call_id = f"gpt:{root}"
     work = f"work-{uuid.uuid4()}"
     claude, qwen = f"claude-{uuid.uuid4()}", f"qwen-{uuid.uuid4()}"
     task = TaskPacket(task_id=root, work_item_id=work, category="analysis",

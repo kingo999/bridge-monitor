@@ -61,3 +61,20 @@ class CompletionEnvelope(BaseModel):
     fallback_child_call_id: str | None = None
     work_resolution: str | None = None
     accounting_complete: bool = False
+
+
+class ParentAcknowledgement(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    acknowledgement_id: str = Field(min_length=1)
+    result_id: str = Field(min_length=1)
+    input_sha256: str = Field(min_length=64, max_length=64)
+    judgment: Literal["accepted", "revised", "replaced", "unused"]
+    reason: str | None = None
+    answer_text: str | None = None
+    supersedes_id: str | None = None
+
+    @model_validator(mode="after")
+    def answer_requirement(self):
+        if self.judgment != "unused" and not self.answer_text:
+            raise ValueError("parent answer text required for contribution or replacement")
+        return self
