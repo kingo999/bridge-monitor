@@ -50,6 +50,10 @@ class RouterCase(BaseModel):
     baseline_source: str = Field(min_length=1)
     tests: list[dict] = Field(min_length=1)
     output_contract: Literal["complete_python_module_v1"]
+    verifier_settings_sha256: str | None = None
+    baseline_validation_reason: str | None = None
+    baseline_sha256: str | None = None
+    tests_sha256: str | None = None
 
     @field_validator("task_arrived_at", "captured_at", "solution_available_at")
     @classmethod

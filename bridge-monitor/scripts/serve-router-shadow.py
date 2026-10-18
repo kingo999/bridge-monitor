@@ -33,7 +33,11 @@ def main() -> int:
         if router.mode == "shadow" and router.verifier is not None:
             verifier = DockerVerifier(router.verifier,
                 coordinator.project_root / "var" / "router" / "verify")
-            run_one_shadow(coordinator, verifier)
+            outcome = run_one_shadow(coordinator, verifier)
+            if outcome and outcome.get("state") == "uncertain":
+                # The uncertain owner incarnation is fenced; a new one may
+                # process unrelated work while the held call awaits reconciliation.
+                coordinator = build_shadow_coordinator(args.config)
         time.sleep(router.worker_poll_ms / 1000)
     return 0
 

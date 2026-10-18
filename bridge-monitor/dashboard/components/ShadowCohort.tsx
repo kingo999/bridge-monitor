@@ -29,6 +29,7 @@ export default function ShadowCohort({ report, filters, onChange }: {
     <div className="shadow-detail-row">
       <p>Reasons: {entries.length ? entries.map(([reason, count]) => `${reason} ${count}`).join(' · ') : 'None recorded'}</p>
       <p>Token usage reported: Qwen {report.usage_coverage.qwen}/{report.queued_shadow} · paid {report.usage_coverage.paid}/{report.attempted_tasks}</p>
+      <p>Median queue: {report.queue_latency_ms.median ?? 'Unknown'} ms · Qwen execution: {report.shadow_execution_latency_ms.median ?? 'Unknown'} ms · verification: {report.verifier_latency_ms.median ?? 'Unknown'} ms</p>
       <p>Conditional avoided paid calls: {report.conditional_avoided_paid_calls ?? 'Unknown'} · Billed savings: {report.billed_savings ?? 'Unknown'}</p>
     </div>
   </section>;

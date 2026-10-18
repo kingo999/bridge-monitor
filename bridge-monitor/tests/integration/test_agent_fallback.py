@@ -59,7 +59,7 @@ def test_silent_agent_job_returns_paid_continuation_and_retains_qwen_slot(runtim
     qwen = QwenAgentAdapter(httpx.Client(transport=httpx.MockTransport(agent)),
         endpoint="http://agent", token="test-token", model="qwen-test",
         expected_digest="a" * 64, context_tokens=1000, output_tokens=20,
-        timeout_seconds=8, first_output_seconds=0.5, idle_output_seconds=0.5,
+        timeout_seconds=8, first_output_seconds=3, idle_output_seconds=0.5,
         ack_seconds=0.1, poll_seconds=0.01, poll_timeout_seconds=0.1,
         poll_failures=2, keep_alive="10m", temperature=0.0)
 
@@ -92,7 +92,7 @@ def test_silent_agent_job_returns_paid_continuation_and_retains_qwen_slot(runtim
     assert parent_result["state"] == "completed"
     assert child_result["state"] == "paid_continuation_required"
     assert child_result["route"] == "paid" and child_result["not_routed"] is False
-    assert status_polls > 1
+    assert status_polls > 1, child_result
     with psycopg.connect(dsn) as conn:
         assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
                             (child_result["child_call_id"],)).fetchone() == ("fallback", True)

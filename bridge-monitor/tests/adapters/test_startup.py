@@ -129,5 +129,5 @@ def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, monkeypat
 
         assert asyncio.run(listed("parent")) == {
             "delegate_claude", "complete_work", "acknowledge_claude_result",
-            "get_execution_status", "cancel_work"}
+            "get_execution_status", "cancel_work", "route_work"}
         assert asyncio.run(listed("claude")) == {"delegate_local_analysis"}

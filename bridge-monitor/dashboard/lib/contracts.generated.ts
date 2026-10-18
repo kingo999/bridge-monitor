@@ -73,7 +73,11 @@ export type ShadowCohort = {
   states: Record<string, number>; outcomes: Record<string, number>;
   reasons: Record<string, number>; model_profiles: Record<string, number>;
   prompt_versions: Record<string, number>; verifier_refs: Record<string, number>;
+  categories: Record<string, number>; output_contracts: Record<string, number>;
+  context_bytes: { samples: number; median: number | null };
   queue_latency_ms: { samples: number; median: number | null };
+  shadow_execution_latency_ms: { samples: number; median: number | null };
+  verifier_latency_ms: { samples: number; median: number | null };
   usage_coverage: { qwen: number; paid: number };
   unknown_usage: { qwen: number; paid: number };
   provider_usage: Array<{ call_id: string; input_tokens: number | null;

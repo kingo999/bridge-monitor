@@ -78,7 +78,7 @@ export default function DashboardClient() {
       const nextSnapshot = includeSnapshot ? await api.snapshot('all') : null;
       const [nextMetrics, firstPage, nextShadow] = await Promise.all([
         api.metrics(cohort), api.workItems(cohort, 0, firstLimit),
-        api.routerCohort(cohort, routerFiltersRef.current),
+        api.routerCohort(cohort, routerFiltersRef.current).catch(() => null),
       ]);
       const nextItems = [...firstPage];
       let page = firstPage;

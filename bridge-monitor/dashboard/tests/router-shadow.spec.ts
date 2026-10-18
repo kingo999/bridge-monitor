@@ -9,7 +9,12 @@ test('router cohort remains separate from production cards and audit opens per w
       reasons: { tests_passed: 1, tests_failed: 1, verifier_missing: 1 },
       model_profiles: { 'qwen-test': 3 }, prompt_versions: { 'complete-module-v1': 3 },
       verifier_refs: { verified: 2, missing: 1 },
+      categories: { single_file_python_fix: 3 },
+      output_contracts: { complete_python_module_v1: 3 },
+      context_bytes: { samples: 3, median: 200 },
       queue_latency_ms: { samples: 2, median: 100 },
+      shadow_execution_latency_ms: { samples: 2, median: 500 },
+      verifier_latency_ms: { samples: 2, median: 20 },
       usage_coverage: { qwen: 1, paid: 1 }, unknown_usage: { qwen: 1, paid: 2 },
       provider_usage: [], conditional_avoided_paid_calls: null,
       conditional_savings_reason: 'no_comparable_paid_same_contract_reference',
@@ -59,4 +64,15 @@ test('router cohort remains separate from production cards and audit opens per w
   await expect(audit).toContainText('shadow_candidate');
   await expect(audit).toContainText('tests_passed');
   await expect(audit).toContainText('Shadow output was never delivered to Claude');
+});
+
+test('dashboard remains available before the router backend is rolled out', async ({ page }) => {
+  await page.route('**/api/v1/router/cohort?*', route => route.fulfill({ status: 404 }));
+  await page.goto('/');
+  await page.getByLabel('Operator credential').fill('operator-secret');
+  await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByLabel('Origin').selectOption('synthetic');
+  await expect(page.getByRole('button', { name: /Routed to Skynet/ })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Parent router shadow cohort' })).toHaveCount(0);
+  await expect(page.getByText(/Data error:/)).toHaveCount(0);
 });

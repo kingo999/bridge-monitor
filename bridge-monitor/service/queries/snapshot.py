@@ -28,11 +28,12 @@ def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> Dashboard
             runtime_table = conn.execute("SELECT to_regclass('runtime_jobs') AS table_name").fetchone()["table_name"]
             if (runtime_table and query.origin != "synthetic" and conn.execute("""SELECT 1 FROM runtime_jobs j
                     JOIN work_items w ON w.work_item_id=j.work_item_id
-                    WHERE w.origin='observed' LIMIT 1""").fetchone()):
+                    WHERE w.origin='observed' AND j.execution_mode='production' LIMIT 1""").fetchone()):
                 capacity = {name: {"active": 0, "queued": 0, "held_uncertain": 0} for name in ("claude", "qwen")}
                 for row in conn.execute("""SELECT j.pool,j.state,j.slot_held,count(*) AS total
                     FROM runtime_jobs j JOIN work_items w ON w.work_item_id=j.work_item_id
-                    WHERE w.origin='observed' GROUP BY j.pool,j.state,j.slot_held"""):
+                    WHERE w.origin='observed' AND j.execution_mode='production'
+                    GROUP BY j.pool,j.state,j.slot_held"""):
                     values = capacity[row["pool"]]
                     if row["state"] == "queued":
                         values["queued"] += row["total"]
@@ -70,7 +71,8 @@ def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> Dashboard
                     (SELECT e.reported_model FROM events e WHERE e.call_id=j.call_id
                         AND e.event_type='model.reported' ORDER BY e.occurred_at DESC LIMIT 1) AS reported_model
                     FROM runtime_jobs j JOIN work_items w ON w.work_item_id=j.work_item_id
-                    WHERE w.origin='observed' AND j.pool='claude' AND j.state IN ('active','uncertain')
+                    WHERE w.origin='observed' AND j.execution_mode='production'
+                    AND j.pool='claude' AND j.state IN ('active','uncertain')
                     ORDER BY j.admitted_at DESC LIMIT 8""").fetchall()
             else:
                 executions = conn.execute("""SELECT e.call_id,e.work_item_id,e.worker_instance_id,

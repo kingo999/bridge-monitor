@@ -162,6 +162,46 @@ def _accounting_complete(conn, call_id: str) -> bool:
     return not bool(pending)
 
 
+def record_shadow_completion(dsn: str, envelope: CompletionEnvelope,
+                             binding: ExecutionBinding, *, raw_bytes: bytes,
+                             parsed_bytes: bytes | None, evidence: dict) -> ResultReceipt:
+    """Commit raw output, parsed candidate, evaluation and slot release atomically."""
+    if envelope.result.delivered or not evidence or not evidence.get("state"):
+        raise ValueError("shadow completion requires undelivered evaluated result")
+    with psycopg.connect(dsn) as conn, conn.transaction():
+        conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
+        pool, job_state, mode = _check_binding(conn, binding, envelope)
+        if pool != "qwen" or mode != "shadow" or job_state != "active":
+            raise PermissionError("shadow completion needs active owned Qwen job")
+        answer = _store_answer(conn, envelope, raw_bytes, None)
+        if parsed_bytes is not None:
+            content_id = str(uuid.uuid5(uuid.NAMESPACE_URL,
+                f"bridge-monitor:shadow:parsed-content:{binding.call_id}"))
+            part_id = str(uuid.uuid5(uuid.NAMESPACE_URL,
+                f"bridge-monitor:shadow:parsed-part:{binding.call_id}"))
+            content = ContentObject.from_bytes(content_id, parsed_bytes,
+                role="assistant", direction="in", content_type="text/x-python",
+                origin="observed", capture_layer="bridge_router_verifier",
+                completeness="complete")
+            conn.execute("INSERT INTO content_objects(content_id,raw_bytes,byte_length,sha256,"
+                "role,direction,content_type,encoding,origin,capture_layer,completeness,"
+                "message_id,block_order) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NULL,0) "
+                "ON CONFLICT(content_id) DO NOTHING",
+                (content.content_id, content.raw_bytes, content.byte_length, content.sha256,
+                 content.role, content.direction, content.content_type, content.encoding,
+                 content.origin, content.capture_layer, content.completeness))
+            conn.execute("INSERT INTO result_parts(part_id,result_id,content_id) "
+                "VALUES(%s,%s,%s) ON CONFLICT(part_id) DO NOTHING",
+                (part_id, answer.result_id, content_id))
+        evaluation_id = str(uuid.uuid5(uuid.NAMESPACE_URL,
+            f"bridge-monitor:shadow:evaluation:{binding.call_id}"))
+        conn.execute("INSERT INTO evaluations(evaluation_id,result_id,evidence,recorded_at) "
+            "VALUES(%s,%s,%s,now())", (evaluation_id, answer.result_id, Jsonb(evidence)))
+        conn.execute("UPDATE runtime_jobs SET state='completed',slot_held=false WHERE call_id=%s",
+                     (binding.call_id,))
+        return answer
+
+
 def record_completion(dsn: str, envelope: CompletionEnvelope, binding: ExecutionBinding,
                       *, answer_bytes: bytes | None = None,
                       raw_answer_bytes: bytes | None = None,

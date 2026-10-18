@@ -1,6 +1,7 @@
 """Parent-router identity, bounded facts and decision publication."""
 
 import hashlib
+import json
 import uuid
 from datetime import datetime, timezone
 
@@ -32,7 +33,11 @@ def collect_capture_facts(dsn: str, task: TaskPacket, *, reserve_tokens: int,
     reserved_calls, reserved_tokens = budget if budget else (0, 0)
     router = policy.router
     return CaptureFacts(case=case, case_digest_valid=case_digest_valid,
-        baseline_failed=True if case_digest_valid else None,
+        baseline_failed=(bool(case and case_digest_valid and policy.router.verifier and
+            case.baseline_validation_reason == "tests_failed" and
+            case.verifier_settings_sha256 == hashlib.sha256(json.dumps(
+                policy.router.verifier.model_dump(mode="json"), sort_keys=True,
+                separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest())),
         capture_healthy=True,
         # Live agent/profile attestation is checked immediately before shadow launch.
         agent_ready=bool(policy.deployment.qwen_agent_endpoint and
@@ -67,7 +72,8 @@ def publish_router_decision(emitter, task: TaskPacket, *, call_id: str,
 
 def existing_parent_decision(dsn: str, work_item_id: str):
     with psycopg.connect(dsn) as conn:
-        return conn.execute("SELECT decision_id,child_call_id,gate_facts->>'task_sha256' "
+        return conn.execute("SELECT decision_id,child_call_id,gate_facts->>'task_sha256',"
+            "policy_version,gate_facts,eligibility "
             "FROM delegation_decisions WHERE work_item_id=%s "
             "AND decision_stage='parent_router' AND execution_mode='production' "
             "ORDER BY decided_at LIMIT 1", (work_item_id,)).fetchone()

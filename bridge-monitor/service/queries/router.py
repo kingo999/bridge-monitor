@@ -41,10 +41,12 @@ def read_router_audit(dsn: str, work_item_id: str) -> dict | None:
         decisions = conn.execute("SELECT decision_id,decision_stage,execution_mode,"
             "child_call_id,route,eligibility,reason,policy_version,gate_facts,"
             "decided_at FROM delegation_decisions WHERE work_item_id=%s "
-            "AND decision_stage='parent_router' ORDER BY decided_at,decision_id",
+            "AND decision_stage IN ('parent_router','claude_child') "
+            "ORDER BY decided_at,decision_id",
             (work_item_id,)).fetchall()
         parent = next((dict(row) for row in decisions
-                       if row["execution_mode"] == "production"), None)
+                       if row["decision_stage"] == "parent_router" and
+                       row["execution_mode"] == "production"), None)
         shadow = next((dict(row) for row in decisions
                        if row["execution_mode"] == "shadow" and row["route"] == "local"), None)
         paid_call = parent["child_call_id"] if parent else None
@@ -109,7 +111,7 @@ def query_shadow_cohort(dsn: str, filters: RouterCohortFilter) -> dict:
     with psycopg.connect(dsn, row_factory=dict_row) as conn, conn.transaction():
         conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
         parents = conn.execute("SELECT d.work_item_id,d.child_call_id,d.reason,d.gate_facts,"
-            "d.decided_at,w.origin,w.created_at FROM delegation_decisions d "
+            "d.decided_at,w.origin,w.category,w.created_at FROM delegation_decisions d "
             "JOIN work_items w ON w.work_item_id=d.work_item_id "
             "WHERE d.decision_stage='parent_router' AND d.execution_mode='production' "
             "AND (%s='all' OR w.origin=%s) "
@@ -154,18 +156,36 @@ def query_shadow_cohort(dsn: str, filters: RouterCohortFilter) -> dict:
             "FROM events WHERE call_id=ANY(%s) AND event_type IN "
             "('attempt.uncertain','admission.blocked') "
             "ORDER BY call_id,occurred_at DESC,event_id DESC", (call_ids,)).fetchall()
+        context_sizes = conn.execute("SELECT j.call_id,c.byte_length FROM runtime_jobs j "
+            "LEFT JOIN content_objects c ON c.content_id=j.prompt_content_id "
+            "WHERE j.call_id=ANY(%s)",
+            ([r["child_call_id"] for r in parents],)).fetchall()
+        stages = conn.execute("SELECT call_id,event_type,min(occurred_at) AS first_at "
+            "FROM events WHERE call_id=ANY(%s) AND event_type IN "
+            "('call.dispatched','call.completed') GROUP BY call_id,event_type",
+            (call_ids,)).fetchall()
     uncertain_by_call = {row["call_id"]: row["payload"].get("reason") for row in uncertain_events}
     reasons = Counter()
     outcomes = Counter()
     models = Counter()
     prompt_versions = Counter()
     verifier_refs = Counter()
+    categories = Counter()
+    output_contracts = Counter()
     state_counts = Counter()
     evaluated = 0
     result_count = 0
     latencies = []
+    verifier_latencies = []
+    shadow_execution_latencies = []
+    context_bytes = [row["byte_length"] for row in context_sizes
+                     if row["byte_length"] is not None]
+    stage_by_call = {(row["call_id"], row["event_type"]): row["first_at"]
+                     for row in stages}
     for parent in parents:
         facts = parent["gate_facts"]
+        categories[parent["category"] or "unknown"] += 1
+        output_contracts[facts.get("output_contract") or "unknown"] += 1
         models[facts.get("model_profile") or "unknown"] += 1
         prompt_versions[facts.get("prompt_version") or "unknown"] += 1
         verifier_refs[facts.get("verifier_ref") or "missing"] += 1
@@ -188,6 +208,8 @@ def query_shadow_cohort(dsn: str, filters: RouterCohortFilter) -> dict:
                 outcome = evidence.get("state") or "unknown"
                 outcomes[outcome] += 1
                 reasons[evidence.get("reason") or "unclassified"] += 1
+                if isinstance(evidence.get("elapsed_seconds"), (int, float)):
+                    verifier_latencies.append(max(0, int(evidence["elapsed_seconds"] * 1000)))
             else:
                 outcomes["unknown"] += 1
                 reasons["evaluation_missing"] += 1
@@ -197,6 +219,10 @@ def query_shadow_cohort(dsn: str, filters: RouterCohortFilter) -> dict:
         if job and job["launch_claimed_at"]:
             latencies.append(max(0, int((job["launch_claimed_at"] -
                                          job["admitted_at"]).total_seconds() * 1000)))
+        started = stage_by_call.get((call_id, "call.dispatched"))
+        completed = stage_by_call.get((call_id, "call.completed"))
+        if started and completed:
+            shadow_execution_latencies.append(max(0, int((completed - started).total_seconds() * 1000)))
     usage_by_call = {row["call_id"] for row in usage if row["input_tokens"] is not None
                      and row["output_tokens"] is not None}
     paid_ids = {row["child_call_id"] for row in parents}
@@ -207,8 +233,18 @@ def query_shadow_cohort(dsn: str, filters: RouterCohortFilter) -> dict:
             "states": dict(state_counts), "outcomes": dict(outcomes),
             "reasons": dict(reasons), "model_profiles": dict(models),
             "prompt_versions": dict(prompt_versions), "verifier_refs": dict(verifier_refs),
+            "categories": dict(categories), "output_contracts": dict(output_contracts),
+            "context_bytes": {"samples": len(context_bytes),
+                              "median": sorted(context_bytes)[len(context_bytes)//2]
+                                if context_bytes else None},
             "queue_latency_ms": {"samples": len(latencies),
                                  "median": sorted(latencies)[len(latencies)//2] if latencies else None},
+            "shadow_execution_latency_ms": {"samples": len(shadow_execution_latencies),
+                "median": sorted(shadow_execution_latencies)[len(shadow_execution_latencies)//2]
+                    if shadow_execution_latencies else None},
+            "verifier_latency_ms": {"samples": len(verifier_latencies),
+                "median": sorted(verifier_latencies)[len(verifier_latencies)//2]
+                    if verifier_latencies else None},
             "usage_coverage": {"qwen": len(shadow_ids & usage_by_call),
                                "paid": len(paid_ids & usage_by_call)},
             "unknown_usage": {"qwen": len(shadow_ids - usage_by_call),

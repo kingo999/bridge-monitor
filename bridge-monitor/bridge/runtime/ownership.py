@@ -145,8 +145,13 @@ def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id:
         chosen_call, root_task, governing_version = winner[:3]
         lease_id = str(uuid.uuid4())
         deadline_seconds = (policy.limits.claude_execution_seconds if pool == "claude"
-                            else policy.router.execution_seconds if execution_mode == "shadow"
                             else policy.limits.qwen_execution_seconds)
+        if execution_mode == "shadow":
+            pinned_row = conn.execute("SELECT policy FROM config_versions WHERE version=%s",
+                                      (governing_version,)).fetchone()
+            if not pinned_row:
+                raise ValueError("shadow admission policy is missing")
+            deadline_seconds = PolicySnapshot.model_validate(pinned_row[0]).router.execution_seconds
         row = conn.execute("UPDATE runtime_jobs SET state='active',owner_incarnation=%s,"
                            "worker_instance_id=%s,lease_id=%s,fencing_token=fencing_token+1,"
                            "slot_held=true,execution_deadline_at=now()+(%s * interval '1 second') "

@@ -131,13 +131,74 @@ class BridgeCoordinator:
         if prior:
             if prior[1] != paid_id or prior[2] != prompt_sha256(prompt):
                 return {"state": "rejected", "reason": "work_item_conflict"}
-            paid = self.get_execution_status(paid_id)
+            if (prior[4].get("output_contract") != output_contract or
+                    prior[4].get("verifier_ref") != verifier_ref):
+                return {"state": "rejected", "reason": "work_item_conflict"}
             with psycopg.connect(self.dsn) as conn:
+                job = conn.execute("SELECT state,requested_model,reserved_tokens FROM runtime_jobs "
+                    "WHERE call_id=%s AND execution_mode='production'", (paid_id,)).fetchone()
                 shadow = conn.execute("SELECT state FROM runtime_jobs WHERE call_id=%s "
                     "AND execution_mode='shadow'", (shadow_id,)).fetchone()
-            return {**paid, "router_decision_id": prior[0],
-                    "shadow_call_id": shadow_id if shadow else None,
-                    "shadow_state": shadow[0] if shadow else "not_queued"}
+                shadow_decided = conn.execute("SELECT 1 FROM delegation_decisions "
+                    "WHERE work_item_id=%s AND decision_stage='parent_router' "
+                    "AND execution_mode='shadow' LIMIT 1", (task.work_item_id,)).fetchone()
+                answer = conn.execute("SELECT c.raw_bytes FROM results r JOIN content_objects c "
+                    "ON c.content_id=r.delivered_content_id WHERE r.call_id=%s "
+                    "AND r.delivered_at IS NOT NULL ORDER BY r.delivered_at DESC LIMIT 1",
+                    (paid_id,)).fetchone()
+                captured = conn.execute("SELECT m.original_content_id,paid_call.requested_model "
+                    "FROM messages m JOIN calls paid_call ON paid_call.call_id=m.call_id "
+                    "JOIN content_objects c ON c.content_id=m.original_content_id "
+                    "WHERE m.call_id=%s AND m.role='user' AND c.raw_bytes=%s "
+                    "ORDER BY m.message_id LIMIT 1", (paid_id, prompt.encode("utf-8"))).fetchone()
+            if job and (job[1] != requested_model or job[2] != reserve_tokens):
+                return {"state": "rejected", "reason": "work_item_conflict"}
+            if captured and captured[1] != requested_model:
+                return {"state": "rejected", "reason": "work_item_conflict"}
+            if not job:
+                if prior[3] != self.policy_version or not captured:
+                    return {"state": "rejected", "reason": "paid_admission_recovery_unavailable",
+                            "router_decision_id": prior[0]}
+                paid = self.delegate_claude(task, prompt, requested_model=requested_model,
+                    reserve_tokens=reserve_tokens, source_id=source_id,
+                    _call_id=paid_id, _captured_prompt_content_id=captured[0],
+                    _expected_policy_version=prior[3])
+            elif job[0] == "queued":
+                paid = self.run_recovery_until_terminal(paid_id)
+            else:
+                paid = self.get_execution_status(paid_id)
+            if answer is None and paid.get("answer") is None and paid.get("state") == "completed":
+                with psycopg.connect(self.dsn) as conn:
+                    answer = conn.execute("SELECT c.raw_bytes FROM results r JOIN content_objects c "
+                        "ON c.content_id=r.delivered_content_id WHERE r.call_id=%s "
+                        "AND r.delivered_at IS NOT NULL ORDER BY r.delivered_at DESC LIMIT 1",
+                        (paid_id,)).fetchone()
+            response = {**paid, "router_decision_id": prior[0],
+                "answer": paid.get("answer") or (bytes(answer[0]).decode("utf-8") if answer else None),
+                "shadow_call_id": shadow_id if shadow else None,
+                "shadow_state": shadow[0] if shadow else "not_queued"}
+            if (not shadow and not shadow_decided and prior[5] == "eligible" and
+                    prior[3] == self.policy_version and
+                    response.get("state") == "completed" and response.get("delivered")):
+                case = None
+                if verifier_ref:
+                    try:
+                        case = load_case(self.project_root, verifier_ref)
+                    except (OSError, ValueError):
+                        pass
+                facts = collect_capture_facts(self.dsn, task, reserve_tokens=reserve_tokens,
+                    case=case, case_digest_valid=case is not None, policy=self.policy,
+                    local_capability=self.local_capability)
+                facts.remaining_calls += 1
+                facts.remaining_tokens += reserve_tokens
+                facts.capture_healthy = self.emitter.may_admit_new_work(
+                    self.policy.deployment.degraded_admission)
+                decision = decide_parent_route(task, prompt, output_contract, verifier_ref,
+                    self.policy.router, facts)
+                if decision.eligible:
+                    return self._enqueue_router_shadow(task, case, decision, paid_id, shadow_id,
+                                                       response)
+            return response
         case = None
         if verifier_ref:
             try:
@@ -174,6 +235,10 @@ class BridgeCoordinator:
                     "shadow_state": "not_eligible" if not decision.eligible else "not_queued"}
         if not decision.eligible or paid.get("state") != "completed" or not paid.get("delivered"):
             return response
+        return self._enqueue_router_shadow(task, case, decision, paid_id, shadow_id, response)
+
+    def _enqueue_router_shadow(self, task: TaskPacket, case, decision, paid_id: str,
+                               shadow_id: str, response: dict) -> dict:
         try:
             prior_local = existing_local_delegation(
                 self.dsn, paid_id, self.policy.deployment.qwen_model_profile)
@@ -340,7 +405,8 @@ class BridgeCoordinator:
         self.emitter.emit(EventType.DELEGATION_DECIDED, call_id=child_id,
             task_id=task.task_id, work_item_id=task.work_item_id,
             config_version=self.policy_version,
-            payload={"decision_id": guidance_decision_id, "route": "local",
+            payload={"decision_id": guidance_decision_id,
+                     "decision_stage": "claude_child", "route": "local",
                      "eligibility": "eligible", "reason": "baseline_ready",
                      "guidance_manifest": readiness.manifest,
                      "gate_facts": readiness.gate_facts})
@@ -500,7 +566,7 @@ class BridgeCoordinator:
             config_version=lease.policy_version,
             payload={"decision_id": str(uuid.uuid5(uuid.NAMESPACE_URL,
                 f"bridge-monitor:{lease.call_id}:reported-paid-direct")),
-                "route": "paid", "eligibility": "unknown",
+                "decision_stage": "claude_child", "route": "paid", "eligibility": "unknown",
                 "reason": "worker_chose_paid_direct",
                 "guidance_manifest": {"state": "not_selected"},
                 "gate_facts": {"provenance": "claude_final_report",

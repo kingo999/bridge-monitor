@@ -13,7 +13,8 @@ from bridge.runtime.policy_startup import active_policy
 
 def runtime_status(dsn: str) -> dict:
     with psycopg.connect(dsn) as conn:
-        rows = conn.execute("SELECT state,slot_held,count(*) FROM runtime_jobs GROUP BY state,slot_held").fetchall()
+        rows = conn.execute("SELECT state,slot_held,count(*) FROM runtime_jobs "
+            "WHERE execution_mode='production' GROUP BY state,slot_held").fetchall()
     return {"active": sum(n for state, held, n in rows if state == "active" and held),
             "queued": sum(n for state, held, n in rows if state == "queued"),
             "held_uncertain": sum(n for state, held, n in rows if state in ("uncertain", "fallback") and held),
@@ -147,7 +148,8 @@ class CodexIngress:
             call_id=request.call_id, task_id=request.task.task_id,
             work_item_id=request.task.work_item_id, config_version=self.policy_version,
             payload={"decision_id": str(uuid.uuid5(uuid.NAMESPACE_URL,
-                     f"bridge-monitor:{request.call_id}:paid-direct")), "route": "paid",
+                     f"bridge-monitor:{request.call_id}:paid-direct")),
+                     "decision_stage": "claude_child", "route": "paid",
                      "eligibility": "ineligible", "reason": reason,
                      "guidance_manifest": manifest, "gate_facts": gate_facts})
         return stored and self.emitter.may_admit_new_work(self.policy.deployment.degraded_admission)

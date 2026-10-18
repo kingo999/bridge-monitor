@@ -33,7 +33,13 @@ def load_case(project_root: Path, verifier_ref: str) -> RouterCase:
     raw = path.read_bytes()
     if hashlib.sha256(raw).hexdigest() != verifier_ref:
         raise ValueError("case digest mismatch")
-    return RouterCase.model_validate_json(raw)
+    case = RouterCase.model_validate_json(raw)
+    if (not case.verifier_settings_sha256 or
+            case.baseline_validation_reason != "tests_failed" or
+            case.baseline_sha256 != hashlib.sha256(case.baseline_source.encode("utf-8")).hexdigest() or
+            case.tests_sha256 != hashlib.sha256(_canonical(case.tests)).hexdigest()):
+        raise ValueError("case baseline validation is incomplete")
+    return case
 
 
 def register_case(project_root: Path, case: RouterCase,
@@ -50,6 +56,12 @@ def register_case(project_root: Path, case: RouterCase,
     baseline = verifier.verify(case.baseline_source, case.tests)
     if baseline.state != "fail" or baseline.reason != "tests_failed":
         raise ValueError("baseline must fail trusted tests")
+    case = case.model_copy(update={
+        "verifier_settings_sha256": hashlib.sha256(
+            _canonical(policy.verifier.model_dump(mode="json"))).hexdigest(),
+        "baseline_validation_reason": baseline.reason,
+        "baseline_sha256": hashlib.sha256(case.baseline_source.encode("utf-8")).hexdigest(),
+        "tests_sha256": hashlib.sha256(_canonical(case.tests)).hexdigest()})
     raw = _canonical(case.model_dump(mode="json"))
     digest = hashlib.sha256(raw).hexdigest()
     root = _case_root(Path(project_root))
@@ -71,6 +83,6 @@ def register_case(project_root: Path, case: RouterCase,
         finally:
             pending.unlink(missing_ok=True)
     return CaseReceipt(verifier_ref=digest,
-        baseline_sha256=hashlib.sha256(case.baseline_source.encode("utf-8")).hexdigest(),
-        tests_sha256=hashlib.sha256(_canonical(case.tests)).hexdigest(),
+        baseline_sha256=case.baseline_sha256,
+        tests_sha256=case.tests_sha256,
         verifier_image=policy.verifier.image, captured_at=case.captured_at)

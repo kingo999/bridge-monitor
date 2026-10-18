@@ -54,6 +54,7 @@ def test_rejected_local_admission_retains_paid_route_and_single_prompt(runtime_d
     assert ingress.record_paid_decision(request, reason=decision.reason,
         manifest={"state": "no_guidance", "version": 1}, gate_facts={"admission": "rejected"})
     with psycopg.connect(dsn) as conn:
-        assert conn.execute("SELECT route,reason FROM delegation_decisions WHERE child_call_id=%s",
-                            (call,)).fetchone() == ("paid", "root_budget_exhausted")
+        assert conn.execute("SELECT route,reason,decision_stage FROM delegation_decisions "
+                            "WHERE child_call_id=%s", (call,)).fetchone() == (
+                            "paid", "root_budget_exhausted", "claude_child")
         assert conn.execute("SELECT count(*) FROM messages WHERE call_id=%s", (call,)).fetchone()[0] == 1

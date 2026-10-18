@@ -6,14 +6,12 @@ import uuid
 from datetime import datetime, timezone
 
 import psycopg
-from psycopg.types.json import Jsonb
 
 from bridge.router.cases import load_case
 from bridge.router.eligibility import build_local_prompt
-from bridge.runtime.completions import record_completion
+from bridge.runtime.completions import record_shadow_completion
 from bridge.runtime.ownership import (abort_unlaunched, claim_dispatch, claim_launch,
                                       mark_execution_uncertain)
-from contracts.content import ContentObject
 from contracts.events import EventType
 from contracts.outcomes import CompletionEnvelope
 from contracts.policy import PolicySnapshot
@@ -58,9 +56,8 @@ def _pinned_policy(dsn: str, version: str) -> PolicySnapshot:
     return PolicySnapshot.model_validate(row[0])
 
 
-def _record_evaluation(dsn: str, result_id: str, call_id: str, *, source: str | None,
-                       state: str, reason: str, verifier_result, manifest: dict,
-                       verifier_image: str) -> None:
+def _evaluation_evidence(*, source: str | None, state: str, reason: str,
+                         verifier_result, manifest: dict, verifier_image: str) -> dict:
     evidence = {"state": state, "reason": reason, "source": "independent_shadow_verifier",
                 "verifier_image": verifier_image, "verifier_ref": manifest.get("verifier_ref"),
                 "policy_sha256": manifest.get("policy_sha256"),
@@ -72,26 +69,7 @@ def _record_evaluation(dsn: str, result_id: str, call_id: str, *, source: str | 
                 "elapsed_seconds": verifier_result.elapsed_seconds if verifier_result else None,
                 "exit_code": verifier_result.exit_code if verifier_result else None,
                 "recorded_at_utc": datetime.now(timezone.utc).isoformat()}
-    with psycopg.connect(dsn) as conn, conn.transaction():
-        if source is not None:
-            content_id = _id("parsed-content", call_id)
-            content = ContentObject.from_bytes(content_id, source.encode("utf-8"),
-                role="assistant", direction="in", content_type="text/x-python",
-                origin="observed", capture_layer="bridge_router_verifier",
-                completeness="complete")
-            conn.execute("INSERT INTO content_objects(content_id,raw_bytes,byte_length,sha256,"
-                "role,direction,content_type,encoding,origin,capture_layer,completeness,"
-                "message_id,block_order) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,NULL,0) "
-                "ON CONFLICT(content_id) DO NOTHING",
-                (content.content_id, content.raw_bytes, content.byte_length, content.sha256,
-                 content.role, content.direction, content.content_type, content.encoding,
-                 content.origin, content.capture_layer, content.completeness))
-            conn.execute("INSERT INTO result_parts(part_id,result_id,content_id) "
-                "VALUES(%s,%s,%s) ON CONFLICT(part_id) DO NOTHING",
-                (_id("parsed-part", call_id), result_id, content_id))
-        conn.execute("INSERT INTO evaluations(evaluation_id,result_id,evidence,recorded_at) "
-            "VALUES(%s,%s,%s,now()) ON CONFLICT(evaluation_id) DO NOTHING",
-            (_id("evaluation", call_id), result_id, Jsonb(evidence)))
+    return evidence
 
 
 def run_one_shadow(coordinator, verifier) -> dict | None:
@@ -112,22 +90,35 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
         manifest, pinned_version = manifest_row
         pinned = _pinned_policy(coordinator.dsn, lease.policy_version)
         ref = manifest.get("verifier_ref")
-        if not ref or ref in coordinator.policy.router.withdrawn_refs:
+        current_router = coordinator.policy.router
+        if not ref or ref in current_router.withdrawn_refs:
             raise ValueError("verifier_withdrawn")
         case = load_case(coordinator.project_root, ref)
-        router = coordinator.policy.router
+        router = pinned.router
         canonical_tests = json.dumps(case.tests, sort_keys=True,
                                      separators=(",", ":")).encode("utf-8")
         pinned_policy_hash = hashlib.sha256(json.dumps(
             pinned.router.model_dump(mode="json"), sort_keys=True,
             separators=(",", ":")).encode("utf-8")).hexdigest()
+        verifier_settings_hash = hashlib.sha256(json.dumps(
+            router.verifier.model_dump(mode="json"), sort_keys=True,
+            separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest() \
+            if router.verifier else None
         if (pinned_version != lease.policy_version or pool != "qwen" or
+                model != pinned.deployment.qwen_model_profile or
                 model != coordinator.policy.deployment.qwen_model_profile or
+                manifest.get("model_digest") != pinned.deployment.qwen_model_digest or
                 manifest.get("model_digest") != coordinator.policy.deployment.qwen_model_digest or
                 manifest.get("model_profile") != model or
-                router.verifier is None or
-                pinned.router.verifier is None or
-                pinned.router.verifier.image != router.verifier.image or
+                router.verifier is None or current_router.verifier is None or
+                router.verifier != current_router.verifier or
+                case.verifier_settings_sha256 != verifier_settings_hash or
+                pinned.deployment.qwen_agent_endpoint !=
+                    coordinator.policy.deployment.qwen_agent_endpoint or
+                pinned.deployment.qwen_output_tokens !=
+                    coordinator.policy.deployment.qwen_output_tokens or
+                pinned.deployment.qwen_temperature !=
+                    coordinator.policy.deployment.qwen_temperature or
                 getattr(getattr(verifier, "settings", None), "image", router.verifier.image)
                     != router.verifier.image or
                 manifest.get("policy_sha256") != pinned_policy_hash or
@@ -148,6 +139,7 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
         preflight = adapter.preflight()
         if not preflight.ready or preflight.observed_digest != manifest.get("model_digest"):
             raise ValueError("agent_attestation_failed")
+        adapter.timeout_seconds = router.execution_seconds
     except (OSError, ValueError, KeyError, AttributeError) as exc:
         abort_unlaunched(coordinator.dsn, lease)
         coordinator.emitter.emit(EventType.ADMISSION_BLOCKED, call_id=call_id,
@@ -194,7 +186,6 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
         producer_id=coordinator.emitter.producer_id,
         producer_incarnation=coordinator.incarnations["qwen"],
         call_id=call_id, attempt_id=attempt_id)
-    record_completion(coordinator.dsn, envelope, binding, answer_bytes=raw.encode("utf-8"))
     source = None
     verification = None
     try:
@@ -209,9 +200,18 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
         source = None
     except Exception as exc:
         state, reason = "uncertain", f"verifier_unavailable:{type(exc).__name__}"
-    _record_evaluation(coordinator.dsn, result_id, call_id, source=source,
-                       state=state, reason=reason, verifier_result=verification,
-                       manifest=manifest, verifier_image=router.verifier.image)
+    evidence = _evaluation_evidence(source=source, state=state, reason=reason,
+        verifier_result=verification, manifest=manifest, verifier_image=router.verifier.image)
+    try:
+        record_shadow_completion(coordinator.dsn, envelope, binding,
+            raw_bytes=raw.encode("utf-8"),
+            parsed_bytes=source.encode("utf-8") if source is not None else None,
+            evidence=evidence)
+    except Exception as exc:
+        mark_execution_uncertain(coordinator.dsn, call_id,
+            reason=f"evaluation_persistence_failed:{type(exc).__name__}")
+        return {"state": "uncertain", "call_id": call_id,
+                "reason": "evaluation_persistence_failed"}
     coordinator.emitter.emit(EventType.CALL_COMPLETED, attempt_id=attempt_id,
         payload={"result_id": result_id, "execution_mode": "shadow"}, **common)
     return {"state": "completed", "call_id": call_id, "result_id": result_id,

@@ -10,6 +10,7 @@ from bridge.code_fix_verifier import VerificationResult
 from bridge.mcp_server import BridgeCoordinator
 from bridge.router.shadow_worker import run_one_shadow
 from bridge.runtime.ownership import claim_dispatch, claim_launch
+from bridge.runtime.scheduler import cancel_queued
 from bridge.runtime.completions import record_completion
 from contracts.outcomes import CompletionEnvelope
 from contracts.work import ExecutionBinding
@@ -73,7 +74,7 @@ def test_shadow_worker_verifies_candidate_without_delivery_or_replay(router_env,
         incarnation_id=worker.incarnations["qwen"], execution_mode="production") is None
     verifier = Verifier()
     outcome = run_one_shadow(worker, verifier)
-    assert outcome["state"] == "completed"
+    assert outcome["state"] == "completed", outcome
     assert outcome["evaluation_state"] == "pass"
     assert qwen.calls == 1 and verifier.calls == 1
     assert run_one_shadow(worker, verifier) is None
@@ -106,6 +107,23 @@ def test_valid_json_wrong_code_is_a_failed_undelivered_result(router_env, tmp_pa
             "JOIN evaluations e ON e.result_id=r.result_id WHERE r.call_id=%s",
             (routed["shadow_call_id"],)).fetchone()
     assert row == (None, "tests_failed")
+
+
+def test_shadow_result_not_completed_if_evaluation_cannot_commit(router_env, tmp_path,
+                                                                  monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    worker = _worker(parent, tmp_path, Qwen())
+    def fail_persistence(*args, **kwargs):
+        raise RuntimeError("database write unavailable")
+    monkeypatch.setattr("bridge.router.shadow_worker.record_shadow_completion", fail_persistence)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome["state"] == "uncertain"
+    with psycopg.connect(parent.dsn) as conn:
+        row = conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone()
+        assert row == ("uncertain", True)
+        assert conn.execute("SELECT count(*) FROM results WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone()[0] == 0
 
 
 def test_malformed_output_does_not_run_verifier(router_env, tmp_path):
@@ -146,11 +164,19 @@ def test_withdrawn_case_is_cancelled_before_remote_send(router_env, tmp_path):
     parent, routed, _, _ = _queue(router_env)
     ref = router_env[4].verifier_ref
     with psycopg.connect(parent.dsn) as conn:
+        original = conn.execute("SELECT policy FROM config_versions WHERE version=%s",
+            (parent.policy_version,)).fetchone()[0]
         conn.execute("UPDATE config_versions SET policy=jsonb_set(policy, "
             "'{router,withdrawn_refs}', %s::jsonb) WHERE version=%s",
             ('["' + ref + '"]', parent.policy_version))
     qwen = Qwen()
-    outcome = run_one_shadow(_worker(parent, tmp_path, qwen), Verifier())
+    try:
+        outcome = run_one_shadow(_worker(parent, tmp_path, qwen), Verifier())
+    finally:
+        from psycopg.types.json import Jsonb
+        with psycopg.connect(parent.dsn) as conn:
+            conn.execute("UPDATE config_versions SET policy=%s WHERE version=%s",
+                (Jsonb(original), parent.policy_version))
     assert outcome["state"] == "cancelled"
     assert outcome["reason"] == "verifier_withdrawn"
     assert qwen.calls == 0
@@ -209,3 +235,69 @@ def test_oversize_response_has_specific_failure_reason(router_env, tmp_path):
     with psycopg.connect(parent.dsn) as conn:
         assert conn.execute("SELECT delivered_at FROM results WHERE call_id=%s",
             (routed["shadow_call_id"],)).fetchone() == (None,)
+
+
+def test_disabled_worker_claims_no_shadow_job(router_env, tmp_path):
+    parent, routed, _, _ = _queue(router_env)
+    with psycopg.connect(parent.dsn) as conn:
+        original = conn.execute("SELECT policy FROM config_versions WHERE version=%s",
+            (parent.policy_version,)).fetchone()[0]
+        conn.execute("UPDATE config_versions SET policy=jsonb_set(policy, "
+            "'{router,mode}', '\"disabled\"'::jsonb) WHERE version=%s",
+            (parent.policy_version,))
+    qwen = Qwen()
+    try:
+        assert run_one_shadow(_worker(parent, tmp_path, qwen), Verifier()) is None
+    finally:
+        from psycopg.types.json import Jsonb
+        with psycopg.connect(parent.dsn) as conn:
+            conn.execute("UPDATE config_versions SET policy=%s WHERE version=%s",
+                (Jsonb(original), parent.policy_version))
+    assert qwen.calls == 0
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone() == ("queued",)
+
+
+def test_cancelled_queue_does_not_send_shadow_job(router_env, tmp_path):
+    parent, routed, _, _ = _queue(router_env)
+    assert cancel_queued(parent.dsn, routed["shadow_call_id"])
+    qwen = Qwen()
+    assert run_one_shadow(_worker(parent, tmp_path, qwen), Verifier()) is None
+    assert qwen.calls == 0
+
+
+def test_capture_gap_before_send_holds_slot_without_model_call(router_env, tmp_path):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    emitted = worker.emitter.emit
+    def gap(event_type, *args, **kwargs):
+        if str(event_type) == "EventType.CALL_DISPATCHED" or event_type == "call.dispatched":
+            return False
+        return emitted(event_type, *args, **kwargs)
+    worker.emitter.emit = gap
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome["reason"] == "capture_gap_before_send"
+    assert qwen.calls == 0
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone() == ("uncertain", True)
+
+
+def test_shadow_timeout_is_unknown_and_does_not_replay(router_env, tmp_path):
+    parent, routed, _, _ = _queue(router_env)
+    from bridge.adapters.base import AdapterResult
+    class Timeout(Qwen):
+        def run(self, *args, **kwargs):
+            self.calls += 1
+            return AdapterResult(state="uncertain", uncertainty="local_execution_deadline")
+    qwen = Timeout()
+    worker = _worker(parent, tmp_path, qwen)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome["reason"] == "local_execution_deadline"
+    assert run_one_shadow(_worker(parent, tmp_path / "after-timeout", qwen), Verifier()) is None
+    assert qwen.calls == 1
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone() == ("uncertain", True)

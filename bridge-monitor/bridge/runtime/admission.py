@@ -114,8 +114,9 @@ def admit_call(dsn: str, request: CallRequest, policy: PolicyInput | PolicySnaps
                       execution_mode))
         if guidance_manifest is not None:
             conn.execute("INSERT INTO delegation_decisions(decision_id,work_item_id,child_call_id,"
-                         "route,eligibility,reason,policy_version,guidance_manifest,gate_facts,decided_at) "
-                         "VALUES(%s,%s,%s,'local','eligible',%s,%s,%s,%s,now())",
+                         "route,eligibility,reason,policy_version,guidance_manifest,gate_facts,"
+                         "decided_at,decision_stage) "
+                         "VALUES(%s,%s,%s,'local','eligible',%s,%s,%s,%s,now(),'claude_child')",
                          (guidance_decision_id, task.work_item_id, request.call_id,
                           "guidance_ready" if guidance_manifest.get("state") == "supplied" else "baseline_ready",
                           policy_version, Jsonb(guidance_manifest), Jsonb(gate_facts or {})))

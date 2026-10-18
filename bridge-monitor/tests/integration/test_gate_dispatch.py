@@ -80,6 +80,8 @@ def test_guidance_decision_is_durable_before_queued_child_can_be_claimed(runtime
     with psycopg.connect(dsn) as conn:
         assert conn.execute("SELECT guidance_manifest FROM delegation_decisions "
                             "WHERE child_call_id=%s AND route='local'", (call,)).fetchone()[0] == manifest
+        assert conn.execute("SELECT decision_stage FROM delegation_decisions "
+                            "WHERE child_call_id=%s AND route='local'", (call,)).fetchone()[0] == "claude_child"
 
 
 def test_review_scope_narrowed_after_queue_prevents_example_dispatch(runtime_dsn, monkeypatch):

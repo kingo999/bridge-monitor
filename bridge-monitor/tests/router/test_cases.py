@@ -35,7 +35,12 @@ def test_register_case_is_pre_solution_content_addressed_and_detects_drift(tmp_p
     receipt = register_case(tmp_path, case, _policy())
     assert len(receipt.verifier_ref) == 64
     assert register_case(tmp_path, case, _policy()).verifier_ref == receipt.verifier_ref
-    assert load_case(tmp_path, receipt.verifier_ref) == case
+    registered = load_case(tmp_path, receipt.verifier_ref)
+    assert registered.baseline_source == case.baseline_source
+    assert registered.verifier_settings_sha256
+    assert registered.baseline_validation_reason == "tests_failed"
+    assert registered.baseline_sha256 == receipt.baseline_sha256
+    assert registered.tests_sha256 == receipt.tests_sha256
     snapshot = tmp_path / "var" / "router" / "cases" / f"{receipt.verifier_ref}.json"
     body = json.loads(snapshot.read_text(encoding="utf-8"))
     body["baseline_source"] = "def square(n):\n    return 4\n"

@@ -6,6 +6,7 @@ from psycopg.types.json import Jsonb
 from fastapi.testclient import TestClient
 
 from bridge.router.shadow_worker import run_one_shadow
+from contracts.events import EventType
 from service.queries.router import (RouterCohortFilter, query_shadow_cohort,
                                     read_router_audit)
 from service.http.app import create_app
@@ -42,6 +43,15 @@ def test_shadow_report_counts_every_parent_attempt_without_billed_savings(router
     assert audit["paid_result"]["delivered_at"] is not None
     assert audit["prompt_refs"]["original"] and audit["prompt_refs"]["shadow_effective"]
     assert audit["result_refs"]["shadow_raw"] and audit["result_refs"]["shadow_parsed"]
+    assert parent.emitter.emit(EventType.DELEGATION_DECIDED,
+        task_id=task.task_id, work_item_id=task.work_item_id,
+        config_version=parent.policy_version,
+        payload={"decision_id": str(uuid.uuid4()), "decision_stage": "claude_child",
+                 "route": "paid", "eligibility": "unknown",
+                 "reason": "worker_chose_paid_direct", "guidance_manifest": {},
+                 "gate_facts": {}})
+    audited = read_router_audit(parent.dsn, task.work_item_id)
+    assert "claude_child" in [item["decision_stage"] for item in audited["decisions"]]
     assert case.task_text not in str(audit)
     assert case.baseline_source not in str(audit)
 
