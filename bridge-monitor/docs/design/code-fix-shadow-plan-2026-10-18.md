@@ -10,6 +10,8 @@
 
 **Spec:** `docs/design/code-fix-shadow-2026-10-18.md`
 
+**Execution status:** The retrospective harness and two-case trial are complete; see `docs/verification/code-fix-shadow-2026-10-18.md`. A genuine natural-task cohort and any live canary remain pending.
+
 ## Global constraints
 
 - Keep all new or modified project files under `C:\AI\bridge-monitor`; do not modify the original bridge.
