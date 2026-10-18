@@ -1,6 +1,7 @@
 """Trusted GPT/Codex ingress: captures exact request before admission."""
 
 import uuid
+from typing import Literal
 
 import psycopg
 
@@ -40,7 +41,9 @@ class CodexIngress:
                effective_prompt: str | None = None,
                guidance_manifest: dict | None = None, gate_facts: dict | None = None,
                guidance_decision_id: str | None = None,
-               expected_policy_version: str | None = None) -> AdmissionDecision:
+               expected_policy_version: str | None = None,
+               execution_mode: Literal["production", "shadow"] = "production",
+               captured_content_id: str | None = None) -> AdmissionDecision:
         self.refresh_policy()
         route = "paid" if pool == "claude" else "local"
         task = request.task
@@ -52,8 +55,17 @@ class CodexIngress:
 
         if not self.emitter.may_admit_new_work(self.policy.deployment.degraded_admission):
             return rejected("capture_degraded")
-        content_id = self._capture_request(request, prompt, effective_prompt=effective_prompt,
-                                           ensure_caller=pool == "claude")
+        content_id = captured_content_id or self._capture_request(
+            request, prompt, effective_prompt=effective_prompt,
+            ensure_caller=pool == "claude", execution_mode=execution_mode)
+        if captured_content_id:
+            with psycopg.connect(self.dsn) as conn:
+                matched = conn.execute("SELECT 1 FROM messages m "
+                    "JOIN content_objects c ON c.content_id=m.original_content_id "
+                    "WHERE m.call_id=%s AND m.original_content_id=%s AND c.raw_bytes=%s LIMIT 1",
+                    (request.call_id, captured_content_id, prompt.encode("utf-8"))).fetchone()
+            if not matched:
+                return rejected("captured_prompt_mismatch")
         if not content_id or not self.emitter.may_admit_new_work(self.policy.deployment.degraded_admission):
             return rejected("capture_degraded")
         decision = admit_call(self.dsn, request, self.policy, policy_version=self.policy_version,
@@ -63,13 +75,15 @@ class CodexIngress:
                               prompt_content_id=content_id,
                               expected_active_version=expected_policy_version or self.policy_version,
                               guidance_manifest=guidance_manifest, gate_facts=gate_facts,
-                              guidance_decision_id=guidance_decision_id)
+                              guidance_decision_id=guidance_decision_id,
+                              execution_mode=execution_mode)
         common = {"task_id": task.task_id, "work_item_id": task.work_item_id,
                   "config_version": decision.policy_version}
         health = self.emitter.health()
         payload = {**runtime_status(self.dsn), "capture_state": health["state"],
                    "known_gaps": health["known_gaps"],
-                   "spool_pressure": health["spool_pressure"]}
+                   "spool_pressure": health["spool_pressure"],
+                   "execution_mode": execution_mode}
         if decision.state == "queued":
             self.emitter.emit(EventType.CALL_QUEUED, call_id=request.call_id,
                               requested_model=request.requested_model, payload=payload, **common)
@@ -81,7 +95,8 @@ class CodexIngress:
 
     def _capture_request(self, request: CallRequest, prompt: str,
                          *, effective_prompt: str | None = None,
-                         ensure_caller: bool = False) -> str | None:
+                         ensure_caller: bool = False,
+                         execution_mode: Literal["production", "shadow"] = "production") -> str | None:
         task = request.task
         common = {"task_id": task.task_id, "work_item_id": task.work_item_id,
                   "config_version": self.policy_version}
@@ -97,7 +112,8 @@ class CodexIngress:
         self.emitter.emit(EventType.CALL_RECEIVED, call_id=request.call_id,
                           requested_model=request.requested_model,
                           payload={"parent_call_id": request.parent_call_id,
-                                   "parent_attempt_id": request.parent_attempt_id}, **common)
+                                   "parent_attempt_id": request.parent_attempt_id,
+                                   "execution_mode": execution_mode}, **common)
         effective_id = None
         if effective_prompt is not None and effective_prompt != prompt:
             effective_id = str(uuid.uuid4())

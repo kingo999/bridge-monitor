@@ -25,6 +25,10 @@ from bridge.runtime.workspaces import (fingerprint_source, materialize_source,
                                        release_source, isolated_workspace_target)
 from bridge.guidance.gates import check_readiness
 from bridge.guidance.selection import resolve_guidance
+from bridge.router.cases import load_case
+from bridge.router.eligibility import build_local_prompt, decide_parent_route
+from bridge.router.ingress import (collect_capture_facts, existing_parent_decision,
+    existing_local_delegation, prompt_sha256, publish_router_decision, router_call_ids)
 from bridge.runtime.fallback import commit_fallback
 from bridge.runtime.scheduler import cancel_queued
 from bridge.runtime.scheduler import request_cancel_tree
@@ -38,7 +42,8 @@ class BridgeCoordinator:
                  source_roots: dict[str, str] | None = None,
                  workspace_base: str | Path | None = None,
                  workspace_max_bytes: int = 104857600,
-                 local_capability: dict | None = None, paid_capability: dict | None = None):
+                 local_capability: dict | None = None, paid_capability: dict | None = None,
+                 project_root: str | Path | None = None):
         self.dsn = dsn
         self.policy = policy
         self.policy_version = policy_version
@@ -52,6 +57,8 @@ class BridgeCoordinator:
         self.source_roots = source_roots or {}
         self.workspace_base = Path(workspace_base) if workspace_base else None
         self.workspace_max_bytes = workspace_max_bytes
+        self.project_root = (Path(project_root).resolve() if project_root else
+                             Path(__file__).resolve().parents[1])
         self.ingress = CodexIngress(dsn, emitter, policy, policy_version)
         self.incarnations = {pool: str(uuid.uuid4()) for pool in ("claude", "qwen")}
         self.workers = {pool: f"bridge-{pool}-{uuid.uuid4()}" for pool in ("claude", "qwen")}
@@ -66,8 +73,13 @@ class BridgeCoordinator:
         self.policy_version = self.policy.version
 
     def delegate_claude(self, task: TaskPacket, prompt: str, *, requested_model: str,
-                        reserve_tokens: int, source_id: str | None = None) -> dict:
+                        reserve_tokens: int, source_id: str | None = None,
+                        _call_id: str | None = None,
+                        _captured_prompt_content_id: str | None = None,
+                        _expected_policy_version: str | None = None) -> dict:
         self._refresh_policy()
+        if _expected_policy_version and self.policy_version != _expected_policy_version:
+            return {"state": "rejected", "reason": "policy_changed"}
         if requested_model != self.policy.fallback.paid_model_profile:
             return {"state": "rejected", "reason": "unvalidated_paid_model_choice"}
         if task.context.get("source_id") and source_id != task.context["source_id"]:
@@ -81,13 +93,15 @@ class BridgeCoordinator:
             source_snapshot = fingerprint_source(self.source_roots[source_id],
                 max_bytes=self.workspace_max_bytes)
             task = task.model_copy(update={"context": {**task.context, "source_id": source_id}})
-        call_id = str(uuid.uuid4())
+        call_id = _call_id or str(uuid.uuid4())
         request = CallRequest(call_id=call_id, task=task, requested_model=requested_model,
                               parent_call_id=f"gpt:{task.task_id}")
         decision = self.ingress.submit(request, prompt=prompt, pool="claude",
                                        reserve_tokens=reserve_tokens,
                                        source_snapshot=source_snapshot,
-                                       source_mode="read" if source_id else None)
+                                       source_mode="read" if source_id else None,
+                                       captured_content_id=_captured_prompt_content_id,
+                                       expected_policy_version=_expected_policy_version)
         if decision.state != "queued":
             return {"state": decision.state, "reason": decision.reason, "call_id": call_id}
         self.owned_calls.add(call_id)
@@ -105,6 +119,113 @@ class BridgeCoordinator:
             return {"state": "queue_expired", "call_id": call_id,
                     "reason": "paid_queue_deadline_exceeded"}
         return self.get_execution_status(call_id)
+
+    def route_work(self, task: TaskPacket, prompt: str, *, requested_model: str,
+                   reserve_tokens: int, output_contract: str,
+                   verifier_ref: str | None = None,
+                   source_id: str | None = None) -> dict:
+        """Return only the paid answer; queue a separate, undelivered shadow case."""
+        self._refresh_policy()
+        paid_id, shadow_id, decision_id = router_call_ids(task)
+        prior = existing_parent_decision(self.dsn, task.work_item_id)
+        if prior:
+            if prior[1] != paid_id or prior[2] != prompt_sha256(prompt):
+                return {"state": "rejected", "reason": "work_item_conflict"}
+            paid = self.get_execution_status(paid_id)
+            with psycopg.connect(self.dsn) as conn:
+                shadow = conn.execute("SELECT state FROM runtime_jobs WHERE call_id=%s "
+                    "AND execution_mode='shadow'", (shadow_id,)).fetchone()
+            return {**paid, "router_decision_id": prior[0],
+                    "shadow_call_id": shadow_id if shadow else None,
+                    "shadow_state": shadow[0] if shadow else "not_queued"}
+        case = None
+        if verifier_ref:
+            try:
+                case = load_case(self.project_root, verifier_ref)
+            except (OSError, ValueError):
+                pass
+        facts = collect_capture_facts(self.dsn, task, reserve_tokens=reserve_tokens,
+            case=case, case_digest_valid=case is not None, policy=self.policy,
+            local_capability=self.local_capability)
+        facts.capture_healthy = self.emitter.may_admit_new_work(
+            self.policy.deployment.degraded_admission)
+        decision = decide_parent_route(task, prompt, output_contract, verifier_ref,
+                                       self.policy.router, facts)
+        paid_request = CallRequest(call_id=paid_id, task=task,
+            requested_model=requested_model, parent_call_id=f"gpt:{task.task_id}")
+        captured = self.ingress._capture_request(paid_request, prompt, ensure_caller=True)
+        if not captured or not self.emitter.may_admit_new_work(
+                self.policy.deployment.degraded_admission):
+            return {"state": "rejected", "reason": "capture_degraded",
+                    "router_decision_id": None, "shadow_call_id": None,
+                    "shadow_state": "not_queued"}
+        if not publish_router_decision(self.emitter, task, call_id=paid_id,
+                decision_id=decision_id, decision=decision,
+                policy_version=self.policy_version, mode="production", route="paid"):
+            return {"state": "rejected", "reason": "capture_degraded",
+                    "router_decision_id": None, "shadow_call_id": None,
+                    "shadow_state": "not_queued"}
+        paid = self.delegate_claude(task, prompt, requested_model=requested_model,
+            reserve_tokens=reserve_tokens, source_id=source_id,
+            _call_id=paid_id, _captured_prompt_content_id=captured,
+            _expected_policy_version=self.policy_version)
+        response = {**paid, "router_decision_id": decision_id,
+                    "shadow_call_id": None,
+                    "shadow_state": "not_eligible" if not decision.eligible else "not_queued"}
+        if not decision.eligible or paid.get("state") != "completed" or not paid.get("delivered"):
+            return response
+        try:
+            prior_local = existing_local_delegation(
+                self.dsn, paid_id, self.policy.deployment.qwen_model_profile)
+        except Exception as exc:
+            response["shadow_state"] = "enqueue_failed"
+            response["shadow_reason"] = type(exc).__name__
+            response["shadow_audit_recorded"] = False
+            return response
+        if prior_local:
+            response["shadow_state"] = "existing_local_delegation"
+            try:
+                response["shadow_audit_recorded"] = publish_router_decision(
+                    self.emitter, task, call_id=paid_id,
+                    decision_id=str(uuid.uuid5(uuid.NAMESPACE_URL,
+                        f"bridge-monitor:parent-router:shadow-skip:{paid_id}")),
+                    decision=decision, policy_version=self.policy_version, mode="shadow",
+                    route="pending", reason="existing_local_delegation")
+            except Exception:
+                response["shadow_audit_recorded"] = False
+            return response
+        try:
+            shadow_request = CallRequest(call_id=shadow_id, task=task,
+                requested_model=self.policy.deployment.qwen_model_profile,
+                parent_call_id=paid_id, parent_attempt_id=f"{paid_id}:attempt:1")
+            local_prompt = build_local_prompt(case, self.policy.router)
+            cutoff = datetime.now(timezone.utc) + timedelta(seconds=(
+                self.policy.router.queue_deadline_seconds +
+                self.policy.router.execution_seconds))
+            admitted = self.ingress.submit(shadow_request, prompt=local_prompt, pool="qwen",
+                reserve_tokens=self.policy.router.shadow_reserve_tokens,
+                local_cutoff_at=cutoff, execution_mode="shadow",
+                expected_policy_version=self.policy_version)
+            publish_router_decision(self.emitter, task, call_id=shadow_id,
+                decision_id=str(uuid.uuid5(uuid.NAMESPACE_URL,
+                    f"bridge-monitor:parent-router:shadow-decision:{shadow_id}")),
+                decision=decision, policy_version=self.policy_version, mode="shadow",
+                route="local" if admitted.state == "queued" else "pending",
+                reason=decision.reason if admitted.state == "queued" else admitted.reason)
+            response["shadow_call_id"] = shadow_id if admitted.state == "queued" else None
+            response["shadow_state"] = admitted.state
+        except Exception as exc:
+            response["shadow_state"] = "enqueue_failed"
+            response["shadow_reason"] = type(exc).__name__
+            try:
+                response["shadow_audit_recorded"] = self.emitter.emit(
+                    EventType.ADMISSION_BLOCKED, call_id=shadow_id,
+                    task_id=task.task_id, work_item_id=task.work_item_id,
+                    config_version=self.policy_version,
+                    payload={"reason": "shadow_enqueue_failed", "execution_mode": "shadow"})
+            except Exception:
+                response["shadow_audit_recorded"] = False
+        return response
 
     def delegate_local_analysis(self, prompt: str) -> dict:
         self._refresh_policy()
@@ -638,6 +759,17 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
 
     mcp = FastMCP("Bridge Monitor")
     if audience == "parent":
+        @mcp.tool()
+        def route_work(task: dict, prompt: str, requested_model: str,
+                       reserve_tokens: int, output_contract: str,
+                       verifier_ref: str | None = None,
+                       source_id: str | None = None) -> dict:
+            """Return the paid worker answer and queue an audited, undelivered Qwen shadow."""
+            return coordinator.route_work(TaskPacket.model_validate(task), prompt,
+                requested_model=requested_model, reserve_tokens=reserve_tokens,
+                output_contract=output_contract, verifier_ref=verifier_ref,
+                source_id=source_id)
+
         @mcp.tool()
         def delegate_claude(task: dict, prompt: str, requested_model: str,
                             reserve_tokens: int, source_id: str | None = None) -> dict:

@@ -48,13 +48,16 @@ def admit_call(dsn: str, request: CallRequest, policy: PolicyInput | PolicySnaps
                expected_active_version: str | None = None,
                guidance_manifest: dict | None = None,
                gate_facts: dict | None = None,
-               guidance_decision_id: str | None = None) -> AdmissionDecision:
+               guidance_decision_id: str | None = None,
+               execution_mode: Literal["production", "shadow"] = "production") -> AdmissionDecision:
     if reserve_tokens < 0:
         raise ValueError("reserve_tokens must be nonnegative")
     if source_mode and not source_snapshot:
         raise ValueError("source access requires an immutable snapshot reference")
     if guidance_manifest is not None and (pool != "qwen" or not guidance_decision_id):
         raise ValueError("local guidance decision identity required")
+    if execution_mode == "shadow" and (pool != "qwen" or policy.router.mode != "shadow"):
+        raise ValueError("shadow admission requires reviewed Qwen router policy")
     task = request.task
     route = "paid" if pool == "claude" else "local"
 
@@ -72,13 +75,13 @@ def admit_call(dsn: str, request: CallRequest, policy: PolicyInput | PolicySnaps
                            (task.task_id,)).fetchone()
         if pin and not _pin_matches(pin, request):
             return answer("rejected", "task_pin_conflict")
-        existing = conn.execute("SELECT request, pool, reserved_tokens, state, policy_version,prompt_content_id "
+        existing = conn.execute("SELECT request, pool, reserved_tokens, state, policy_version,prompt_content_id,execution_mode "
                                 "FROM runtime_jobs WHERE call_id=%s",
                                 (request.call_id,)).fetchone()
         if existing:
-            body, existing_pool, tokens, state, version, stored_prompt = existing
+            body, existing_pool, tokens, state, version, stored_prompt, stored_mode = existing
             if (body != request.model_dump() or existing_pool != pool or tokens != reserve_tokens
-                    or stored_prompt != prompt_content_id):
+                    or stored_prompt != prompt_content_id or stored_mode != execution_mode):
                 return answer("rejected", "call_conflict")
             return AdmissionDecision(work_item_id=task.work_item_id, route=route,
                                      state=state, policy_version=version)
@@ -101,11 +104,14 @@ def admit_call(dsn: str, request: CallRequest, policy: PolicyInput | PolicySnaps
                      "tokens_reserved=tokens_reserved+%s WHERE task_id=%s", (reserve_tokens, task.task_id))
         conn.execute("INSERT INTO runtime_jobs(call_id,task_id,work_item_id,pool,request,requested_model,"
                      "policy_version,state,queue_deadline_at,local_cutoff_at,reserved_tokens,source_snapshot,source_mode,"
-                     "prompt_content_id) "
-                     "VALUES(%s,%s,%s,%s,%s,%s,%s,'queued',now()+(%s * interval '1 second'),%s,%s,%s,%s,%s)",
+                     "prompt_content_id,execution_mode) "
+                     "VALUES(%s,%s,%s,%s,%s,%s,%s,'queued',now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s)",
                      (request.call_id, task.task_id, task.work_item_id, pool, Jsonb(request.model_dump()),
-                      request.requested_model, policy_version, policy.deployment.queue_deadline_seconds,
-                      local_cutoff_at, reserve_tokens, source_snapshot, source_mode, prompt_content_id))
+                      request.requested_model, policy_version,
+                      (policy.router.queue_deadline_seconds if execution_mode == "shadow" else
+                       policy.deployment.queue_deadline_seconds),
+                      local_cutoff_at, reserve_tokens, source_snapshot, source_mode, prompt_content_id,
+                      execution_mode))
         if guidance_manifest is not None:
             conn.execute("INSERT INTO delegation_decisions(decision_id,work_item_id,child_call_id,"
                          "route,eligibility,reason,policy_version,guidance_manifest,gate_facts,decided_at) "
