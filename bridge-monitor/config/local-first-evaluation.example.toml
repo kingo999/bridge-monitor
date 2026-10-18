@@ -1,0 +1,8 @@
+# Offline candidate only. No active bridge policy reads this file.
+mode = "disabled"
+canary_percent = 0
+categories = []
+max_local_seconds = 60
+local_output_tokens = 256
+paid_timeout_seconds = 90
+paid_max_budget_usd = 0.10

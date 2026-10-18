@@ -1,0 +1,14 @@
+[
+  {"id":"lfh-python-get","category":"code_reasoning","question":"In Python, data = {'x': 0}. What is data.get('x', 9)? Return the value only.","answer":"0"},
+  {"id":"lfh-js-filter","category":"code_reasoning","question":"In JavaScript, const a = [1, 2, 3]. What is a.filter(x => x > 1).length? Return the number only.","answer":"2"},
+  {"id":"lfh-sql-unmatched","category":"sql_reasoning","question":"Table jobs contains IDs 1, 2, 3, 4, 5. Table results has job_id values 1, 1, 4. How many distinct jobs have no matching results row? Return the number only.","answer":"3"},
+  {"id":"lfh-route-rate","category":"metrics","question":"Seventeen of forty work items were routed locally. Give the routing percentage to one decimal place with a percent sign.","answer":"42.5%"},
+  {"id":"lfh-missing-rate","category":"metrics","question":"Of twenty-five delivered results, six lack dispositions. What percent lack dispositions? Return the percent to one decimal place.","answer":"24.0%"},
+  {"id":"lfh-queue","category":"arithmetic","question":"A queue begins with 230 jobs. Workers complete 12 jobs per minute for 7 minutes, then 9 jobs per minute for 4 minutes. No jobs arrive. How many jobs remain?","answer":"110"},
+  {"id":"lfh-percentage","category":"arithmetic","question":"What is 18 percent of 250? Return the number only.","answer":"45"},
+  {"id":"lfh-earliest-failure","category":"information_extraction","question":"Records: A failed on 2026-10-17; B failed on 2026-10-15; C passed on 2026-10-14; D failed on 2026-10-16. Which failed record is earliest? Return its ID only.","answer":"B"},
+  {"id":"lfh-priority","category":"information_extraction","question":"Records: R1 has severity P3; R2 has severity P2; R3 has severity P1; R4 has severity P2. P1 is highest priority. Which record is highest priority? Return its ID only.","answer":"R3"},
+  {"id":"lfh-power","category":"code_reasoning","question":"In Python, what is 2 ** 3 ** 2? Return the integer only.","answer":"512"},
+  {"id":"lfh-js-floor","category":"code_reasoning","question":"In JavaScript, what is Math.floor(-7 / 3)? Return the integer only.","answer":"-3"},
+  {"id":"lfh-set-length","category":"code_reasoning","question":"In Python, what is len(set([1, 1, 2, 3, 3]))? Return the integer only.","answer":"3"}
+]

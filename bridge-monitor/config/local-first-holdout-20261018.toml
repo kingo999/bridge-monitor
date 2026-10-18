@@ -1,0 +1,8 @@
+# Explicit offline evaluation; never loaded by the desktop MCP service.
+mode = "evaluation"
+canary_percent = 100
+categories = ["code_reasoning", "sql_reasoning", "metrics", "arithmetic", "information_extraction"]
+max_local_seconds = 60
+local_output_tokens = 256
+paid_timeout_seconds = 90
+paid_max_budget_usd = 0.10

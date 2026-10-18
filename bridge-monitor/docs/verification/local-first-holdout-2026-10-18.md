@@ -1,0 +1,25 @@
+# Fresh local-first holdout — 18 October 2026
+
+The candidate route was exercised outside the live bridge. It did not activate a policy, write production Postgres events, change the dashboard cohort, or modify the original bridge. The exact questions and answers were written to `tests/fixtures/local-first-holdout-20261018.json` before model calls. The complete per-call prompt, raw response, model, token usage, elapsed time, verification result, and fallback reason are in the local ignored receipt `var/probes/local-first-holdout-20261018.json`. Its post-run SHA-256 is `6d1e804f3490700555a19041ab3b3eb4f1ca835d254b92b3680091c2c9748ea8`. The fixture was not committed before the run, so this local record does not independently prove preregistration. The updated runner hashes input files and code into new receipts and refuses a changed or interrupted resume; those controls cannot be applied retroactively to this completed run.
+
+Twelve new read-only questions covered code reasoning, SQL, arithmetic, metrics, and extraction. Each received a restricted Sonnet-direct answer and a candidate local-first answer, with arm order alternated. The local path used the authenticated Skynet agent and pinned Qwen 2.5 profile. A completed Qwen response was delivered only if its JSON answer matched the prewritten key exactly; failure, malformed output, or uncertainty required Sonnet. This exact-key verifier is **holdout-only**. Production tasks generally do not arrive with a known correct answer.
+
+| Measure | Sonnet direct | Local-first candidate |
+| --- | ---: | ---: |
+| Questions | 12 | 12 |
+| Sonnet worker calls in that path | 12 | 3 |
+| Qwen answers accepted / sent to Sonnet | — | 9 / 3 |
+| Final answers meeting the exact JSON-and-key contract | 11 | 11 |
+| Sum of observed per-task path time | 32.611 s | 35.040 s |
+
+The three Qwen errors were a SQL unmatched-row count (`2` instead of `3`), queue arithmetic (`158` instead of `110`), and Python set length (`4` instead of `3`). All three triggered Sonnet fallback. All twelve final answers had the correct substance on inspection, but Sonnet returned an explanation inside the answer field for the queue task; both its direct and fallback outputs missed the exact `110` contract.
+
+Qwen reported 1,086 input and 176 output tokens over the twelve calls. The nine direct-arm Sonnet calls that a successful local-first route would have skipped reported 18 ordinary input, 13,193 cache-read input, 17,162 cache-creation input, and 107 output tokens. This is a measured *worker-call counterfactual*, not net paid savings. The actual experiment invoked both arms, so it made twelve direct Sonnet calls plus three fallback calls. The CLI's list-cost estimates cannot be subtracted to infer a bill: arm order and prompt caching affected both paths, GPT/Codex parent usage is absent, and the user may be on a subscription rather than per-token billing.
+
+The candidate took 2.429 seconds longer across these short tasks (about 7.4%). The authenticated agent's polling interval and the first model warm-up are included. This sample is too small and deliberately checkable to forecast general latency or quality. The live database's 30 observed work items include 12 tagged arithmetic and eight tagged code reasoning, but those observations include controlled probes and do not establish a production verifier for either category. For arithmetic with a safe deterministic calculator, Qwen itself may be unnecessary; arbitrary code reasoning cannot be accepted merely because Qwen returned well-formed JSON.
+
+**Decision:** Keep the candidate disabled and out of the live MCP path. The holdout shows a possible reduction in Sonnet invocations when an independent answer check exists, while the three Qwen errors and slightly higher latency rule out a broad unchecked Qwen-first route. A live canary needs a useful production verifier (or an explicitly designed parent judgment step), review of that trust boundary, and parent-plus-worker usage measurement. No policy activation is part of this holdout.
+
+Claude's read-only review found no blocking defect in the offline-only scope. Its actionable findings led to normalized answer delivery, rejection of duplicate JSON keys, fail-closed handling of malformed paid responses, stronger receipt metadata, preservation of completed-arm evidence after interruption, and handling of a missing Claude CLI. File and Git fingerprints were unchanged during the review; these fixes were applied afterward.
+
+Final verification: the local-first tests passed (25), the full suite against the dedicated test database passed (297 passed, two skipped), and the holdout script's dry run validated its pinned profiles and configuration. The full run exposed a transient Windows `PermissionError` during atomic receipt replacement; a bounded retry and regression test resolved it. The stored holdout counts and timings were independently recomputed from the ignored receipt. The original bridge has no tracked changes from this work.
