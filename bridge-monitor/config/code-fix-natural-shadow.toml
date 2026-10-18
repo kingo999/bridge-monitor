@@ -1,0 +1,28 @@
+# Offline natural-task shadow only. This file is never read by the live bridge.
+mode = "shadow"
+cohort = "natural_shadow"
+max_cases = 1
+target_cases = 30
+cohort_start_at = "2026-10-18T14:02:00+00:00"
+excluded_case_ids = ["historical-answer-normalization", "historical-paid-fallback-format"]
+excluded_baseline_sha256 = ["e3b6d0d022590318e5103c0e1f767cb916daab7c430cea794fe4e69b88a77e4b", "639679fff40fd3737039a190f4931217d60a60bf1095587dce55f4be5ea74483"]
+excluded_task_sha256 = ["7c433a588a3aed602ce0633f1e9a47a3b3b9ff3a44d3f242459e7b05c74b5d54", "17dd55b6336069aa74a89f911c6ea04d9d166a10ddad1f373d64d1f26e58b596"]
+parent_model = "gpt-6.1-sol"
+parent_timeout_seconds = 120
+local_output_tokens = 2048
+local_timeout_seconds = 120
+paid_timeout_seconds = 120
+paid_max_budget_usd = 0.10
+prompt_prefix = '''Fix the bug in the single Python file below. Return exactly one JSON object with exactly one key, "answer". Its string value must be the complete replacement Python module: include all required imports and functions, preserve the public callable names and signatures unless the task explicitly changes them, and make the module importable. Do not return a patch, explanation, Markdown fence, placeholder, or a value such as "None" in place of source code. If you cannot produce a complete module, return an empty answer string so the caller can use paid fallback. Do not use tools.
+
+'''
+
+[verifier]
+image = "python@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf52ea5da5bb8d929a"
+daemon_endpoint = "npipe:////./pipe/dockerDesktopLinuxEngine"
+timeout_seconds = 12
+memory_mb = 256
+cpus = 1
+pids_limit = 64
+max_source_bytes = 16384
+max_test_bytes = 16384

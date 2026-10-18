@@ -50,6 +50,8 @@ def parse_codex_jsonl(stream: str, *, requested_model: str,
 def summarize_shadow(results: dict[str, dict], *, cohort: str = "retrospective_shadow") -> dict:
     totals: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     coverage: dict[str, dict[str, int]] = defaultdict(lambda: {"known": 0, "missing": 0})
+    models = defaultdict(lambda: {"requested": defaultdict(int),
+                                  "reported": defaultdict(int)})
     direct_calls = 0
     local_path_calls = 0
     verified = 0
@@ -63,8 +65,12 @@ def summarize_shadow(results: dict[str, dict], *, cohort: str = "retrospective_s
                             ("gpt_direct", parent.get("direct")),
                             ("gpt_local_first", parent.get("local_first"))):
             if reply is not None:
-                covered = isinstance(reply.get("usage"), dict) and bool(reply["usage"])
+                covered = (reply.get("state") == "completed" and
+                    isinstance(reply.get("usage"), dict) and bool(reply["usage"]))
                 coverage[name]["known" if covered else "missing"] += 1
+                for label, key in (("requested", "requested_model"),
+                                   ("reported", "reported_model")):
+                    models[name][label][reply.get(key) or "unknown"] += 1
             if reply and isinstance(reply.get("usage"), dict):
                 for key, value in reply["usage"].items():
                     if type(value) is int and value >= 0:
@@ -80,6 +86,8 @@ def summarize_shadow(results: dict[str, dict], *, cohort: str = "retrospective_s
             "paid_worker_calls_direct": direct_calls,
             "paid_worker_calls_local_first": local_path_calls,
             "verified_local_deliveries": verified,
+            "model_choices": {name: {label: dict(counts) for label, counts in fields.items()}
+                              for name, fields in models.items()},
             "token_totals": {key: dict(value) for key, value in totals.items()},
             "net_billed_savings_usd": None,
             "savings_limit": "Provider-specific tokens are not interchangeable; billing and "

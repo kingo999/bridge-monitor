@@ -14,11 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
 
-from bridge.code_fix_shadow_runner import run_shadow_cases  # noqa: E402
+from bridge.code_fix_shadow_runner import (PROMPT_PREFIX, run_shadow_cases,  # noqa: E402
+                                           validate_natural_case)
 from bridge.code_fix_verifier import DockerVerifier, VerifierSettings  # noqa: E402
 from bridge.experiment_transports import (codex_parent_call, make_qwen_adapter,  # noqa: E402
                                           qwen_call, sonnet_call)
 from bridge.shadow_accounting import summarize_shadow  # noqa: E402
+from bridge.shadow_cohort import check_new_case  # noqa: E402
 from contracts.policy import PolicyInput  # noqa: E402
 
 
@@ -27,6 +29,12 @@ class ShadowSettings(BaseModel):
     mode: Literal["disabled", "shadow"] = "disabled"
     cohort: Literal["retrospective_shadow", "natural_shadow"] = "retrospective_shadow"
     max_cases: int = Field(default=2, ge=1, le=100)
+    target_cases: int = Field(default=30, ge=1, le=1000)
+    cohort_start_at: str | None = None
+    excluded_case_ids: list[str] = Field(default_factory=list)
+    excluded_baseline_sha256: list[str] = Field(default_factory=list)
+    excluded_task_sha256: list[str] = Field(default_factory=list)
+    prompt_prefix: str = Field(default=PROMPT_PREFIX, min_length=1)
     parent_model: str = Field(min_length=1)
     parent_timeout_seconds: float = Field(default=120, gt=0)
     local_output_tokens: int = Field(default=2048, gt=0)
@@ -60,6 +68,22 @@ def main(argv: list[str] | None = None) -> int:
     capabilities = tomllib.loads(args.capabilities.read_text(encoding="utf-8"))
     if settings.mode != "shadow" or len(cases) > settings.max_cases:
         raise SystemExit("explicit shadow mode and configured case limit required")
+    if settings.cohort == "natural_shadow":
+        if (len(cases) != 1 or not isinstance(cases[0], dict) or
+                not isinstance(cases[0].get("provenance"), dict)):
+            raise SystemExit("natural shadow requires one case with provenance")
+        if args.receipt == parser.get_default("receipt"):
+            raise SystemExit("natural shadow requires an explicit per-case receipt path")
+        receipt_dir = PROJECT / "var" / "probes" / "natural-code-fix"
+        if (args.receipt.resolve().parent != receipt_dir.resolve() or
+                not args.receipt.name.endswith(".receipt.json")):
+            raise SystemExit("natural receipt must be under var/probes/natural-code-fix as *.receipt.json")
+        if args.receipt.name != cases[0]["id"] + ".receipt.json":
+            raise SystemExit("natural receipt filename must match the case ID")
+        try:
+            validate_natural_case(cases[0], settings.model_dump())
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
     if not policy.deployment.qwen_agent_endpoint:
         raise SystemExit("authenticated Skynet agent required")
     inputs = {"settings_sha256": args.settings, "cases_sha256": args.cases,
@@ -80,6 +104,15 @@ def main(argv: list[str] | None = None) -> int:
         "paid_model": policy.fallback.paid_model_profile,
         "parent_model": settings.parent_model,
         "verifier_image": settings.verifier.image})
+    if settings.cohort == "natural_shadow":
+        existing_dir = PROJECT / "var" / "probes" / "natural-code-fix"
+        existing = [path for path in sorted(existing_dir.glob("*.receipt.json"))
+                    if path.resolve() != args.receipt.resolve()]
+        try:
+            check_new_case(cases[0], settings.model_dump(), settings.prompt_prefix,
+                metadata, existing)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
     if args.dry_run:
         print(json.dumps({"cases": len(cases), "cohort": settings.cohort,
             "qwen_model": metadata["qwen_model"], "paid_model": metadata["paid_model"],
@@ -101,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
                 model=policy.fallback.paid_model_profile, settings=settings),
             lambda prompt: codex_parent_call(prompt, model=settings.parent_model,
                 timeout_seconds=settings.parent_timeout_seconds),
-            run_metadata=metadata)
+            run_metadata=metadata, prompt_prefix=settings.prompt_prefix)
     summary = summarize_shadow(receipt["results"], cohort=settings.cohort)
     print(json.dumps({"summary": summary, "receipt": str(args.receipt)},
                      sort_keys=True))

@@ -44,9 +44,9 @@ def test_multiple_parent_turns_sum_only_with_complete_usage():
 
 
 def test_summary_reports_paid_worker_avoidance_without_claiming_billed_savings():
-    direct = {"route": "paid", "paid": {"usage": {"input_tokens": 5,
+    direct = {"route": "paid", "paid": {"state": "completed", "usage": {"input_tokens": 5,
         "cache_read_input_tokens": 100, "output_tokens": 20}, "elapsed_seconds": 2.0}}
-    local = {"route": "local", "reason": "verified", "local": {"usage": {"input_tokens": 40,
+    local = {"route": "local", "reason": "verified", "local": {"state": "completed", "usage": {"input_tokens": 40,
         "output_tokens": 15}, "elapsed_seconds": 3.0}, "paid": None}
     parents = {"direct": {"state": "completed", "usage": {"input_tokens": 100}},
                "local_first": {"state": "completed", "usage": {"input_tokens": 110}}}

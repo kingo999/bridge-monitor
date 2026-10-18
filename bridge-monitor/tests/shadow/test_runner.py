@@ -1,17 +1,28 @@
 import json
 from dataclasses import asdict
+from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 
 from bridge.code_fix_verifier import CaseValidation, VerificationResult
 from bridge.local_first import ModelReply
 from bridge.code_fix_shadow_runner import run_shadow_cases
+from bridge.shadow_cohort import summarize_receipts
 
 
 CASES = [{"id": "real-fix-1", "task": "Make answer return 42.",
           "baseline_source": "def answer(): return 41\n",
           "reference_source": "def answer(): return 42\n",
           "tests": [{"function": "answer", "args": [], "expected": 42}]}]
+
+NATURAL_SETTINGS = {"mode": "shadow", "cohort": "natural_shadow",
+    "cohort_start_at": "2026-10-18T13:46:18+00:00",
+    "excluded_case_ids": ["historical-answer-normalization", "historical-paid-fallback-format"],
+    "excluded_baseline_sha256": ["e3b6d0d022590318e5103c0e1f767cb916daab7c430cea794fe4e69b88a77e4b",
+        "639679fff40fd3737039a190f4931217d60a60bf1095587dce55f4be5ea74483"],
+    "excluded_task_sha256": ["7c433a588a3aed602ce0633f1e9a47a3b3b9ff3a44d3f242459e7b05c74b5d54",
+        "17dd55b6336069aa74a89f911c6ea04d9d166a10ddad1f373d64d1f26e58b596"]}
 
 
 class FakeVerifier:
@@ -130,3 +141,67 @@ def test_completed_result_drift_is_rejected_on_resume(tmp_path):
             lambda _: pytest.fail("local replay"),
             lambda _: pytest.fail("paid replay"),
             lambda _: pytest.fail("parent replay"))
+
+
+def test_configured_prompt_is_shared_by_both_workers_and_pinned(tmp_path):
+    prompts = []
+    path = tmp_path / "prompt.json"
+    def worker(prompt, model):
+        prompts.append(prompt)
+        return reply(CASES[0]["reference_source"], model)
+    run_shadow_cases(CASES, {"mode": "shadow"}, path, FakeVerifier(),
+        lambda prompt: worker(prompt, "qwen"),
+        lambda prompt: worker(prompt, "sonnet"), lambda _: {},
+        prompt_prefix="Return the complete replacement module as JSON.\n")
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert len(prompts) == 2 and prompts[0] == prompts[1]
+    assert prompts[0].startswith("Return the complete replacement module")
+    assert saved["prompt_prefix"] == "Return the complete replacement module as JSON.\n"
+    with pytest.raises(ValueError, match="changed"):
+        run_shadow_cases(CASES, {"mode": "shadow"}, path, FakeVerifier(),
+            lambda _: pytest.fail("local replay"), lambda _: pytest.fail("paid replay"),
+            lambda _: pytest.fail("parent replay"), prompt_prefix="different")
+
+
+def test_natural_case_requires_provenance_before_dispatch(tmp_path):
+    settings = NATURAL_SETTINGS
+    with pytest.raises(ValueError, match="provenance"):
+        run_shadow_cases(CASES, settings, tmp_path / "bad.json", FakeVerifier(),
+            lambda _: pytest.fail("local called"), lambda _: pytest.fail("paid called"),
+            lambda _: pytest.fail("parent called"))
+    natural = {**CASES[0], "provenance": {
+        "origin_ref": "codex-task-2026-10-19-001",
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "baseline_ref": "git:abc123", "test_ref": "git:def456"}}
+    receipt = run_shadow_cases([natural], settings, tmp_path / "good.json",
+        FakeVerifier(), lambda _: reply(natural["reference_source"], "qwen"),
+        lambda _: reply(natural["reference_source"], "sonnet"), lambda _: {})
+    assert receipt["cohort"] == "natural_shadow"
+    assert receipt["cases"][0]["provenance"]["origin_ref"] == "codex-task-2026-10-19-001"
+    assert receipt["results"][natural["id"]]["arm_elapsed_seconds"]["direct"] >= 0
+    assert natural["task"] not in receipt["results"][natural["id"]]["parent_prompts"]["direct"]
+    assert "Task SHA-256" in receipt["results"][natural["id"]]["parent_prompts"]["direct"]
+    assert summarize_receipts([tmp_path / "good.json"], target_cases=1)["eligible_cases"] == 1
+    with pytest.raises(ValueError, match="one case"):
+        run_shadow_cases([natural, {**natural, "id": "another"}], settings,
+            tmp_path / "many.json", FakeVerifier(), lambda _: pytest.fail("local"),
+            lambda _: pytest.fail("paid"), lambda _: pytest.fail("parent"))
+
+
+def test_retro_baseline_and_future_capture_are_rejected_before_dispatch(tmp_path):
+    historical = json.loads((Path(__file__).resolve().parents[1] / "fixtures" /
+        "code-fix-shadow-20261018.json").read_text(encoding="utf-8"))[0]
+    historical["id"] = "new-looking-id"
+    historical["provenance"] = {"origin_ref": "new-looking-origin",
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+        "baseline_ref": "git:claimed", "test_ref": "git:claimed"}
+    with pytest.raises(ValueError, match="excluded retrospective"):
+        run_shadow_cases([historical], NATURAL_SETTINGS, tmp_path / "historical.json",
+            FakeVerifier(), lambda _: pytest.fail("qwen dispatched"),
+            lambda _: pytest.fail("sonnet dispatched"), lambda _: {})
+    fresh = {**CASES[0], "provenance": {**historical["provenance"],
+        "captured_at": "2099-01-01T00:00:00+00:00"}}
+    with pytest.raises(ValueError, match="capture time"):
+        run_shadow_cases([fresh], NATURAL_SETTINGS, tmp_path / "future.json",
+            FakeVerifier(), lambda _: pytest.fail("qwen dispatched"),
+            lambda _: pytest.fail("sonnet dispatched"), lambda _: {})
