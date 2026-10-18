@@ -105,6 +105,17 @@ def test_parent_judgment_lineage(runtime_dsn, judgment, answer, relation):
     assert bool(receipt.output_result_id) == bool(answer)
 
 
+def test_unused_parent_answer_is_retained_without_claiming_output_contribution(runtime_dsn):
+    claude, _, bindings = _seed_chain(runtime_dsn, recipient_call_id="gpt")
+    paid = _paid_result(runtime_dsn, claude, bindings[claude])
+    receipt = _ack(runtime_dsn, claude, paid, judgment="unused", answer="Different topic")
+    with psycopg.connect(runtime_dsn) as conn:
+        output = conn.execute("SELECT output_result_id FROM dispositions WHERE "
+                              "disposition_id=%s", (receipt.acknowledgement_id,)).fetchone()[0]
+    assert receipt.output_result_id is not None
+    assert output is None
+
+
 def test_parent_report_rejects_wrong_call_hash_and_conflicting_replay(runtime_dsn):
     claude, other, bindings = _seed_chain(runtime_dsn, recipient_call_id="gpt")
     paid = _paid_result(runtime_dsn, claude, bindings[claude])

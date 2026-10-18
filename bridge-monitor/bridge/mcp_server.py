@@ -12,10 +12,12 @@ from pathlib import Path
 import psycopg
 
 from contracts.events import EventType
-from contracts.outcomes import CompletionEnvelope, ContributionLink, DispositionRecord
+from contracts.outcomes import (CompletionEnvelope, ContributionLink, DispositionRecord,
+                                ParentAcknowledgement)
 from contracts.work import CallRequest, ExecutionBinding, TaskPacket
 from bridge.adapters.codex_ingress import CodexIngress, runtime_status
 from bridge.runtime.completions import record_completion
+from bridge.runtime.parent_acknowledgements import record_parent_acknowledgement
 from bridge.runtime.ownership import (claim_dispatch, claim_launch,
                                       mark_execution_uncertain, register_incarnation,
                                       abort_unlaunched)
@@ -568,6 +570,31 @@ class BridgeCoordinator:
                 "accounting_complete": receipt.accounting_complete,
                 "diagnostics": list(receipt.diagnostics)}
 
+    def acknowledge_claude_result(self, call_id: str, report: dict) -> dict:
+        if call_id not in self.owned_calls:
+            raise PermissionError("acknowledgement is outside this parent process's owned calls")
+        claim = ParentAcknowledgement.model_validate(report)
+        receipt = record_parent_acknowledgement(self.dsn, call_id=call_id,
+            producer_id=self.emitter.producer_id, report=claim)
+        if receipt.created:
+            with psycopg.connect(self.dsn) as conn:
+                parent_id, work_id, task_id = conn.execute(
+                    "SELECT c.parent_call_id,c.work_item_id,w.task_id FROM calls c "
+                    "JOIN work_items w ON w.work_item_id=c.work_item_id WHERE c.call_id=%s",
+                    (call_id,)).fetchone()
+            self.emitter.emit(EventType.DISPOSITION_RECORDED, call_id=call_id,
+                task_id=task_id, work_item_id=work_id,
+                payload={"disposition_id": claim.acknowledgement_id,
+                         "result_id": claim.result_id, "actor_id": f"gpt-parent:{parent_id}",
+                         "stage": "gpt", "judgment": claim.judgment, "reason": claim.reason,
+                         "supersedes_id": claim.supersedes_id,
+                         "input_sha256": claim.input_sha256,
+                         "output_result_id": (receipt.output_result_id
+                                              if claim.judgment != "unused" else None)})
+        return {"acknowledgement_id": receipt.acknowledgement_id,
+                "output_result_id": receipt.output_result_id,
+                "judgment": receipt.judgment}
+
 
 def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
     from mcp.server.fastmcp import FastMCP
@@ -586,6 +613,11 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
         def complete_work(call_id: str, envelope: dict) -> dict:
             """Supply a later completion acknowledgement for this client's owned call."""
             return coordinator.complete_work(call_id, CompletionEnvelope.model_validate(envelope))
+
+        @mcp.tool()
+        def acknowledge_claude_result(call_id: str, report: dict) -> dict:
+            """Report how this parent used a delivered Claude result; parent-reported evidence."""
+            return coordinator.acknowledge_claude_result(call_id, report)
 
         @mcp.tool()
         def get_execution_status(call_id: str) -> dict:

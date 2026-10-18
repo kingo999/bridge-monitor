@@ -55,12 +55,13 @@ def record_parent_acknowledgement(dsn: str, *, call_id: str, producer_id: str,
         output_bytes = report.answer_text.encode("utf-8") if report.answer_text is not None else None
         if output_bytes is not None:
             output_result_id, output_content_id, output_hash = _output_ids(parent_call_id, output_bytes)
+        disposition_output_id = output_result_id if report.judgment != "unused" else None
         prior = conn.execute("SELECT result_id,actor_id,stage,judgment,reason,supersedes_id,"
             "input_sha256,output_result_id,details FROM dispositions WHERE disposition_id=%s",
             (report.acknowledgement_id,)).fetchone()
         details = {"provenance": "parent_mcp_report", "producer_id": producer_id}
         expected = (report.result_id, actor_id, "gpt", report.judgment, report.reason,
-                    report.supersedes_id, report.input_sha256, output_result_id, details)
+                    report.supersedes_id, report.input_sha256, disposition_output_id, details)
         if prior:
             if prior != expected:
                 raise ValueError("acknowledgement ID conflicts with different report")
@@ -101,7 +102,7 @@ def record_parent_acknowledgement(dsn: str, *, call_id: str, producer_id: str,
             "judgment,reason,supersedes_id,recorded_at,part_id,input_sha256,"
             "output_result_id,details) VALUES(%s,%s,%s,'gpt',%s,%s,%s,now(),NULL,%s,%s,%s)",
             (report.acknowledgement_id, report.result_id, actor_id, report.judgment,
-             report.reason, report.supersedes_id, report.input_sha256, output_result_id,
+             report.reason, report.supersedes_id, report.input_sha256, disposition_output_id,
              Jsonb(details)))
         if output_result_id is not None and report.judgment != "unused":
             relation = {"accepted": "accepted_contribution",
