@@ -116,8 +116,9 @@ apart from warm calls), `responses.jsonl` (raw text, parsed result, policy verdi
 
 ## Operational rollout
 
-Steps 1–3 were applied on 19 October 2026 after explicit approval (see the verification report). Step 4 is the
-manual operating mode; step 5 is still not done. Each step changes live services or schema and needs a deliberate go-ahead.
+Steps 1–3 were applied on 19 October 2026 after explicit approval (see the verification report).
+Step 4 is the manual operating mode; step 5 has begun as a controlled rollout. Operations that
+change live services or schema require authorization covering those changes.
 
 1. Take the standard backup (`scripts/backup-monitor.ps1`), then confirm 007 is the only pending
    migration. Apply with `python -m database.migrate <OPERATIONAL_DSN_ENV_NAME>`. It is additive:
@@ -128,11 +129,14 @@ manual operating mode; step 5 is still not done. Each step changes live services
    renders nothing while the schema is absent.
 4. Start Gemma with `start --warm`, then run capture/run commands manually. No scheduled task is
    created and none of this touches `BridgeMonitor-RouterShadow`.
-5. The optional `route_work` capture hook is implemented but **disabled and not deployed**.
-   It uses the bounded background observer described below. Enabling it is a separate operation;
-   a synchronous call to the manual `capture_text` path is not an equivalent replacement.
+5. The optional `route_work` capture hook entered controlled rollout on 19 October 2026.
+   Migration 008 and dashboard reporting are deployed, and one fresh parent passed a real
+   controlled capture. The Bridge Monitor desktop MCP entry now names the reviewed enabled
+   local configuration for subsequent connections. Existing parent connections keep their
+   startup snapshots until reconnect. See the [rollout receipt](../reviews/gemma-route-work-capture-rollout-2026-10-19.md).
+   A synchronous call to manual `capture_text` is not an equivalent replacement.
 
-## Optional arrival capture (not enabled)
+## Optional arrival capture
 
 The parent can offer registered, matching single-file cases before paid dispatch. This does
 not select a route or start Gemma. Child and shadow audiences have no observer. Only the
@@ -160,7 +164,8 @@ items and joins the active daemon for at most 250 ms; an active transaction may 
 Migration `008_classifier_route_capture.sql` adds only classifier accounting/progress tables
 and a partial classifier index. Missing schema disables the optional sink on its first
 attempt; it does not affect parent dispatch or the existing manual classification schema.
-It has **not been applied to the operational database**. The database-wide lifetime limits
+It was applied to the operational database on 19 October 2026 after a private verified backup;
+only 008 was pending, and production counts and the active policy stayed unchanged. The database-wide lifetime limits
 are 256 hook observations and 4 MiB serialized input, and one successful persistence per two
 seconds. Duplicates are free. Observation, protected content and budget charge commit together.
 Restart, profile change and rollback never replenish counters. A database error or ambiguous
@@ -198,11 +203,12 @@ loop, background service or model start is created. With Gemma stopped, reconcil
 queue expiry can proceed without claiming or sending model work. A production decision is
 route evidence, not proof of admission, completion or delivery.
 
-Before live rollout, separately approve the schema migration after backup/index/locking
-review, the deployment/restart, and local enablement. The migration runner applies **all**
-pending migrations; review that list first. First deploy with the new switch false, verify
-disabled behavior, then use a small approved controlled case. Starting Gemma and performing
-a manual classifier run also remain separate decisions. No live policy activation is needed.
+For future rollouts, obtain authorization covering schema migration, deployment/restart and
+local enablement. The migration runner applies **all** pending migrations; review that list
+first and use bounded locking. First deploy with the new switch false, verify disabled
+behavior, then use a small controlled case. The 19 October rollout followed this sequence
+under explicit user authorization. Gemma remains stopped; starting it and performing a
+manual classifier run remain separate decisions. No live policy activation is needed.
 
 Disable future capture by setting `route_work_capture.enabled = false` and performing an
 approved parent restart; editing the file alone cannot stop a running startup snapshot.
