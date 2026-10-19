@@ -9,6 +9,8 @@ from service.queries.metrics import query_metrics
 from service.queries.snapshot import read_snapshot
 from service.queries.router import (RouterCohortFilter, query_shadow_cohort,
                                     read_router_audit)
+from service.queries.classifier import (ClassifierCohortFilter, query_classifier_cohort,
+                                        read_classifier_observation)
 
 
 def query_router(dsn: str, operator_token: str, sessions: dict, *,
@@ -117,5 +119,29 @@ def query_router(dsn: str, operator_token: str, sessions: dict, *,
         if audit is None:
             raise HTTPException(404, "work item not found")
         return audit
+
+    @router.get("/classifier/cohort")
+    def classifier_cohort(request: Request, authorization: str | None = Header(default=None),
+                          origin_kind: str = "all", model: str | None = None,
+                          profile_id: str | None = None, rubric_version: str | None = None,
+                          created_from: datetime | None = None,
+                          created_until: datetime | None = None):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        try:
+            filters = ClassifierCohortFilter(origin_kind=origin_kind, model=model,
+                profile_id=profile_id, rubric_version=rubric_version,
+                created_from=created_from, created_until=created_until)
+            return query_classifier_cohort(dsn, filters)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @router.get("/classifier/observations/{observation_id}")
+    def classifier_observation(observation_id: str, request: Request,
+                               authorization: str | None = Header(default=None)):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        detail = read_classifier_observation(dsn, observation_id)
+        if detail is None:
+            raise HTTPException(404, "classifier observation not found")
+        return detail
 
     return router
