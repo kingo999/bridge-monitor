@@ -1,0 +1,7 @@
+# Persistent router shadow worker — 19 October 2026
+
+`BridgeMonitor-RouterShadow` is a separate per-user Windows scheduled task. Its action invokes `scripts/run-router-shadow-task.ps1` with `config/router-shadow-task.example.json` and contains no credentials. The wrapper reads the existing protected desktop DSN and Skynet agent token file, waits for project-local PostgreSQL, runs `serve-router-shadow.py`, and retries after an exit. It starts at sign-in with `IgnoreNew` multiple-instance handling. Existing dashboard and PostgreSQL tasks were not changed.
+
+Before registration, two orphaned manual launch pairs were found. The operational database had no queued, active or held Qwen shadow jobs, so those exact four processes were stopped. The separate task was then registered and started. It reported `Running` with one wrapper and one worker process pair. A controlled stop of the idle worker pair caused the wrapper to launch a new pair within ten seconds; `var/logs/router-shadow-task.log` recorded the exit. The task action still contained paths only, and the operational database continued to show zero open Qwen shadow jobs and four v2 independently passing evaluations. No new cohort or Qwen request was created during this setup.
+
+The task depends on an interactive sign-in for the current Windows user. Check its state and worker logs after a host restart. Do not launch a manual worker alongside it. Stop admitting router work before intentionally stopping the task; active or uncertain calls require the existing reconciliation procedure.

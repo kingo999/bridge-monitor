@@ -1,0 +1,17 @@
+{
+  "task_name": "BridgeMonitor-RouterShadow",
+  "python_executable": ".venv\\Scripts\\python.exe",
+  "worker_script": "scripts\\serve-router-shadow.py",
+  "runtime_config": "config\\runtime-capabilities.proposal.toml",
+  "desktop_secrets": "var\\secrets\\desktop-mcp.json",
+  "agent_token_env_name": "BRIDGE_MONITOR_SKYNET_TOKEN",
+  "pg_isready_executable": "C:\\Program Files\\PostgreSQL\\18\\bin\\pg_isready.exe",
+  "postgres_host": "127.0.0.1",
+  "postgres_port": 45481,
+  "postgres_probe_user": "bridge_monitor",
+  "database_ready_seconds": 45,
+  "restart_delay_seconds": 5,
+  "stdout_log": "var\\logs\\router-shadow-task.stdout.log",
+  "stderr_log": "var\\logs\\router-shadow-task.stderr.log",
+  "service_log": "var\\logs\\router-shadow-task.log"
+}
