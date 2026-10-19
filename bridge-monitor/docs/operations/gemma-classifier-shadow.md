@@ -2,10 +2,11 @@
 
 The classifier is **advisory and observational**. Gemma 4 12B recommends one of `tools`,
 `general_local`, `code_local`, `paid` or `clarify` for a request. The recommendation is stored
-beside a deterministic check of whether it *would be allowed*, and beside the route the
-unchanged system actually took. It never selects, dispatches, admits, rejects or alters
-anything, and it is not wired into `route_work`, the scheduler, the Qwen shadow worker, or any
-policy. Only inputs you explicitly hand to it are observed; ordinary conversations are not.
+beside a deterministic check of whether it *would be allowed*, and beside the unchanged
+system's recorded route decision. It never selects, dispatches, admits, rejects or alters
+production work. Its recommendations do not enter `route_work`, the scheduler, the Qwen
+shadow worker or live policy. The optional arrival hook records matching registered cases;
+classification still requires an explicit runner invocation. Ordinary conversations are not captured.
 
 Everything is off until you copy `config/gemma-classifier.example.toml` to a `*.local.toml`
 (git-ignored), set `enabled = true`, and pass it with `--config` (or
@@ -135,7 +136,10 @@ change live services or schema require authorization covering those changes.
    local configuration. The desktop MCP was reconnected at 21:17 CEST and the current tool
    connection passed a zero-call-budget capture/recovery check. Future configuration edits
    still require reconnecting startup snapshots. See the [rollout receipt](../reviews/gemma-route-work-capture-rollout-2026-10-19.md).
-   A synchronous call to manual `capture_text` is not an equivalent replacement.
+   At 21:24 CEST, the pinned runtime was started and one still-fresh controlled hook
+   observation was classified and linked. Gemma remains running; the one-shot classifier
+   runner is closed and no continuous runner is scheduled. A synchronous call to manual
+   `capture_text` is not an equivalent replacement.
 
 ## Optional arrival capture
 
@@ -208,8 +212,9 @@ For future rollouts, obtain authorization covering schema migration, deployment/
 local enablement. The migration runner applies **all** pending migrations; review that list
 first and use bounded locking. First deploy with the new switch false, verify disabled
 behavior, then use a small controlled case. The 19 October rollout followed this sequence
-under explicit user authorization. Gemma remains stopped; starting it and performing a
-manual classifier run remain separate decisions. No live policy activation is needed.
+under explicit user authorization. A subsequent explicit request authorized starting Gemma
+and classifying one controlled hook observation; that check completed successfully. Further
+manual runs remain explicit operations. No live policy activation is needed.
 
 Disable future capture by setting `route_work_capture.enabled = false` and performing an
 approved parent restart; editing the file alone cannot stop a running startup snapshot.

@@ -5,6 +5,11 @@ mode while preserving the live routing policy. `codex/gemma-route-capture` was m
 fast-forward into `codex/skynet-task-status` at `1603286e109b85e7b38819c27c1d4822dbd1784a`.
 No remote push was performed. The design draft and unrelated IDE/project files were unchanged.
 
+Latest status after the separately authorized 21:24 CEST classification check: **Gemma is
+running fully on the RX 7900 XT; one controlled hook observation completed and linked**.
+The one-shot classifier runner has closed. Live policy and production routing remain unchanged.
+The sections below preserve the earlier capture-only rollout and reconnect chronology.
+
 The advisory model recommendation was Claude Opus because the rollout crosses migration,
 process-ownership and failure-isolation boundaries. No model setting was changed. The single
 paid canary used the existing live policy's Sonnet profile.
@@ -155,3 +160,63 @@ Receipts are `reconnect-attempt.json`, `connected-budget-verification.json`,
 Only operational documentation changed in Git during this verification; no product source,
 model settings or live routing policy was edited. The merged code's earlier full regression
 result remains applicable; this stage added live transport/capture/expiry checks.
+
+## One controlled Gemma classification — 21:24 CEST
+
+The user explicitly authorized starting Gemma and running one controlled classification
+through the capture hook. The still-fresh, sole pending observation from the actual desktop
+hook was reused, avoiding another paid probe or quota charge. Its request age at dispatch was
+358.718 seconds, inside the hard 600-second limit. Its zero-call-budget production probe had
+correctly been rejected: the linked `paid` decision is route evidence, not a paid execution.
+
+The standard launcher verified the pinned runtime and model manifest, started owned process
+11612 on loopback port 11435 and warmed the model in 5.733 seconds. Read-only runtime status
+verified Ollama 0.30.9, the expected manifest digest, the ROCm/gfx1100 discrete RX 7900 XT and
+8,373,969,878 of 8,373,969,878 model bytes resident in VRAM. No CPU fallback was observed.
+
+The normal runner held its single-runner advisory lock, verified that this was the only
+eligible queued row and called `process_one` exactly once. No prompt, generation profile,
+facts, capture timestamp, quota or policy was changed. The outcome was:
+
+| Field | Verified result |
+| --- | --- |
+| Observation | `8f6cbc4c-4708-56ce-9316-567587fda6c5` |
+| Origin / capture method | `controlled` / `route_work` |
+| Outcome / attempts | `completed`, valid contract / **1** |
+| Raw recommendation | `code` / **`code_local`** |
+| Advisory assessment | blocked: **`code_worker_unknown`**, no warnings |
+| Stored system route | **`paid`**, exact binding `matched` |
+| Exact decision | `9c163e7b-0584-582d-a9d9-118ffa069e3a` |
+| Inference / request | 1,826 / **1,827 ms** |
+| Arrival to completion | 360,578 ms, including the manual queue wait |
+| Terminal usage | **703 input / 55 output tokens**, `ollama_terminal` |
+| Backend | `gpu_resident`, pinned Gemma 4 12B digest |
+
+The response bytes/hash, parsed recommendation and capture provenance were checked in the
+database. The stored route source validates the exact task, work item, paid-call identity,
+production decision, prompt/source hashes, registered-case reference and output contract.
+Every other observation's attempt count stayed unchanged. The route label was filled during
+normal completion; no live late-fill simulation, extra inference or fabricated result was used.
+
+Live authenticated dashboard API checks matched the observation and protected response body.
+An unmocked installed-Chrome browser check signed in to the live loopback dashboard, selected
+`route_work` and verified its rendered panel: 2 submitted, 1 attempted/completed, 0 failed,
+1 skipped; `code_local 1`; unknown-capacity blocks 1; actual route known 1/1; usage 703/55;
+and `gpu_resident 1`. The one skipped row is the older expired canary, not a classifier failure.
+Unauthenticated cohort, detail and response-content requests remained 401. The panel screenshot
+was inspected and saved as `var/hook-rollout-20261019/classification-dashboard.png`.
+
+All production event/call/job/decision/result/work-item counts and all four policy activations
+stayed unchanged across classification. Protected content gained exactly the classifier response.
+Hook quota remains **2 rows / 1,148 bytes**. The active policy version/hash is unchanged.
+The runner closed after the one observation; Gemma remains owned, healthy and GPU-resident
+with the reviewed 30-minute keep-alive. No paid call, Qwen dispatch, migration, restart of
+production services or continuous runner schedule was added by this classification check.
+
+Local receipts include `classification-hook-preflight.json`, `classification-runtime-start.log`,
+`classification-hook-run.json`, `classification-hook-verification.json`,
+`classification-dashboard-api.json`, `classification-dashboard-browser.json`,
+`classification-runtime-final.json` and `classification-dashboard.png`. The execution-model
+advice was Claude Sonnet for this established bounded procedure; it was advisory and changed
+no model setting. Product source is unchanged, so verification used the live one-shot path
+and dashboard rather than rerunning the unchanged full regression suite.
