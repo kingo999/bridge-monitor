@@ -140,7 +140,9 @@ class ShadowRunner:
         return fields
 
     def run(self, *, stop: threading.Event, max_items: int | None = None,
-            idle_seconds: float = 2.0) -> dict:
+            until_idle: bool = False, idle_seconds: float = 2.0) -> dict:
+        """Process items until stopped. ``until_idle`` (or ``max_items``) also ends the loop
+        when the queue is empty or the classifier is unavailable."""
         counts = {"processed": 0, "unavailable": 0}
         while not stop.is_set() and (max_items is None or counts["processed"] < max_items):
             result = self.process_one(stop)
@@ -151,7 +153,7 @@ class ShadowRunner:
                 break
             else:
                 counts[result.status] = counts.get(result.status, 0) + 1
-                if max_items is not None and result.status == "idle":
+                if (until_idle or max_items is not None) and result.status in ("idle", "unavailable"):
                     break
                 stop.wait(idle_seconds)
         return counts

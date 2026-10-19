@@ -11,6 +11,7 @@ import FlowGraph from './FlowGraph';
 import MetricStrip from './MetricStrip';
 import WorkList from './WorkList';
 import ShadowCohort from './ShadowCohort';
+import ClassifierCohort from './ClassifierCohort';
 
 const initialFilters: CohortFilters = {
   origin: 'observed', consumerStage: 'claude', createdFrom: '', createdUntil: '', completedOnly: false,
@@ -213,6 +214,7 @@ export default function DashboardClient() {
     <MetricStrip report={metrics} selected={selectedMetric} onSelect={setSelectedMetric}
       consumerStage={filters.consumerStage} />
     <ShadowCohort report={shadowCohort} filters={routerFilters} onChange={changeRouterFilters} />
+    <ClassifierCohort />
     {selectedMetric && <p className="filter-note">Loaded work list filtered by {metricLabel(selectedMetric, filters.consumerStage)}. Numerator/denominator and coverage come from the service; result-unit metrics may map several results to one work item.</p>}
     <div className="dashboard-grid"><div className="left-column">
       <FlowGraph status={snapshot?.status || null} capacity={snapshot?.capacity || null} items={liveItems} executions={snapshot?.worker_executions || []} selectedId={selectedId}

@@ -259,3 +259,18 @@ def test_live_router_does_not_reference_the_classifier():
                  "bridge/router/shadow_worker.py", "bridge/runtime/scheduler.py",
                  "bridge/runtime/admission.py"):
         assert "classifier" not in (root / name).read_text(encoding="utf-8"), name
+
+
+def test_run_until_idle_drains_the_queue_and_stops(cdsn, cfg):
+    for index in range(2):
+        submit(cdsn, cfg, ref=f"idle{index}")
+    with runner_for(cdsn, cfg, FakeOllama()) as runner:
+        counts = runner.run(stop=threading.Event(), until_idle=True, idle_seconds=0.01)
+    assert counts["processed"] == 2 and counts["idle"] == 1
+
+
+def test_run_until_idle_stops_when_the_classifier_is_unavailable(cdsn, cfg):
+    submit(cdsn, cfg)
+    with runner_for(cdsn, cfg, FakeOllama(mode="down")) as runner:
+        counts = runner.run(stop=threading.Event(), until_idle=True, idle_seconds=0.01)
+    assert counts["processed"] == 0 and counts["unavailable"] == 1

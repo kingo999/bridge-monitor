@@ -17,6 +17,24 @@ export type CohortFilters = {
 
 export type OperatorSession = { authenticated: boolean; work_item_max_limit?: number };
 export type RouterFilters = { modelProfile: string; promptVersion: string; verifierRef: string };
+export type ClassifierFilters = { originKind: string; model: string; profileId: string };
+export type Dist = { samples: number; median: number | null; p95: number | null; max: number | null };
+export type ClassifierCohort = {
+  definition_version: string; available: boolean; reason?: string; scope_note?: string;
+  counts: Record<'submitted' | 'attempted' | 'completed' | 'failed' | 'skipped' | 'uncertain' | 'cancelled' | 'pending' | 'unknown_outcome', number>;
+  skip_reasons: Record<string, number>; error_types: Record<string, number>;
+  contract_errors: Record<string, number>;
+  recommendations: { routes: Record<string, number>; categories: Record<string, number> };
+  policy: { allowed: number; blocked: number; block_reasons: Record<string, number> };
+  reference: { labelled: number; unlabelled: number; raw_route_acceptable: number; raw_route_preferred: number; allowed_and_acceptable: number };
+  actual_route: { known: number; unknown: number; differs_from_recommendation: number; note: string };
+  follow_up: { with_verification_or_correction: number; with_operator_judgment: number; completed: number };
+  latency_ms: Record<'queue' | 'request' | 'first_content' | 'inference_reported' | 'load_reported' | 'end_to_end', Dist>;
+  tokens: { input_total: number; output_total: number; provenance: Record<string, number>; attempted: number };
+  backend_residency: Record<string, number>;
+  cost: { local_provider_charge_usd: number | null; electricity_usd: number | null; electricity_reason: string; hypothetical_avoided_paid_calls: number | null; billed_savings: number | null };
+  filters: { models: string[]; profiles: string[]; rubrics: string[]; origins: string[] };
+};
 
 export function queryString(filters: CohortFilters): string {
   const params = new URLSearchParams({ origin: filters.origin, consumer_stage: filters.consumerStage });
@@ -45,6 +63,12 @@ export const api = {
     if (router.promptVersion) params.set('prompt_version', router.promptVersion);
     if (router.verifierRef) params.set('verifier_ref', router.verifierRef);
     return request<ShadowCohort>(`/api/v1/router/cohort?${params}`);
+  },
+  classifierCohort: (filters: ClassifierFilters) => {
+    const params = new URLSearchParams({ origin_kind: filters.originKind || 'all' });
+    if (filters.model) params.set('model', filters.model);
+    if (filters.profileId) params.set('profile_id', filters.profileId);
+    return request<ClassifierCohort>(`/api/v1/classifier/cohort?${params}`);
   },
   routerAudit: (id: string) => request<RouterAudit>(`/api/v1/router/audit/${encodeURIComponent(id)}`),
   workItems: (filters: CohortFilters, offset = 0, limit = 100) => request<WorkItem[]>(`/api/v1/work-items?${queryString(filters)}&limit=${limit}&offset=${offset}`),

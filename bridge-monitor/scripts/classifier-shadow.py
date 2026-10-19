@@ -112,8 +112,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"result": "busy", "detail": str(exc)}))
             return 6
         try:
-            max_items = args.max_items
-            counts = runner.run(stop=stop, max_items=max_items if (max_items or args.until_idle) else None)
+            counts = runner.run(stop=stop, max_items=args.max_items, until_idle=args.until_idle)
         except KeyboardInterrupt:
             stop.set()
             counts = {"interrupted": True}
