@@ -1,0 +1,82 @@
+[
+  {
+    "id": "easy-clamp-upper-bound",
+    "group": "expected_shadow",
+    "reason": "Small isolated fix with a failing baseline and trusted tests.",
+    "category": "single_file_python_fix",
+    "scope": ["analysis"],
+    "task": "Return only the complete corrected Python module. clamp(value, low, high) must include the upper bound and clamp values outside the range.",
+    "baseline_source": "def clamp(value, low, high):\n    return max(low, min(value, high + 1))\n",
+    "tests": [
+      {"function": "clamp", "args": [12, 0, 10], "expected": 10},
+      {"function": "clamp", "args": [-2, 0, 10], "expected": 0},
+      {"function": "clamp", "args": [5, 0, 10], "expected": 5}
+    ]
+  },
+  {
+    "id": "easy-first-nonblank",
+    "group": "expected_shadow",
+    "reason": "Single-function whitespace bug with clear test vectors.",
+    "category": "single_file_python_fix",
+    "scope": ["analysis"],
+    "task": "Return only the complete corrected Python module. first_nonblank(lines) must skip blank or whitespace-only lines and return the first nonblank line stripped, or None.",
+    "baseline_source": "def first_nonblank(lines):\n    for line in lines:\n        if line:\n            return line.strip()\n    return None\n",
+    "tests": [
+      {"function": "first_nonblank", "args": [[" ", " hi ", "there"]], "expected": "hi"},
+      {"function": "first_nonblank", "args": [["", "  ", "x"]], "expected": "x"},
+      {"function": "first_nonblank", "args": [["", " "]], "expected": null}
+    ]
+  },
+  {
+    "id": "no-tests-no-verifier",
+    "group": "expected_paid_only",
+    "reason": "No trusted baseline or tests; the current gate requires a verifier reference.",
+    "category": "single_file_python_fix",
+    "scope": ["analysis"],
+    "task": "Explain how you would repair a Python parser that sometimes returns an empty string. No source file or trusted tests are supplied.",
+    "baseline_source": null,
+    "tests": null
+  },
+  {
+    "id": "outside-python-policy",
+    "group": "expected_paid_only",
+    "reason": "A multi-file TypeScript change is outside the approved single-file Python category and has no compatible verifier.",
+    "category": "multi_file_refactor",
+    "scope": ["analysis"],
+    "task": "Outline a safe multi-file TypeScript refactor that moves an API route and its client types together. Do not change files.",
+    "baseline_source": null,
+    "tests": null
+  },
+  {
+    "id": "maybe-positive-integer-parser",
+    "group": "quality_uncertain_shadow",
+    "reason": "The gate should admit it, but type and boundary semantics make local quality uncertain.",
+    "category": "single_file_python_fix",
+    "scope": ["analysis"],
+    "task": "Return only the complete corrected Python module. parse_positive_int(raw) accepts a string containing a positive decimal integer, allowing surrounding whitespace. Return None for zero, negatives, booleans, non-strings, or malformed strings.",
+    "baseline_source": "def parse_positive_int(raw):\n    try:\n        return int(raw)\n    except (TypeError, ValueError):\n        return None\n",
+    "tests": [
+      {"function": "parse_positive_int", "args": [" 12 "], "expected": 12},
+      {"function": "parse_positive_int", "args": ["0"], "expected": null},
+      {"function": "parse_positive_int", "args": ["-3"], "expected": null},
+      {"function": "parse_positive_int", "args": [true], "expected": null},
+      {"function": "parse_positive_int", "args": [12], "expected": null},
+      {"function": "parse_positive_int", "args": ["12x"], "expected": null}
+    ]
+  },
+  {
+    "id": "maybe-merge-adjacent-intervals",
+    "group": "quality_uncertain_shadow",
+    "reason": "The gate should admit it, but multiple edge cases make local quality uncertain.",
+    "category": "single_file_python_fix",
+    "scope": ["analysis"],
+    "task": "Return only the complete corrected Python module. merge_intervals(intervals) treats integer intervals as inclusive: sort them, merge overlaps and directly adjacent ranges, and return lists of [start, end].",
+    "baseline_source": "def merge_intervals(intervals):\n    merged = []\n    for start, end in sorted(intervals):\n        if merged and start <= merged[-1][1]:\n            merged[-1][1] = max(merged[-1][1], end)\n        else:\n            merged.append([start, end])\n    return merged\n",
+    "tests": [
+      {"function": "merge_intervals", "args": [[[1, 2], [3, 4]]], "expected": [[1, 4]]},
+      {"function": "merge_intervals", "args": [[[5, 7], [1, 3], [3, 5]]], "expected": [[1, 7]]},
+      {"function": "merge_intervals", "args": [[[1, 2], [5, 6]]], "expected": [[1, 2], [5, 6]]},
+      {"function": "merge_intervals", "args": [[]], "expected": []}
+    ]
+  }
+]
