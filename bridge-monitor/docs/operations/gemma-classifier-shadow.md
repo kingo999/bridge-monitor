@@ -112,9 +112,10 @@ apart from warm calls), `responses.jsonl` (raw text, parsed result, policy verdi
 - **Roll back the schema** (only after a backup, and only if classifier data may be discarded):
   `database/rollbacks/007_classifier_shadow_down.sql`.
 
-## Proposed operational rollout (not applied)
+## Operational rollout
 
-Each step below changes live services or schema and needs a deliberate go-ahead.
+Steps 1–3 were applied on 19 October 2026 after explicit approval (see the verification report). Step 4 is the
+manual operating mode; step 5 is still not done. Each step changes live services or schema and needs a deliberate go-ahead.
 
 1. Take the standard backup (`scripts/backup-monitor.ps1`), then confirm 007 is the only pending
    migration. Apply with `python -m database.migrate <OPERATIONAL_DSN_ENV_NAME>`. It is additive:

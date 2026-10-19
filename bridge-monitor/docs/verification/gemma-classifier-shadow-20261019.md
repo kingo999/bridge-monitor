@@ -123,7 +123,19 @@ port are never touched). The dashboard type-checks (`tsc --noEmit`); it was **no
   final metadata query; all workflows, baselines and hashes were saved and a separate audit passed. This work did not rerun it.
 - Skynet and Qwen were not used. No paid call was made.
 
+## Operational rollout (applied after explicit approval)
+
+- Backup: `var/backups/bridge-monitor-20261019T153010Z.dump` (SHA-256 `2CB7DBA4…0C7B`), taken at idle.
+- Migration `007_classifier_shadow` applied to the operational database at 15:3x UTC with no busy jobs; 001–006 untouched.
+- Dashboard static export rebuilt (previous export kept in `var/backups/dashboard-out-pre-classifier-20261019`).
+- Dashboard backend restarted through `scripts/stop-monitor.ps1`; the `BridgeMonitor-Dashboard` supervisor relaunched it
+  (PID 14216 → 42880). Producers write to the database directly (`DirectCollector`), so capture was not interrupted. Operator sessions were reset.
+  `BridgeMonitor-RouterShadow` was not touched.
+- Live smoke test: one controlled router case captured and classified (`code_local`, policy-allowed, GPU-resident, usage reported, actual route
+  unknown). Policy hash, migrations other than 007, event count, jobs, calls and routing decisions were identical before and after.
+  The authenticated HTTP cohort endpoint was not exercised live; the cohort query was.
+- The `route_work` capture hook, a Gemma scheduled task and any policy activation remain **not** done.
+
 ## Final state
 
-Gemma server stopped, port 11435 closed, no `ollama`/`llama-server` process. Live policy, migrations,
-job tables and event counts match the starting checkpoint. `BridgeMonitor-RouterShadow` was not touched.
+Live policy `43a200ea…` unchanged. Gemma server left running and idle on 127.0.0.1:11435 (stop with `gemma-runtime.py stop`).
