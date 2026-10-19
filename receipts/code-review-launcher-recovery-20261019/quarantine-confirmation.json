@@ -1,0 +1,9 @@
+{
+  "original_path": "\\\\?\\C:\\Users\\kian\\.codex\\plugins\\cache\\openai-bundled\\code-review\\26.1013.40934\\scripts\\launch_code_review_mcp.cmd",
+  "detection": "Atc4.Detection",
+  "quarantine_sha256": "678B1FD9F901EECF9C2A248C79D84C3C90120D3907B9E88F60DCB95CBCE814C6",
+  "bundled_source_sha256": "678B1FD9F901EECF9C2A248C79D84C3C90120D3907B9E88F60DCB95CBCE814C6",
+  "directory_write_check": "passed; temporary diagnostic txt removed",
+  "launcher_copy": "Access denied even with sandbox disabled",
+  "quarantined_bytes_match_original": true
+}

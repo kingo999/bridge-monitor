@@ -99,11 +99,31 @@ class ShadowRunner:
         return ProcessResult("processed", row["observation_id"], interp.state,
                              interp.error_type or interp.validation_error)
 
+    def _route_link(self, work_item_id: str | None) -> dict:
+        """Optional enrichment: the unchanged system's route, or nothing.
+
+        A lookup failure never costs the classification result: the route stays NULL (fillable
+        later) and the failure is noted in the provenance. A missing, pending or unmapped
+        decision also leaves the route NULL, never the literal ``unknown``.
+        """
+        try:
+            project_route, provenance = store.actual_route_for(self.dsn, work_item_id)
+        except Exception as exc:  # ordinary lookup failure only; termination signals propagate
+            return {"actual_route_source": {"status": "lookup_failed",
+                                            "error_type": type(exc).__name__}}
+        if project_route is None:
+            return {}
+        mapped = map_actual_route(project_route)
+        if mapped == "unknown":
+            return {"actual_route_source": {**provenance, "status": "unmapped_route"},
+                    "actual_route_observed_at": store.utcnow()}
+        return {"actual_route": mapped, "actual_route_source": provenance,
+                "actual_route_observed_at": store.utcnow()}
+
     def _fields(self, row, outcome, interp, identity, residency, message: str) -> dict:
         captured_at: datetime = row["captured_at"]
         dispatched_at: datetime = row["dispatched_at"]
         finished = outcome.finished_at
-        route, provenance = store.actual_route_for(self.dsn, row["work_item_id"])
         fields = {
             "runtime_version": identity.runtime_version, "observed_digest": identity.observed_digest,
             "reported_model": outcome.reported_model, "backend": residency.evidence(),
@@ -127,10 +147,7 @@ class ShadowRunner:
         if interp.recommendation:
             fields.update(rec_category=interp.recommendation.category,
                           rec_route=interp.recommendation.route)
-        if route is not None:
-            fields.update(actual_route=map_actual_route(route),
-                          actual_route_source=provenance,
-                          actual_route_observed_at=store.utcnow())
+        fields.update(self._route_link(row["work_item_id"]))
         if outcome.usage:
             fields.update(outcome.usage, usage_provenance="ollama_terminal")
         elif outcome.status == "completed":

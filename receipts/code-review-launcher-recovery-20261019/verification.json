@@ -1,0 +1,32 @@
+{
+  "restored": true,
+  "existing_plugin_files_unchanged": true,
+  "added_files": [
+    "scripts\\launch_code_review_mcp.cmd"
+  ],
+  "source_version": "26.1013.40934",
+  "source_launcher_sha256": "678b1fd9f901eecf9c2a248c79d84c3c90120d3907b9e88f60dcb95cbce814c6",
+  "source_app_signature": {
+    "status": "Valid",
+    "publisher": "OpenAI OpCo, LLC"
+  },
+  "source_launch_smoke_passed": true,
+  "advertised_tools": 32,
+  "test_exit": 0,
+  "test_cleanup": "stdin_closed_process_exited",
+  "cache_launch_smoke_passed": true,
+  "blocked_reason": null,
+  "settings_changed": false,
+  "reviews_submitted": false,
+  "credentials_forwarded": false,
+  "cache_launch_smoke_status": "passed",
+  "elevated_script": "C:\\AI\\receipts\\code-review-launcher-recovery-20261019\\Restore-CodeReviewLauncher.ps1",
+  "elevated_script_syntax_and_checkonly_passed": true,
+  "quarantine_hash_matches_shipped_launcher": true,
+  "directory_writable": true,
+  "verified_at": "2026-10-19T16:18:36.916433+00:00",
+  "restored_sha256": "678B1FD9F901EECF9C2A248C79D84C3C90120D3907B9E88F60DCB95CBCE814C6",
+  "restored_bytes": 52,
+  "recovery_method": "User restored the matching Bitdefender quarantine entry; assistant verified hashes and cache startup.",
+  "codex_code_review_tool_namespace_available": true
+}

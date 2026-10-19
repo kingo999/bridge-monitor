@@ -157,7 +157,7 @@ def actual_route_for(dsn: str, work_item_id: str | None) -> tuple[str | None, di
     """The unchanged system's production parent-router decision, with provenance."""
     if not work_item_id:
         return None, None
-    with psycopg.connect(dsn, connect_timeout=5) as conn:
+    with psycopg.connect(dsn, connect_timeout=2, options="-c statement_timeout=1000") as conn:
         row = conn.execute("""SELECT decision_id,route,decided_at FROM delegation_decisions
             WHERE work_item_id=%s AND decision_stage='parent_router'
             AND execution_mode='production' ORDER BY decided_at,decision_id LIMIT 1""",
