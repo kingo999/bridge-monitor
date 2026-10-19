@@ -1,0 +1,55 @@
+# Advisory Gemma classifier shadow and its project-local runtime.
+# Disabled by default. This example activates nothing: copy it to a *.local.toml (ignored by
+# git), review it, and pass it with --config or BRIDGE_CLASSIFIER_SHADOW_CONFIG. The shadow
+# only records recommendations; it never selects, dispatches or alters a real route.
+
+[classifier_shadow]
+enabled = false
+endpoint = "http://127.0.0.1:11435"        # loopback only; anything else is rejected
+model = "gemma4:12b"
+model_digest = "4eb23ef187e2c5462566d6a1d3bbbc2f1346d0b4327cbb66d58fffbcc9b2b05c"
+keep_alive = "30m"                          # residency: avoid reloading per request
+connect_timeout_seconds = 2
+request_timeout_seconds = 60
+max_response_bytes = 8192
+max_input_bytes = 24576                     # larger inputs are skipped, never truncated
+max_queue = 8                               # a full queue records a skip, never blocks
+max_queue_age_seconds = 600                 # unprocessed inputs expire instead of running late
+halt_on_cpu_fallback = true
+
+[classifier_shadow.profile]                 # measured benchmark settings; change = new profile_id
+profile_id = "gemma-router-profile-v1"
+num_ctx = 8192
+num_predict = 192
+temperature = 0.0
+think = false
+top_k = 40
+top_p = 0.9
+repeat_penalty = 1.0
+presence_penalty = 0.0
+seed = 42
+
+[classifier_shadow.facts]                   # reviewed static facts for router-submitted work
+general_available = false                   # this project has no general local worker
+code_worker_configured = true               # live capacity is additionally probed read-only
+paid_allowed = true
+tools_available = true
+
+[gemma_runtime]
+host = "127.0.0.1"
+port = 11435
+runtime_dir = "var/runtimes/ollama-0.30.9"
+runtime_sha256 = "76604706187dc2cccfd3eccb6bff51696e1bb7e7639038ce9e0f47455177f960"
+models_dir = "var/models/gemma-7900"
+model = "gemma4:12b"
+manifest_sha256 = "4eb23ef187e2c5462566d6a1d3bbbc2f1346d0b4327cbb66d58fffbcc9b2b05c"
+state_dir = "var/run/gemma-classifier"
+log_dir = "var/logs/gemma-classifier"
+context_length = 8192
+keep_alive = "30m"
+max_queue = 4
+startup_timeout_seconds = 60
+stop_timeout_seconds = 15
+expected_gpu_library = "ROCm"
+expected_gpu_compute = "gfx1100"
+debug_logging = false

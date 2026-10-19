@@ -1,0 +1,42 @@
+[
+  {
+    "acceptable_categories": [
+      "code"
+    ],
+    "acceptable_routes": [
+      "clarify"
+    ],
+    "category": "code",
+    "critical": true,
+    "facts": {
+      "code_available": false,
+      "general_available": true,
+      "paid_allowed": false
+    },
+    "id": "C08",
+    "preferred_route": "clarify",
+    "rationale": "",
+    "request": "Explain what f(0) does using only this function.",
+    "source": "def f(n): return n or 10"
+  },
+  {
+    "acceptable_categories": [
+      "text"
+    ],
+    "acceptable_routes": [
+      "paid"
+    ],
+    "category": "text",
+    "critical": false,
+    "facts": {
+      "code_available": true,
+      "general_available": false,
+      "paid_allowed": true
+    },
+    "id": "T08",
+    "preferred_route": "paid",
+    "rationale": "",
+    "request": "Rewrite this update under 40 words. Keep uncertainty and return a reviewable draft.",
+    "source": "We observed slower first requests but cannot yet separate load time from generation."
+  }
+]
