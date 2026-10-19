@@ -31,6 +31,7 @@ export type ClassifierCohort = {
   follow_up: { with_verification_or_correction: number; with_operator_judgment: number; completed: number };
   latency_ms: Record<'queue' | 'request' | 'first_content' | 'inference_reported' | 'load_reported' | 'end_to_end', Dist>;
   tokens: { input_total: number; output_total: number; provenance: Record<string, number>; attempted: number };
+  router_evidence?: { note: string; completed_with_work_item: number; qwen_shadow_independent_evaluation: Record<string, number>; paid_result_dispositions: Record<string, number> };
   backend_residency: Record<string, number>;
   cost: { local_provider_charge_usd: number | null; electricity_usd: number | null; electricity_reason: string; hypothetical_avoided_paid_calls: number | null; billed_savings: number | null };
   filters: { models: string[]; profiles: string[]; rubrics: string[]; origins: string[] };

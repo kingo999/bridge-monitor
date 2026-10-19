@@ -50,6 +50,7 @@ export default function ClassifierCohort() {
       <p>Reference labels: {report.reference.labelled} labelled · raw route acceptable {report.reference.raw_route_acceptable} · allowed and acceptable {report.reference.allowed_and_acceptable}</p>
       <p>Actual route known for {report.actual_route.known}/{c.completed} · differs from recommendation {report.actual_route.differs_from_recommendation} (a difference is not an error)</p>
       <p>Verification or correction on {report.follow_up.with_verification_or_correction}/{report.follow_up.completed} · operator judgment {report.follow_up.with_operator_judgment}</p>
+      {report.router_evidence && <p>Router context for {report.router_evidence.completed_with_work_item} linked work item(s) · Qwen shadow evaluation {list(report.router_evidence.qwen_shadow_independent_evaluation)} · paid result dispositions {list(report.router_evidence.paid_result_dispositions)} (context, not a correctness judgment)</p>}
       <p>Skipped: {list(report.skip_reasons)} · Errors: {list({ ...report.error_types, ...report.contract_errors })}</p>
       <p>Median / p95 — queue {ms(report.latency_ms.queue)} · request {ms(report.latency_ms.request)} · end to end {ms(report.latency_ms.end_to_end)}</p>
       <p>Tokens in/out {report.tokens.input_total}/{report.tokens.output_total} · coverage {list(report.tokens.provenance)} · backend {list(report.backend_residency)}</p>

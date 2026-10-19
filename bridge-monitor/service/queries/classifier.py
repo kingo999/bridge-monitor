@@ -52,7 +52,7 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
         if not _available(conn):
             return {"definition_version": DEFINITION_VERSION, "available": False,
                     "reason": "schema_not_applied"}
-        rows = conn.execute("""SELECT observation_id,origin_kind,requested_model,profile_id,
+        rows = conn.execute("""SELECT observation_id,work_item_id,origin_kind,requested_model,profile_id,
             rubric_version,state,skip_reason,error_type,validation_error,attempts,rec_route,
             rec_category,policy_allowed,policy_blocks,actual_route,queue_ms,request_ms,
             first_content_ms,inference_ms,load_ms,end_to_end_ms,input_tokens,output_tokens,
@@ -73,6 +73,18 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
         evaluations = conn.execute("""SELECT observation_id,kind,reference_route,
             acceptable_routes,judgment,recorded_at,evaluation_id FROM classifier_evaluations
             WHERE observation_id=ANY(%s) ORDER BY recorded_at,evaluation_id""", (ids,)).fetchall()
+        work_ids = sorted({r["work_item_id"] for r in rows if r.get("work_item_id")})
+        shadow_eval = conn.execute("""SELECT DISTINCT ON (d.work_item_id) d.work_item_id,
+            e.evidence->>'state' AS state FROM delegation_decisions d
+            JOIN results r ON r.call_id=d.child_call_id JOIN evaluations e ON e.result_id=r.result_id
+            WHERE d.work_item_id=ANY(%s) AND d.decision_stage='parent_router'
+            AND d.execution_mode='shadow' AND d.route='local'
+            ORDER BY d.work_item_id,e.recorded_at DESC,e.evaluation_id DESC""", (work_ids,)).fetchall()
+        paid_dispositions = conn.execute("""SELECT DISTINCT ON (c.work_item_id) c.work_item_id,
+            x.judgment FROM dispositions x JOIN results r ON r.result_id=x.result_id
+            JOIN calls c ON c.call_id=r.call_id WHERE c.work_item_id=ANY(%s)
+            AND c.execution_mode='production' ORDER BY c.work_item_id,x.recorded_at DESC,
+            x.disposition_id DESC""", (work_ids,)).fetchall()
         facets = conn.execute("""SELECT array_agg(DISTINCT requested_model) AS models,
             array_agg(DISTINCT profile_id) AS profiles, array_agg(DISTINCT rubric_version) AS rubrics,
             array_agg(DISTINCT origin_kind) AS origins FROM classifier_observations""").fetchone()
@@ -96,6 +108,11 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
             agree += 1
             allowed_agree += bool(r["policy_allowed"])
         preferred += r["rec_route"] == ref["reference_route"]
+    completed_work = {r["work_item_id"] for r in completed if r.get("work_item_id")}
+    shadow_states = Counter(e["state"] or "unknown" for e in shadow_eval
+                            if e["work_item_id"] in completed_work)
+    disposition_judgments = Counter(d["judgment"] for d in paid_dispositions
+                                    if d["work_item_id"] in completed_work)
     known_actual = [r for r in completed if r["actual_route"] not in (None, "unknown")]
     block_reasons = Counter(b for r in completed for b in (r["policy_blocks"] or []))
     covered = Counter(r["usage_provenance"] or "missing" for r in attempted)
@@ -134,6 +151,12 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
                       "with_operator_judgment": sum("operator_judgment" in
                           follow_up.get(r["observation_id"], set()) for r in completed),
                       "completed": len(completed)},
+        "router_evidence": {
+            "note": ("Context from the existing router for the same work item. It is not a judgment "
+                     "of whether the recommendation was right."),
+            "completed_with_work_item": len(completed_work),
+            "qwen_shadow_independent_evaluation": dict(shadow_states),
+            "paid_result_dispositions": dict(disposition_judgments)},
         "latency_ms": {"queue": _distribution([r["queue_ms"] for r in attempted]),
                        "request": _distribution([r["request_ms"] for r in completed]),
                        "first_content": _distribution([r["first_content_ms"] for r in completed]),

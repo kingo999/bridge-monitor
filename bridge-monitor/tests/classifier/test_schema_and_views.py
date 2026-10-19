@@ -156,3 +156,27 @@ def test_endpoints_require_operator_auth_and_keep_bodies_behind_content_access(c
     assert body.content == b"secret source body"
     assert client.get("/api/v1/classifier/observations/nope", headers=operator).status_code == 404
     assert client.get("/api/v1/classifier/cohort?origin_kind=bogus", headers=operator).status_code == 422
+
+
+def test_cohort_links_existing_router_evidence_without_treating_it_as_correctness(cdsn, cfg):
+    with psycopg.connect(cdsn) as conn:
+        conn.execute("INSERT INTO tasks(task_id,origin,scope,created_at) VALUES ('t-ev','observed','{}',now()) ON CONFLICT DO NOTHING")
+        conn.execute("INSERT INTO work_items(work_item_id,task_id,origin,category,created_at) VALUES ('w-ev','t-ev','observed','x',now()) ON CONFLICT DO NOTHING")
+        for call, mode in (("c-ev-paid", "production"), ("c-ev-shadow", "shadow")):
+            conn.execute("INSERT INTO calls(call_id,work_item_id,created_at,execution_mode) VALUES (%s,'w-ev',now(),%s) ON CONFLICT DO NOTHING", (call, mode))
+        conn.execute("INSERT INTO delegation_decisions(decision_id,work_item_id,child_call_id,route,eligibility,decided_at,decision_stage,execution_mode) VALUES ('d-ev-p','w-ev','c-ev-paid','paid','eligible',now(),'parent_router','production'),('d-ev-s','w-ev','c-ev-shadow','local','eligible',now(),'parent_router','shadow') ON CONFLICT DO NOTHING")
+        conn.execute("INSERT INTO results(result_id,call_id) VALUES ('r-ev-paid','c-ev-paid'),('r-ev-shadow','c-ev-shadow') ON CONFLICT DO NOTHING")
+        conn.execute("INSERT INTO evaluations(evaluation_id,result_id,evidence,recorded_at) VALUES ('e-ev','r-ev-shadow','{\"state\":\"pass\"}'::jsonb,now()) ON CONFLICT DO NOTHING")
+        conn.execute("INSERT INTO dispositions(disposition_id,result_id,actor_id,stage,judgment,recorded_at) VALUES ('x-ev','r-ev-paid','parent','claude','accepted',now()) ON CONFLICT DO NOTHING")
+    linked = ingest.capture_text(cdsn, cfg, origin_kind="controlled", origin_ref="ev-1", request="Fix it.",
+                                 facts=dict(GENERAL_FACTS), work_item_id="w-ev").observation_id
+    unlinked = make_observation(cdsn, cfg, "ev-unlinked")
+    with ShadowRunner(cdsn, cfg, FakeOllama(reply_json("code_local", "code")).classifier()) as runner:
+        runner.run(stop=threading.Event(), until_idle=True, idle_seconds=0.01)
+    report = query_classifier_cohort(cdsn, ClassifierCohortFilter())
+    evidence = report["router_evidence"]
+    assert evidence["completed_with_work_item"] == 1
+    assert evidence["qwen_shadow_independent_evaluation"] == {"pass": 1}
+    assert evidence["paid_result_dispositions"] == {"accepted": 1}
+    assert report["actual_route"]["known"] == 1 and linked and unlinked
+    assert report["follow_up"]["with_verification_or_correction"] == 0   # not a correctness judgment
