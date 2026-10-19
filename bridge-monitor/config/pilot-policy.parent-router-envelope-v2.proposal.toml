@@ -1,0 +1,73 @@
+# Proposal only. Keep the current route gated until local and live status checks pass.
+[limits]
+claude_global_active = 2
+claude_per_root_active = 1
+claude_waiting = 8
+qwen_active = 1
+qwen_waiting = 4
+local_outstanding_per_claude = 1
+claude_execution_seconds = 540
+qwen_execution_seconds = 120
+
+[deployment]
+queue_deadline_seconds = 30
+queue_poll_ms = 200
+context_wait_seconds = 10
+fallback_allowance_tokens = 4096
+fallback_allowance_seconds = 60
+client_timeout_seconds = 600
+delivery_margin_seconds = 30
+payload_limit_bytes = 1048576
+spool_limit_bytes = 52428800
+spool_overflow_policy = "reject_new_work"
+degraded_admission = "reject_new_work"
+retention_days = 30
+postgres_dsn_ref = "env:BRIDGE_MONITOR_DSN"
+qwen_endpoint = "http://192.168.0.78:11434"
+qwen_agent_endpoint = "http://192.168.0.78:8874"
+qwen_agent_token_ref = "env:BRIDGE_MONITOR_SKYNET_TOKEN"
+qwen_model_profile = "qwen2.5-coder:14b-instruct-q4_K_M"
+qwen_model_digest = "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849"
+qwen_output_tokens = 2048
+qwen_keep_alive = "10m"
+qwen_temperature = 0.0
+qwen_ack_seconds = 5
+qwen_poll_seconds = 2
+qwen_poll_timeout_seconds = 3
+qwen_poll_failures = 2
+qwen_first_output_seconds = 45
+qwen_idle_output_seconds = 20
+
+[fallback]
+paid_model_profile = "sonnet"
+
+[review]
+reviewer = "claude-opus-read-only"
+approval_reference = "user-resolve-shadow-envelope-2026-10-19"
+
+[router]
+mode = "shadow"
+categories = ["single_file_python_fix"]
+scopes = ["analysis"]
+output_contract = "complete_python_module_v1"
+prompt_version = "complete-module-envelope-v2"
+sample_percent = 100
+queue_deadline_seconds = 30
+execution_seconds = 120
+shadow_reserve_tokens = 2048
+max_context_tokens = 8192
+max_prompt_bytes = 16384
+max_source_bytes = 16384
+worker_poll_ms = 1000
+retention_days = 30
+withdrawn_refs = []
+
+[router.verifier]
+image = "python@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf52ea5da5bb8d929a"
+daemon_endpoint = "npipe:////./pipe/dockerDesktopLinuxEngine"
+timeout_seconds = 12
+memory_mb = 256
+cpus = 1
+pids_limit = 64
+max_source_bytes = 16384
+max_test_bytes = 16384

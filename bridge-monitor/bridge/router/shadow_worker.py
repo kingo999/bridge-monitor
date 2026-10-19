@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -22,7 +23,14 @@ def _id(kind: str, call_id: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"bridge-monitor:shadow:{kind}:{call_id}"))
 
 
-def _strict_source(raw: str) -> str:
+def _strict_source(raw: str, *, prompt_version: str) -> tuple[str, str]:
+    envelope = "json"
+    if prompt_version == "complete-module-envelope-v2" and raw.startswith("```"):
+        match = re.fullmatch(r"```json\r?\n(.*?)\r?\n```\r?\n?", raw, re.DOTALL)
+        if match is None:
+            raise ValueError("invalid fenced JSON envelope")
+        raw = match.group(1)
+        envelope = "fenced_json"
     def unique(items):
         result = {}
         for key, value in items:
@@ -36,7 +44,7 @@ def _strict_source(raw: str) -> str:
     answer = parsed["answer"]
     if not isinstance(answer, str) or not answer.strip():
         raise ValueError("answer must contain complete source")
-    return answer
+    return answer, envelope
 
 
 def _shadow_manifest(dsn: str, call_id: str):
@@ -57,8 +65,11 @@ def _pinned_policy(dsn: str, version: str) -> PolicySnapshot:
 
 
 def _evaluation_evidence(*, source: str | None, state: str, reason: str,
-                         verifier_result, manifest: dict, verifier_image: str) -> dict:
+                         verifier_result, manifest: dict, verifier_image: str,
+                         output_envelope: str | None, parser_version: str) -> dict:
     evidence = {"state": state, "reason": reason, "source": "independent_shadow_verifier",
+                "parser_version": parser_version,
+                "output_envelope": output_envelope or "invalid",
                 "verifier_image": verifier_image, "verifier_ref": manifest.get("verifier_ref"),
                 "policy_sha256": manifest.get("policy_sha256"),
                 "model_profile": manifest.get("model_profile"),
@@ -77,8 +88,13 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
     coordinator._refresh_policy()
     if coordinator.policy.router.mode != "shadow":
         return None
-    lease = claim_dispatch(coordinator.dsn, pool="qwen",
-        incarnation_id=coordinator.incarnations["qwen"], execution_mode="shadow")
+    try:
+        lease = claim_dispatch(coordinator.dsn, pool="qwen",
+            incarnation_id=coordinator.incarnations["qwen"], execution_mode="shadow")
+    except psycopg.OperationalError:
+        # No model send has started. A possibly committed claim remains fenced
+        # by its held slot; the loop may safely retry unrelated queued work.
+        return {"state": "unavailable", "reason": "database_unavailable_before_claim"}
     if lease is None:
         return None
     call_id = lease.call_id
@@ -187,9 +203,11 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
         producer_incarnation=coordinator.incarnations["qwen"],
         call_id=call_id, attempt_id=attempt_id)
     source = None
+    output_envelope = None
     verification = None
     try:
-        source = _strict_source(raw)
+        source, output_envelope = _strict_source(raw,
+            prompt_version=router.prompt_version)
         if len(source.encode("utf-8")) > router.max_source_bytes:
             raise ValueError("output_too_large")
         verification = verifier.verify(source, case.tests)
@@ -201,7 +219,10 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
     except Exception as exc:
         state, reason = "uncertain", f"verifier_unavailable:{type(exc).__name__}"
     evidence = _evaluation_evidence(source=source, state=state, reason=reason,
-        verifier_result=verification, manifest=manifest, verifier_image=router.verifier.image)
+        verifier_result=verification, manifest=manifest, verifier_image=router.verifier.image,
+        output_envelope=output_envelope,
+        parser_version=("json-envelope-v2" if router.prompt_version ==
+            "complete-module-envelope-v2" else "json-envelope-v1"))
     try:
         record_shadow_completion(coordinator.dsn, envelope, binding,
             raw_bytes=raw.encode("utf-8"),

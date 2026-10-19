@@ -13,7 +13,7 @@ local_output_tokens = 2048
 local_timeout_seconds = 120
 paid_timeout_seconds = 120
 paid_max_budget_usd = 0.10
-prompt_prefix = '''Fix the bug in the single Python file below. Return exactly one JSON object with exactly one key, "answer". Its string value must be the complete replacement Python module: include all required imports and functions, preserve the public callable names and signatures unless the task explicitly changes them, and make the module importable. Do not return a patch, explanation, Markdown fence, placeholder, or a value such as "None" in place of source code. If you cannot produce a complete module, return an empty answer string so the caller can use paid fallback. Do not use tools.
+prompt_prefix = '''Fix the bug in the single Python file below. Return exactly one JSON object with exactly one key, "answer". Its string value must be the complete replacement Python module: include all required imports and functions, preserve the public callable names and signatures unless the task explicitly changes them, and make the module importable. Do not return a patch, explanation, Markdown fence, placeholder, or a value such as "None" in place of source code. Do not use tools.
 
 '''
 

@@ -12,6 +12,8 @@ from bridge.router.shadow_worker import run_one_shadow
 from bridge.runtime.ownership import claim_dispatch, claim_launch
 from bridge.runtime.scheduler import cancel_queued
 from bridge.runtime.completions import record_completion
+from bridge.runtime.policy_startup import activate_policy
+from contracts.policy import validate_policy
 from contracts.outcomes import CompletionEnvelope
 from contracts.work import ExecutionBinding
 from bridge.telemetry.emitter import TelemetryEmitter
@@ -109,6 +111,38 @@ def test_valid_json_wrong_code_is_a_failed_undelivered_result(router_env, tmp_pa
     assert row == (None, "tests_failed")
 
 
+def test_fenced_json_is_verified_with_raw_and_format_audit(router_env, tmp_path):
+    parent, _, task, case, receipt = router_env
+    proposed = parent.policy.model_dump(exclude={"version", "source_hash"})
+    proposed["router"]["prompt_version"] = "complete-module-envelope-v2"
+    caps = {"claude-test": {"context_tokens": 10000}}
+    digest = validate_policy(proposed, caps).snapshot.source_hash
+    activate_policy(parent.dsn, proposed, caps,
+        approved_hash=digest, operator_id="router-test-v2")
+    parent._refresh_policy()
+    routed = parent.route_work(task, case.task_text,
+        requested_model="claude-test", reserve_tokens=100,
+        output_contract="complete_python_module_v1", verifier_ref=receipt.verifier_ref)
+    assert routed["shadow_state"] == "queued"
+    raw = '```json\r\n{"answer":"def square(n):\\n    return n * n\\n"}\r\n```\r\n'
+    verifier = Verifier()
+    outcome = run_one_shadow(_worker(parent, tmp_path, Qwen(answer=raw)), verifier)
+    assert outcome["evaluation_state"] == "pass"
+    assert verifier.calls == 1
+    with psycopg.connect(parent.dsn) as conn:
+        row = conn.execute("SELECT r.delivered_at,raw.raw_bytes,parsed.raw_bytes,e.evidence "
+            "FROM results r JOIN content_objects raw ON raw.content_id=r.raw_content_id "
+            "JOIN result_parts part ON part.result_id=r.result_id "
+            "JOIN content_objects parsed ON parsed.content_id=part.content_id "
+            "JOIN evaluations e ON e.result_id=r.result_id WHERE r.call_id=%s",
+            (routed["shadow_call_id"],)).fetchone()
+    assert row[0] is None
+    assert bytes(row[1]).decode() == raw
+    assert bytes(row[2]).decode() == "def square(n):\n    return n * n\n"
+    assert row[3]["parser_version"] == "json-envelope-v2"
+    assert row[3]["output_envelope"] == "fenced_json"
+
+
 def test_shadow_result_not_completed_if_evaluation_cannot_commit(router_env, tmp_path,
                                                                   monkeypatch):
     parent, routed, _, _ = _queue(router_env)
@@ -158,6 +192,18 @@ def test_restart_after_launch_claim_never_sends_same_shadow_call(router_env, tmp
     assert claim_launch(parent.dsn, lease)
     assert run_one_shadow(_worker(parent, tmp_path / "restart", qwen), Verifier()) is None
     assert qwen.calls == 0
+
+
+def test_own_unlaunched_shadow_lease_is_recovered_without_second_claim(router_env, tmp_path):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    lease = claim_dispatch(parent.dsn, pool="qwen",
+        incarnation_id=worker.incarnations["qwen"], execution_mode="shadow")
+    assert lease.call_id == routed["shadow_call_id"]
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome["evaluation_state"] == "pass"
+    assert qwen.calls == 1
 
 
 def test_withdrawn_case_is_cancelled_before_remote_send(router_env, tmp_path):
@@ -257,6 +303,50 @@ def test_disabled_worker_claims_no_shadow_job(router_env, tmp_path):
     with psycopg.connect(parent.dsn) as conn:
         assert conn.execute("SELECT state FROM runtime_jobs WHERE call_id=%s",
             (routed["shadow_call_id"],)).fetchone() == ("queued",)
+
+
+def test_transient_database_failure_before_dispatch_does_not_stop_worker(
+        router_env, tmp_path, monkeypatch):
+    parent, _, _, _ = _queue(router_env)
+    worker = _worker(parent, tmp_path, Qwen())
+    def unavailable(*args, **kwargs):
+        raise psycopg.OperationalError("No buffer space available")
+    monkeypatch.setattr("bridge.router.shadow_worker.claim_dispatch", unavailable)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome == {"state": "unavailable",
+                       "reason": "database_unavailable_before_claim"}
+
+
+def test_transient_database_failure_during_policy_refresh_is_unavailable(
+        router_env, tmp_path, monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    worker = _worker(parent, tmp_path, Qwen())
+    def unavailable():
+        raise psycopg.OperationalError("No buffer space available")
+    monkeypatch.setattr(worker, "_refresh_policy", unavailable)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome == {"state": "unavailable",
+                       "reason": "database_unavailable_before_claim"}
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone() == ("queued",)
+
+
+def test_transient_database_failure_after_claim_aborts_before_model_send(
+        router_env, tmp_path, monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    def unavailable(*args, **kwargs):
+        raise psycopg.OperationalError("No buffer space available")
+    monkeypatch.setattr(worker, "_load_job", unavailable)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome == {"state": "cancelled", "call_id": routed["shadow_call_id"],
+                       "reason": "database_unavailable_before_launch"}
+    assert qwen.calls == 0
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone() == ("cancelled", False)
 
 
 def test_cancelled_queue_does_not_send_shadow_job(router_env, tmp_path):

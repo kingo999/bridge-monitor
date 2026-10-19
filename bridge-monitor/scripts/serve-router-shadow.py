@@ -6,6 +6,8 @@ import sys
 import time
 from pathlib import Path
 
+import psycopg
+
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT))
 
@@ -28,7 +30,13 @@ def main() -> int:
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     while not stopping:
-        coordinator._refresh_policy()
+        try:
+            coordinator._refresh_policy()
+        except psycopg.OperationalError:
+            # No dispatch starts without a current policy. Keep the process
+            # alive so a transient local database socket failure can clear.
+            time.sleep(coordinator.policy.router.worker_poll_ms / 1000)
+            continue
         router = coordinator.policy.router
         if router.mode == "shadow" and router.verifier is not None:
             verifier = DockerVerifier(router.verifier,
