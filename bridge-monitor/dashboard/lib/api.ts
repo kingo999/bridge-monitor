@@ -17,7 +17,7 @@ export type CohortFilters = {
 
 export type OperatorSession = { authenticated: boolean; work_item_max_limit?: number };
 export type RouterFilters = { modelProfile: string; promptVersion: string; verifierRef: string };
-export type ClassifierFilters = { originKind: string; model: string; profileId: string };
+export type ClassifierFilters = { originKind: string; model: string; profileId: string; captureMethod?: string };
 export type Dist = { samples: number; median: number | null; p95: number | null; max: number | null };
 export type ClassifierCohort = {
   definition_version: string; available: boolean; reason?: string; scope_note?: string;
@@ -25,7 +25,9 @@ export type ClassifierCohort = {
   skip_reasons: Record<string, number>; error_types: Record<string, number>;
   contract_errors: Record<string, number>;
   recommendations: { routes: Record<string, number>; categories: Record<string, number> };
-  policy: { allowed: number; blocked: number; block_reasons: Record<string, number> };
+  policy: { allowed: number; blocked: number; block_reasons: Record<string, number>; unknown_code_capacity_blocks?: number; other_blocked?: number };
+  capture?: { observations: Record<string, number>; unique_work_items: number; unique_work_items_by_method: Record<string, number>; overlap_work_items: number; note: string };
+  fact_coverage?: Record<string, Record<'true' | 'false' | 'unknown', number>>;
   reference: { labelled: number; unlabelled: number; raw_route_acceptable: number; raw_route_preferred: number; allowed_and_acceptable: number };
   actual_route: { known: number; unknown: number; differs_from_recommendation: number; note: string };
   follow_up: { with_verification_or_correction: number; with_operator_judgment: number; completed: number };
@@ -67,6 +69,7 @@ export const api = {
   },
   classifierCohort: (filters: ClassifierFilters) => {
     const params = new URLSearchParams({ origin_kind: filters.originKind || 'all' });
+    if (filters.captureMethod) params.set('capture_method', filters.captureMethod);
     if (filters.model) params.set('model', filters.model);
     if (filters.profileId) params.set('profile_id', filters.profileId);
     return request<ClassifierCohort>(`/api/v1/classifier/cohort?${params}`);

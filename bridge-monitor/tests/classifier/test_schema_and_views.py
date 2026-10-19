@@ -58,7 +58,13 @@ def preserved(dsn):
                 conn.execute("SELECT count(*) FROM content_objects").fetchone()[0])
 
 
-def test_migration_is_additive_preserves_records_and_rolls_back_cleanly(isolated):
+def test_migration_is_additive_preserves_records_and_rolls_back_cleanly(isolated, tmp_path, monkeypatch):
+    # Keep the original 007 up/down contract isolated from later additive migrations.
+    import shutil
+    migration_dir = tmp_path / 'migrations'
+    migration_dir.mkdir()
+    shutil.copy(MIGRATIONS / '007_classifier_shadow.sql', migration_dir)
+    monkeypatch.setattr('database.migrate.MIGRATIONS', migration_dir)
     before = preserved(isolated)
     assert migrate(isolated) == ["007_classifier_shadow"]
     assert preserved(isolated) == before

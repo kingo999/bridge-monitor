@@ -26,6 +26,9 @@ export default function ClassifierCohort() {
     <div className="panel-heading"><div><h2>Gemma classifier · advisory shadow</h2>
       <p>{report.scope_note}</p></div><span className="pill">{report.definition_version}</span></div>
     <div className="shadow-filters">
+      <label>Capture<select value={filters.captureMethod || 'all'} aria-label="Classifier capture method"
+        onChange={event => setFilters({ ...filters, captureMethod: event.target.value })}>
+        {['all', 'manual', 'route_work'].map(m => <option key={m}>{m}</option>)}</select></label>
       <label>Origin<select value={filters.originKind} aria-label="Classifier origin"
         onChange={event => setFilters({ ...filters, originKind: event.target.value })}>
         {['all', 'natural', 'controlled', 'synthetic', 'replay'].map(o => <option key={o}>{o}</option>)}</select></label>
@@ -46,7 +49,10 @@ export default function ClassifierCohort() {
     </div>
     <div className="shadow-detail-row">
       <p>Recommended routes: {list(report.recommendations.routes)}</p>
+      {report.capture && <p>Captures: {list(report.capture.observations)} · {report.capture.unique_work_items} unique work items · {report.capture.overlap_work_items} shared by manual and hook captures. {report.capture.note}</p>}
       <p>Policy-blocked recommendations: {report.policy.blocked} of {report.policy.allowed + report.policy.blocked} · {list(report.policy.block_reasons)}</p>
+      {report.policy.unknown_code_capacity_blocks !== undefined && <p>Unknown code capacity blocks: {report.policy.unknown_code_capacity_blocks} · Recommendations with other blocks: {report.policy.other_blocked} (counts may overlap). Unknown capacity is not evidence of an incorrect raw route.</p>}
+      {report.fact_coverage?.code_available && <p>Code capacity facts: {list(report.fact_coverage.code_available)}</p>}
       <p>Reference labels: {report.reference.labelled} labelled · raw route acceptable {report.reference.raw_route_acceptable} · allowed and acceptable {report.reference.allowed_and_acceptable}</p>
       <p>Actual route known for {report.actual_route.known}/{c.completed} · differs from recommendation {report.actual_route.differs_from_recommendation} (a difference is not an error)</p>
       <p>Verification or correction on {report.follow_up.with_verification_or_correction}/{report.follow_up.completed} · operator judgment {report.follow_up.with_operator_judgment}</p>

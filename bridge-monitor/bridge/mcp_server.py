@@ -15,6 +15,7 @@ from contracts.events import EventType
 from contracts.outcomes import (CompletionEnvelope, ContributionLink, DispositionRecord,
                                 ParentAcknowledgement)
 from contracts.work import CallRequest, ExecutionBinding, TaskPacket
+from contracts.route_capture import RouteCapture, RouteObserver
 from bridge.adapters.codex_ingress import CodexIngress, runtime_status
 from bridge.runtime.completions import record_completion
 from bridge.runtime.parent_acknowledgements import record_parent_acknowledgement
@@ -43,13 +44,15 @@ class BridgeCoordinator:
                  workspace_base: str | Path | None = None,
                  workspace_max_bytes: int = 104857600,
                  local_capability: dict | None = None, paid_capability: dict | None = None,
-                 project_root: str | Path | None = None):
+                 project_root: str | Path | None = None,
+                 route_observer: RouteObserver | None = None):
         self.dsn = dsn
         self.policy = policy
         self.policy_version = policy_version
         self.emitter = emitter
         self.claude_adapter = claude_adapter
         self.qwen_adapter = qwen_adapter
+        self.route_observer = route_observer
         self.parent_call_id = parent_call_id
         self.parent_lease_id = parent_lease_id
         self.local_capability = local_capability or {}
@@ -71,6 +74,36 @@ class BridgeCoordinator:
     def _refresh_policy(self):
         self.policy = self.ingress.refresh_policy()
         self.policy_version = self.policy.version
+
+    def close(self):
+        if self.route_observer is not None:
+            try:
+                self.route_observer.close()
+            except Exception:
+                pass
+
+    def _offer_route_capture(self, task, prompt, case, verifier_ref, output_contract,
+                             paid_id, decision_id):
+        if self.route_observer is None or case is None:
+            return
+        try:
+            if len(task.scope) > 8:
+                return
+            snapshot = RouteCapture(task_id=task.task_id, work_item_id=task.work_item_id,
+                category=task.category, scope=tuple(task.scope),
+                scope_approved=all(s in self.policy.router.scopes for s in task.scope),
+                prompt=prompt, case_task_id=case.task_id, case_prompt=case.task_text,
+                source=case.baseline_source, case_digest=verifier_ref,
+                origin_kind=case.origin_kind, origin_ref=case.origin_ref,
+                output_contract=output_contract, case_output_contract=case.output_contract,
+                decision_id=decision_id, paid_call_id=paid_id,
+                captured_at=datetime.now(timezone.utc), registered_at=case.captured_at,
+                solution_available_at=case.solution_available_at,
+                tests_present=bool(case.tests), case_validated=True)
+            self.route_observer.offer(snapshot)
+        except Exception:
+            # This optional observer cannot alter routing or mask termination signals.
+            pass
 
     def delegate_claude(self, task: TaskPacket, prompt: str, *, requested_model: str,
                         reserve_tokens: int, source_id: str | None = None,
@@ -205,6 +238,8 @@ class BridgeCoordinator:
                 case = load_case(self.project_root, verifier_ref)
             except (OSError, ValueError):
                 pass
+        self._offer_route_capture(task, prompt, case, verifier_ref, output_contract,
+                                  paid_id, decision_id)
         facts = collect_capture_facts(self.dsn, task, reserve_tokens=reserve_tokens,
             case=case, case_digest_valid=case is not None, policy=self.policy,
             local_capability=self.local_capability)
@@ -883,6 +918,7 @@ def main(argv: list[str] | None = None) -> int:
     if not config_path:
         print("BRIDGE_MONITOR_RUNTIME_CONFIG is required", file=sys.stderr)
         return 2
+    coordinator = None
     try:
         from bridge.startup import build_coordinator
         coordinator = build_coordinator(config_path, audience=args.audience,
@@ -893,6 +929,10 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:
         print(f"bridge MCP startup failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
+    finally:
+        close = getattr(coordinator, 'close', None)
+        if close is not None:
+            close()
     return 0
 
 

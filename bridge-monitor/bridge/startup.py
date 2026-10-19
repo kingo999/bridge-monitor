@@ -57,6 +57,28 @@ class DirectCollector:
         return ingest_batch(self.dsn, producer, events, content)
 
 
+def optional_route_observer(project, dsn, audience):
+    if audience != 'parent':
+        return None
+    try:
+        from bridge.classifier.hook_config import load_hook_settings
+        # The manual CLI shares this variable; an external manual file cannot opt in here.
+        chosen = os.environ.get('BRIDGE_CLASSIFIER_SHADOW_CONFIG')
+        if chosen and not (project / chosen).resolve().is_relative_to(project.resolve()):
+            return None
+        settings = load_hook_settings(project_root=project)
+        if settings is None:
+            return None
+        from bridge.classifier.observer import RouteCaptureObserver
+        return RouteCaptureObserver(dsn, settings)
+    except Exception:
+        try:
+            print('route-capture-v1: optional_setup_failed_sink_disabled', file=sys.stderr)
+        except Exception:
+            pass
+        return None
+
+
 def build_coordinator(runtime_config_path: str | Path, *,
                       audience: Literal["parent", "claude", "shadow"],
                       parent_call_id: str | None = None,
@@ -139,14 +161,16 @@ def build_coordinator(runtime_config_path: str | Path, *,
         else:
             qwen_adapter = QwenAdapter(httpx.Client(), **common,
                 cancel_poll_seconds=capabilities.cancellation_poll_ms / 1000)
-    return BridgeCoordinator(dsn, policy, policy.version, emitter,
+    coordinator = BridgeCoordinator(dsn, policy, policy.version, emitter,
         claude_adapter=claude_adapter, qwen_adapter=qwen_adapter,
         source_roots=capabilities.sources,
         workspace_base=project / "var" / "workspaces",
         workspace_max_bytes=capabilities.workspace_max_bytes,
         parent_call_id=parent_call_id, parent_lease_id=parent_lease_id,
         local_capability=capabilities.qwen.model_dump(),
-        paid_capability=capabilities.claude.model_dump())
+        paid_capability=capabilities.claude.model_dump(), project_root=project)
+    coordinator.route_observer = optional_route_observer(project, dsn, audience)
+    return coordinator
 
 
 def build_shadow_coordinator(runtime_config_path: str | Path) -> BridgeCoordinator:

@@ -35,6 +35,9 @@ code_worker_configured = true               # live capacity is additionally prob
 paid_allowed = true
 tools_available = true
 
+[route_work_capture]
+enabled = false                             # separate parent-only opt-in; requires migration 008
+
 [gemma_runtime]
 host = "127.0.0.1"
 port = 11435

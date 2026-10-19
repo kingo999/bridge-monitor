@@ -242,7 +242,8 @@ def test_classifier_activity_cannot_dispatch_or_alter_anything_else(cdsn, cfg):
 
 def test_classifier_modules_never_import_dispatch_or_the_live_router():
     code = ("import sys, bridge.classifier.runner, bridge.classifier.ingest, "
-            "bridge.classifier.client, bridge.classifier.replay; "
+            "bridge.classifier.client, bridge.classifier.replay, bridge.classifier.observer, "
+            "bridge.classifier.hook_capture, bridge.classifier.hook_store, bridge.classifier.route_links; "
             "bad = [m for m in sys.modules if m in ('bridge.mcp_server', 'bridge.runtime.scheduler', "
             "'bridge.runtime.admission', 'bridge.adapters.qwen_agent', 'bridge.adapters.qwen_runtime', "
             "'bridge.adapters.claude_cli', 'bridge.router.ingress', 'bridge.router.shadow_worker', "

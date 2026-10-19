@@ -22,6 +22,7 @@ TERMINAL_STATES = ("completed", "failed", "skipped", "uncertain", "cancelled")
 class ClassifierCohortFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     origin_kind: Literal["natural", "controlled", "synthetic", "replay", "all"] = "all"
+    capture_method: Literal['all', 'manual', 'route_work'] = 'all'
     model: str | None = None
     profile_id: str | None = None
     rubric_version: str | None = None
@@ -56,16 +57,21 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
             rubric_version,state,skip_reason,error_type,validation_error,attempts,rec_route,
             rec_category,policy_allowed,policy_blocks,actual_route,queue_ms,request_ms,
             first_content_ms,inference_ms,load_ms,end_to_end_ms,input_tokens,output_tokens,
-            usage_provenance,backend,captured_at
+            usage_provenance,backend,captured_at,facts,
+            CASE WHEN facts_provenance->>'capture_method'='route_work' THEN 'route_work'
+                 ELSE 'manual' END AS capture_method
             FROM classifier_observations
             WHERE (%s='all' OR origin_kind=%s)
+              AND (%s='all' OR CASE WHEN facts_provenance->>'capture_method'='route_work'
+                   THEN 'route_work' ELSE 'manual' END=%s)
               AND (%s::text IS NULL OR requested_model=%s)
               AND (%s::text IS NULL OR profile_id=%s)
               AND (%s::text IS NULL OR rubric_version=%s)
               AND (%s::timestamptz IS NULL OR captured_at>=%s)
               AND (%s::timestamptz IS NULL OR captured_at<%s)
             ORDER BY captured_at DESC LIMIT %s""",
-            (filters.origin_kind, filters.origin_kind, filters.model, filters.model,
+            (filters.origin_kind, filters.origin_kind, filters.capture_method, filters.capture_method,
+             filters.model, filters.model,
              filters.profile_id, filters.profile_id, filters.rubric_version,
              filters.rubric_version, filters.created_from, filters.created_from,
              filters.created_until, filters.created_until, ROW_LIMIT)).fetchall()
@@ -118,11 +124,24 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
     covered = Counter(r["usage_provenance"] or "missing" for r in attempted)
     resident = Counter((r["backend"] or {}).get("state", "unrecorded") for r in attempted)
     verification_kinds = {"verification", "acceptance", "correction"}
+    method_work = {method: {r['work_item_id'] for r in rows
+                           if r['capture_method'] == method and r['work_item_id']}
+                   for method in ('manual', 'route_work')}
+    fact_coverage = {key: {label: sum((r['facts'].get(key) is value) for r in rows)
+                           for label, value in (('true', True), ('false', False), ('unknown', None))}
+                     for key in ('general_available', 'code_available', 'paid_allowed',
+                                 'tools_available', 'context_complete', 'tests_present')}
     return {
         "definition_version": DEFINITION_VERSION, "available": True,
         "scope_note": ("Advisory recommendations only. Not production routing, not Qwen "
                        "dispatches, not completed coding tasks and not paid requests saved."),
         "rows_considered": len(rows), "row_limit": ROW_LIMIT,
+        'capture': {'observations': {m: sum(r['capture_method'] == m for r in rows) for m in method_work},
+                    'unique_work_items': len(set.union(*method_work.values())),
+                    'unique_work_items_by_method': {m: len(ids) for m, ids in method_work.items()},
+                    'overlap_work_items': len(set.intersection(*method_work.values())),
+                    'note': 'Counts cover this bounded query window; dropped in-memory offers are not recorded.'},
+        'fact_coverage': fact_coverage,
         "counts": {"submitted": len(rows), "attempted": len(attempted),
                    "completed": states["completed"], "failed": states["failed"],
                    "skipped": states["skipped"], "uncertain": states["uncertain"],
@@ -136,7 +155,9 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
                             "categories": dict(Counter(r["rec_category"] for r in completed))},
         "policy": {"allowed": sum(r["policy_allowed"] is True for r in completed),
                    "blocked": sum(r["policy_allowed"] is False for r in completed),
-                   "block_reasons": dict(block_reasons)},
+                   "block_reasons": dict(block_reasons),
+                   'unknown_code_capacity_blocks': sum('code_worker_unknown' in (r['policy_blocks'] or []) for r in completed),
+                   'other_blocked': sum(any(b != 'code_worker_unknown' for b in (r['policy_blocks'] or [])) for r in completed)},
         "reference": {"labelled": labelled, "unlabelled": len(completed) - labelled,
                       "raw_route_acceptable": agree, "raw_route_preferred": preferred,
                       "allowed_and_acceptable": allowed_agree},

@@ -103,27 +103,34 @@ def capture(dsn: str, cap: ObservationCapture, cfg: ClassifierShadowConfig, *,
                 source_id = put_content(conn, f"classifier:{obs_id}:source",
                                         cap.input.source.encode("utf-8"),
                                         role="classifier_source", origin=origin)
-        conn.execute("""INSERT INTO classifier_observations
-            (observation_id,source_key,origin_kind,origin_ref,replay_id,task_id,work_item_id,
-             request_sha256,source_sha256,input_bytes,request_content_id,source_content_id,
-             facts,facts_captured_at,facts_provenance,contract_version,rubric_version,
-             rubric_sha256,profile_id,profile,requested_model,expected_digest,state,skip_reason,
-             captured_at)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-            (obs_id, key, cap.origin_kind, cap.origin_ref, cap.replay_id, cap.task_id,
-             cap.work_item_id, cap.input.request_sha256(), cap.input.source_sha256(), size,
-             request_id, source_id, Jsonb(cap.input.facts), now, Jsonb(cap.facts_provenance),
-             CONTRACT_VERSION, RUBRIC_VERSION, RUBRIC_SHA256, cfg.profile.profile_id,
-             Jsonb(cfg.profile.model_dump()), cfg.model, cfg.model_digest,
-             "skipped" if skip else "captured", skip, now))
+        insert_capture(conn, cap, cfg, obs_id=obs_id, key=key, size=size,
+                       request_id=request_id, source_id=source_id, skip=skip, now=now)
     return CaptureResult("skipped" if skip else "captured", obs_id, skip_reason=skip)
+
+
+def insert_capture(conn, cap, cfg, *, obs_id, key, size, request_id, source_id, skip, now):
+    """Transaction-local insert shared by manual and bounded automatic persistence."""
+    conn.execute("""INSERT INTO classifier_observations
+        (observation_id,source_key,origin_kind,origin_ref,replay_id,task_id,work_item_id,
+         request_sha256,source_sha256,input_bytes,request_content_id,source_content_id,
+         facts,facts_captured_at,facts_provenance,contract_version,rubric_version,
+         rubric_sha256,profile_id,profile,requested_model,expected_digest,state,skip_reason,
+         captured_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+        (obs_id, key, cap.origin_kind, cap.origin_ref, cap.replay_id, cap.task_id,
+         cap.work_item_id, cap.input.request_sha256(), cap.input.source_sha256(), size,
+         request_id, source_id, Jsonb(cap.input.facts), now, Jsonb(cap.facts_provenance),
+         CONTRACT_VERSION, RUBRIC_VERSION, RUBRIC_SHA256, cfg.profile.profile_id,
+         Jsonb(cfg.profile.model_dump()), cfg.model, cfg.model_digest,
+         "skipped" if skip else "captured", skip, now))
 
 
 def expire_stale(dsn: str, cfg: ClassifierShadowConfig, now: datetime) -> int:
     with psycopg.connect(dsn, connect_timeout=5) as conn, conn.transaction():
         cursor = conn.execute("""UPDATE classifier_observations SET state='skipped',
-            skip_reason='expired_unprocessed' WHERE state='captured' AND captured_at < %s""",
-            (now - timedelta(seconds=cfg.max_queue_age_seconds),))
+            skip_reason='expired_unprocessed' WHERE state='captured' AND (captured_at < %s
+              OR (facts_provenance->>'capture_method'='route_work' AND captured_at < %s))""",
+            (now - timedelta(seconds=cfg.max_queue_age_seconds), now - timedelta(seconds=600)))
         return cursor.rowcount
 
 

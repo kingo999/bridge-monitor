@@ -128,6 +128,89 @@ manual operating mode; step 5 is still not done. Each step changes live services
    renders nothing while the schema is absent.
 4. Start Gemma with `start --warm`, then run capture/run commands manually. No scheduled task is
    created and none of this touches `BridgeMonitor-RouterShadow`.
-5. A `route_work` capture hook is **not** implemented. If wanted, add it after review as a
-   try/except-wrapped call to `bridge.classifier.ingest.capture_text` that is awaited by nothing.
-   Rollback is removing that call.
+5. The optional `route_work` capture hook is implemented but **disabled and not deployed**.
+   It uses the bounded background observer described below. Enabling it is a separate operation;
+   a synchronous call to the manual `capture_text` path is not an equivalent replacement.
+
+## Optional arrival capture (not enabled)
+
+The parent can offer registered, matching single-file cases before paid dispatch. This does
+not select a route or start Gemma. Child and shadow audiences have no observer. Only the
+existing fresh-case load supplies data: request, baseline and bounded registration metadata;
+hidden tests, expected outputs and answers are excluded. Natural/controlled origins are kept.
+
+Both `classifier_shadow.enabled = true` and `route_work_capture.enabled = true` must be
+explicitly set in a reviewed TOML file inside the project, named by
+`BRIDGE_CLASSIFIER_SHADOW_CONFIG` before parent startup. Manual-only configuration leaves the
+hook off; an inherited path outside the project is quietly ignored without reading that file.
+Configuration and explicit paid/tools assertions are frozen at startup. The hook
+records general capacity false and code capacity unknown; it performs no delayed capacity
+probe. The model, digest, profile and endpoint remain pinned to the reviewed values.
+
+The observer has one daemon worker, eight pending items and a non-waiting offer. It drops
+oversize, contended, full or expired inputs rather than persisting rejection bodies. Limits
+are 24,576 combined request/source characters and serialized input bytes, 256 characters per
+copied identifier, 4 KiB provenance, and 600 seconds age from arrival. Automatic database
+operations request `connect_timeout=1`, with a 50 ms lock timeout and 250 ms statement timeout.
+Installed Psycopg 3.3.6 enforces a two-second connection minimum per address, so the effective
+connection bound is not one second. The project's numeric loopback DSN uses a single address;
+multi-address/DNS and OS stalls can take longer. Shutdown discards pending
+items and joins the active daemon for at most 250 ms; an active transaction may still finish.
+
+Migration `008_classifier_route_capture.sql` adds only classifier accounting/progress tables
+and a partial classifier index. Missing schema disables the optional sink on its first
+attempt; it does not affect parent dispatch or the existing manual classification schema.
+It has **not been applied to the operational database**. The database-wide lifetime limits
+are 256 hook observations and 4 MiB serialized input, and one successful persistence per two
+seconds. Duplicates are free. Observation, protected content and budget charge commit together.
+Restart, profile change and rollback never replenish counters. A database error or ambiguous
+commit disables that process's sink, discards its pending items and is never retried. Known
+pre-commit failures count as `database_error`; an error during commit after writes counts as
+`persistence_uncertain`. Even a short pre-write lock timeout latches off: this deliberately
+trades coverage for failure isolation, rather than silently relaxing the approved design. Budget
+exhaustion also latches the sink off. Replenishment/retention changes require separate approval.
+
+Process-local fixed counters include offer/queue/contention, expiry, size, cooldown/budget,
+binding and persistence losses. They are approximate and disappear at exit; persisted rows
+are not a denominator for all requests. Fixed reason diagnostics go to stderr from the worker,
+never through the production emitter. Memory queues do not survive restart. Arrival capture
+can consume lifetime budget even if later decision publication, admission or
+delivery fails. Missing links and failed dispatches do not refund that budget. The cohort's
+capture-method filter, unique/overlapping work items and fact coverage cover only its bounded
+query window. Unknown code-capacity blocks are shown separately from other policy blocks;
+neither proves the raw model recommendation was incorrect.
+
+Hook links require the exact frozen decision/call/task/work-item identities and gate hashes,
+case reference and contract. Missing, mismatched and unmapped decisions leave SQL NULL;
+there is no substitution of another decision from the same work item. Existing historical
+non-NULL values, including `unknown`, are never overwritten. Manual captures retain their
+existing immediate matching behavior and are not automatically enrolled in hook reconciliation.
+
+Each manual runner iteration reconciles at most 64 completed, unlinked hook rows before its
+endpoint availability check. A saved ordered cursor advances even over missing/mismatched
+decisions and wraps at a fixed sweep upper key, revisiting unresolved/backdated completions.
+Route/provenance/time fills and cursor progress commit atomically. `runner.link_progress`
+exposes examined/linked/error/timeout/suspended counts to local callers; fixed stderr reasons
+report failed or suspended passes. Two consecutive timeout failures suspend reconciliation for that
+invocation; missing/corrupt schema suspends it immediately. Investigate database health/schema
+and inspect progress with a read-only query, then invoke the runner manually again. No retry
+loop, background service or model start is created. With Gemma stopped, reconciliation and
+queue expiry can proceed without claiming or sending model work. A production decision is
+route evidence, not proof of admission, completion or delivery.
+
+Before live rollout, separately approve the schema migration after backup/index/locking
+review, the deployment/restart, and local enablement. The migration runner applies **all**
+pending migrations; review that list first. First deploy with the new switch false, verify
+disabled behavior, then use a small approved controlled case. Starting Gemma and performing
+a manual classifier run also remain separate decisions. No live policy activation is needed.
+
+Disable future capture by setting `route_work_capture.enabled = false` and performing an
+approved parent restart; editing the file alone cannot stop a running startup snapshot.
+Stopping the classifier runner stops subsequent model sends, not arrival capture or an
+already-sent request. Code rollback removes the optional offer/bootstrap wiring followed by
+an approved restart. For a full rollback to an older code version, first remove the entire
+`[route_work_capture]` section from local classifier TOML files: the old strict loader rejects
+that unknown section, even with `enabled = false`, and would break manual capture/runner use.
+Retain the existing manual classifier settings. Preserve observations, content, budget and cursor; do not run migration
+007's destructive rollback with dependent 008 objects present. No policy change or schema
+rollback is required to disable the feature.

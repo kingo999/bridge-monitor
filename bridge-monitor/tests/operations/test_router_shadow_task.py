@@ -10,7 +10,9 @@ PROJECT = Path(__file__).resolve().parents[2]
 def test_router_shadow_task_preview_is_nonsecret_and_read_only():
     task_name = "BridgeMonitor-RouterShadow"
     result = subprocess.run([
-        "powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File",
+        # Serialize the returned object: default table formatting truncates long worktree paths.
+        "powershell.exe", "-NoProfile", "-NonInteractive", "-OutputFormat", "XML",
+        "-ExecutionPolicy", "Bypass", "-File",
         str(PROJECT / "scripts" / "install-router-shadow-task.ps1"),
         "-ConfigPath", str(PROJECT / "config" / "router-shadow-task.example.json"),
     ], capture_output=True, text=True, timeout=20)

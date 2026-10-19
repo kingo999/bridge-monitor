@@ -12,6 +12,9 @@ def cdsn(test_dsn):
     with psycopg.connect(test_dsn) as conn:
         conn.execute("TRUNCATE classifier_evaluations, classifier_observations")
         conn.execute("DELETE FROM content_objects WHERE content_id LIKE 'classifier:%'")
+        # Test isolation only; process restart and production capture never reset accounting.
+        conn.execute("UPDATE classifier_hook_capture_budget SET consumed_rows=0, consumed_bytes=0, last_persisted_at=NULL")
+        conn.execute("UPDATE classifier_route_link_progress SET last_at=NULL,last_id=NULL,upper_at=NULL,upper_id=NULL")
     return test_dsn
 
 

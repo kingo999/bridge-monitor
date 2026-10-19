@@ -7,6 +7,7 @@ worker module, so a recommendation cannot start or alter any execution path.
 
 import hashlib
 import math
+import sys
 import threading
 import uuid
 from dataclasses import dataclass
@@ -44,6 +45,8 @@ class ShadowRunner:
         self.runner_id = runner_id or f"classifier-runner:{uuid.uuid4()}"
         self.halted: str | None = None
         self._lock_conn: psycopg.Connection | None = None
+        self.link_progress = {"examined": 0, "linked": 0, "errors": 0, "timeouts": 0, "suspended": False}
+        self._link_timeout_streak = 0
 
     # The advisory lock lives on a dedicated connection for the runner's lifetime.
     def start(self) -> int:
@@ -73,6 +76,7 @@ class ShadowRunner:
             return ProcessResult("halted", reason=self.halted)
         now = store.utcnow()
         store.expire_stale(self.dsn, self.cfg, now)
+        self._reconcile_routes()
         identity = self.classifier.check_identity()
         if not identity.ok:
             # Nothing is claimed or sent; queued inputs age out instead of being classified late.
@@ -99,7 +103,32 @@ class ShadowRunner:
         return ProcessResult("processed", row["observation_id"], interp.state,
                              interp.error_type or interp.validation_error)
 
-    def _route_link(self, work_item_id: str | None) -> dict:
+    def _reconcile_routes(self):
+        if self.link_progress['suspended']:
+            return
+        try:
+            from bridge.classifier.route_links import reconcile_page
+            result = reconcile_page(self.dsn)
+            for name in ('examined', 'linked'):
+                self.link_progress[name] += result[name]
+            self._link_timeout_streak = 0
+        except Exception as exc:
+            self.link_progress['errors'] += 1
+            if isinstance(exc, (psycopg.errors.QueryCanceled, psycopg.errors.LockNotAvailable,
+                                psycopg.OperationalError)):
+                self.link_progress['timeouts'] += 1
+                self._link_timeout_streak += 1
+                self.link_progress['suspended'] = self._link_timeout_streak >= 2
+            else:
+                self.link_progress['suspended'] = True
+            if self.link_progress['errors'] == 1 or self.link_progress['suspended']:
+                try:
+                    print('route-link-v1: suspended' if self.link_progress['suspended'] else
+                          'route-link-v1: pass_failed', file=sys.stderr)
+                except Exception:
+                    pass
+
+    def _route_link(self, work_item_id: str | None, row: dict | None = None) -> dict:
         """Optional enrichment: the unchanged system's route, or nothing.
 
         A lookup failure never costs the classification result: the route stays NULL (fillable
@@ -107,6 +136,9 @@ class ShadowRunner:
         decision also leaves the route NULL, never the literal ``unknown``.
         """
         try:
+            if row and row['facts_provenance'].get('capture_method') == 'route_work':
+                from bridge.classifier.route_links import immediate_link
+                return immediate_link(self.dsn, row)
             project_route, provenance = store.actual_route_for(self.dsn, work_item_id)
         except Exception as exc:  # ordinary lookup failure only; termination signals propagate
             return {"actual_route_source": {"status": "lookup_failed",
@@ -147,7 +179,7 @@ class ShadowRunner:
         if interp.recommendation:
             fields.update(rec_category=interp.recommendation.category,
                           rec_route=interp.recommendation.route)
-        fields.update(self._route_link(row["work_item_id"]))
+        fields.update(self._route_link(row["work_item_id"], row))
         if outcome.usage:
             fields.update(outcome.usage, usage_provenance="ollama_terminal")
         elif outcome.status == "completed":

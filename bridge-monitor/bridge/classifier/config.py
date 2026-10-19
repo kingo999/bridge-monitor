@@ -4,7 +4,7 @@ import os
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
 from contracts.classifier import GenerationProfile
 
@@ -79,10 +79,16 @@ class RuntimeConfig(BaseModel):
         return f"http://{self.host}:{self.port}"
 
 
+class RouteWorkCaptureConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    enabled: StrictBool = False
+
+
 class ClassifierConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     classifier_shadow: ClassifierShadowConfig = Field(default_factory=ClassifierShadowConfig)
     gemma_runtime: RuntimeConfig = Field(default_factory=RuntimeConfig)
+    route_work_capture: RouteWorkCaptureConfig = Field(default_factory=RouteWorkCaptureConfig)
 
 
 def load_config(path: str | os.PathLike | None = None) -> ClassifierConfig:

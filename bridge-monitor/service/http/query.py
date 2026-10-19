@@ -123,12 +123,13 @@ def query_router(dsn: str, operator_token: str, sessions: dict, *,
     @router.get("/classifier/cohort")
     def classifier_cohort(request: Request, authorization: str | None = Header(default=None),
                           origin_kind: str = "all", model: str | None = None,
+                          capture_method: str = 'all',
                           profile_id: str | None = None, rubric_version: str | None = None,
                           created_from: datetime | None = None,
                           created_until: datetime | None = None):
         require_browser_operator(request, authorization, operator_token, sessions)
         try:
-            filters = ClassifierCohortFilter(origin_kind=origin_kind, model=model,
+            filters = ClassifierCohortFilter(origin_kind=origin_kind, model=model, capture_method=capture_method,
                 profile_id=profile_id, rubric_version=rubric_version,
                 created_from=created_from, created_until=created_until)
             return query_classifier_cohort(dsn, filters)
