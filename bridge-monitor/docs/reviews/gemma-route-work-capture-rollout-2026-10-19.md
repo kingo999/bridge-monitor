@@ -74,11 +74,12 @@ module in 6.23 seconds. Its answer passed the pinned container verifier's truste
 Capture occurred at 18:59:50.468 UTC, before delivery at 18:59:56.418 UTC. Protected request and
 source bytes match their hashes; the snapshot excludes hidden tests and the answer. Code
 capacity remains unknown. An ordinary recovery request returned the same delivered answer
-without another model execution or capture. Durable quota is **1 row / 574 bytes**, with no reset.
+without another model execution or capture. At the initial handoff, durable quota was
+**1 row / 574 bytes**, with no reset; the desktop check below adds one observation.
 No Qwen job was admitted, and no Qwen or Gemma inference was made for this rollout.
 
-A read-only exact-binding lookup matched the production paid decision. The observation is
-still `captured`, with zero attempts, no response and SQL NULL `actual_route`: no classification
+A read-only exact-binding lookup matched the production paid decision. The observation was
+initially `captured`, with zero attempts, no response and SQL NULL `actual_route`: no classification
 result or completed-row late fill was fabricated. One real runner iteration with Gemma stopped
 returned `endpoint_unavailable`, reported no reconciliation errors and claimed/sent nothing.
 Completed-row late linking remains covered by the merged regression suite, rather than this
@@ -86,18 +87,17 @@ unclassified live canary.
 
 ## Activation and rollback
 
-Only `mcp_servers.bridge_monitor.env.BRIDGE_CLASSIFIER_SHADOW_CONFIG` was added to the user's
+Initially, only `mcp_servers.bridge_monitor.env.BRIDGE_CLASSIFIER_SHADOW_CONFIG` was added to the user's
 Codex configuration. Parsed before/after comparison confirmed every other setting was
 unchanged; the original file was preserved beside it as
 `config.toml.before-gemma-capture-20261019`. Server-scoped `env` is documented in
 [OpenAI's MCP configuration reference](https://learn.chatgpt.com/docs/extend/mcp?surface=cli).
 
-The canary parent was closed cleanly. The existing desktop parents predate this change and
-retain their original startup snapshots. Subsequent Bridge Monitor connections will opt in;
-this is not evidence that capture is already active in every existing chat. No desktop-wide
-restart was forced. Capture stays bounded by the unchanged 8-item pending queue, 256-row/4-MiB
-lifetime budget, two-second rate limit and ten-minute maximum age. The classifier runner is
-not scheduled, and Gemma stays stopped.
+The canary parent was closed cleanly. At the initial handoff, existing desktop parents
+retained their original startup snapshots, so active capture in this chat was still unverified.
+The subsequent desktop reconnect below resolves that gap. Capture stays bounded by the
+unchanged 8-item pending queue, 256-row/4-MiB lifetime budget, two-second rate limit and
+ten-minute maximum age. The classifier runner is not scheduled, and Gemma stays stopped.
 
 The disabled startup path was checked again after the canary, and quota survived unchanged;
 the reviewed enabled file was then restored. To disable future capture, set only
@@ -109,3 +109,49 @@ loader. Do not run migration 007's destructive rollback.
 The active policy remains version `43a200ea7bf9f73a`, hash
 `43a200ea7bf9f73aad0cd5f642e5b51230ffd405f275342a81bc911b906770b2`, with four activations.
 No policy, routing thresholds, scheduling, pool limits or existing shadow-worker task changed.
+
+## Desktop reconnect and verification — 21:17 CEST
+
+The first probe through this chat's actual MCP tool still used an owner registered before
+deployment. One additional controlled Sonnet execution completed and passed trusted tests,
+but no hook observation was created. Recovery reused that answer without another execution.
+The unsuccessful refresh was recorded, not treated as successful enablement. Merely seeing
+a new unrelated parent process was insufficient evidence that this tool had reconnected.
+
+Under the user's explicit reconnect request, the `bridge_monitor` connection switch in the
+desktop settings was cycled off/on, then the client's displayed Restart control was applied.
+The refreshed MCP parent loaded the reviewed configuration at **21:17:41 CEST**. The final
+configuration differs from the original only by the classifier-config environment entry and
+an explicit `bridge_monitor.enabled = true`; every other parsed setting matches.
+
+A fresh controlled registered case was sent through the current MCP tool with **zero call
+and token budgets**. Admission correctly returned `root_budget_exhausted` on both the first
+request and recovery. Exactly one arrival observation was persisted, with exact request and
+source bytes, the expected configuration hash and a post-reconnect load timestamp. Recovery
+did not capture again. No runtime job, result or model execution was created by this check.
+
+| Identity | Value |
+| --- | --- |
+| Work item | `e94d857c-f780-4772-a1e8-169702a579bb` |
+| Rejected paid-call identity | `e975d6c6-a5bf-533c-87b1-33ff9e2968a8` |
+| Hook observation | `8f6cbc4c-4708-56ce-9316-567587fda6c5` |
+
+Read-only exact-binding validation matched its production decision. This demonstrates route
+evidence despite rejected admission; it does not claim an executed paid route. The latest
+observation remains unclassified with zero attempts and SQL NULL `actual_route`. The live
+dashboard reports **3 observations: 1 manual and 2 hook**, with unauthenticated access still
+401. Unknown code capacity remains unknown.
+
+One real runner pass with Gemma stopped expired the initial, now-over-ten-minute hook canary
+as `expired_unprocessed`, preserving its zero attempts and absent response/route. The recent
+capture remained pending. Reconciliation reported no errors, and no model request was sent.
+Production counts and durable quota were unchanged by this expiry pass. Final lifetime
+consumption is **2 rows / 1,148 bytes**, with no refund or reset. Policy version/hash and all
+four policy activations remain unchanged; Gemma remains stopped.
+
+Receipts are `reconnect-attempt.json`, `connected-budget-verification.json`,
+`connected-final-checks.json`, `connected-expiry-check.json` and
+`ui-reconnect-config-verification.json` under the ignored rollout evidence directory.
+Only operational documentation changed in Git during this verification; no product source,
+model settings or live routing policy was edited. The merged code's earlier full regression
+result remains applicable; this stage added live transport/capture/expiry checks.

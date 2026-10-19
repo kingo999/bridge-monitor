@@ -132,8 +132,9 @@ change live services or schema require authorization covering those changes.
 5. The optional `route_work` capture hook entered controlled rollout on 19 October 2026.
    Migration 008 and dashboard reporting are deployed, and one fresh parent passed a real
    controlled capture. The Bridge Monitor desktop MCP entry now names the reviewed enabled
-   local configuration for subsequent connections. Existing parent connections keep their
-   startup snapshots until reconnect. See the [rollout receipt](../reviews/gemma-route-work-capture-rollout-2026-10-19.md).
+   local configuration. The desktop MCP was reconnected at 21:17 CEST and the current tool
+   connection passed a zero-call-budget capture/recovery check. Future configuration edits
+   still require reconnecting startup snapshots. See the [rollout receipt](../reviews/gemma-route-work-capture-rollout-2026-10-19.md).
    A synchronous call to manual `capture_text` is not an equivalent replacement.
 
 ## Optional arrival capture
