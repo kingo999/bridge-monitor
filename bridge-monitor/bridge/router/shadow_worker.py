@@ -85,7 +85,10 @@ def _evaluation_evidence(*, source: str | None, state: str, reason: str,
 
 def run_one_shadow(coordinator, verifier) -> dict | None:
     """Claim at most one queued shadow job; never retry a claimed remote send."""
-    coordinator._refresh_policy()
+    try:
+        coordinator._refresh_policy()
+    except psycopg.OperationalError:
+        return {"state": "unavailable", "reason": "database_unavailable_before_claim"}
     if coordinator.policy.router.mode != "shadow":
         return None
     try:
@@ -156,13 +159,51 @@ def run_one_shadow(coordinator, verifier) -> dict | None:
         if not preflight.ready or preflight.observed_digest != manifest.get("model_digest"):
             raise ValueError("agent_attestation_failed")
         adapter.timeout_seconds = router.execution_seconds
+    except psycopg.OperationalError:
+        # Preparation has not crossed the one-way launch boundary. Release
+        # only when the database confirms this exact lease is unlaunched.
+        try:
+            cancelled = abort_unlaunched(coordinator.dsn, lease)
+        except psycopg.OperationalError:
+            cancelled = False
+        return {"state": "cancelled" if cancelled else "unavailable",
+                "call_id": call_id, "reason": "database_unavailable_before_launch"}
     except (OSError, ValueError, KeyError, AttributeError) as exc:
-        abort_unlaunched(coordinator.dsn, lease)
-        coordinator.emitter.emit(EventType.ADMISSION_BLOCKED, call_id=call_id,
-            payload={"reason": str(exc), "execution_mode": "shadow"},
-            config_version=lease.policy_version)
-        return {"state": "cancelled", "call_id": call_id, "reason": str(exc)}
-    if not claim_launch(coordinator.dsn, lease):
+        try:
+            cancelled = abort_unlaunched(coordinator.dsn, lease)
+        except psycopg.OperationalError:
+            cancelled = False
+        if cancelled:
+            try:
+                coordinator.emitter.emit(EventType.ADMISSION_BLOCKED, call_id=call_id,
+                    payload={"reason": str(exc), "execution_mode": "shadow"},
+                    config_version=lease.policy_version)
+            except psycopg.OperationalError:
+                pass
+        return {"state": "cancelled" if cancelled else "unavailable",
+                "call_id": call_id, "reason": str(exc)}
+    try:
+        launched = claim_launch(coordinator.dsn, lease)
+    except psycopg.OperationalError:
+        # The commit may have succeeded while its acknowledgement was lost.
+        # There has been no model send. Cancel only if still unlaunched;
+        # otherwise leave this exact lease fenced as uncertain.
+        try:
+            cancelled = abort_unlaunched(coordinator.dsn, lease)
+        except psycopg.OperationalError:
+            cancelled = False
+        if not cancelled:
+            try:
+                mark_execution_uncertain(coordinator.dsn, call_id,
+                    reason="launch_acknowledgement_lost_before_send")
+            except psycopg.OperationalError:
+                # Retain this incarnation so its unlaunched lease can be
+                # recovered on the next poll if neither operation committed.
+                return {"state": "unavailable", "call_id": call_id,
+                        "reason": "launch_acknowledgement_lost_before_send"}
+        return {"state": "cancelled" if cancelled else "uncertain",
+                "call_id": call_id, "reason": "launch_acknowledgement_lost_before_send"}
+    if not launched:
         return {"state": "uncertain", "call_id": call_id,
                 "reason": "launch_already_claimed"}
     common = {"call_id": call_id, "task_id": request.task.task_id,

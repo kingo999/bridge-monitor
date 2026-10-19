@@ -9,7 +9,7 @@ from bridge.adapters.qwen_runtime import ModelPreflight
 from bridge.code_fix_verifier import VerificationResult
 from bridge.mcp_server import BridgeCoordinator
 from bridge.router.shadow_worker import run_one_shadow
-from bridge.runtime.ownership import claim_dispatch, claim_launch
+from bridge.runtime.ownership import abort_unlaunched, claim_dispatch, claim_launch
 from bridge.runtime.scheduler import cancel_queued
 from bridge.runtime.completions import record_completion
 from bridge.runtime.policy_startup import activate_policy
@@ -206,6 +206,37 @@ def test_own_unlaunched_shadow_lease_is_recovered_without_second_claim(router_en
     assert qwen.calls == 1
 
 
+def test_lost_dispatch_acknowledgement_recovers_exact_lease_once(
+        router_env, tmp_path, monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    real_claim = claim_dispatch
+    def lost_ack(*args, **kwargs):
+        lease = real_claim(*args, **kwargs)
+        assert lease.call_id == routed["shadow_call_id"]
+        raise psycopg.OperationalError("dispatch acknowledgement lost")
+    monkeypatch.setattr("bridge.router.shadow_worker.claim_dispatch", lost_ack)
+    assert run_one_shadow(worker, Verifier()) == {
+        "state": "unavailable", "reason": "database_unavailable_before_claim"}
+    assert qwen.calls == 0
+    monkeypatch.setattr("bridge.router.shadow_worker.claim_dispatch", real_claim)
+    assert run_one_shadow(worker, Verifier())["evaluation_state"] == "pass"
+    assert qwen.calls == 1
+
+
+def test_other_incarnation_cannot_recover_unlaunched_lease(router_env, tmp_path):
+    parent, routed, _, _ = _queue(router_env)
+    owner = _worker(parent, tmp_path, Qwen())
+    lease = claim_dispatch(parent.dsn, pool="qwen",
+        incarnation_id=owner.incarnations["qwen"], execution_mode="shadow")
+    assert lease.call_id == routed["shadow_call_id"]
+    other = _worker(parent, tmp_path / "other", Qwen())
+    assert claim_dispatch(parent.dsn, pool="qwen",
+        incarnation_id=other.incarnations["qwen"], execution_mode="shadow") is None
+    assert abort_unlaunched(parent.dsn, lease)
+
+
 def test_withdrawn_case_is_cancelled_before_remote_send(router_env, tmp_path):
     parent, routed, _, _ = _queue(router_env)
     ref = router_env[4].verifier_ref
@@ -344,6 +375,89 @@ def test_transient_database_failure_after_claim_aborts_before_model_send(
     assert outcome == {"state": "cancelled", "call_id": routed["shadow_call_id"],
                        "reason": "database_unavailable_before_launch"}
     assert qwen.calls == 0
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone() == ("cancelled", False)
+
+
+def test_lost_launch_acknowledgement_never_sends_and_fences_call(
+        router_env, tmp_path, monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    real_launch = claim_launch
+    def lost_ack(dsn, lease):
+        assert real_launch(dsn, lease)
+        raise psycopg.OperationalError("launch acknowledgement lost")
+    monkeypatch.setattr("bridge.router.shadow_worker.claim_launch", lost_ack)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome == {"state": "uncertain", "call_id": routed["shadow_call_id"],
+                       "reason": "launch_acknowledgement_lost_before_send"}
+    assert qwen.calls == 0
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state,slot_held,launch_claimed_at IS NOT NULL "
+            "FROM runtime_jobs WHERE call_id=%s", (routed["shadow_call_id"],)
+            ).fetchone() == ("uncertain", True, True)
+
+
+def test_failed_launch_claim_cancels_unlaunched_call(
+        router_env, tmp_path, monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    def unavailable(*args, **kwargs):
+        raise psycopg.OperationalError("launch did not commit")
+    monkeypatch.setattr("bridge.router.shadow_worker.claim_launch", unavailable)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome["state"] == "cancelled"
+    assert qwen.calls == 0
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
+            (routed["shadow_call_id"],)).fetchone() == ("cancelled", False)
+
+
+def test_failed_launch_and_cleanup_keep_same_owner_for_recovery(
+        router_env, tmp_path, monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    real_launch, real_abort = claim_launch, abort_unlaunched
+    def unavailable(*args, **kwargs):
+        raise psycopg.OperationalError("database unavailable")
+    monkeypatch.setattr("bridge.router.shadow_worker.claim_launch", unavailable)
+    monkeypatch.setattr("bridge.router.shadow_worker.abort_unlaunched", unavailable)
+    monkeypatch.setattr("bridge.router.shadow_worker.mark_execution_uncertain", unavailable)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome["state"] == "unavailable"
+    assert qwen.calls == 0
+    with psycopg.connect(parent.dsn) as conn:
+        assert conn.execute("SELECT state,slot_held,launch_claimed_at IS NULL "
+            "FROM runtime_jobs WHERE call_id=%s", (routed["shadow_call_id"],)
+            ).fetchone() == ("active", True, True)
+    monkeypatch.setattr("bridge.router.shadow_worker.claim_launch", real_launch)
+    monkeypatch.setattr("bridge.router.shadow_worker.abort_unlaunched", real_abort)
+    assert run_one_shadow(worker, Verifier())["evaluation_state"] == "pass"
+    assert qwen.calls == 1
+
+
+def test_cleanup_database_failure_keeps_unlaunched_lease_recoverable(
+        router_env, tmp_path, monkeypatch):
+    parent, routed, _, _ = _queue(router_env)
+    qwen = Qwen()
+    worker = _worker(parent, tmp_path, qwen)
+    real_abort = abort_unlaunched
+    def unavailable(*args, **kwargs):
+        raise psycopg.OperationalError("cleanup unavailable")
+    monkeypatch.setattr("bridge.router.shadow_worker.abort_unlaunched", unavailable)
+    monkeypatch.setattr("bridge.router.shadow_worker._shadow_manifest",
+                        lambda *_: None)
+    outcome = run_one_shadow(worker, Verifier())
+    assert outcome == {"state": "unavailable", "call_id": routed["shadow_call_id"],
+                       "reason": "shadow_decision_missing"}
+    assert qwen.calls == 0
+    monkeypatch.setattr("bridge.router.shadow_worker.abort_unlaunched", real_abort)
+    next_outcome = run_one_shadow(worker, Verifier())
+    assert next_outcome["state"] == "cancelled"
     with psycopg.connect(parent.dsn) as conn:
         assert conn.execute("SELECT state,slot_held FROM runtime_jobs WHERE call_id=%s",
             (routed["shadow_call_id"],)).fetchone() == ("cancelled", False)

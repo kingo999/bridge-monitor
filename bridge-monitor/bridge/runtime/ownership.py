@@ -66,6 +66,17 @@ def claim_dispatch(dsn: str, *, pool: Literal["claude", "qwen"], incarnation_id:
                 return _existing_lease(prior)
             if prior:
                 return None
+        elif execution_mode == "shadow":
+            # A lost dispatch acknowledgement can leave this incarnation's
+            # lease active before the one-way launch claim. Recover that exact
+            # lease; a launched or uncertain job is never returned here.
+            prior = conn.execute("SELECT call_id,lease_id,owner_incarnation,"
+                "fencing_token,policy_version FROM runtime_jobs "
+                "WHERE pool='qwen' AND execution_mode='shadow' AND state='active' "
+                "AND owner_incarnation=%s AND launch_claimed_at IS NULL "
+                "ORDER BY admitted_at,call_id LIMIT 1", (incarnation_id,)).fetchone()
+            if prior:
+                return _existing_lease(prior)
         policy_row = conn.execute("SELECT c.policy FROM runtime_active_policy a "
                                   "JOIN config_versions c ON c.version=a.version "
                                   "WHERE a.singleton=true").fetchone()
