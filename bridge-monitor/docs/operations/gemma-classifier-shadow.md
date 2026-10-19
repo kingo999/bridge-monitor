@@ -21,7 +21,9 @@ Everything is off until you copy `config/gemma-classifier.example.toml` to a `*.
 .\.venv\Scripts\python.exe scripts\gemma-runtime.py stop --config <config>
 ```
 
-Needs no PowerShell 7 and no global change. `start` verifies the pinned `ollama.exe` SHA-256 and the
+For everyday use, double-click `scripts\gemma-start.cmd` (starts and loads the model) or
+`scripts\gemma-stop.cmd` (frees the GPU, e.g. before gaming); both are safe to repeat and use the
+default runtime settings. Needs no PowerShell 7 and no global change. `start` verifies the pinned `ollama.exe` SHA-256 and the
 `gemma4:12b` manifest SHA-256, refuses an occupied port, then launches the portable Ollama 0.30.9
 detached with a **process-scoped** environment: `127.0.0.1:11435` only, cloud disabled, one
 parallel request, one loaded model, a bounded request queue, 8192 context, configurable
