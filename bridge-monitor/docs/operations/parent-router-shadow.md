@@ -8,6 +8,8 @@ A repeat of the same task/work-item/prompt/contract/reference returns the stored
 
 As checked on 18 October 2026, the operational policy hash is `445c3debabdc63c876c61ace504b0d1f281f8f52b95cb2b8fbee80ee5e428629`; its router is absent, which validates as disabled. Migration `006_router_shadow` is not applied to the operational database, and the running backend returns 404 for `/api/v1/router/cohort`. The static dashboard handles that staged state by omitting the router panel while preserving the existing production cards. No shadow worker or live router policy was activated by implementation or verification.
 
+On 19 October 2026, the operational dashboard returned HTTP 500 for authenticated snapshots because the new snapshot query referenced `runtime_jobs.execution_mode` before migration `006_router_shadow` had been applied. A protected backup was created at `var/backups/bridge-monitor-20261019T130256Z.dump` (SHA-256 `0FEE6276BC6D25800062A011B4F19996BB187877E3336CFE20E035ED7F8DA59B`), then migration `006_router_shadow` was applied. Authenticated snapshot, metrics and router-cohort requests returned HTTP 200 afterward. The active router mode remains the disabled default; this schema repair did not start the shadow worker or a live canary. The migration step below is now complete for this operational database; verify its recorded version before any future cutover.
+
 ## Stage and activate after review
 
 1. Back up the operational database with the existing project backup procedure. Apply project migration `006_router_shadow` using `.\.venv\Scripts\python.exe -m database.migrate BRIDGE_MONITOR_DSN`; check the DSN names the operational Bridge Monitor database. The migration adds mode and decision-stage attribution with production defaults.
