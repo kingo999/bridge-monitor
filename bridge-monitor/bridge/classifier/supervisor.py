@@ -59,7 +59,28 @@ def atomic_json(path: Path, body: dict):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp')
     temporary.write_text(json.dumps(body, indent=2, default=str) + '\n', encoding='utf-8')
-    os.replace(temporary, path)
+    # Windows readers/scanners can briefly deny rename/delete sharing. Retry
+    # only the rename of this already-closed file, never the classification or
+    # database operation. Persistent permissions and other IO failures escape.
+    delays = (.01, .02, .04, .08, .16)
+    first_error = None
+    for attempt in range(len(delays) + 1):
+        try:
+            os.replace(temporary, path)
+        except OSError as exc:
+            code = getattr(exc, 'winerror', None)
+            if os.name != 'nt' or code not in (5, 32, 33) or attempt == len(delays):
+                LOG.error('state_file_replace_failed winerror=%s errno=%s attempts=%s',
+                          code, exc.errno, attempt + 1)
+                raise
+            if first_error is None:
+                first_error = code
+            time.sleep(delays[attempt])
+        else:
+            if attempt:
+                LOG.warning('state_file_replace_recovered winerror=%s retries=%s',
+                            first_error, attempt)
+            return
 
 
 def validate_dsn(dsn: str, expected_database: str):

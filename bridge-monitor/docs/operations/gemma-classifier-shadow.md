@@ -183,6 +183,15 @@ than trusting a stale receipt after a crash. The bounded, rotating supervisor lo
 `var/logs/gemma-classifier/auto-service.log`; runtime launch logs retain their existing locations.
 The exported installed definition is `var/run/classifier-shadow-auto/task-definition.xml`.
 
+Status and halt files are written to a closed temporary file before atomic replacement. Windows
+can briefly deny that rename while a reader or scanner holds the destination. Error codes
+5, 32 and 33 receive five bounded retries at 10, 20, 40, 80 and 160 ms (310 ms total requested
+delay). Only the rename is retried: no model request, classification or database write is
+repeated. Persistent denial preserves the previous valid destination and raises the original
+error. Other IO errors are not retried. Recovery/failure diagnostics record the operation,
+Windows code and retry count without logging file bodies or exception messages. This does not
+alter permissions or antivirus settings.
+
 The task was installed on 20 October 2026. An idle-crash test restored the supervisor through
 the five-minute trigger, with exactly one database lock owner. The shorter failure retry did
 not fire in that test; the five-minute trigger is the verified recovery path. No additional

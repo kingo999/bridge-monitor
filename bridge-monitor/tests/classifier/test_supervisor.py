@@ -127,6 +127,21 @@ def test_dead_runtime_is_recovered_before_next_queue_pass(harness, monkeypatch):
     assert len(calls) == 2 and harness.events.count('ready') == 2
 
 
+def test_status_file_retry_does_not_repeat_classification(harness, monkeypatch):
+    import ctypes
+    original = service.os.replace
+    attempts = []
+    def replace(source, destination):
+        attempts.append(1)
+        if len(attempts) < 3:
+            raise ctypes.WinError(5)
+        return original(source, destination)
+    monkeypatch.setattr(service.os, 'replace', replace)
+    assert harness.run() == 0
+    assert harness.events.count('process') == 1
+    assert harness.events.count('lock_closed') == 1
+
+
 def test_cpu_fallback_latches_across_scheduler_restarts(harness, monkeypatch):
     def process(self, cancel):
         self.halted = 'gpu_residency_cpu_only'
