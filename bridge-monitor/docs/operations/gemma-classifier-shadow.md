@@ -128,8 +128,8 @@ change live services or schema require authorization covering those changes.
    "schema not applied"; after it they return data. Unauthenticated requests stay 401.
 3. Rebuild the static dashboard (`npm run build` in `dashboard/`) to show the new panel; it
    renders nothing while the schema is absent.
-4. Start Gemma with `start --warm`, then run capture/run commands manually. No scheduled task is
-   created and none of this touches `BridgeMonitor-RouterShadow`.
+4. Start Gemma with `start --warm`, then run capture/run commands manually, or use the explicitly
+   installed automatic task below. Neither mode changes `BridgeMonitor-RouterShadow`.
 5. The optional `route_work` capture hook entered controlled rollout on 19 October 2026.
    Migration 008 and dashboard reporting are deployed, and one fresh parent passed a real
    controlled capture. The Bridge Monitor desktop MCP entry now names the reviewed enabled
@@ -137,9 +137,57 @@ change live services or schema require authorization covering those changes.
    connection passed a zero-call-budget capture/recovery check. Future configuration edits
    still require reconnecting startup snapshots. See the [rollout receipt](../reviews/gemma-route-work-capture-rollout-2026-10-19.md).
    At 21:24 CEST, the pinned runtime was started and one still-fresh controlled hook
-   observation was classified and linked. Gemma remains running; the one-shot classifier
-   runner is closed and no continuous runner is scheduled. A synchronous call to manual
+   observation was classified and linked. That one-shot classifier runner was closed;
+   continuous operation was enabled on 20 October, as described below. A synchronous call to manual
    `capture_text` is not an equivalent replacement.
+
+## Automatic sign-in startup and recovery
+
+`scripts/install-classifier-auto-task.ps1 -ConfigPath <reviewed-local-TOML>` prints a task plan.
+Adding `-Install` explicitly registers `BridgeMonitor-GemmaClassifier`; an existing task is
+never overwritten. It runs `scripts/classifier-auto.py` through the project virtual environment's
+`pythonw.exe`, with the current user's limited interactive token and no visible console. It starts
+30 seconds after that user signs in, including after reboot. It does not run before sign-in, matching
+the project database and dashboard tasks. No account password is stored. The protected desktop
+credential file is read by the worker; its contents never enter task arguments or logs.
+
+The task allows no overlapping instances and no time limit. It requests three failure retries at
+one-minute intervals; an independent, indefinite five-minute recovery trigger covers exits even
+when Windows does not perform an immediate retry. Allow up to five minutes for crash recovery
+while signed in and dependencies are available. A Windows-held file lease prevents overlapping supervisors across sessions,
+including manual starts. The existing PostgreSQL advisory lock prevents simultaneous classifier
+runners. An already-running manual runner is left alone; the supervisor waits for its lock before
+starting or warming Gemma. Classification runs inside the supervisor, without a separate child
+runner to orphan. A lost database lock connection is discarded and reacquired before another pass.
+
+The supervisor waits for the exact configured loopback database and uses the existing runtime
+ownership receipts, executable/model hashes and GPU checks to start or recover the project-local
+Gemma server. Transient database/runtime failures retry with a 5–60 second backoff. Interrupted
+classification sends become `uncertain` under the existing recovery rule and are never resent.
+Queue age, size, capture budget, profile, route linking and all live routing policy stay unchanged.
+
+CPU/partial offload, identity mismatch, an unowned listener, or a changed pinned configuration
+write `var/run/classifier-shadow-auto/halt.json`. Scheduler retries do not clear this safety halt.
+Review and resolve the cause before deliberately removing it; configuration changes also require
+reviewing the task's pinned hash. Do not delete a halt just to make automatic retries resume.
+
+For a deliberate pause, create `var/run/classifier-shadow-auto/stop.requested`. The worker finishes
+its current bounded classification, closes the database lock, and exits. The marker survives
+reboot and prevents every scheduled start. Remove only this marker and start the scheduled task
+to resume. Disable the task as well when retiring the service; stopping the task alone does not
+disable its recovery triggers. Gemma's runtime remains independently controlled by `gemma-runtime.py`.
+
+`var/run/classifier-shadow-auto/service.json` records process identity, latest status and heartbeat
+(at least every 30 seconds during normal operation). Check PID, executable and creation time rather
+than trusting a stale receipt after a crash. The bounded, rotating supervisor log is
+`var/logs/gemma-classifier/auto-service.log`; runtime launch logs retain their existing locations.
+The exported installed definition is `var/run/classifier-shadow-auto/task-definition.xml`.
+
+The task was installed on 20 October 2026. An idle-crash test restored the supervisor through
+the five-minute trigger, with exactly one database lock owner. The shorter failure retry did
+not fire in that test; the five-minute trigger is the verified recovery path. No additional
+classification, production call, capture-budget charge or policy activation occurred during
+handoff or crash recovery. Local receipts are under `var/hook-rollout-20261019/autostart-*.json`.
 
 ## Optional arrival capture
 
