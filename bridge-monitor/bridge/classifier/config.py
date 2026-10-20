@@ -82,6 +82,7 @@ class RuntimeConfig(BaseModel):
 class RouteWorkCaptureConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     enabled: StrictBool = False
+    normal_traffic_enabled: StrictBool = False
 
 
 class ClassifierConfig(BaseModel):

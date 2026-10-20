@@ -21,7 +21,7 @@ def test_report_separates_capture_methods_overlap_and_unknown_code(cdsn, tmp_pat
         runner.process_one()
         runner.process_one()
     report = query_classifier_cohort(cdsn, ClassifierCohortFilter())
-    assert report['capture']['observations'] == {'manual': 1, 'route_work': 1}
+    assert report['capture']['observations'] == {'manual': 1, 'route_work': 1, 'bridge_ingress': 0}
     assert report['capture']['unique_work_items'] == 1
     assert report['capture']['overlap_work_items'] == 1
     assert report['fact_coverage']['code_available'] == {'true': 0, 'false': 1, 'unknown': 1}

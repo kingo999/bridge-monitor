@@ -136,7 +136,7 @@ class ShadowRunner:
         decision also leaves the route NULL, never the literal ``unknown``.
         """
         try:
-            if row and row['facts_provenance'].get('capture_method') == 'route_work':
+            if row and row['facts_provenance'].get('capture_method') in ('route_work','bridge_ingress'):
                 from bridge.classifier.route_links import immediate_link
                 return immediate_link(self.dsn, row)
             project_route, provenance = store.actual_route_for(self.dsn, work_item_id)

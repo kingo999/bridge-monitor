@@ -28,7 +28,7 @@ export default function ClassifierCohort() {
     <div className="shadow-filters">
       <label>Capture<select value={filters.captureMethod || 'all'} aria-label="Classifier capture method"
         onChange={event => setFilters({ ...filters, captureMethod: event.target.value })}>
-        {['all', 'manual', 'route_work'].map(m => <option key={m}>{m}</option>)}</select></label>
+        {['all', 'manual', 'route_work', 'bridge_ingress'].map(m => <option key={m}>{m}</option>)}</select></label>
       <label>Origin<select value={filters.originKind} aria-label="Classifier origin"
         onChange={event => setFilters({ ...filters, originKind: event.target.value })}>
         {['all', 'natural', 'controlled', 'synthetic', 'replay'].map(o => <option key={o}>{o}</option>)}</select></label>

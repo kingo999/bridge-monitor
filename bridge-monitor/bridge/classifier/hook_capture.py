@@ -5,9 +5,10 @@ import json
 
 from bridge.classifier.hook_config import HookSettings
 from contracts.classifier import ClassifierInput, ObservationCapture
-from contracts.route_capture import RouteCapture
+from contracts.route_capture import RouteCapture, BridgeCapture
 
 BINDING_VERSION = 'route-work-binding-v1'
+INGRESS_BINDING_VERSION = 'bridge-ingress-binding-v1'
 
 
 def binding_hash(binding: dict) -> str:
@@ -16,9 +17,11 @@ def binding_hash(binding: dict) -> str:
                                      ensure_ascii=False).encode('utf-8')).hexdigest()
 
 
-def prepare_capture(item: RouteCapture, settings: HookSettings) -> ObservationCapture | None:
+def prepare_capture(item: RouteCapture | BridgeCapture, settings: HookSettings) -> ObservationCapture | None:
     if not item.acceptable():
         return None
+    if isinstance(item, BridgeCapture):
+        return prepare_ingress(item, settings)
     facts = dict(general_available=False, code_available=None,
                  paid_allowed=settings.paid_allowed, tools_available=settings.tools_available,
                  tests_present=item.tests_present, context_complete=bool(item.source.strip()),
@@ -38,5 +41,32 @@ def prepare_capture(item: RouteCapture, settings: HookSettings) -> ObservationCa
         return None
     return ObservationCapture(origin_kind=item.origin_kind,
         origin_ref=f'route_work:{item.work_item_id}:{binding["sha256"]}',
+        task_id=item.task_id, work_item_id=item.work_item_id, input=inp,
+        facts_provenance=provenance, max_input_bytes=min(24576, settings.shadow_config().max_input_bytes))
+
+
+def prepare_ingress(item: BridgeCapture, settings: HookSettings) -> ObservationCapture | None:
+    if not settings.normal_traffic_enabled:
+        return None
+    inp = ClassifierInput(request=item.prompt, source='', facts=dict(
+        general_available=False, code_available=None, paid_allowed=settings.paid_allowed,
+        tools_available=settings.tools_available, tests_present=None, context_complete=None,
+        scope=None, security_sensitive=None, external_tools_required=None))
+    binding = dict(version=INGRESS_BINDING_VERSION, method=item.method,
+        task_id=item.task_id, work_item_id=item.work_item_id, decision_id=item.decision_id,
+        paid_call_id=item.paid_call_id, requested_model=item.requested_model,
+        task_sha256=inp.request_sha256(), baseline_sha256=inp.source_sha256(),
+        verifier_ref=item.verifier_ref, output_contract=item.output_contract)
+    binding['sha256'] = binding_hash(binding)
+    method = 'route_work' if item.method == 'route_work' else 'bridge_ingress'
+    provenance = dict(capture_method=method, ingress_method=item.method,
+        route_work_binding=binding, config_sha256=settings.config_sha256,
+        config_loaded_at=settings.loaded_at.isoformat(), captured_at=item.captured_at.isoformat(),
+        facts_source='frozen_config_and_parent_ingress', code_available='unknown_at_arrival',
+        source_coverage='prompt_only')
+    if len(json.dumps(provenance, ensure_ascii=False).encode('utf-8')) > 4096:
+        return None
+    return ObservationCapture(origin_kind=item.origin_kind,
+        origin_ref=f'bridge:{item.method}:{item.work_item_id}:{binding["sha256"]}',
         task_id=item.task_id, work_item_id=item.work_item_id, input=inp,
         facts_provenance=provenance, max_input_bytes=min(24576, settings.shadow_config().max_input_bytes))

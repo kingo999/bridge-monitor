@@ -15,7 +15,7 @@ from contracts.events import EventType
 from contracts.outcomes import (CompletionEnvelope, ContributionLink, DispositionRecord,
                                 ParentAcknowledgement)
 from contracts.work import CallRequest, ExecutionBinding, TaskPacket
-from contracts.route_capture import RouteCapture, RouteObserver
+from contracts.route_capture import RouteCapture, RouteObserver, BridgeCapture
 from bridge.adapters.codex_ingress import CodexIngress, runtime_status
 from bridge.runtime.completions import record_completion
 from bridge.runtime.parent_acknowledgements import record_parent_acknowledgement
@@ -83,26 +83,52 @@ class BridgeCoordinator:
                 pass
 
     def _offer_route_capture(self, task, prompt, case, verifier_ref, output_contract,
-                             paid_id, decision_id):
-        if self.route_observer is None or case is None:
+                             paid_id, decision_id, requested_model):
+        if self.route_observer is None:
             return
         try:
-            if len(task.scope) > 8:
+            arrival = datetime.now(timezone.utc)
+            matched_case = bool(case and case.task_id == task.task_id and case.task_text == prompt)
+            if (matched_case and case.solution_available_at is not None
+                    and case.solution_available_at <= arrival):
                 return
-            snapshot = RouteCapture(task_id=task.task_id, work_item_id=task.work_item_id,
-                category=task.category, scope=tuple(task.scope),
-                scope_approved=all(s in self.policy.router.scopes for s in task.scope),
-                prompt=prompt, case_task_id=case.task_id, case_prompt=case.task_text,
-                source=case.baseline_source, case_digest=verifier_ref,
-                origin_kind=case.origin_kind, origin_ref=case.origin_ref,
-                output_contract=output_contract, case_output_contract=case.output_contract,
-                decision_id=decision_id, paid_call_id=paid_id,
-                captured_at=datetime.now(timezone.utc), registered_at=case.captured_at,
-                solution_available_at=case.solution_available_at,
-                tests_present=bool(case.tests), case_validated=True)
-            self.route_observer.offer(snapshot)
+            controlled = task.context.get('shadow_capture_origin') == 'controlled'
+            if case is not None and len(task.scope) <= 8:
+                snapshot = RouteCapture(task_id=task.task_id, work_item_id=task.work_item_id,
+                    category=task.category, scope=tuple(task.scope),
+                    scope_approved=all(s in self.policy.router.scopes for s in task.scope),
+                    prompt=prompt, case_task_id=case.task_id, case_prompt=case.task_text,
+                    source=case.baseline_source, case_digest=verifier_ref,
+                    origin_kind='controlled' if controlled else case.origin_kind, origin_ref=case.origin_ref,
+                    output_contract=output_contract, case_output_contract=case.output_contract,
+                    decision_id=decision_id, paid_call_id=paid_id,
+                    captured_at=arrival, registered_at=case.captured_at,
+                    solution_available_at=case.solution_available_at,
+                    tests_present=bool(case.tests), case_validated=True)
+                if snapshot.acceptable():
+                    self.route_observer.offer(snapshot)
+                    return
+            self._offer_bridge_capture(task, prompt, 'route_work', paid_id, decision_id,
+                requested_model, verifier_ref, output_contract,
+                controlled=bool(matched_case and case.origin_kind == 'controlled'))
         except Exception:
             # This optional observer cannot alter routing or mask termination signals.
+            pass
+
+    def _offer_bridge_capture(self, task, prompt, method, paid_id, decision_id,
+                              requested_model, verifier_ref=None, output_contract='', *, controlled=False):
+        try:
+            if not getattr(self.route_observer, 'normal_traffic_enabled', False):
+                return
+            # A caller may demote probes to controlled; it cannot assert host-held facts.
+            origin = ('controlled' if controlled or task.context.get('shadow_capture_origin') == 'controlled'
+                      else 'natural')
+            self.route_observer.offer(BridgeCapture(task_id=task.task_id,
+                work_item_id=task.work_item_id, prompt=prompt, method=method,
+                paid_call_id=paid_id, decision_id=decision_id, requested_model=requested_model,
+                captured_at=datetime.now(timezone.utc), origin_kind=origin,
+                verifier_ref=verifier_ref, output_contract=output_contract))
+        except Exception:
             pass
 
     def delegate_claude(self, task: TaskPacket, prompt: str, *, requested_model: str,
@@ -127,6 +153,9 @@ class BridgeCoordinator:
                 max_bytes=self.workspace_max_bytes)
             task = task.model_copy(update={"context": {**task.context, "source_id": source_id}})
         call_id = _call_id or str(uuid.uuid4())
+        if _call_id is None:
+            self._offer_bridge_capture(task, prompt, 'delegate_claude', call_id, call_id,
+                                       requested_model)
         request = CallRequest(call_id=call_id, task=task, requested_model=requested_model,
                               parent_call_id=f"gpt:{task.task_id}")
         decision = self.ingress.submit(request, prompt=prompt, pool="claude",
@@ -239,7 +268,7 @@ class BridgeCoordinator:
             except (OSError, ValueError):
                 pass
         self._offer_route_capture(task, prompt, case, verifier_ref, output_contract,
-                                  paid_id, decision_id)
+                                  paid_id, decision_id, requested_model)
         facts = collect_capture_facts(self.dsn, task, reserve_tokens=reserve_tokens,
             case=case, case_digest_valid=case is not None, policy=self.policy,
             local_capability=self.local_capability)

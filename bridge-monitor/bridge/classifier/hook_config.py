@@ -19,6 +19,7 @@ class HookSettings:
     loaded_at: datetime
     paid_allowed: bool | None
     tools_available: bool | None
+    normal_traffic_enabled: bool = False
 
     def shadow_config(self) -> ClassifierShadowConfig:
         return ClassifierShadowConfig.model_validate_json(self.config_json)
@@ -50,4 +51,5 @@ def load_hook_settings(*, project_root: Path, config_path: Path | None = None) -
         if key in facts and type(facts[key]) is not bool:
             raise ValueError('hook fact assertions must be booleans')
     return HookSettings(shadow.model_dump_json(), hashlib.sha256(raw).hexdigest(),
-                        datetime.now(timezone.utc), facts.get('paid_allowed'), facts.get('tools_available'))
+                        datetime.now(timezone.utc), facts.get('paid_allowed'), facts.get('tools_available'),
+                        cfg.route_work_capture.normal_traffic_enabled)

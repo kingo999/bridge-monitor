@@ -129,7 +129,7 @@ def expire_stale(dsn: str, cfg: ClassifierShadowConfig, now: datetime) -> int:
     with psycopg.connect(dsn, connect_timeout=5) as conn, conn.transaction():
         cursor = conn.execute("""UPDATE classifier_observations SET state='skipped',
             skip_reason='expired_unprocessed' WHERE state='captured' AND (captured_at < %s
-              OR (facts_provenance->>'capture_method'='route_work' AND captured_at < %s))""",
+              OR (facts_provenance->>'capture_method' IN ('route_work','bridge_ingress') AND captured_at < %s))""",
             (now - timedelta(seconds=cfg.max_queue_age_seconds), now - timedelta(seconds=600)))
         return cursor.rowcount
 

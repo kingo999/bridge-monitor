@@ -126,7 +126,7 @@ def test_large_backlog_uses_partial_index_and_advances_over_incomplete_bindings(
         conn.execute('ANALYZE classifier_observations')
         plan = conn.execute(f'EXPLAIN (ANALYZE,FORMAT JSON) SELECT observation_id,captured_at '
             f'FROM classifier_observations WHERE {PENDING} ORDER BY captured_at,observation_id LIMIT 64').fetchone()[0]
-        assert 'classifier_pending_hook_link_idx' in json.dumps(plan)
+        assert 'classifier_pending_bridge_link_idx' in json.dumps(plan)
         assert plan[0]['Plan']['Actual Rows'] == 64
     first = reconcile_page(cdsn)
     second = reconcile_page(cdsn)
@@ -140,7 +140,7 @@ def test_008_is_additive_and_reapplying_cannot_replenish_budget(isolated):
     with psycopg.connect(isolated) as conn:
         before = conn.execute('SELECT (SELECT count(*) FROM tasks), (SELECT count(*) FROM work_items), '
                               '(SELECT count(*) FROM content_objects)').fetchone()
-    assert migrate(isolated) == ['007_classifier_shadow', '008_classifier_route_capture']
+    assert migrate(isolated) == ['007_classifier_shadow', '008_classifier_route_capture', '009_classifier_normal_capture']
     with psycopg.connect(isolated) as conn:
         assert conn.execute('SELECT (SELECT count(*) FROM tasks), (SELECT count(*) FROM work_items), '
                             '(SELECT count(*) FROM content_objects)').fetchone() == before
