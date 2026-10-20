@@ -22,7 +22,7 @@ TERMINAL_STATES = ("completed", "failed", "skipped", "uncertain", "cancelled")
 class ClassifierCohortFilter(BaseModel):
     model_config = ConfigDict(extra="forbid")
     origin_kind: Literal["natural", "controlled", "synthetic", "replay", "all"] = "all"
-    capture_method: Literal['all', 'manual', 'route_work'] = 'all'
+    capture_method: Literal['all', 'manual', 'route_work', 'bridge_ingress'] = 'all'
     model: str | None = None
     profile_id: str | None = None
     rubric_version: str | None = None
@@ -58,12 +58,12 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
             rec_category,policy_allowed,policy_blocks,actual_route,queue_ms,request_ms,
             first_content_ms,inference_ms,load_ms,end_to_end_ms,input_tokens,output_tokens,
             usage_provenance,backend,captured_at,facts,
-            CASE WHEN facts_provenance->>'capture_method'='route_work' THEN 'route_work'
+            CASE WHEN facts_provenance->>'capture_method' IN ('route_work','bridge_ingress') THEN facts_provenance->>'capture_method'
                  ELSE 'manual' END AS capture_method
             FROM classifier_observations
             WHERE (%s='all' OR origin_kind=%s)
-              AND (%s='all' OR CASE WHEN facts_provenance->>'capture_method'='route_work'
-                   THEN 'route_work' ELSE 'manual' END=%s)
+              AND (%s='all' OR CASE WHEN facts_provenance->>'capture_method' IN ('route_work','bridge_ingress')
+                   THEN facts_provenance->>'capture_method' ELSE 'manual' END=%s)
               AND (%s::text IS NULL OR requested_model=%s)
               AND (%s::text IS NULL OR profile_id=%s)
               AND (%s::text IS NULL OR rubric_version=%s)
@@ -126,7 +126,7 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
     verification_kinds = {"verification", "acceptance", "correction"}
     method_work = {method: {r['work_item_id'] for r in rows
                            if r['capture_method'] == method and r['work_item_id']}
-                   for method in ('manual', 'route_work')}
+                   for method in ('manual', 'route_work', 'bridge_ingress')}
     fact_coverage = {key: {label: sum((r['facts'].get(key) is value) for r in rows)
                            for label, value in (('true', True), ('false', False), ('unknown', None))}
                      for key in ('general_available', 'code_available', 'paid_allowed',
@@ -139,7 +139,7 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
         'capture': {'observations': {m: sum(r['capture_method'] == m for r in rows) for m in method_work},
                     'unique_work_items': len(set.union(*method_work.values())),
                     'unique_work_items_by_method': {m: len(ids) for m, ids in method_work.items()},
-                    'overlap_work_items': len(set.intersection(*method_work.values())),
+                    'overlap_work_items': sum(n > 1 for n in Counter(w for ids in method_work.values() for w in ids).values()),
                     'note': 'Counts cover this bounded query window; dropped in-memory offers are not recorded.'},
         'fact_coverage': fact_coverage,
         "counts": {"submitted": len(rows), "attempted": len(attempted),

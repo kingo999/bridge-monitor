@@ -5,18 +5,31 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from bridge.classifier import store
-from bridge.classifier.hook_capture import BINDING_VERSION, binding_hash
+from bridge.classifier.hook_capture import BINDING_VERSION, INGRESS_BINDING_VERSION, binding_hash
 from bridge.classifier.hook_store import DB_OPTIONS
 from bridge.classifier.policy import map_actual_route
 
 PENDING = """state='completed' AND actual_route IS NULL AND work_item_id IS NOT NULL
-    AND facts_provenance->>'capture_method'='route_work'"""
+    AND facts_provenance->>'capture_method' IN ('route_work','bridge_ingress')"""
 BINDING_KEYS = {'version','sha256','task_id','work_item_id','decision_id','paid_call_id',
                 'task_sha256','baseline_sha256','verifier_ref','output_contract'}
 
 
 def checked_binding(row):
     b = row['facts_provenance'].get('route_work_binding')
+    if isinstance(b, dict) and b.get('version') == INGRESS_BINDING_VERSION:
+        keys = BINDING_KEYS | {'method', 'requested_model'}
+        if (set(b) != keys or b['sha256'] != binding_hash(b)
+                or not all((k == 'verifier_ref' and v is None) or (type(v) is str and len(v) <= 256
+                    and (bool(v) or k in ('verifier_ref','output_contract'))) for k,v in b.items())
+                or b['method'] not in ('route_work','delegate_claude')
+                or row['facts_provenance'].get('capture_method') != (
+                    'route_work' if b['method']=='route_work' else 'bridge_ingress')
+                or b['task_id'] != row['task_id'] or b['work_item_id'] != row['work_item_id']
+                or b['task_sha256'] != row['request_sha256']
+                or b['baseline_sha256'] != row['source_sha256']):
+            return None
+        return b
     if (not isinstance(b, dict) or set(b) != BINDING_KEYS
             or not all(isinstance(v, str) and 0 < len(v) <= 256 for v in b.values())
             or b['version'] != BINDING_VERSION or b['sha256'] != binding_hash(b)
@@ -30,13 +43,27 @@ def checked_binding(row):
 def decisions(conn, rows):
     ids = [b['decision_id'] for row in rows if (b := checked_binding(row))]
     # Exact primary keys only. No work-item fallback, earliest/latest or alternate decision search.
-    return {r['decision_id']: r for r in conn.execute("""SELECT d.decision_id,d.work_item_id,
+    found = {r['decision_id']: r for r in conn.execute("""SELECT d.decision_id,d.work_item_id,
         d.child_call_id,d.decision_stage,d.execution_mode,d.route,d.gate_facts,d.decided_at,
-        c.work_item_id AS call_work_item_id,w.task_id,cw.task_id AS call_task_id
+        c.work_item_id AS call_work_item_id,w.task_id,cw.task_id AS call_task_id,
+        c.requested_model
         FROM delegation_decisions d LEFT JOIN calls c ON c.call_id=d.child_call_id
         LEFT JOIN work_items w ON w.work_item_id=d.work_item_id
         LEFT JOIN work_items cw ON cw.work_item_id=c.work_item_id
         WHERE d.decision_id=ANY(%s)""", (ids,)).fetchall()}
+    call_ids = [b['paid_call_id'] for row in rows if (b := checked_binding(row))
+                and b.get('method') == 'delegate_claude']
+    if call_ids:
+        for r in conn.execute("""SELECT c.call_id AS decision_id,c.call_id AS child_call_id,
+            c.work_item_id,c.work_item_id AS call_work_item_id,w.task_id,w.task_id AS call_task_id,
+            c.requested_model,c.execution_mode,j.pool,j.requested_model AS admitted_model,
+            j.admitted_at AS decided_at,encode(sha256(o.raw_bytes),'hex') AS prompt_sha256
+            FROM calls c JOIN work_items w ON w.work_item_id=c.work_item_id
+            JOIN runtime_jobs j ON j.call_id=c.call_id AND j.execution_mode='production'
+            JOIN content_objects o ON o.content_id=j.prompt_content_id
+            WHERE c.call_id=ANY(%s)""", (call_ids,)).fetchall():
+            found[r['decision_id']] = r
+    return found
 
 
 def validate_link(row, decision):
@@ -45,6 +72,8 @@ def validate_link(row, decision):
         return {'actual_route_source': {'status': 'binding_incomplete'}}
     if decision is None:
         return {'actual_route_source': {'status': 'decision_missing', 'decision_id': b['decision_id']}}
+    if b['version'] == INGRESS_BINDING_VERSION:
+        return validate_ingress_link(b, decision)
     same = (decision['decision_id'] == b['decision_id']
         and decision['child_call_id'] == b['paid_call_id']
         and decision['work_item_id'] == decision['call_work_item_id'] == b['work_item_id']
@@ -63,6 +92,37 @@ def validate_link(row, decision):
             'decision_id': b['decision_id'], 'binding_version': BINDING_VERSION,
             'binding_sha256': b['sha256'], 'checked_identity': b,
             'project_route': decision['route'], 'decided_at': decision['decided_at'].isoformat()}}
+
+
+def validate_ingress_link(b, decision):
+    same = (decision['decision_id'] == b['decision_id']
+        and decision['child_call_id'] == b['paid_call_id']
+        and decision['work_item_id'] == decision['call_work_item_id'] == b['work_item_id']
+        and decision['task_id'] == decision['call_task_id'] == b['task_id']
+        and decision['requested_model'] == b['requested_model']
+        and decision['execution_mode'] == 'production')
+    if b['method'] == 'route_work':
+        same = (same and decision['decision_stage'] == 'parent_router'
+            and isinstance(decision['gate_facts'], dict)
+            and decision['gate_facts'].get('task_sha256') == b['task_sha256']
+            and decision['gate_facts'].get('verifier_ref') == b['verifier_ref']
+            and decision['gate_facts'].get('output_contract') == b['output_contract'])
+        route = map_actual_route(decision['route'])
+        table = 'delegation_decisions'
+    else:
+        same = (same and b['decision_id'] == b['paid_call_id'] and decision.get('pool') == 'claude'
+            and decision.get('prompt_sha256') == b['task_sha256']
+            and decision.get('admitted_model') == b['requested_model'])
+        route, table = 'paid', 'runtime_jobs'
+    status = 'binding_mismatch' if not same else 'unmapped_route' if route == 'unknown' else 'matched'
+    fields = {'actual_route_source': {'status': status, 'table': table,
+        'decision_id': b['decision_id'], 'binding_version': b['version'],
+        'binding_sha256': b['sha256'], 'checked_identity': b}}
+    if status == 'matched':
+        fields.update(actual_route=route, actual_route_observed_at=store.utcnow())
+        fields['actual_route_source'].update(project_route=route,
+            decided_at=decision['decided_at'].isoformat())
+    return fields
 
 
 def immediate_link(dsn, row):

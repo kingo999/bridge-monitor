@@ -57,3 +57,31 @@ class RouteCapture:
 class RouteObserver(Protocol):
     def offer(self, snapshot: RouteCapture) -> None: ...
     def close(self) -> None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class BridgeCapture:
+    """Prompt-only parent ingress. No repository, answer, or caller context is copied."""
+    task_id: str
+    work_item_id: str
+    prompt: str
+    method: str
+    paid_call_id: str
+    decision_id: str
+    requested_model: str
+    captured_at: datetime
+    origin_kind: str = 'natural'
+    verifier_ref: str | None = None
+    output_contract: str = ''
+
+    def acceptable(self) -> bool:
+        ids = (self.task_id, self.work_item_id, self.paid_call_id,
+               self.decision_id, self.requested_model)
+        return (all(type(v) is str and 0 < len(v) <= 256 for v in ids)
+            and type(self.prompt) is str and 0 < len(self.prompt) <= 24576
+            and self.method in ('route_work', 'delegate_claude')
+            and self.origin_kind in ('natural', 'controlled')
+            and (self.verifier_ref is None or
+                 (type(self.verifier_ref) is str and len(self.verifier_ref) <= 256))
+            and type(self.output_contract) is str and len(self.output_contract) <= 256
+            and self.captured_at.utcoffset() is not None)

@@ -37,6 +37,10 @@ class RouteCaptureObserver:
         self.thread.start()
 
     @property
+    def normal_traffic_enabled(self):
+        return self._settings.normal_traffic_enabled
+
+    @property
     def pending(self):
         return len(self._queue)
 

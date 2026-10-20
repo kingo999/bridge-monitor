@@ -37,6 +37,7 @@ tools_available = true
 
 [route_work_capture]
 enabled = false                             # separate parent-only opt-in; requires migration 008
+normal_traffic_enabled = false              # prompt-only normal parent traffic; index migration 009
 
 [gemma_runtime]
 host = "127.0.0.1"

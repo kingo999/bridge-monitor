@@ -283,3 +283,44 @@ that unknown section, even with `enabled = false`, and would break manual captur
 Retain the existing manual classifier settings. Preserve observations, content, budget and cursor; do not run migration
 007's destructive rollback with dependent 008 objects present. No policy change or schema
 rollback is required to disable the feature.
+
+
+## Normal parent traffic capture
+
+The separately enabled `[route_work_capture].normal_traffic_enabled = true` extends
+arrival capture to ordinary parent `route_work` requests of any category/contract,
+without a case registration, and public parent `delegate_claude` submissions. Both
+existing enable switches remain required. Existing configurations retain registered-case
+capture until this third switch is explicitly enabled and the parent is restarted.
+
+Unregistered requests copy only the original prompt and bounded call/task identifiers.
+They do not read repositories, copy arbitrary caller context, hidden tests or answers,
+or infer source completeness, test coverage, scope or code capacity. Those facts stay
+unknown. Matching registered Python cases retain their original source and provenance.
+The parent may mark a controlled probe with `task.context.shadow_capture_origin =
+"controlled"`; this label cannot set trusted facts or routing authority. Other ordinary
+submissions are natural. A matching controlled registration also stays controlled when
+its task needs the prompt-only path.
+
+Normal `route_work` captures remain in the route_work dashboard filter. Direct public
+parent delegations appear in the additional bridge_ingress filter, with ingress_method
+identifying the entry point. Internal delegation from route_work and existing-decision
+recovery do not offer a second observation. Direct public delegations are distinct calls
+and carry distinct call identities. Classification results never enter a response,
+admission expression, worker prompt or routing decision.
+
+The same eight-item queue, two-second persistence interval, 600-second expiry, database
+failure latch, 256-row / 4-MiB lifetime quota and no-resend rules cover both capture paths.
+No quota is reset. Migration 009 adds a classifier-only partial index for the expanded
+late-link candidate population; it reuses the saved cursor and does not alter production
+tables. Immediate and late normal links validate the exact call, task, work item, model,
+original prompt hash and production mode. route_work additionally validates its exact
+parent decision, contract and verifier reference. Direct delegates use the exact admitted
+Claude job and its original prompt content; rejection without admission leaves the route
+unknown. A known route is a recorded decision/admission, not proof of completion.
+
+This integration observes requests submitted through Bridge Monitor. Standalone architect
+or Claude MCP servers and ordinary chat are separate entry points; they are not intercepted.
+Runtime supervision, the pinned Gemma generation profile, GPU safety checks and live
+routing policy remain unchanged. Rollback is to disable normal_traffic_enabled and restart
+the parent, preserving observations, the additive index and lifetime accounting.
