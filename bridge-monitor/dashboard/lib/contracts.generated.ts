@@ -28,10 +28,13 @@ export type WorkerExecution = { call_id: string; work_item_id: string | null;
   worker_instance_id: string | null; requested_model: string | null;
   reported_model: string | null; occurred_at: string; waiting_on_local?: boolean };
 export type MetricValue = { numerator: number; denominator: number; percent: number | null };
+export type DistributionSlice = { key: string; label: string; count: number; percent: number | null };
+export type Distribution = { title: string; basis: string; total: number; slices: DistributionSlice[] };
 export type MetricSet = {
   definition_version: string; cohort: Record<string, unknown>; as_of: string;
   unit: string; metrics: Record<string, MetricValue>; coverage: Record<string, MetricValue>;
   guidance_groups?: Record<string, number>;
+  distributions?: Record<'node' | 'model' | 'handling' | 'tier', Distribution>;
 };
 export type Publication = {
   position: number; event_id: string; event_type: string; occurred_at: string;

@@ -41,16 +41,14 @@ test('donut charts stay visible above the live flow while percentage tiles colla
   await expect(panel.getByRole('article')).toHaveCount(0);
   await panel.locator('summary').click();
   const metrics = await (await page.request.get('/api/v1/metrics?origin=synthetic')).json();
-  for (const [title, value, unit] of [
-    ['Routing', metrics.metrics.routed, 'work items'],
-    ['Local contribution', metrics.metrics.contribution, 'delivered results'],
-    ['Paid takeover', metrics.metrics.takeover, 'routed work items'],
-    ['Disposition coverage', metrics.coverage.disposition, 'delivered results'],
-  ] as const) {
-    const chart = charts.getByRole('article', { name: `${title} chart`, exact: true });
-    await expect(chart).toContainText(`${value.percent}%`);
-    await expect(chart).toContainText(`${value.numerator} / ${value.denominator}`);
-    await expect(chart).toContainText(`Unit: ${unit}`);
+  for (const key of ['node', 'model', 'handling', 'tier'] as const) {
+    const distribution = metrics.distributions[key];
+    const chart = charts.getByRole('article', { name: `${distribution.title} chart`, exact: true });
+    await expect(chart).toContainText(`${distribution.total} work items`);
+    for (const slice of distribution.slices) {
+      await expect(chart).toContainText(slice.label);
+      await expect(chart).toContainText(`${slice.count} / ${distribution.total}`);
+    }
   }
   const button = panel.getByRole('button', { name: /Not routed/ });
   await button.click();
@@ -69,26 +67,21 @@ test('donut charts stay visible above the live flow while percentage tiles colla
   await expect(button).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('donut charts distinguish unknown rates from a reported zero', async ({ page }) => {
+test('donut charts distinguish an empty cohort from a zero-count slice', async ({ page }) => {
   await page.route('**/api/v1/metrics?*', async route => {
     const response = await route.fetch();
     const data = await response.json();
-    data.metrics.contribution = { numerator: 0, denominator: 0, percent: null };
-    data.metrics.takeover = { numerator: 0, denominator: 40, percent: 0 };
-    data.coverage.disposition = { numerator: 0, denominator: 0, percent: null };
+    data.distributions.node.total = 0;
+    data.distributions.node.slices = data.distributions.node.slices.map((slice: { count: number; percent: number | null }) => ({ ...slice, count: 0, percent: null }));
     await route.fulfill({ json: data });
   });
   await openDashboard(page);
   const panel = page.getByRole('region', { name: 'Live monitor charts', exact: true });
-  const unknown = panel.getByRole('article', { name: 'Local contribution chart' });
-  await expect(unknown).toContainText('N/A');
-  await expect(unknown.getByRole('img')).toHaveAccessibleName(/N\/A|not available/);
-  const missing = panel.getByRole('article', { name: 'Disposition coverage chart' });
-  await expect(missing).toContainText('N/A');
-  const zero = panel.getByRole('article', { name: 'Paid takeover chart' });
-  await expect(zero).toContainText('0%');
-  await expect(zero).toContainText('0 / 40');
-  await expect(zero.getByRole('img')).toHaveAccessibleName(/0%/);
+  const empty = panel.getByRole('article', { name: 'Work by final executor chart' });
+  await expect(empty).toContainText('N/A');
+  await expect(empty.getByRole('img')).toHaveAccessibleName(/no work items/);
+  const populated = panel.getByRole('article', { name: 'Work by handling chart' });
+  await expect(populated).toContainText('0%');
 });
 
 test('donut charts fit a narrow screen', async ({ page }) => {

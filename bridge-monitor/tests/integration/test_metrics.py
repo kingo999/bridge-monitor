@@ -40,6 +40,9 @@ def test_demonstration_statistics_are_reproduced_from_stored_facts(seeded):
     assert report.metrics["eligible_delegation"].percent == 40.0
     assert report.coverage["eligibility"].percent == 100.0
     assert report.coverage["final_resolution"].percent == 85.0
+    for distribution in report.distributions.values():
+        assert distribution.total == 100
+        assert sum(slice.count for slice in distribution.slices) == 100
 
 
 def test_replay_is_idempotent_and_synthetic_excluded_by_default(seeded):
@@ -80,7 +83,7 @@ def test_shadow_dispatch_on_same_work_item_does_not_change_production_metrics(se
                 "reported_acceptance", "contribution"):
         assert after.metrics[key] == before.metrics[key]
     assert after.coverage["disposition"] == before.coverage["disposition"]
-    assert after.definition_version == "phase1-v4"
+    assert after.definition_version == "phase1-v5"
     assert before_cutoff.metrics["routed"] == before.metrics["routed"]
     page = list_work_items(seeded, CohortQuery(origin="synthetic"), limit=100)
     row = next(item for item in page if item["work_item_id"] == "demo-work-061")

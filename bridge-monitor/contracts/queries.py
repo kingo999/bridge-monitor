@@ -25,6 +25,20 @@ class MetricValue(BaseModel):
     percent: float | None
 
 
+class DistributionSlice(BaseModel):
+    key: str
+    label: str
+    count: int
+    percent: float | None
+
+
+class Distribution(BaseModel):
+    title: str
+    basis: str
+    total: int
+    slices: list[DistributionSlice]
+
+
 class MetricSet(BaseModel):
     definition_version: str
     cohort: CohortQuery
@@ -33,6 +47,7 @@ class MetricSet(BaseModel):
     metrics: dict[str, MetricValue]
     coverage: dict[str, MetricValue] = Field(default_factory=dict)
     guidance_groups: dict[str, int] = Field(default_factory=dict)
+    distributions: dict[str, Distribution] = Field(default_factory=dict)
 
 
 class PublicationCursor(BaseModel):

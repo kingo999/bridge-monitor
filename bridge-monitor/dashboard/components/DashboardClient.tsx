@@ -218,7 +218,7 @@ export default function DashboardClient() {
 
     <section className="panel monitor-charts-panel" aria-label="Live monitor charts">
       <div className="monitor-charts-header"><h2>Live monitor charts</h2>
-        <p>Routing and outcomes for the selected cohort.</p></div>
+        <p>Who handled work, which models contributed, and whether the final result used paid or local work.</p></div>
       <MetricCharts report={metrics} />
     </section>
 

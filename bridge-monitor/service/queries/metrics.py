@@ -5,9 +5,10 @@ import psycopg
 from contracts.queries import CohortQuery, MetricSet, MetricValue
 from service.queries.cohorts import cutoff, leaf_work_items
 from service.queries.guidance import work_guidance, matches_guidance_filters, result_guidance_group
+from service.queries.distributions import query_distributions
 
 
-DEFINITION_VERSION = "phase1-v4"
+DEFINITION_VERSION = "phase1-v5"
 
 
 def _metric(numerator: int, denominator: int) -> MetricValue:
@@ -26,6 +27,7 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
                         if matches_guidance_filters(guidance[work_id], query)}
             from service.queries.direct_execution import execution_metadata
             execution_facts = execution_metadata(conn, work_ids, as_of)
+            distributions = query_distributions(conn, work_ids, execution_facts, as_of)
             total_work = len(work_ids)
             direct_count = sum(f["execution_path"] == "direct_codex" for f in execution_facts.values())
             bridge_count = sum(f["execution_path"] == "bridge" for f in execution_facts.values())
@@ -120,6 +122,7 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
     final_resolution = sum(bool(resolution[work_id] & {"local_retained", "paid_revision_with_contribution", "paid_replaced"})
                            for work_id in dispatched)
     return MetricSet(definition_version=DEFINITION_VERSION, cohort=query, as_of=as_of,
+                     distributions=distributions,
                      guidance_groups={group: sum(facts["guidance_group"] == group
                          for work_id, facts in guidance.items() if work_id in work_ids)
                          for group in sorted({guidance[work_id]["guidance_group"] for work_id in work_ids})},
