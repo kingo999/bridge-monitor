@@ -343,5 +343,21 @@ Inspect/replay without invoking a model:
 .\.venv\Scripts\python.exe -B scripts\capture-codex-desktop.py --codex-home C:\Users\kian\.codex --flush
 ```
 
+Status also shows up to eight recent structural hook outcomes, backed by at most
+32 diagnostic rows. Diagnostics contain only the known event name, outcome or
+exception class and bounded tool identifiers/classifications; they omit prompts,
+tool bodies, paths and exception text. Empty
+checkpoints do not establish automatic recording. On Windows, the fixed Python
+executable path has no spaces and must be unquoted at the start of the command so
+PowerShell invokes it rather than parsing it as a string expression. After changing
+definitions, review/trust them normally and reload the desktop runtime: an existing
+session may keep launching its previously cached command.
+
+The desktop's native clock hook identifier is `clockcurr_time`; it is explicitly
+classified as a direct management operation. Unknown tool identifiers still fail
+closed. Classifier fixes do not clear unknown flags already observed in an earlier
+checkpoint. Validate a fresh turn after such a fix rather than rewriting capture
+history to make a probe pass.
+
 Global installation and trust apply across projects loaded by this Codex home;
 client support, instruction precedence and hook loading still limit coverage.

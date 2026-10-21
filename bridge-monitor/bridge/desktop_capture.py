@@ -29,7 +29,8 @@ def tool_kind(name):
         return 'unknown'
     return 'direct' if name in ('Bash', 'apply_patch', 'Edit', 'Write', 'exec_command',
         'write_stdin', 'exec', 'wait', 'functions.exec', 'functions.wait', 'web.run',
-        'web__run', 'view_image', 'request_user_input', 'request_user_input_async') else 'unknown'
+        'web__run', 'view_image', 'request_user_input', 'request_user_input_async',
+        'clockcurr_time') else 'unknown'
 
 
 def _canonical(path):

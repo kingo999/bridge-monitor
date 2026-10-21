@@ -2,6 +2,7 @@ import hashlib
 import importlib
 import json
 import os
+import runpy
 
 import pytest
 
@@ -49,6 +50,12 @@ def test_real_turn_counters_keep_scope_identity_zero_and_provenance(tmp_path):
     assert usage.provenance == 'codex_desktop_usage_record'
     assert usage.runtime_model == 'runtime-model' and usage.runtime_provider == 'openai'
     assert usage.source_sha256 == hashlib.sha256(raw).hexdigest()
+
+
+def test_native_clock_hook_name_is_a_direct_management_operation():
+    kind = importlib.import_module('bridge.desktop_capture').tool_kind
+    assert kind('clockcurr_time') == 'direct'
+    assert kind('clockworker') == 'unknown'
 
 
 def test_session_totals_are_never_used_as_turn_usage(tmp_path):
@@ -118,3 +125,15 @@ def test_hook_checkpoints_discard_prompt_and_tool_bodies(tmp_path):
     raw = state.read_bytes()
     for secret in (b'PRIVATE PROMPT', b'SECRET COMMAND', b'SECRET OUTPUT'):
         assert secret not in raw
+
+
+def test_hook_diagnostics_are_bounded_and_structural(tmp_path):
+    from pathlib import Path
+    module = runpy.run_path(str(Path(__file__).resolve().parents[2] / 'scripts/capture-codex-desktop.py'))
+    state = tmp_path / 'health.sqlite'
+    for _ in range(40):
+        module['diagnostic'](state, 'PostToolUse', 'no_forward_checkpoint')
+    with importlib.import_module('bridge.desktop_capture')._state(state) as conn:
+        rows = conn.execute('SELECT event,outcome FROM hook_diagnostics').fetchall()
+    assert len(rows) == 32
+    assert set(rows) == {('PostToolUse', 'no_forward_checkpoint')}

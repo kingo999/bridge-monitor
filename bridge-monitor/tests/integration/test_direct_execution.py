@@ -146,6 +146,8 @@ def test_desktop_hooks_replay_scoped_usage_once_after_a_transient_failure(direct
             'transcript_path': str(path), 'model': 'runtime-model'}
     capture_hook({**base, 'hook_event_name': 'UserPromptSubmit', 'prompt': 'PRIVATE'},
                  codex_home=home, state_path=state)
+    capture_hook({**base, 'hook_event_name': 'PostToolUse', 'tool_name': 'clockcurr_time'},
+                 codex_home=home, state_path=state)
     with path.open('ab') as f: f.write(raw)
     capture_hook({**base, 'hook_event_name': 'Stop'}, codex_home=home, state_path=state)
     real = direct_codex.record_direct_task

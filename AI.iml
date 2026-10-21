@@ -3,6 +3,7 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/bridge-monitor" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/.pytest_tmp_m2/test_child_config_is_project_l0/bridge-monitor/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/.pytest_tmp_m2/test_parent_config_is_project_0/bridge-monitor/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/.pytest_tmp_m2/test_parent_runtime_uses_activ0/bridge-monitor/.venv" />
