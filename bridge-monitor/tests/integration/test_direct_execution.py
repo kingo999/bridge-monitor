@@ -132,3 +132,68 @@ def test_direct_work_cannot_acquire_fake_bridge_calls(direct_dsn):
         work_item_id=receipt["work_item_id"])
     with pytest.raises(ValueError, match="direct"):
         ingest_batch(direct_dsn, event.producer_id, [event], [])
+
+
+def test_desktop_hooks_replay_scoped_usage_once_after_a_transient_failure(direct_dsn, tmp_path, monkeypatch):
+    import json
+    from tests.adapters.test_desktop_capture import fixture
+    from bridge.desktop_capture import capture_hook, flush_capture
+    from bridge import direct_codex
+    home, path, offset, raw = fixture(tmp_path)
+    path.write_bytes(path.read_bytes()[:offset])
+    state = tmp_path / 'state.sqlite'
+    base = {'session_id': 'session-1', 'turn_id': 'turn-1', 'cwd': 'C:/test/project',
+            'transcript_path': str(path), 'model': 'runtime-model'}
+    capture_hook({**base, 'hook_event_name': 'UserPromptSubmit', 'prompt': 'PRIVATE'},
+                 codex_home=home, state_path=state)
+    with path.open('ab') as f: f.write(raw)
+    capture_hook({**base, 'hook_event_name': 'Stop'}, codex_home=home, state_path=state)
+    real = direct_codex.record_direct_task
+    def unavailable(*args, **kwargs):
+        raise ConnectionError('secret detail must not be retained')
+    monkeypatch.setattr(direct_codex, 'record_direct_task', unavailable)
+    first = flush_capture(dsn=direct_dsn, codex_home=home, state_path=state)
+    assert first[0]['recorded'] is False
+    assert b'secret detail' not in state.read_bytes()
+    monkeypatch.setattr(direct_codex, 'record_direct_task', real)
+    assert flush_capture(dsn=direct_dsn, codex_home=home, state_path=state)[0]['recorded'] is True
+    assert flush_capture(dsn=direct_dsn, codex_home=home, state_path=state) == []
+    with psycopg.connect(direct_dsn) as conn:
+        work = conn.execute('SELECT work_item_id FROM direct_executions').fetchone()[0]
+    detail = read_work_item_detail(direct_dsn, work)
+    assert detail['direct_execution']['metadata_provenance'] == 'desktop_hook'
+    assert detail['direct_execution']['bypass_reason'] == 'not_reported'
+    assert len(detail['direct_usage']) == 1
+    usage = detail['direct_usage'][0]
+    assert usage['input_tokens'] == 12 and usage['output_tokens'] == 0
+    assert usage['provenance'] == 'codex_desktop_usage_record'
+    assert usage['evidence']['runtime_model'] == 'runtime-model'
+    assert usage['evidence']['runtime_provider'] == 'openai'
+    assert usage['evidence']['attribution'] == 'desktop_turn_capture'
+    assert detail['calls'] == []
+
+
+def test_desktop_capture_preserves_an_explicit_reason_on_the_same_execution(direct_dsn, tmp_path):
+    from tests.adapters.test_desktop_capture import fixture
+    from bridge.desktop_capture import capture_hook, flush_capture
+    home, path, offset, raw = fixture(tmp_path)
+    path.write_bytes(path.read_bytes()[:offset])
+    state = tmp_path / 'state.sqlite'
+    base = {'session_id': 'session-1', 'turn_id': 'turn-1', 'cwd': 'C:/test/project',
+            'transcript_path': str(path), 'model': 'runtime-model'}
+    metadata = {**report(), 'execution_id': 'codex-desktop:session-1:turn-1',
+                'session_id': 'session-1', 'project_root': base['cwd'],
+                'reason': 'User explicitly authorized direct execution for this turn.'}
+    first = importlib.import_module('bridge.direct_codex').record_direct_task(
+        direct_dsn, producer_id='bridge-monitor-parent', report=metadata)
+    capture_hook({**base, 'hook_event_name': 'UserPromptSubmit'}, codex_home=home, state_path=state)
+    with path.open('ab') as stream:
+        stream.write(raw)
+    capture_hook({**base, 'hook_event_name': 'Stop'}, codex_home=home, state_path=state)
+    assert flush_capture(dsn=direct_dsn, codex_home=home, state_path=state)[0]['recorded']
+    detail = read_work_item_detail(direct_dsn, first['work_item_id'])
+    assert detail['direct_execution']['reason'] == metadata['reason']
+    assert detail['direct_execution']['bypass_reason'] == metadata['bypass_reason']
+    assert len(detail['direct_usage']) == 1
+    with psycopg.connect(direct_dsn) as conn:
+        assert conn.execute('SELECT count(*) FROM direct_executions').fetchone()[0] == 1

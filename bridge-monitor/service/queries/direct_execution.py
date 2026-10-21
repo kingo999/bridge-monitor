@@ -7,7 +7,7 @@ def execution_metadata(conn, work_ids, as_of):
     if not work_ids:
         return {}
     with conn.cursor(row_factory=dict_row) as cursor:
-        direct = cursor.execute("SELECT DISTINCT ON (work_item_id) work_item_id,payload "
+        direct = cursor.execute("SELECT DISTINCT ON (work_item_id) work_item_id,payload,observation_layer "
             "FROM events WHERE event_type='direct_task.recorded' AND work_item_id=ANY(%s) "
             "AND occurred_at<=%s ORDER BY work_item_id,occurred_at DESC,event_id DESC",
             (list(work_ids), as_of)).fetchall()
@@ -22,7 +22,8 @@ def execution_metadata(conn, work_ids, as_of):
         result[row["work_item_id"]] = {"execution_path": "direct_codex",
             "bypass_reason": report["bypass_reason"], "bypass_reason_text": report["reason"],
             "requested_model": report.get("requested_model"), "reported_model": None,
-            "direct_execution": {**report, "metadata_provenance": "caller_reported"}}
+            "direct_execution": {**report, "metadata_provenance":
+                "desktop_hook" if row['observation_layer'] == 'codex_desktop_hook' else "caller_reported"}}
     return result
 
 

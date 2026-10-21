@@ -17,7 +17,7 @@ test('direct execution shows bypass, unknown usage and a late CLI receipt withou
   const event = (sequence: number, usage: Record<string, unknown> | null = null) => ({
     event_id: `${execution}-${sequence}`, event_type: 'direct_task.recorded', schema_version: 1,
     producer_id: 'seed', producer_incarnation: execution, producer_sequence: sequence,
-    occurred_at: report.observed_at, origin: 'synthetic', observation_layer: 'e2e',
+    occurred_at: report.observed_at, origin: 'imported', observation_layer: 'e2e',
     capture_completeness: 'partial', task_id: work, work_item_id: work, session_id: report.session_id,
     payload: { report: { ...report, record_id: `${execution}-${sequence}` }, usage,
       source_turn_id: usage ? 'turn-1' : null },
@@ -30,7 +30,7 @@ test('direct execution shows bypass, unknown usage and a late CLI receipt withou
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('imported');
   await page.getByLabel('Execution path', { exact: true }).selectOption('direct_codex');
   await page.getByRole('button', { name: new RegExp(work) }).click();
   const panel = page.getByRole('region', { name: 'Direct Codex execution', exact: true });
@@ -50,5 +50,15 @@ test('direct execution shows bypass, unknown usage and a late CLI receipt withou
   await expect(panel).toContainText('Output: 0');
   await expect(panel).toContainText('Cache-creation input: Unknown');
   await expect(panel).toContainText('Provider: Unknown');
+  const desktopUsage = { ...usage, provenance: 'codex_desktop_usage_record',
+    source_sha256: 'b'.repeat(64), runtime_model: 'desktop-runtime-model', runtime_provider: 'openai' };
+  const desktop = event(3, desktopUsage);
+  desktop.payload.source_turn_id = 'turn-2';
+  const captured = await request.post('/api/v1/events/batch', { headers, data: { events: [desktop], content: [] } });
+  expect(captured.ok()).toBeTruthy();
+  await expect(panel).toContainText('Codex desktop runtime usage');
+  await expect(panel).toContainText('Runtime model: desktop-runtime-model');
+  await expect(panel).toContainText('Runtime provider: openai');
+  await expect(panel).toContainText('Source SHA-256 (turn range)');
   await page.screenshot({ path: '../var/reports/direct-execution-dashboard.png', fullPage: true });
 });

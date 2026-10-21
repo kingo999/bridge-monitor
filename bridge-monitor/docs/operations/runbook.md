@@ -240,7 +240,7 @@ The report requires `record_id` (unique receipt/idempotency key), `execution_id`
 Optional `reason` records the user's instruction/approval or management exception;
 optional `requested_model` is explicitly a request, not an observed model identity.
 Allowed reasons are `user_instruction`, `approved_fallback`, `bridge_unavailable`,
-`bridge_unsuitable`, `management`, `trivial_operation`, and `other`. If a real session
+`bridge_unsuitable`, `management`, `trivial_operation`, `not_reported`, and `other`. If a real session
 ID is unavailable, disclose that and defer the record; never invent one to import usage.
 
 Reuse the same `execution_id` for start/completion and a new `record_id` for each
@@ -290,6 +290,58 @@ turn total. Session-wide counters are not accepted as task measurements.
 The dashboard work list has a loaded-items execution-path filter, bypass reason
 labels and separate Bridge/direct counts. Direct details show scoped counters and
 their provenance; no receipt means unknown usage. Existing Skynet percentages
-exclude direct tasks and retain their meaning. Recording metadata works for the
-desktop app, but desktop task token usage remains unknown without a supported
-receipt. This feature is explicit recording, not universal automatic interception.
+exclude direct tasks and retain their meaning. Missing usage stays unknown.
+
+### Automatic desktop recording
+
+The global `C:\Users\kian\.codex\hooks.json` registers
+`scripts/capture-codex-desktop.py` for UserPromptSubmit, PostToolUse, Stop,
+Interrupt and SessionEnd. These definitions must be trusted through Codex's normal
+`/hooks` interface. The existing notify command, MCP routes and model settings are
+preserved. This handler records observations; it never executes a model or grants
+permission to bypass the Bridge.
+
+UserPromptSubmit creates a forward-only checkpoint for the hook-supplied current
+desktop transcript, session and turn. PostToolUse marks observed delegation and
+unknown tools. Stop queues completion and asynchronously flushes the capture to
+the existing Monitor database. Interrupt marks cancellation; subsequent Stop or
+SessionEnd flushes pending observations. There is no history discovery or backfill.
+Only paths inside the configured Codex home's sessions directory with matching
+desktop identity are accepted. Captured ranges are capped at 8 MiB. The local
+`var/spool/codex-desktop.sqlite` retains structural checkpoints, never prompt,
+answer or tool bodies. Protect this ignored spool like the existing runtime data.
+
+Use `execution_id = codex-desktop:<actual-session-id>:<actual-turn-id>` for explicit
+reason reports concerning an automatically captured turn. The hook preserves that
+record's structured reason. Without one it records `not_reported`; it does not
+parse prompts to infer a bypass or approval. Reports using a different execution
+ID will remain separate records. Automatic summaries identify a desktop turn,
+not a semantic multi-turn task.
+
+The installed desktop runtime exposes `token_usage_record` frames. The importer
+matches the actual session/turn and verifies cumulative turn counters against
+deduplicated response counters. It never substitutes thread totals. Supported
+completed captures have `codex_desktop_usage_record` provenance, reported runtime
+model/provider when available, turn scope, and a SHA-256 of the captured turn
+range. The source schema is internal and may change. Missing, conflicting,
+incomplete or unsupported measurements stay unknown; costs are not estimated.
+
+Observed delegated/mixed turns and unknown tool coverage are excluded from
+automatic standalone-direct totals to avoid double accounting Bridge calls.
+Specialized execution paths may omit hooks, and shell subprocesses cannot be
+independently classified. This is best-effort observation, not universal routing
+enforcement or guaranteed capture. Existing sessions may require reload before
+new hook definitions run. No token values are fabricated to fill capture gaps.
+
+Database failures retain pending checkpoints for later Stop/SessionEnd or explicit
+bounded replay. Completion/late-counter retries are bounded to eight attempts;
+capture gaps remain visible in local status. Replay is idempotent by session/turn.
+Inspect/replay without invoking a model:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\capture-codex-desktop.py --codex-home C:\Users\kian\.codex --status
+.\.venv\Scripts\python.exe -B scripts\capture-codex-desktop.py --codex-home C:\Users\kian\.codex --flush
+```
+
+Global installation and trust apply across projects loaded by this Codex home;
+client support, instruction precedence and hook loading still limit coverage.

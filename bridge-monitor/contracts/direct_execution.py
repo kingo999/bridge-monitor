@@ -1,4 +1,4 @@
-"""Caller-reported execution metadata; token counts require a separate CLI receipt."""
+"""Execution observations; token counts require a separate scoped runtime receipt."""
 
 from datetime import datetime, timezone
 from typing import Literal
@@ -15,7 +15,7 @@ class DirectExecutionReport(BaseModel):
     summary: str = Field(min_length=1, max_length=1000)
     status: Literal["running", "completed", "failed", "cancelled", "unknown"]
     bypass_reason: Literal["user_instruction", "approved_fallback", "bridge_unavailable",
-                         "bridge_unsuitable", "management", "trivial_operation", "other"]
+                         "bridge_unsuitable", "management", "trivial_operation", "other", "not_reported"]
     reason: str = Field(default="", max_length=2000)
     requested_model: str | None = Field(default=None, min_length=1, max_length=200)
     observed_at: datetime
@@ -33,7 +33,9 @@ class CodexTurnReceipt(BaseModel):
     session_id: str = Field(min_length=1, max_length=200)
     source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     scope: Literal["turn"] = "turn"
-    provenance: Literal["codex_cli_receipt"] = "codex_cli_receipt"
+    provenance: Literal["codex_cli_receipt", "codex_desktop_usage_record"] = "codex_cli_receipt"
+    runtime_model: str | None = Field(default=None, min_length=1, max_length=200)
+    runtime_provider: str | None = Field(default=None, min_length=1, max_length=200)
     input_tokens: int | None = Field(default=None, ge=0)
     output_tokens: int | None = Field(default=None, ge=0)
     cache_read_input_tokens: int | None = Field(default=None, ge=0)

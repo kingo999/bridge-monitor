@@ -2,7 +2,7 @@
 export type Origin = 'observed' | 'imported' | 'synthetic' | 'all';
 export type DirectExecution = { execution_id: string; record_id: string; session_id: string;
   project_root: string; summary: string; status: string; bypass_reason: string; reason: string;
-  requested_model: string | null; observed_at: string; metadata_provenance: 'caller_reported' };
+  requested_model: string | null; observed_at: string; metadata_provenance: 'caller_reported' | 'desktop_hook' };
 export type DashboardStatus = {
   active: number; queued: number; held_uncertain: number; blocked: number;
   capture_state: 'healthy' | 'degraded' | 'unknown'; known_gaps: number;
@@ -52,7 +52,8 @@ export type WorkDetail = {
     input_tokens: number | null; output_tokens: number | null;
     cache_read_input_tokens: number | null; cache_creation_input_tokens: number | null;
     provenance: string; price_basis: string | null; source_turn_id: string;
-    evidence: { source_sha256: string; reasoning_output_tokens: number | null } }>;
+    evidence: { source_sha256: string; reasoning_output_tokens: number | null;
+      runtime_model?: string | null; runtime_provider?: string | null; digest_scope?: string } }>;
   work_item: WorkItem;
   calls: Array<{ call_id: string; parent_call_id: string | null; requested_model: string | null; created_at: string; execution_mode: 'production' | 'shadow'; local_dispatch: boolean }>;
   messages: Array<{ message_id: string; call_id: string; role: string; direction: string; original_content_id: string | null; effective_content_id: string | null }>;

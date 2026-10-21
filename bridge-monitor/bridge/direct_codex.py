@@ -84,7 +84,8 @@ def parse_codex_turn(stream: str | bytes, *, turn_index: int | None = None) -> C
 
 def record_direct_task(dsn: str, *, producer_id: str, report: dict,
                        usage: CodexTurnReceipt | None = None,
-                       source_turn_id: str | None = None) -> dict:
+                       source_turn_id: str | None = None,
+                       observation_layer: str = "codex_direct_recorder") -> dict:
     report = DirectExecutionReport.model_validate(report)
     if not producer_id:
         raise PermissionError("authenticated recorder required")
@@ -94,12 +95,18 @@ def record_direct_task(dsn: str, *, producer_id: str, report: dict,
         raise ValueError("source_turn_id requires a usage receipt")
     work_id = "direct:" + str(uuid.uuid5(uuid.NAMESPACE_URL, report.execution_id))
     event_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"direct-report:{producer_id}:{report.record_id}"))
+    usage_data = usage.model_dump() if usage else None
+    if usage_data is not None:
+        # Preserve the wire identity of receipts made before desktop support existed.
+        for field in ("runtime_model", "runtime_provider"):
+            if usage_data[field] is None:
+                usage_data.pop(field)
     payload = {"report": report.model_dump(mode="json"),
-               "usage": usage.model_dump() if usage else None, "source_turn_id": source_turn_id}
+               "usage": usage_data, "source_turn_id": source_turn_id}
     event = EventEnvelope(event_id=event_id, event_type=EventType.DIRECT_TASK_RECORDED,
         schema_version=1, producer_id=producer_id, producer_incarnation=event_id,
         producer_sequence=1, occurred_at=report.observed_at, origin="observed",
-        observation_layer="codex_direct_recorder", capture_completeness="partial",
+        observation_layer=observation_layer, capture_completeness="partial",
         task_id=work_id, work_item_id=work_id, session_id=report.session_id, payload=payload)
     with psycopg.connect(dsn) as conn, conn.transaction():
         # This lock protects recorder identity/replay, never scheduler capacity.

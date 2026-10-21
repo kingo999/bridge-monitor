@@ -66,6 +66,9 @@ def project_direct_task(conn, event):
                 "reasoning_output_tokens": usage.reasoning_output_tokens,
                 "attribution": "caller_selected_cli_turn", "provider": None,
                 "reported_model": None}
+    if usage.provenance == "codex_desktop_usage_record":
+        evidence.update(runtime_model=usage.runtime_model, runtime_provider=usage.runtime_provider,
+                        digest_scope="captured_turn_range", attribution="desktop_turn_capture")
     expected = (report.execution_id, usage.input_tokens, usage.output_tokens,
                 usage.cache_read_input_tokens, usage.cache_creation_input_tokens, evidence)
     previous = conn.execute("SELECT direct_execution_id,input_tokens,output_tokens,"
@@ -76,11 +79,11 @@ def project_direct_task(conn, event):
     conn.execute("INSERT INTO usage_observations(observation_id,direct_execution_id,"
         "source_turn_id,scope,is_cumulative,input_tokens,output_tokens,"
         "cache_read_input_tokens,cache_creation_input_tokens,provenance,evidence) "
-        "VALUES(%s,%s,%s,'turn',true,%s,%s,%s,%s,'codex_cli_receipt',%s) "
+        "VALUES(%s,%s,%s,'turn',true,%s,%s,%s,%s,%s,%s) "
         "ON CONFLICT(observation_id) DO NOTHING",
         (observation_id, report.execution_id, packet.source_turn_id,
          usage.input_tokens, usage.output_tokens, usage.cache_read_input_tokens,
-         usage.cache_creation_input_tokens, Jsonb(evidence)))
+         usage.cache_creation_input_tokens, usage.provenance, Jsonb(evidence)))
     stored = conn.execute("SELECT direct_execution_id,input_tokens,output_tokens,"
         "cache_read_input_tokens,cache_creation_input_tokens,evidence FROM usage_observations "
         "WHERE observation_id=%s", (observation_id,)).fetchone()
