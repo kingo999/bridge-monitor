@@ -1,11 +1,17 @@
 // Mirrors the versioned Python query DTOs; regenerate when those contracts change.
 export type Origin = 'observed' | 'imported' | 'synthetic' | 'all';
+export type DirectExecution = { execution_id: string; record_id: string; session_id: string;
+  project_root: string; summary: string; status: string; bypass_reason: string; reason: string;
+  requested_model: string | null; observed_at: string; metadata_provenance: 'caller_reported' };
 export type DashboardStatus = {
   active: number; queued: number; held_uncertain: number; blocked: number;
   capture_state: 'healthy' | 'degraded' | 'unknown'; known_gaps: number;
   spool_pressure: number | null;
 };
 export type WorkItem = {
+  execution_path?: 'bridge' | 'direct_codex' | 'unknown';
+  bypass_reason?: string; bypass_reason_text?: string;
+  direct_execution?: DirectExecution;
   work_item_id: string; task_id: string; category: string | null; origin: Origin;
   created_at: string; resolution: string | null; resolved_at: string | null;
   routed: boolean; paid_route: boolean; requested_model?: string | null;
@@ -41,6 +47,12 @@ export type OutputPreview = {
   truncated: boolean; last_event_at: string | null;
 };
 export type WorkDetail = {
+  direct_execution?: DirectExecution | null;
+  direct_usage?: Array<{ observation_id: string; scope: string; is_cumulative: boolean;
+    input_tokens: number | null; output_tokens: number | null;
+    cache_read_input_tokens: number | null; cache_creation_input_tokens: number | null;
+    provenance: string; price_basis: string | null; source_turn_id: string;
+    evidence: { source_sha256: string; reasoning_output_tokens: number | null } }>;
   work_item: WorkItem;
   calls: Array<{ call_id: string; parent_call_id: string | null; requested_model: string | null; created_at: string; execution_mode: 'production' | 'shadow'; local_dispatch: boolean }>;
   messages: Array<{ message_id: string; call_id: string; role: string; direction: string; original_content_id: string | null; effective_content_id: string | null }>;

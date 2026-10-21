@@ -32,7 +32,9 @@ test('classifier capture filter and unknown capacity stay separate from producti
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   const panel = page.getByRole('region', { name: 'Gemma classifier shadow cohort' });
+  await panel.locator('summary').click();
   await expect(panel).toContainText('1 unique work items');
   await expect(panel).toContainText('Unknown code capacity blocks: 1');
   await expect(panel).toContainText('Unknown capacity is not evidence of an incorrect raw route.');

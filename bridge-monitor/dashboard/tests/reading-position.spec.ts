@@ -5,6 +5,7 @@ test('a delayed previous cohort cannot replace the current work list and metrics
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await expect(page.locator('.connection')).toContainText('Connected');
   const workHeading = page.getByRole('region', { name: 'Recent and historical work' })
     .getByRole('heading', { name: /Recent & active work/ });
@@ -72,6 +73,7 @@ test('a delayed load-more page cannot enter a different cohort', async ({ page, 
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await expect(page.locator('.connection')).toContainText('Connected');
   const workPanel = page.getByRole('region', { name: 'Recent and historical work' });
   const workHeading = workPanel.getByRole('heading', { name: /Recent & active work/ });
@@ -118,6 +120,7 @@ test('selected exchange remains selected when the list refreshes', async ({ page
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await page.getByRole('button', { name: /demo-work-061/ }).first().click();
   await expect(page.getByText('demo-work-061').last()).toBeVisible();
@@ -129,6 +132,7 @@ test('live refresh keeps older work items loaded for historical reading', async 
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await expect(page.locator('.connection')).toContainText('Connected');
   const nonce = randomUUID();
   const base = { schema_version: 1, producer_id: 'seed', producer_incarnation: nonce,

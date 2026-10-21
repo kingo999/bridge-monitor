@@ -1,15 +1,16 @@
 import type { ShadowCohort as Cohort } from '@/lib/contracts.generated';
 import type { RouterFilters } from '@/lib/api';
+import CollapsiblePanel from './CollapsiblePanel';
 
 export default function ShadowCohort({ report, filters, onChange }: {
   report: Cohort | null; filters: RouterFilters; onChange: (next: RouterFilters) => void;
 }) {
   if (!report) return null;
   const entries = Object.entries(report.reasons).sort((a, b) => b[1] - a[1]);
-  return <section className="panel shadow-cohort" aria-label="Parent router shadow cohort">
-    <div className="panel-heading"><div><h2>Parent router · shadow audit</h2>
-      <p>Attempted tasks, independent verification, and usage coverage</p></div>
-      <span className="pill">{report.definition_version}</span></div>
+  return <CollapsiblePanel className="shadow-cohort" label="Parent router shadow cohort" title="Parent router · shadow audit"
+    subtitle="Attempted tasks, independent verification, and usage coverage" badge={report.definition_version}>
+
+
     <div className="shadow-filters">
       <label>Model profile<input value={filters.modelProfile} aria-label="Router model profile"
         onChange={event => onChange({ ...filters, modelProfile: event.target.value })} /></label>
@@ -32,5 +33,5 @@ export default function ShadowCohort({ report, filters, onChange }: {
       <p>Median queue: {report.queue_latency_ms.median ?? 'Unknown'} ms · Qwen execution: {report.shadow_execution_latency_ms.median ?? 'Unknown'} ms · verification: {report.verifier_latency_ms.median ?? 'Unknown'} ms</p>
       <p>Conditional avoided paid calls: {report.conditional_avoided_paid_calls ?? 'Unknown'} · Billed savings: {report.billed_savings ?? 'Unknown'}</p>
     </div>
-  </section>;
+  </CollapsiblePanel>;
 }

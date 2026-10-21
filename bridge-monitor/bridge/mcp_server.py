@@ -890,6 +890,21 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
     mcp = FastMCP("Bridge Monitor")
     if audience == "parent":
         @mcp.tool()
+        def record_direct_task(report: dict) -> dict:
+            """Record direct Codex task metadata/bypass reason; never accepts guessed token counts.
+
+            report requires record_id (idempotency key), execution_id (stable task key),
+            session_id, project_root, summary, status (running/completed/failed/cancelled/unknown),
+            bypass_reason (user_instruction/approved_fallback/bridge_unavailable/bridge_unsuitable/
+            management/trivial_operation/other), observed_at (ISO timestamp); reason and
+            requested_model are optional. Actual usage is imported from an explicit CLI receipt.
+            This records observations only and grants no direct-execution authority.
+            """
+            from bridge.direct_codex import record_direct_task as record
+            return record(coordinator.dsn, producer_id=coordinator.emitter.producer_id,
+                          report=report)
+
+        @mcp.tool()
         def route_work(task: dict, prompt: str, requested_model: str,
                        reserve_tokens: int, output_contract: str,
                        verifier_ref: str | None = None,

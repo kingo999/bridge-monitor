@@ -66,6 +66,7 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
     <div className="flow-canvas" ref={canvasRef} role="img" aria-label="GPT and Codex delegate to Claude and Skynet; Gemma observes an advisory copy">
       <ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{ padding: 0.12 }}
         onInit={setInstance}
+        panActivationKeyCode={null}
         nodesDraggable={false} nodesConnectable={false} elementsSelectable
         onEdgeClick={(_, edge) => { if (edge.id !== 'gpt-gemma') onEdge(edge.id === 'claude-qwen' ? 'routed' : 'not_routed'); }}
         proOptions={{ hideAttribution: true }}>

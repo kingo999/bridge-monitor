@@ -5,6 +5,7 @@ test('service metrics match the 100-item sample and history keeps topology curre
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await expect(page.getByRole('button', { name: /Routed to Skynet/ })).toContainText('40%');
   await expect(page.getByRole('button', { name: /Not routed/ })).toContainText('60%');
@@ -15,26 +16,28 @@ test('service metrics match the 100-item sample and history keeps topology curre
   await page.getByRole('button', { name: 'History' }).click();
   await expect(page.getByRole('region', { name: 'Current orchestration flow' })).toBeVisible();
   await page.getByRole('button', { name: /Not routed/ }).click();
-  await expect(page.getByText('Work list filtered by Not routed')).toBeVisible();
+  await expect(page.getByText('Loaded work list filtered by Not routed.', { exact: false })).toBeVisible();
 });
 
 test('GPT consumer view labels missing acknowledgements as unknown', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await page.getByLabel('Consumer').selectOption('gpt');
 
   const acceptance = page.getByRole('button', { name: /GPT-reported acceptance/ });
   await expect(acceptance).toContainText('No GPT acknowledgement captured; final use unknown');
   await acceptance.click();
-  await expect(page.getByText('Work list filtered by GPT-reported acceptance')).toBeVisible();
+  await expect(page.getByText('Loaded work list filtered by GPT-reported acceptance.', { exact: false })).toBeVisible();
 });
 
 test('GPT acknowledgement shows parent-submitted answer with capture boundary', async ({ page, request }) => {
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   const nonce = randomUUID();
   const task = `parent-task-${nonce}`;
   const work = `parent-work-${nonce}`;
@@ -114,6 +117,7 @@ test('resolved work without a delegation record is visible separately from pendi
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await expect(page.locator('.connection')).toContainText('Connected');
   const unique = randomUUID();
   const taskId = `no-route-task-${unique}`;

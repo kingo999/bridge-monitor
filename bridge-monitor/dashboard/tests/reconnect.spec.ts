@@ -94,6 +94,7 @@ test('paused display keeps collecting and resumes with a new committed work item
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
   const pendingMetric = page.getByRole('button', { name: /Routing pending/ });
+  await page.getByRole('region', { name: 'Percentage panel', exact: true }).locator('summary').click();
   await expect(page.locator('.connection')).toContainText('Connected');
   await expect(pendingMetric.locator('small')).toHaveText(/^\d+ \/ \d+$/);
   const before = await pendingMetric.locator('small').innerText();

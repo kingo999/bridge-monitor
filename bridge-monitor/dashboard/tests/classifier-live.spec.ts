@@ -27,6 +27,7 @@ test('classifier updates without filter changes, pauses, resumes and clears stal
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
   const panel = page.getByRole('region', { name: 'Gemma classifier shadow cohort' });
+  await panel.locator('summary').click();
   const submitted = panel.locator('.shadow-stats div').filter({ hasText: 'Submitted' }).locator('strong');
   await expect(submitted).toHaveText('0');
   completed = 1;

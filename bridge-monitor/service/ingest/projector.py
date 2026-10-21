@@ -12,6 +12,10 @@ CAPTURE_TYPES = {EventType.CAPTURE_GAP, EventType.CAPTURE_DEGRADED,
 
 
 def validate_projectable_event(event: EventEnvelope) -> None:
+    if event.event_type == EventType.DIRECT_TASK_RECORDED:
+        from contracts.direct_execution import DirectRecordedEvent
+        DirectRecordedEvent.model_validate(event.payload)
+        return
     """Reject malformed facts before they can be stored with deferred references."""
     p = event.payload
 
@@ -92,6 +96,8 @@ def validate_projectable_event(event: EventEnvelope) -> None:
 
 
 def missing_references(conn, event: EventEnvelope) -> list[str]:
+    if event.event_type == EventType.DIRECT_TASK_RECORDED:
+        return []  # This atomic event creates its task and work item.
     p = event.payload
     missing = []
     def require(table: str, column: str, value: str | None, label: str):
@@ -151,6 +157,10 @@ def project_status(conn, event: EventEnvelope) -> None:
 
 
 def project_domain(conn, event: EventEnvelope) -> None:
+    if event.event_type == EventType.DIRECT_TASK_RECORDED:
+        from service.ingest.direct_execution import project_direct_task
+        project_direct_task(conn, event)
+        return
     p = event.payload
     kind = event.event_type
     if kind == EventType.TASK_CREATED:
@@ -163,6 +173,9 @@ def project_domain(conn, event: EventEnvelope) -> None:
                      (event.work_item_id or p["work_item_id"], event.task_id or p.get("task_id"),
                       p.get("parent_work_item_id"), event.origin, p.get("category"), event.occurred_at))
     elif kind == EventType.CALL_RECEIVED:
+        if conn.execute("SELECT 1 FROM direct_executions WHERE work_item_id=%s",
+                        (event.work_item_id,)).fetchone():
+            raise ValueError("direct task cannot be used as a Bridge call; use a separate work item")
         conn.execute("""INSERT INTO calls(call_id,work_item_id,parent_call_id,parent_attempt_id,
                      requested_model,created_at,execution_mode)
                      VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(call_id) DO NOTHING""",

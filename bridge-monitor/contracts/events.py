@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class EventType(str, Enum):
+    DIRECT_TASK_RECORDED = "direct_task.recorded"
     TASK_CREATED = "task.created"
     WORK_ITEM_CREATED = "work_item.created"
     WORKER_STARTED = "worker.started"

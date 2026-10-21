@@ -224,3 +224,72 @@ bridge-monitor-skynet-agent.service` on Skynet. Stop admitting new Qwen work
 first and preserve any uncertain receipts and held capacity for reconciliation;
 do not free a slot merely because the agent stopped. Restore the backed-up
 direct policy and restart the bridge only after checking active calls.
+
+## Direct Codex execution records
+
+Direct execution is a separate observation, not a Bridge worker, queue entry or
+Skynet routing decision. After applying migration `010_direct_codex`, the parent
+MCP exposes `record_direct_task(report)`; the restricted Claude child does not.
+Reload MCP tools in Codex to discover the new tool. Recording never grants
+permission to execute directly; the existing routing and approval policy applies.
+
+The report requires `record_id` (unique receipt/idempotency key), `execution_id`
+(stable task identity), `session_id` (actual Codex thread ID when available),
+`project_root`, a short `summary`, `status` (`running`, `completed`, `failed`,
+`cancelled`, `unknown`), `bypass_reason`, and a timezone-aware `observed_at`.
+Optional `reason` records the user's instruction/approval or management exception;
+optional `requested_model` is explicitly a request, not an observed model identity.
+Allowed reasons are `user_instruction`, `approved_fallback`, `bridge_unavailable`,
+`bridge_unsuitable`, `management`, `trivial_operation`, and `other`. If a real session
+ID is unavailable, disclose that and defer the record; never invent one to import usage.
+
+Reuse the same `execution_id` for start/completion and a new `record_id` for each
+update. Retry an unchanged report with the original `record_id`; altered payloads
+under the same ID are rejected. Session, project and recorder ownership are
+immutable. Terminal outcomes cannot be reopened or rewritten by backdated reports.
+Lifecycle metadata is caller-reported, not independently observed process state.
+
+The metadata tool deliberately does not accept token estimates or bare counters.
+Use the project-local CLI for an explicitly selected `codex exec --json` receipt:
+
+```powershell
+.\.venv\Scripts\python.exe -B scripts\record-direct-codex.py `
+  --report var\reports\my-direct-task.json `
+  --receipt var\reports\my-codex-output.jsonl `
+  --source-turn-id my-stable-turn-id --turn-index 0
+```
+
+Without `--receipt`, the same command records metadata only. It uses the existing
+protected desktop launcher database settings; `--dsn-env NAME` selects an explicit
+test database/environment reference instead. It never discovers transcript files,
+executes Codex or invokes a model. Database authentication and the protected settings
+file are the local CLI trust boundary; HTTP event ingestion retains producer-token
+authentication, and the MCP derives the producer from its server, not the report.
+
+Each usage receipt must match the report's session. Select one turn explicitly
+when a file contains several. Keep `source-turn-id` stable and unique within that
+session across retries and imports; this is a caller-supplied identity, not one
+inferred from token totals. Reuse cannot attach the same turn to another task.
+Identical usage imports are idempotent; conflicting counters or receipt hashes are
+rejected. Use a new report ID to attach usage after completion. A receipt with no
+counters does not reserve a usage identity, so a later measured receipt can fill it.
+Measured partial snapshots are immutable; corrections need explicit reconciliation,
+not a new turn identity that would double-count the same turn.
+
+Only exposed CLI turn counters are stored, with `codex_cli_receipt` provenance,
+turn scope, the exact source-file SHA-256, and caller-selected attribution. No raw
+transcript is retained by this importer. Unknown/missing counters stay NULL; zero
+is retained as zero. Cache and reasoning counters may be subsets of input/output,
+so no totals or costs are inferred. The receipt does not establish an actual model
+or provider if the CLI did not report them. Caller-selected receipts are not
+independent provider attestation. Recognized delegation and unknown MCP worker
+calls are rejected as standalone-direct usage; shell-launched subprocesses are not
+independently audited. Failed/incomplete/malformed capture cannot establish a full
+turn total. Session-wide counters are not accepted as task measurements.
+
+The dashboard work list has a loaded-items execution-path filter, bypass reason
+labels and separate Bridge/direct counts. Direct details show scoped counters and
+their provenance; no receipt means unknown usage. Existing Skynet percentages
+exclude direct tasks and retain their meaning. Recording metadata works for the
+desktop app, but desktop task token usage remains unknown without a supported
+receipt. This feature is explicit recording, not universal automatic interception.

@@ -92,6 +92,9 @@ def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> Dashboard
                         WHERE resolved.work_item_id=e.work_item_id)
                     ORDER BY e.occurred_at DESC LIMIT 8""").fetchall()
             as_of = conn.execute("SELECT clock_timestamp() AS now").fetchone()["now"]
+            from service.queries.direct_execution import execution_metadata
+            execution_facts = execution_metadata(conn, [row["work_item_id"] for row in items], as_of)
+            items = [{**dict(row), **execution_facts[row["work_item_id"]]} for row in items]
     return DashboardSnapshot(cursor=PublicationCursor(**cursor), as_of=as_of,
                              status=DashboardStatus(**status), work_items=[dict(row) for row in items],
                              worker_executions=[dict(row) for row in executions], capacity=capacity)

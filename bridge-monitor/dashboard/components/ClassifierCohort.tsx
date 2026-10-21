@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, AuthenticationRequired } from '@/lib/api';
 import type { ClassifierCohort as Report, ClassifierFilters, Dist } from '@/lib/api';
+import CollapsiblePanel from './CollapsiblePanel';
 
 const ms = (d: Dist) => d.samples ? `${d.median} / ${d.p95} ms (n=${d.samples})` : 'Unknown';
 const list = (values: Record<string, number>) => {
@@ -33,9 +34,9 @@ export default function ClassifierCohort({ paused = false }: { paused?: boolean 
   }, [filters, paused]);
   if (!report || !report.available) return null;
   const c = report.counts;
-  return <section className="panel shadow-cohort classifier-cohort" aria-label="Gemma classifier shadow cohort">
-    <div className="panel-heading"><div><h2>Gemma classifier · advisory shadow</h2>
-      <p>{report.scope_note}</p></div><span className="pill">{report.definition_version}</span></div>
+  return <CollapsiblePanel className="shadow-cohort classifier-cohort" label="Gemma classifier shadow cohort"
+    title="Gemma classifier · advisory shadow" subtitle={report.scope_note} badge={report.definition_version}>
+
     <div className="shadow-filters">
       <label>Capture<select value={filters.captureMethod || 'all'} aria-label="Classifier capture method"
         onChange={event => setFilters({ ...filters, captureMethod: event.target.value })}>
@@ -73,5 +74,5 @@ export default function ClassifierCohort({ paused = false }: { paused?: boolean 
       <p>Tokens in/out {report.tokens.input_total}/{report.tokens.output_total} · coverage {list(report.tokens.provenance)} · backend {list(report.backend_residency)}</p>
       <p>Local provider charge {report.cost.local_provider_charge_usd ?? 'Unknown'} · Electricity {report.cost.electricity_usd ?? 'Unknown'} ({report.cost.electricity_reason}) · Avoided paid calls {report.cost.hypothetical_avoided_paid_calls ?? 'Unknown'} · Billed savings {report.cost.billed_savings ?? 'Unknown'}</p>
     </div>
-  </section>;
+  </CollapsiblePanel>;
 }

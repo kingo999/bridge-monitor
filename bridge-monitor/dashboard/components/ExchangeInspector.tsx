@@ -7,6 +7,7 @@ import ExecutionTimeline from './ExecutionTimeline';
 import GuidanceDetails from './GuidanceDetails';
 import ResponseComparison from './ResponseComparison';
 import RouterAudit from './RouterAudit';
+import DirectExecutionDetails from './DirectExecutionDetails';
 
 type Tab = 'exchange' | 'decision' | 'guidance' | 'timeline' | 'router';
 
@@ -128,13 +129,15 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
     {!id && <p className="empty-state">Select a row to inspect prompts, responses and decisions.</p>}
     {id && loading && !detail && <p className="empty-state">Loading exchange…</p>}
     {detail && <><div className="inspector-summary"><h3>{detail.work_item.category || detail.work_item.work_item_id}</h3>
-      <p>Requested: {primaryModel?.requested_model || 'Unknown'} · Reported: {primaryModel?.reported_model || 'Unknown'}</p>
+      <p>Requested: {primaryModel?.requested_model || detail.direct_execution?.requested_model || 'Unknown'} · Reported: {primaryModel?.reported_model || 'Unknown'}</p>
       {agentStatus && <p>Last bridge observation · Skynet job: {agentStatus.agent_state || 'Unknown'} · Agent: {agentStatus.agent_reachable === true ? 'reachable' : agentStatus.agent_reachable === false ? 'unreachable' : 'unverified'} · Last Qwen output {outputAge === null ? 'not observed' : jobActive ? `${outputAge}s ago` : outputTime}{agentStatus.timeout_reason ? ` · ${agentStatus.timeout_reason}` : ''}</p>}</div>
       <div className="inspector-tabs" role="tablist" aria-label="Inspector views">
         {(['exchange', 'decision', 'guidance', 'timeline', 'router'] as Tab[]).map(value => <button key={value} type="button"
           role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{value}</button>)}</div>
       <div className="inspector-content">
         {tab === 'exchange' && <>
+          {detail.direct_execution && <DirectExecutionDetails detail={detail} />}
+          {!detail.direct_execution && <>
           {claudeCall && <>
             <BodyCard title="GPT → Claude original prompt"
               content={body(claudeInbound?.original_content_id || claudeOutbound?.original_content_id)}
@@ -200,8 +203,10 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
             }) : <p className="muted">No usage reported.</p>}
             <p className="coverage-note">Provider-reported counters are shown per observation; cumulative and incremental rows are not summed. Missing values are unknown, not zero.</p>
           </section>
+          </>}
         </>}
         {tab === 'decision' && <div className="decision-list">
+          {detail.direct_execution && <p>Direct Codex · {detail.direct_execution.bypass_reason}: {detail.direct_execution.reason || 'No additional reason supplied'}</p>}
           <h3>Routing and disposition</h3>
           {detail.decisions.map(d => <div className="fact-card" key={d.decision_id}><strong>{d.route} · {d.eligibility}</strong>
             <p>{d.reason || 'No reason recorded'}</p><small>Policy {d.policy_version || 'unknown'} · {new Date(d.decided_at).toLocaleString()}</small>
@@ -216,7 +221,7 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
         {tab === 'timeline' && <ExecutionTimeline detail={detail} />}
         {tab === 'router' && id && <RouterAudit id={id} refreshKey={refreshKey} />}
       </div>
-      <div className="inspector-footer">Claude disposition: <strong>{selectedDisposition?.judgment || 'Unreported'}</strong> · GPT disposition: <strong>{gptDisposition?.judgment || 'Unknown'}</strong>{gptDisposition && ' (parent-reported)'}</div>
+      <div className="inspector-footer">{detail.direct_execution ? 'Direct execution · no Bridge worker disposition applies' : <>Claude disposition: <strong>{selectedDisposition?.judgment || 'Unreported'}</strong> · GPT disposition: <strong>{gptDisposition?.judgment || 'Unknown'}</strong>{gptDisposition && ' (parent-reported)'}</>}</div>
     </>}
   </aside>;
 }

@@ -17,6 +17,7 @@ export function metricText(value?: MetricValue): string {
 
 export function matchesMetric(item: WorkItem, key: MetricKey | null): boolean {
   if (!key) return true;
+  if (item.execution_path === 'direct_codex') return false;
   if (key === 'routed') return item.routed;
   if (key === 'not_routed') return !item.routed && item.paid_route;
   if (key === 'pending') return !item.routed && !item.paid_route;

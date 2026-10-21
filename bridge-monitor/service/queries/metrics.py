@@ -7,7 +7,7 @@ from service.queries.cohorts import cutoff, leaf_work_items
 from service.queries.guidance import work_guidance, matches_guidance_filters, result_guidance_group
 
 
-DEFINITION_VERSION = "phase1-v3"
+DEFINITION_VERSION = "phase1-v4"
 
 
 def _metric(numerator: int, denominator: int) -> MetricValue:
@@ -24,6 +24,14 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
             guidance = work_guidance(conn, all_work_ids, as_of)
             work_ids = {work_id for work_id in all_work_ids
                         if matches_guidance_filters(guidance[work_id], query)}
+            from service.queries.direct_execution import execution_metadata
+            execution_facts = execution_metadata(conn, work_ids, as_of)
+            total_work = len(work_ids)
+            direct_count = sum(f["execution_path"] == "direct_codex" for f in execution_facts.values())
+            bridge_count = sum(f["execution_path"] == "bridge" for f in execution_facts.values())
+            # Direct observations never become pending Skynet delegations or skew its ratios.
+            work_ids = {identifier for identifier in work_ids
+                        if execution_facts[identifier]["execution_path"] != "direct_codex"}
             dispatched = {row[0] for row in conn.execute("""SELECT DISTINCT e.work_item_id
                 FROM events e LEFT JOIN calls c ON c.call_id=e.call_id
                 WHERE e.event_type='call.dispatched' AND e.payload->>'destination'='skynet'
@@ -116,6 +124,9 @@ def query_metrics(dsn: str, query: CohortQuery) -> MetricSet:
                          for work_id, facts in guidance.items() if work_id in work_ids)
                          for group in sorted({guidance[work_id]["guidance_group"] for work_id in work_ids})},
                      metrics={
+                         "direct_execution": _metric(direct_count, total_work),
+                         "bridge_execution": _metric(bridge_count, total_work),
+                         "unknown_execution": _metric(total_work - direct_count - bridge_count, total_work),
                          "routed": _metric(D, W),
                          "not_routed": _metric(len(not_routed), W),
                          "pending": _metric(len(work_ids - dispatched - not_routed), W),

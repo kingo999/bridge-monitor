@@ -150,6 +150,8 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
             page_facts = work_guidance(conn, {row[0] for row in rows}, as_of)
             gpt_judgments = (_gpt_work_judgments(conn, [row[0] for row in rows], as_of)
                              if query.consumer_stage == "gpt" else {})
+            from service.queries.direct_execution import execution_metadata
+            execution_facts = execution_metadata(conn, [row[0] for row in rows], as_of)
     return [dict(zip(("work_item_id", "task_id", "category", "origin", "created_at",
                       "resolution", "resolved_at", "routed", "paid_route",
                       "requested_model", "reported_model", "disposition_judgment"), row),
@@ -158,7 +160,8 @@ def list_work_items(dsn: str, query: CohortQuery, *, limit: int = 50, offset: in
                  guidance_group=page_facts[row[0]]["guidance_group"],
                  failure_categories=page_facts[row[0]]["failure_categories"],
                  repair_efforts=page_facts[row[0]]["repair_efforts"],
-                 example_reuse_statuses=page_facts[row[0]]["example_reuse_statuses"])
+                 example_reuse_statuses=page_facts[row[0]]["example_reuse_statuses"],
+                 **execution_facts[row[0]])
             for row in rows]
 
 
@@ -175,6 +178,10 @@ def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100
             work = conn.execute("SELECT * FROM work_items WHERE work_item_id=%s", (work_item_id,)).fetchone()
             if work is None:
                 return None
+            from service.queries.direct_execution import execution_metadata, direct_usage
+            execution_facts = execution_metadata(conn, [work_item_id], cutoff(CohortQuery()))[work_item_id]
+            direct = execution_facts.get("direct_execution")
+            direct_observations = direct_usage(conn, direct["execution_id"]) if direct else []
             calls = conn.execute("""SELECT c.call_id,c.parent_call_id,c.requested_model,c.created_at,
                 c.execution_mode,
                 EXISTS (SELECT 1 FROM events e WHERE e.call_id=c.call_id AND e.event_type='call.dispatched'
@@ -292,10 +299,12 @@ def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100
             content = conn.execute("""SELECT content_id,completeness,byte_length,content_type,
                 encoding FROM content_objects WHERE content_id=ANY(%s)""", (list(ids),)).fetchall()
     work_data = dict(work)
+    work_data.update(execution_facts)
     if resolutions:
         work_data["resolution"] = resolutions[-1]["outcome"]
         work_data["resolved_at"] = resolutions[-1]["recorded_at"]
     return {"work_item": work_data, "calls": list(map(dict, calls)),
+            "direct_execution": direct, "direct_usage": direct_observations,
             "messages": list(map(dict, messages)), "results": list(map(dict, results)),
             "models": list(map(dict, models)), "usage": list(map(dict, usage)),
             "decisions": list(map(dict, decisions)),

@@ -12,6 +12,8 @@ import MetricStrip from './MetricStrip';
 import WorkList from './WorkList';
 import ShadowCohort from './ShadowCohort';
 import ClassifierCohort from './ClassifierCohort';
+import CollapsiblePanel from './CollapsiblePanel';
+import MetricCharts from './MetricCharts';
 
 const initialFilters: CohortFilters = {
   origin: 'observed', consumerStage: 'claude', createdFrom: '', createdUntil: '', completedOnly: false,
@@ -185,7 +187,7 @@ export default function DashboardClient() {
   }
 
   const visibleItems = items.filter(item => matchesMetric(item, selectedMetric) &&
-    `${item.work_item_id} ${item.category || ''} ${item.reported_model || ''}`.toLowerCase().includes(search.toLowerCase()));
+    `${item.work_item_id} ${item.category || ''} ${item.reported_model || ''} ${item.requested_model || ''} ${item.bypass_reason || ''} ${item.bypass_reason_text || ''} ${item.direct_execution?.summary || ''}`.toLowerCase().includes(search.toLowerCase()));
   const liveItems = snapshot?.work_items || [];
 
   if (auth === 'checking') return <main className="loading-screen"><div className="brand-mark">↗</div><h1>Bridge Monitor</h1><p>Checking operator session…</p></main>;
@@ -202,7 +204,7 @@ export default function DashboardClient() {
       <div className="header-actions"><CohortControls filters={filters} onChange={changeFilters} mode={mode} onMode={setMode}
         paused={paused} onPause={togglePause} />
         <button className="logout" type="button" onClick={async () => { await api.logout(); setAuth('login'); }}>Sign out</button></div></header>
-    <div className="status-line"><span>{mode === 'history' ? 'Historical cohort' : 'Live monitor'} · {filters.origin} · {metrics?.metrics.routed.denominator ?? 0} work items</span>
+    <div className="status-line"><span>{mode === 'history' ? 'Historical cohort' : 'Live monitor'} · {filters.origin} · {metrics?.metrics.direct_execution?.denominator ?? metrics?.metrics.routed.denominator ?? 0} work items · Bridge-delegated: {metrics?.metrics.bridge_execution?.numerator ?? 'Unknown'} · Direct Codex: {metrics?.metrics.direct_execution?.numerator ?? 'Unknown'}</span>
       {snapshot && <span>Snapshot {new Date(snapshot.as_of).toLocaleString()}</span>}</div>
     {(error || pendingDisplay || streamState === 'offline' || streamState === 'gap' || snapshot?.status.capture_state === 'degraded' || !!snapshot?.status.known_gaps) &&
       <div className="alert-bar" role="status">{error && <span>Data error: {error}. </span>}
@@ -211,17 +213,28 @@ export default function DashboardClient() {
         {streamState === 'gap' && <span>Replay gap · snapshot refreshed. </span>}
         {snapshot?.status.capture_state === 'degraded' && <span>Capture degraded. </span>}
         {!!snapshot?.status.known_gaps && <span>{snapshot.status.known_gaps} known capture gap(s). </span>}</div>}
-    <MetricStrip report={metrics} selected={selectedMetric} onSelect={setSelectedMetric}
-      consumerStage={filters.consumerStage} />
-    <ShadowCohort report={shadowCohort} filters={routerFilters} onChange={changeRouterFilters} />
-    <ClassifierCohort paused={paused} />
-    {selectedMetric && <p className="filter-note">Loaded work list filtered by {metricLabel(selectedMetric, filters.consumerStage)}. Numerator/denominator and coverage come from the service; result-unit metrics may map several results to one work item.</p>}
+
+
+
+    <section className="panel monitor-charts-panel" aria-label="Live monitor charts">
+      <div className="monitor-charts-header"><h2>Live monitor charts</h2>
+        <p>Routing and outcomes for the selected cohort.</p></div>
+      <MetricCharts report={metrics} />
+    </section>
+
     <div className="dashboard-grid"><div className="left-column">
       <FlowGraph status={snapshot?.status || null} capacity={snapshot?.capacity || null} items={liveItems} executions={snapshot?.worker_executions || []} selectedId={selectedId}
         expanded={expanded} onToggle={toggleExpanded} onSelect={setSelectedId} paused={paused}
         onEdge={focusEdge} />
       <WorkList items={visibleItems} selectedId={selectedId} onSelect={setSelectedId}
         search={search} onSearch={setSearch} loading={loading} more={more} onMore={() => void loadMore()} />
+      {selectedMetric && <p className="filter-note">Loaded work list filtered by {metricLabel(selectedMetric, filters.consumerStage)}. Numerator/denominator and coverage come from the service; result-unit metrics may map several results to one work item.</p>}
+      <CollapsiblePanel className="percentage-panel" label="Percentage panel" title="Percentages" subtitle="Service-reported delegation and outcome statistics">
+        <MetricStrip report={metrics} selected={selectedMetric} onSelect={setSelectedMetric}
+          consumerStage={filters.consumerStage} />
+      </CollapsiblePanel>
+      <ShadowCohort report={shadowCohort} filters={routerFilters} onChange={changeRouterFilters} />
+      <ClassifierCohort paused={paused} />
     </div><ExchangeInspector id={selectedId} refreshKey={detailRefresh} paused={paused} /></div>
     <footer className="app-footer"><span>Current topology remains live while historical filters control metrics and work list.</span>
       <span>Definition {metrics?.definition_version || '—'} · As of {metrics ? new Date(metrics.as_of).toLocaleString() : '—'}</span></footer>
