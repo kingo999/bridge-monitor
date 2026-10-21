@@ -48,7 +48,7 @@ def test_hook_deduplicates_without_charge_and_keeps_hook_time(cdsn, tmp_path):
 
 
 @pytest.mark.parametrize('reason', ['rate_limited', 'database_queue_full', 'capture_budget_exhausted',
-                                   'input_too_large', 'expired'])
+                                   'expired'])
 def test_drops_add_no_observations_or_content(cdsn, tmp_path, reason):
     if reason == 'rate_limited':
         capture(cdsn, tmp_path)

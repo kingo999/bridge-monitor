@@ -13,6 +13,7 @@ from typing import Literal
 import psycopg
 from psycopg.rows import dict_row
 from pydantic import BaseModel, ConfigDict
+from service.queries.classifier_exclusions import query_capture_exclusions
 
 DEFINITION_VERSION = "classifier-shadow-cohort-v1"
 ROW_LIMIT = 5000
@@ -96,6 +97,7 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
         facets = conn.execute("""SELECT array_agg(DISTINCT requested_model) AS models,
             array_agg(DISTINCT profile_id) AS profiles, array_agg(DISTINCT rubric_version) AS rubrics,
             array_agg(DISTINCT origin_kind) AS origins FROM classifier_observations""").fetchone()
+        capture_exclusions = query_capture_exclusions(conn, filters)
     states = Counter(r["state"] for r in rows)
     attempted = [r for r in rows if r["attempts"] >= 1]
     completed = [r for r in rows if r["state"] == "completed"]
@@ -138,6 +140,7 @@ def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
         "scope_note": ("Advisory recommendations only. Not production routing, not Qwen "
                        "dispatches, not completed coding tasks and not paid requests saved."),
         "rows_considered": len(rows), "row_limit": ROW_LIMIT,
+        "capture_exclusions": capture_exclusions,
         'capture': {'observations': {m: sum(r['capture_method'] == m for r in rows) for m in method_work},
                     'unique_work_items': len(set.union(*method_work.values())),
                     'unique_work_items_by_method': {m: len(ids) for m, ids in method_work.items()},

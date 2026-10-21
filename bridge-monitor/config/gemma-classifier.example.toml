@@ -5,6 +5,7 @@
 
 [classifier_shadow]
 enabled = false
+scenario_guidance = false                  # opt-in; also set profile_id below to gemma-router-profile-v4-suitability
 endpoint = "http://127.0.0.1:11435"        # loopback only; anything else is rejected
 model = "gemma4:12b"
 model_digest = "4eb23ef187e2c5462566d6a1d3bbbc2f1346d0b4327cbb66d58fffbcc9b2b05c"

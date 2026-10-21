@@ -9,7 +9,15 @@ from pathlib import Path
 
 from bridge.classifier.config import (CONFIG_ENV, MANIFEST_DIGEST, MODEL_NAME,
                                      ClassifierConfig, ClassifierShadowConfig)
+from bridge.classifier.scenarios import GUIDED_PROFILE_IDS
 from contracts.classifier import GenerationProfile
+
+
+def _profile_allowed(shadow: ClassifierShadowConfig) -> bool:
+    if shadow.profile == GenerationProfile():
+        return True
+    return bool(shadow.scenario_guidance
+                and any(shadow.profile == GenerationProfile(profile_id=p) for p in GUIDED_PROFILE_IDS))
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,7 +51,7 @@ def load_hook_settings(*, project_root: Path, config_path: Path | None = None) -
         return None
     shadow = cfg.classifier_shadow
     if (shadow.model != MODEL_NAME or shadow.model_digest != MANIFEST_DIGEST
-            or shadow.profile != GenerationProfile()
+            or not _profile_allowed(shadow)
             or shadow.endpoint != 'http://127.0.0.1:11435'):
         raise ValueError('hook requires the reviewed model, profile and loopback endpoint')
     facts = data.get('classifier_shadow', {}).get('facts', {})

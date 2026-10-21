@@ -1,0 +1,4 @@
+# Prompt/gate identities hash exact file bytes. Preserve archived and current bytes.
+bridge/classifier/scenarios.py -text whitespace=cr-at-eol
+bridge/classifier/scenarios_v2.py -text whitespace=cr-at-eol
+bridge/classifier/scenarios_v3.py -text whitespace=cr-at-eol

@@ -10,21 +10,24 @@ from bridge.classifier import store
 from bridge.classifier.hook_capture import prepare_capture
 from bridge.classifier.hook_config import HookSettings
 from bridge.classifier.hook_store import CaptureDatabaseError, capture_hook
-from contracts.route_capture import RouteCapture
+from bridge.classifier.exclusions import CaptureExclusion, project_exclusion, persist_exclusion
+from contracts.route_capture import RouteCapture, BridgeCapture
 
 COUNTERS = ('offers', 'accepted', 'memory_queue_full', 'submission_contention',
     'binding_skipped', 'input_too_large', 'expired', 'rate_limited', 'database_queue_full',
     'capture_budget_exhausted', 'solution_already_available', 'captured', 'duplicate',
     'persistence_uncertain', 'database_error', 'provenance_too_large',
-    'disabled_offers', 'discarded', 'worker_failed')
+    'disabled_offers', 'discarded', 'worker_failed', 'excluded')
 
 
 class RouteCaptureObserver:
     def __init__(self, dsn: str, settings: HookSettings, *, persist=capture_hook,
+                 persist_excluded=persist_exclusion,
                  utcnow=store.utcnow, monotonic=time.monotonic):
         self._dsn, self._settings = dsn, settings
         self._cfg = settings.shadow_config()
         self._persist, self._utcnow, self._monotonic = persist, utcnow, monotonic
+        self._persist_excluded = persist_excluded
         self._guard = threading.Lock()
         self._queue = deque()
         self._stop = threading.Event()
@@ -50,8 +53,14 @@ class RouteCaptureObserver:
             self.counters['disabled_offers'] += 1
             return
         if not snapshot.acceptable():
-            self.counters['binding_skipped'] += 1
-            return
+            if isinstance(snapshot,BridgeCapture) and not self._settings.normal_traffic_enabled:
+                self.counters['binding_skipped'] += 1
+                return
+            projection = project_exclusion(snapshot)
+            if projection is None:
+                self.counters['binding_skipped'] += 1
+                return
+            snapshot = projection
         if not self._guard.acquire(blocking=False):
             self.counters['submission_contention'] += 1
             return
@@ -95,12 +104,9 @@ class RouteCaptureObserver:
                     self.counters['expired'] += 1
                     continue
                 try:
-                    cap = prepare_capture(item, self._settings)
-                    if cap is None:
+                    cap = None if isinstance(item, CaptureExclusion) else prepare_capture(item, self._settings)
+                    if cap is None and not isinstance(item, CaptureExclusion):
                         self.counters['binding_skipped'] += 1
-                        continue
-                    if cap.input.input_bytes() > min(24576, self._cfg.max_input_bytes):
-                        self.counters['input_too_large'] += 1
                         continue
                 except (ValueError, TypeError):
                     self.counters['binding_skipped'] += 1
@@ -113,7 +119,13 @@ class RouteCaptureObserver:
                     break
                 self._last_attempt = tick
                 try:
-                    result = self._persist(self._dsn, cap, self._cfg, captured_at=item.captured_at, now=now)
+                    if isinstance(item, CaptureExclusion):
+                        result = self._persist_excluded(self._dsn,item,self._settings,now=now)
+                    else:
+                        result = self._persist(self._dsn, cap, self._cfg, captured_at=item.captured_at, now=now)
+                except (ValueError,TypeError):
+                    self.counters['binding_skipped'] += 1
+                    continue
                 except Exception as exc:
                     # Includes an ambiguous commit: never retry and never print exception text.
                     reason = ('database_error' if isinstance(exc, (CaptureDatabaseError, psycopg.Error))
@@ -125,6 +137,8 @@ class RouteCaptureObserver:
                 reason = result.skip_reason if result.state == 'dropped' else result.state
                 if reason in self.counters:
                     self.counters[reason] += 1
+                if result.state == 'excluded':
+                    self.counters['input_too_large'] += 1
                 if reason == 'capture_budget_exhausted':
                     self._disable()
                     self._diagnostic('capture_budget_exhausted')

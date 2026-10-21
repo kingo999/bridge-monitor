@@ -140,7 +140,8 @@ def test_008_is_additive_and_reapplying_cannot_replenish_budget(isolated):
     with psycopg.connect(isolated) as conn:
         before = conn.execute('SELECT (SELECT count(*) FROM tasks), (SELECT count(*) FROM work_items), '
                               '(SELECT count(*) FROM content_objects)').fetchone()
-    assert migrate(isolated) == ['007_classifier_shadow', '008_classifier_route_capture', '009_classifier_normal_capture']
+    assert migrate(isolated) == ['007_classifier_shadow', '008_classifier_route_capture', '009_classifier_normal_capture',
+                                 '010_direct_codex', '011_classifier_capture_exclusions']
     with psycopg.connect(isolated) as conn:
         assert conn.execute('SELECT (SELECT count(*) FROM tasks), (SELECT count(*) FROM work_items), '
                             '(SELECT count(*) FROM content_objects)').fetchone() == before

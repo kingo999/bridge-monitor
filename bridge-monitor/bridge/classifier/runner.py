@@ -21,7 +21,10 @@ from bridge.classifier.config import ClassifierShadowConfig
 from bridge.classifier.interpret import interpret
 from bridge.classifier.policy import map_actual_route
 from bridge.classifier.rubric import RUBRIC
-from contracts.classifier import ClassifierInput, TrustedFacts
+from bridge.classifier.scenarios import (UnknownRubricIdentity, compare_to_scenarios,
+                                         prepare_scenario_input, rubric_for_identity,
+                                         scenario_provenance)
+from contracts.classifier import ClassifierInput, GenerationProfile, TrustedFacts
 
 
 class RunnerBusy(RuntimeError):
@@ -85,15 +88,27 @@ class ShadowRunner:
         row = store.claim_next(self.dsn, self.runner_id, claimed_at)
         if row is None:
             return ProcessResult("idle")
-        item = ClassifierInput(request=row["request_text"] or "", source=row["source_text"] or "",
-                               facts=row["facts"])
-        message = item.user_message()
+        try:
+            item = ClassifierInput(request=row["request_text"] or "", source=row["source_text"] or "",
+                                   facts=row["facts"])
+            rubric = self._row_rubric(row)
+            message, decision = prepare_scenario_input(item, rubric,
+                context_tokens=self.classifier.profile.num_ctx,
+                output_tokens=self.classifier.profile.num_predict)
+        except UnknownRubricIdentity as exc:
+            return self._reject_identity(row, exc)  # nothing is sent
+        except Exception as exc:
+            return self._reject_identity(row, exc, error_type='invalid_classifier_input')
+        extra = {"rubric": rubric.text} if rubric.guided else {}
         outcome = self.classifier.classify(message, seed=row["profile"].get("seed"),
                                            cancel=cancel,
-                                           deadline_seconds=self.cfg.request_timeout_seconds)
+                                           deadline_seconds=self.cfg.request_timeout_seconds,
+                                           **extra)
         residency = self.classifier.residency()
-        interp = interpret(outcome, expected_model=self.cfg.model, facts=item.trusted())
-        fields = self._fields(row, outcome, interp, identity, residency, message)
+        interp = interpret(outcome, expected_model=self.cfg.model, facts=item.trusted(),
+                           scenario_decision=decision)
+        fields = self._fields(row, outcome, interp, identity, residency, message,
+                              rubric=rubric, decision=decision)
         raw = outcome.raw_text.encode("utf-8") if outcome.raw_text else None
         store.finish(self.dsn, row["observation_id"], state=interp.state, fields=fields,
                      response=raw, response_complete=outcome.terminal_ok)
@@ -102,6 +117,42 @@ class ShadowRunner:
             self.halted = f"gpu_residency_{residency.state}"
         return ProcessResult("processed", row["observation_id"], interp.state,
                              interp.error_type or interp.validation_error)
+
+    def _row_rubric(self, row):
+        rubric = rubric_for_identity(row["profile_id"], row["rubric_sha256"])
+        if row.get("rubric_version") not in (None, rubric.version):
+            raise UnknownRubricIdentity("rubric version mismatch")
+        if rubric.guided:  # legacy rows keep their existing behaviour
+            try:
+                captured = GenerationProfile.model_validate(row["profile"])
+            except Exception:
+                raise UnknownRubricIdentity("captured generation profile invalid")
+            if captured.profile_id != row['profile_id']:
+                raise UnknownRubricIdentity('nested generation profile identity mismatch')
+            # The captured seed is passed explicitly to classify(), so it may vary
+            # without changing the client's other pinned generation settings.
+            if (captured.model_dump(exclude={"profile_id", "seed"})
+                    != self.classifier.profile.model_dump(exclude={"profile_id", "seed"})):
+                raise UnknownRubricIdentity("captured generation options differ from classifier")
+        return rubric
+
+    def _reject_identity(self, row, exc, *, error_type='unknown_rubric_identity') -> ProcessResult:
+        now = store.utcnow()
+        fields = {"error_type": error_type, "error_detail": type(exc).__name__,
+                  "completed_at": now, "valid": None,
+                  "queue_ms": store.milliseconds(row["dispatched_at"] - row["captured_at"]),
+                  "end_to_end_ms": store.milliseconds(now - row["captured_at"])}
+        store.finish(self.dsn, row["observation_id"], state="failed", fields=fields,
+                     response=None, response_complete=False)
+        return ProcessResult("processed", row["observation_id"], "failed", error_type)
+
+    @staticmethod
+    def _backend(residency, interp, rubric, decision) -> dict:
+        evidence = residency.evidence()
+        if rubric is not None and rubric.guided and decision is not None:
+            evidence["scenario"] = {**scenario_provenance(rubric, decision),
+                                    "comparison": compare_to_scenarios(interp.recommendation, decision)}
+        return evidence
 
     def _reconcile_routes(self):
         if self.link_progress['suspended']:
@@ -152,13 +203,15 @@ class ShadowRunner:
         return {"actual_route": mapped, "actual_route_source": provenance,
                 "actual_route_observed_at": store.utcnow()}
 
-    def _fields(self, row, outcome, interp, identity, residency, message: str) -> dict:
+    def _fields(self, row, outcome, interp, identity, residency, message: str,
+                *, rubric=None, decision=None) -> dict:
         captured_at: datetime = row["captured_at"]
         dispatched_at: datetime = row["dispatched_at"]
         finished = outcome.finished_at
         fields = {
             "runtime_version": identity.runtime_version, "observed_digest": identity.observed_digest,
-            "reported_model": outcome.reported_model, "backend": residency.evidence(),
+            "reported_model": outcome.reported_model,
+            "backend": self._backend(residency, interp, rubric, decision),
             "done_reason": outcome.done_reason,
             "first_content_at": outcome.first_content_at, "completed_at": finished,
             "queue_ms": store.milliseconds(dispatched_at - captured_at),
@@ -183,7 +236,8 @@ class ShadowRunner:
         if outcome.usage:
             fields.update(outcome.usage, usage_provenance="ollama_terminal")
         elif outcome.status == "completed":
-            prompt_bytes = len(RUBRIC.encode("utf-8")) + len(message.encode("utf-8"))
+            prompt_text = rubric.text if rubric is not None else RUBRIC
+            prompt_bytes = len(prompt_text.encode("utf-8")) + len(message.encode("utf-8"))
             fields.update(input_tokens=math.ceil(prompt_bytes / 4),
                           usage_provenance="estimated_utf8_bytes_div_4")
         return fields

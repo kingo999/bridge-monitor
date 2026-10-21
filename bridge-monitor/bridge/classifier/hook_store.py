@@ -34,7 +34,9 @@ def capture_hook(dsn: str, cap: ObservationCapture, cfg: ClassifierShadowConfig,
             return drop('expired')
         size = cap.input.input_bytes()
         if size > min(24576, cfg.max_input_bytes, cap.max_input_bytes or 24576):
-            return drop('input_too_large')
+            from bridge.classifier.exclusions import from_capture, persist_record
+            item = from_capture(cap,cfg,captured_at)
+            return persist_record(dsn,item,cfg,cap.facts_provenance['config_sha256'],now=now)
         key = store.source_key(cap, cfg)
         obs_id = store.observation_id_for(key)
         with psycopg.connect(dsn, connect_timeout=1, options=DB_OPTIONS) as conn, conn.transaction():
@@ -75,6 +77,8 @@ def capture_hook(dsn: str, cap: ObservationCapture, cfg: ClassifierShadowConfig,
                 'consumed_bytes=consumed_bytes+%s,last_persisted_at=clock_timestamp() WHERE scope=%s', (size, BUDGET_SCOPE))
             commit_pending = True
     except Exception as exc:
+        if isinstance(exc,(CaptureDatabaseError,CaptureCommitUncertain)):
+            raise
         if commit_pending:
             raise CaptureCommitUncertain('commit_outcome_unknown') from exc
         raise CaptureDatabaseError('capture_not_committed') from exc

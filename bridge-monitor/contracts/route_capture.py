@@ -5,6 +5,13 @@ from datetime import datetime
 from typing import Protocol
 
 
+def valid_metadata_text(value, *, allow_empty=False) -> bool:
+    # Bounded short identifiers only; never encode or scan request/source bodies here.
+    return (type(value) is str and (allow_empty or len(value)>0) and len(value)<=256
+            and '\x00' not in value
+            and all(not 0xD800<=ord(char)<=0xDFFF for char in value))
+
+
 @dataclass(frozen=True, slots=True)
 class RouteCapture:
     task_id: str
@@ -29,19 +36,19 @@ class RouteCapture:
     tests_present: bool
     case_validated: bool
 
-    def acceptable(self) -> bool:
+    def valid_binding(self) -> bool:
         # Cheap bounds only: no serialization, hashing or I/O on the caller thread.
         ids = (self.task_id, self.work_item_id, self.category, self.case_task_id,
                self.origin_ref, self.output_contract, self.case_output_contract,
                self.decision_id, self.paid_call_id)
-        return (all(type(v) is str and 0 < len(v) <= 256 for v in ids)
+        return (all(valid_metadata_text(v) for v in ids)
             and type(self.prompt) is str and type(self.source) is str
-            and 0 < len(self.prompt) + len(self.source) <= 24576
+            and 0 < len(self.prompt) + len(self.source)
             and self.case_prompt == self.prompt and self.case_task_id == self.task_id
             and self.output_contract == self.case_output_contract == 'complete_python_module_v1'
             and self.category == 'single_file_python_fix'
             and type(self.scope) is tuple and 0 < len(self.scope) <= 8
-            and all(type(v) is str and 0 < len(v) <= 256 for v in self.scope)
+            and all(valid_metadata_text(v) for v in self.scope)
             and self.scope_approved is True and self.case_validated is True
             and self.origin_kind in ('natural', 'controlled')
             and type(self.case_digest) is str and len(self.case_digest) == 64
@@ -52,6 +59,9 @@ class RouteCapture:
             and (self.solution_available_at is None
                  or (self.solution_available_at.utcoffset() is not None
                      and self.solution_available_at > self.captured_at)))
+
+    def acceptable(self) -> bool:
+        return self.valid_binding() and len(self.prompt) + len(self.source) <= 24576
 
 
 class RouteObserver(Protocol):
@@ -74,14 +84,17 @@ class BridgeCapture:
     verifier_ref: str | None = None
     output_contract: str = ''
 
-    def acceptable(self) -> bool:
+    def valid_binding(self) -> bool:
         ids = (self.task_id, self.work_item_id, self.paid_call_id,
                self.decision_id, self.requested_model)
-        return (all(type(v) is str and 0 < len(v) <= 256 for v in ids)
-            and type(self.prompt) is str and 0 < len(self.prompt) <= 24576
+        return (all(valid_metadata_text(v) for v in ids)
+            and type(self.prompt) is str and 0 < len(self.prompt)
             and self.method in ('route_work', 'delegate_claude')
             and self.origin_kind in ('natural', 'controlled')
             and (self.verifier_ref is None or
-                 (type(self.verifier_ref) is str and len(self.verifier_ref) <= 256))
-            and type(self.output_contract) is str and len(self.output_contract) <= 256
+                 valid_metadata_text(self.verifier_ref,allow_empty=True))
+            and valid_metadata_text(self.output_contract,allow_empty=True)
             and self.captured_at.utcoffset() is not None)
+
+    def acceptable(self) -> bool:
+        return self.valid_binding() and len(self.prompt) <= 24576

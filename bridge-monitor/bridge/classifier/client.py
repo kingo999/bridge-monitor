@@ -155,16 +155,16 @@ class OllamaClassifier:
         return ResidencyCheck("gpu_resident", **base)
 
     # -- inference --------------------------------------------------------------
-    def payload(self, user_message: str, seed: int | None = None) -> dict:
+    def payload(self, user_message: str, seed: int | None = None, rubric: str | None = None) -> dict:
         return {"model": self.model,
-                "messages": [{"role": "system", "content": RUBRIC},
+                "messages": [{"role": "system", "content": RUBRIC if rubric is None else rubric},
                              {"role": "user", "content": user_message}],
                 "format": RESPONSE_SCHEMA, "think": self.profile.think, "stream": True,
                 "keep_alive": self.keep_alive, "options": self.profile.options(seed)}
 
     def classify(self, user_message: str, *, seed: int | None = None,
                  cancel: threading.Event | None = None,
-                 deadline_seconds: float | None = None) -> InferenceOutcome:
+                 deadline_seconds: float | None = None, rubric: str | None = None) -> InferenceOutcome:
         budget = min(deadline_seconds or self.request_timeout, self.request_timeout)
         out = InferenceOutcome(status="transport_error", started_at=_utc())
         begun = time.perf_counter()
@@ -194,7 +194,7 @@ class OllamaClassifier:
         watcher.start()
         try:
             with self.http.stream("POST", f"{self.endpoint}/api/chat",
-                                  json=self.payload(user_message, seed)) as response:
+                                  json=self.payload(user_message, seed, rubric)) as response:
                 holder["response"] = response
                 out.sent = True
                 if response.status_code != 200:

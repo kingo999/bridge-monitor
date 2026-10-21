@@ -14,8 +14,11 @@ from pathlib import Path
 
 from bridge.classifier.client import OllamaClassifier
 from bridge.classifier.interpret import interpret
-from bridge.classifier.rubric import RUBRIC_SHA256, RUBRIC_VERSION
-from contracts.classifier import ClassifierInput, ReferenceLabel
+from bridge.classifier.scenarios import (CATALOGUE_VERSION, catalogue_sha256, compare_to_scenarios,
+                                         prepare_scenario_input, rubric_for_identity,
+                                         scenario_provenance, GUIDED_PROFILE_IDS, metadata_for_identity)
+from bridge.classifier.rubric import RUBRIC_SHA256
+from contracts.classifier import ClassifierInput, ReferenceLabel, POLICY_VERSION
 
 
 def _reference(case: dict) -> ReferenceLabel:
@@ -62,6 +65,9 @@ def score(record: dict, case: dict) -> dict:
 
 def run_replay(classifier: OllamaClassifier, cases: list[dict], seeds: list[int], out_dir: Path,
                *, label: str, cases_path: Path, runtime_note: dict | None = None) -> dict:
+    ident = rubric_for_identity(classifier.profile.profile_id,
+        None if classifier.profile.profile_id in GUIDED_PROFILE_IDS else RUBRIC_SHA256)
+    kw = {"rubric": ident.text} if ident.guided else {}
     out_dir.mkdir(parents=True, exist_ok=False)  # fresh evidence directory only
     by_id = {c["id"]: c for c in cases}
     identity = classifier.check_identity()
@@ -70,7 +76,11 @@ def run_replay(classifier: OllamaClassifier, cases: list[dict], seeds: list[int]
     manifest = {"label": label, "started_at": datetime.now(timezone.utc).isoformat(),
                 "cases_file": str(cases_path),
                 "cases_sha256": hashlib.sha256(cases_path.read_bytes()).hexdigest(),
-                "rubric_version": RUBRIC_VERSION, "rubric_sha256": RUBRIC_SHA256,
+                "rubric_version": ident.version, "rubric_sha256": ident.sha256,
+                "policy_version": metadata_for_identity(ident)['policy_version'] if ident.guided else POLICY_VERSION,
+                **({"scenario_guided": True, "profile_id": ident.profile_id,
+                    **metadata_for_identity(ident)}
+                   if ident.guided else {}),
                 "profile": classifier.profile.model_dump(), "model": classifier.model,
                 "expected_digest": classifier.expected_digest,
                 "observed_digest": identity.observed_digest,
@@ -79,10 +89,11 @@ def run_replay(classifier: OllamaClassifier, cases: list[dict], seeds: list[int]
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
     records = []
     # One excluded warmup records model load separately from warm classification.
-    warm = classifier.classify(ClassifierInput(
+    warm_item = ClassifierInput(
         request="Rewrite this note clearly for review.", source="The observation is incomplete.",
-        facts={"general_available": True, "code_available": True, "paid_allowed": True}
-    ).user_message(), seed=seeds[0])
+        facts={"general_available": True, "code_available": True, "paid_allowed": True})
+    warm = classifier.classify(prepare_scenario_input(warm_item, ident,
+        context_tokens=classifier.profile.num_ctx, output_tokens=classifier.profile.num_predict)[0], seed=seeds[0], **kw)
     (out_dir / "warmup.json").write_text(json.dumps({
         "status": warm.status, "request_seconds": warm.request_seconds,
         "durations_ms": warm.durations_ms, "usage": warm.usage,
@@ -93,8 +104,11 @@ def run_replay(classifier: OllamaClassifier, cases: list[dict], seeds: list[int]
                 case = by_id[case_id]
                 item = ClassifierInput(request=case["request"], source=case.get("source", ""),
                                        facts=case["facts"])
-                outcome = classifier.classify(item.user_message(), seed=block["seed"])
-                interp = interpret(outcome, expected_model=classifier.model, facts=item.trusted())
+                message, decision = prepare_scenario_input(item, ident,
+                    context_tokens=classifier.profile.num_ctx, output_tokens=classifier.profile.num_predict)
+                outcome = classifier.classify(message, seed=block["seed"], **kw)
+                interp = interpret(outcome, expected_model=classifier.model, facts=item.trusted(),
+                                   scenario_decision=decision)
                 record = {"case_id": case_id, "pass": block["pass"], "seed": block["seed"],
                           "state": interp.state, "error_type": interp.error_type,
                           "validation_error": interp.validation_error,
@@ -107,6 +121,9 @@ def run_replay(classifier: OllamaClassifier, cases: list[dict], seeds: list[int]
                           "request_seconds": outcome.request_seconds,
                           "first_content_seconds": outcome.first_content_seconds,
                           "durations_ms": outcome.durations_ms, "usage": outcome.usage}
+                if ident.guided:
+                    record["scenario"] = {**scenario_provenance(ident, decision),
+                                          "comparison": compare_to_scenarios(interp.recommendation, decision)}
                 record["score"] = score(record, case)
                 sink.write(json.dumps(record, ensure_ascii=False) + "\n")
                 sink.flush()

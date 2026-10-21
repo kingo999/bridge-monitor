@@ -31,6 +31,7 @@ export type ClassifierCohort = {
   definition_version: string; available: boolean; reason?: string; scope_note?: string;
   counts: Record<'submitted' | 'attempted' | 'completed' | 'failed' | 'skipped' | 'uncertain' | 'cancelled' | 'pending' | 'unknown_outcome', number>;
   skip_reasons: Record<string, number>; error_types: Record<string, number>;
+  capture_exclusions?: { available: boolean; total: number; reasons: Record<string, number>; size_kinds: Record<string, number>; metadata_bytes: number; note?: string };
   contract_errors: Record<string, number>;
   recommendations: { routes: Record<string, number>; categories: Record<string, number> };
   policy: { allowed: number; blocked: number; block_reasons: Record<string, number>; unknown_code_capacity_blocks?: number; other_blocked?: number };

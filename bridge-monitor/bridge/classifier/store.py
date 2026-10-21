@@ -16,6 +16,7 @@ from psycopg.types.json import Jsonb
 
 from bridge.classifier.config import ClassifierShadowConfig
 from bridge.classifier.rubric import RUBRIC_SHA256, RUBRIC_VERSION
+from bridge.classifier.scenarios import rubric_for_config
 from contracts.classifier import CONTRACT_VERSION, ObservationCapture
 
 CAPTURE_LOCK = 0x4C534F43  # serializes queue-bound checks; independent of admission locks
@@ -34,7 +35,7 @@ def milliseconds(delta: timedelta) -> int:
 def source_key(cap: ObservationCapture, cfg: ClassifierShadowConfig) -> str:
     """Durable identity of one intended observation. A rerun needs a distinct replay_id."""
     parts = [cap.origin_kind, cap.origin_ref, cap.input.request_sha256(),
-             cap.input.source_sha256(), cfg.profile.profile_id, RUBRIC_SHA256,
+             cap.input.source_sha256(), cfg.profile.profile_id, rubric_for_config(cfg).sha256,
              cfg.model_digest, cap.replay_id or ""]
     return hashlib.sha256("\x1f".join(parts).encode("utf-8")).hexdigest()
 
@@ -110,6 +111,7 @@ def capture(dsn: str, cap: ObservationCapture, cfg: ClassifierShadowConfig, *,
 
 def insert_capture(conn, cap, cfg, *, obs_id, key, size, request_id, source_id, skip, now):
     """Transaction-local insert shared by manual and bounded automatic persistence."""
+    rubric = rubric_for_config(cfg)
     conn.execute("""INSERT INTO classifier_observations
         (observation_id,source_key,origin_kind,origin_ref,replay_id,task_id,work_item_id,
          request_sha256,source_sha256,input_bytes,request_content_id,source_content_id,
@@ -120,7 +122,7 @@ def insert_capture(conn, cap, cfg, *, obs_id, key, size, request_id, source_id, 
         (obs_id, key, cap.origin_kind, cap.origin_ref, cap.replay_id, cap.task_id,
          cap.work_item_id, cap.input.request_sha256(), cap.input.source_sha256(), size,
          request_id, source_id, Jsonb(cap.input.facts), now, Jsonb(cap.facts_provenance),
-         CONTRACT_VERSION, RUBRIC_VERSION, RUBRIC_SHA256, cfg.profile.profile_id,
+         CONTRACT_VERSION, rubric.version, rubric.sha256, cfg.profile.profile_id,
          Jsonb(cfg.profile.model_dump()), cfg.model, cfg.model_digest,
          "skipped" if skip else "captured", skip, now))
 

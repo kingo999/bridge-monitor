@@ -36,6 +36,23 @@ def test_controlled_marker_also_demotes_registered_natural_capture():
     assert unit_capture(controlled=True)[0].origin_kind == 'controlled'
 
 
+def test_registered_oversize_source_is_offered_for_exclusion_not_prompt_only():
+    from types import SimpleNamespace
+    from datetime import datetime,timezone,timedelta
+    from bridge.mcp_server import BridgeCoordinator
+    from contracts.route_capture import RouteCapture
+    now=datetime.now(timezone.utc)
+    c=BridgeCoordinator.__new__(BridgeCoordinator)
+    c.route_observer=Observer()
+    c.policy=SimpleNamespace(router=SimpleNamespace(scopes=['analysis']))
+    task=SimpleNamespace(task_id='t',work_item_id='w',category='single_file_python_fix',scope=['analysis'],context={})
+    case=SimpleNamespace(task_id='t',task_text='Fix square',baseline_source='x'*49033,origin_kind='natural',
+        origin_ref='registered:natural',output_contract='complete_python_module_v1',
+        captured_at=now-timedelta(seconds=5),tests=[{}],solution_available_at=None)
+    c._offer_route_capture(task,'Fix square',case,'a'*64,'complete_python_module_v1','call','decision','sonnet')
+    assert len(c.route_observer.items)==1 and isinstance(c.route_observer.items[0],RouteCapture)
+
+
 def test_empty_verifier_reference_links_to_exact_empty_reference(tmp_path):
     from contracts.route_capture import BridgeCapture
     from bridge.classifier.hook_config import load_hook_settings

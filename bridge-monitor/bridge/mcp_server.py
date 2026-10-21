@@ -105,7 +105,7 @@ class BridgeCoordinator:
                     captured_at=arrival, registered_at=case.captured_at,
                     solution_available_at=case.solution_available_at,
                     tests_present=bool(case.tests), case_validated=True)
-                if snapshot.acceptable():
+                if snapshot.valid_binding():
                     self.route_observer.offer(snapshot)
                     return
             self._offer_bridge_capture(task, prompt, 'route_work', paid_id, decision_id,

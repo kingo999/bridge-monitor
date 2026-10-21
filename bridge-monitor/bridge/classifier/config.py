@@ -4,8 +4,9 @@ import os
 import tomllib
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
+from bridge.classifier.scenarios import GUIDED_PROFILE_ID, GUIDED_PROFILE_IDS
 from contracts.classifier import GenerationProfile
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -41,6 +42,13 @@ class ClassifierShadowConfig(BaseModel):
     max_queue_age_seconds: int = Field(default=600, ge=10)
     halt_on_cpu_fallback: bool = True
     facts: ConfiguredFacts = Field(default_factory=ConfiguredFacts)
+    scenario_guidance: StrictBool = False
+
+    @model_validator(mode='after')
+    def guidance_matches_profile(self):
+        if self.scenario_guidance != (self.profile.profile_id in GUIDED_PROFILE_IDS):
+            raise ValueError('scenario_guidance requires exactly the guided profile_id')
+        return self
 
 
 class RuntimeConfig(BaseModel):

@@ -13,6 +13,73 @@ Everything is off until you copy `config/gemma-classifier.example.toml` to a `*.
 `BRIDGE_CLASSIFIER_SHADOW_CONFIG`). The commands below use
 `var/probes/gemma-classifier-shadow-20261019/classifier-local.toml` as the config.
 
+## Versioned scenario guidance (shadow only)
+
+The opt-in `classifier_shadow.scenario_guidance = true` requires
+`classifier_shadow.profile.profile_id = "gemma-router-profile-v4-suitability"` for new rollout.
+The default retains the original rubric and profile. The catalogue in
+`bridge/classifier/scenarios.py` supplies examples, counterexamples, trusted-fact
+requirements and route exclusions. Its hash includes the gate implementation;
+the guided prompt also carries that fingerprint. Change versions when changing
+released rule meaning, and retain the old implementation with its receipts.
+
+Guided inputs preserve captured request/source/facts and add host-computed
+`host_scenario` metadata. Only trusted host facts grant availability or permission.
+The model's raw category/route/reason is retained; a forbidden route is marked
+blocked by `recommendation-policy-v4-suitability`, never rewritten as a correct
+answer. Security indicators are conservative and incomplete. Explicit security
+reviews cannot fall through to the general worker; clearly descriptive prose
+about security remains eligible when trusted facts permit it.
+
+The v4 suitability scenarios exclude the general worker and tools for known code
+work, exclude the code worker and tools for bounded prose, and exclude both local
+LLMs for exact deterministic work. An unavailable specialist therefore cannot be
+replaced merely because another worker is available. Detection is conservative and
+incomplete; it removes routes and does not create trusted capability facts. Mixed
+prose/code actions, polite prefixes and code-shaped source have regression coverage.
+Unknown security risk still excludes the code worker. Prose about security can remain
+eligible for general work unless the host marks it sensitive or requests an operation.
+
+The compact v4 system text is 1,657 UTF-8 bytes; it omits duplicated schema/examples
+while retaining the catalogue fingerprint. The full host catalogue remains available
+for audit. The context stays 8,192 tokens with 192 output tokens and the existing
+conservative byte bound plus 512 bytes of headroom. Oversized requests still fail
+before inference; request and source are never truncated. Capture's larger byte
+limit is not a guarantee of inference coverage. Report preflight failures separately.
+
+`scenarios_v2.py` preserves the previous guided implementation byte-for-byte, including
+its 5,027-byte rubric, gate semantics, policy version and known substitution limitation.
+The runner and replay path dispatch by captured identity. The initial compact v3
+experiment is also archived exactly in `scenarios_v3.py`; its observed field-extraction
+gap led to a separate v4 identity and fresh confirmation cases. The archived guided IDs remain
+accepted for reproducible comparisons and old startup snapshots; v4 is the deployment
+target. Do not reinterpret old captures as v4. `.gitattributes` preserves fingerprinted
+module bytes. Version/hash pin tests make later accidental identity reuse visible.
+
+Capture stores the actual profile and rubric hash. The runner chooses by that
+captured identity, so legacy and guided rows can coexist. Unknown/mismatched
+identities and invalid or conservatively oversized guided inputs fail before
+inference. Guided prompt size includes system text, host metadata and output
+headroom under a conservative UTF-8 byte bound; it is not a tokenizer measurement.
+`backend.scenario` records catalogue/gate/rubric identities, matched scenarios,
+allowed/forbidden routes, fallback and the separate comparison with the raw answer.
+Existing cohort filters expose the new profile/rubric without schema changes.
+
+For file replay, select a guided local config with `classifier-shadow.py --config
+<guided-config> replay ...`. For continuous capture, stop the existing supervisor
+using its pause marker, update the reviewed config and pinned scheduled-task hash,
+then restart it and reconnect the parent MCP connection, whose capture settings are
+frozen at startup. Preserve halt markers, quota counters and production policy.
+Never label legacy captures as guided merely because runner settings changed.
+The runner must actually receive a newly captured guided profile.
+
+Benchmark labels must be frozen before inference. Store synthetic experiments as
+`origin_kind=replay` and keep them separate from natural traffic. Compare original
+Gemma, guided Gemma and frozen rules on the same new inputs; report raw accuracy,
+gate compliance, guard/fallback results, actual usage and latency separately.
+Count repeated seeds as repeatability checks, not new independent tasks. Apply a
+cumulative call/time bound in the benchmark driver, including warmup calls.
+
 ## Runtime: start, status, stop
 
 ```powershell
