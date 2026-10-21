@@ -262,6 +262,8 @@ def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100
                     ('attempt.status','attempt.uncertain','response.delta')
                 ORDER BY call_id,event_type,occurred_at DESC,event_id DESC""",
                 (work_item_id,)).fetchall()
+            from service.queries.reconciliations import read_runtime_executions
+            runtime_executions = read_runtime_executions(conn, work_item_id)
             pack_ids = sorted({d["guidance_manifest"].get("pack_version_id") for d in decisions
                                if d["guidance_manifest"].get("pack_version_id")})
             packs = conn.execute("SELECT pack_version_id,pack_id,version_label,sha256,items "
@@ -313,6 +315,7 @@ def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100
             "resolutions": list(map(dict, resolutions)), "events": list(map(dict, events)),
             "agent_statuses": derive_agent_statuses(sorted(map(dict, agent_events),
                 key=lambda row: row["occurred_at"])),
+            "runtime_executions": runtime_executions,
             "events_truncated": events_truncated,
             "events_gap_after": head_events if events_truncated else None,
             "guidance_packs": list(map(dict, packs)), "example_reviews": list(map(dict, reviews)),

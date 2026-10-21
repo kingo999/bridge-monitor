@@ -44,7 +44,7 @@ test('donut charts stay visible above the live flow while percentage tiles colla
   for (const key of ['node', 'model', 'handling', 'tier'] as const) {
     const distribution = metrics.distributions[key];
     const chart = charts.getByRole('article', { name: `${distribution.title} chart`, exact: true });
-    await expect(chart).toContainText(`${distribution.total} work items`);
+    await expect(chart.getByRole('img')).toHaveAccessibleName(new RegExp(`of ${distribution.total}(,|$)`));
     for (const slice of distribution.slices) {
       await expect(chart).toContainText(slice.label);
       await expect(chart).toContainText(`${slice.count} / ${distribution.total}`);

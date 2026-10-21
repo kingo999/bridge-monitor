@@ -8,6 +8,7 @@ import GuidanceDetails from './GuidanceDetails';
 import ResponseComparison from './ResponseComparison';
 import RouterAudit from './RouterAudit';
 import DirectExecutionDetails from './DirectExecutionDetails';
+import ReconciliationDetails, { RuntimeSummary } from './ReconciliationDetails';
 
 type Tab = 'exchange' | 'decision' | 'guidance' | 'timeline' | 'router';
 
@@ -50,6 +51,20 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [id, refreshKey]);
+  useEffect(() => {
+    if (!id || paused) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      try {
+        const value = await api.detail(id);
+        if (!cancelled) setDetail(value);
+      } catch { /* Retain the last recorded snapshot on a transient polling error. */ }
+      finally { if (!cancelled) timer = setTimeout(poll, 5000); }
+    };
+    timer = setTimeout(poll, 5000);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [id, refreshKey, paused]);
   const references = useMemo(() => detail ? Array.from(new Set([
     ...detail.messages.flatMap(m => [m.original_content_id, m.effective_content_id]),
     ...detail.results.flatMap(r => [r.raw_content_id, r.delivered_content_id]),
@@ -65,6 +80,8 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
 
   const activeCalls = useMemo(() => detail ? detail.calls.filter(call =>
     call.execution_mode !== 'shadow' && !call.call_id.startsWith('gpt:') &&
+    !['terminated', 'cancelled', 'completed'].includes(detail.runtime_executions?.find(
+      execution => execution.call_id === call.call_id)?.state || '') &&
     !detail.results.some(result => result.call_id === call.call_id && result.delivered_at)) : [],
   [detail]);
   useEffect(() => {
@@ -80,6 +97,7 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
   }, [id, detail, activeCalls]);
 
   const localCall = detail?.calls.find(c => c.local_dispatch);
+  const runtimeExecution = detail?.runtime_executions?.find(execution => execution.call_id === localCall?.call_id);
   const agentStatus = detail?.agent_statuses?.find(s => s.call_id === localCall?.call_id);
   const outputAge = agentStatus?.last_model_output_at ?
     Math.max(0, Math.floor((clockNow - new Date(agentStatus.last_model_output_at).getTime()) / 1000)) : null;
@@ -130,7 +148,8 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
     {id && loading && !detail && <p className="empty-state">Loading exchange…</p>}
     {detail && <><div className="inspector-summary"><h3>{detail.work_item.category || detail.work_item.work_item_id}</h3>
       <p>Requested: {primaryModel?.requested_model || detail.direct_execution?.requested_model || 'Unknown'} · Reported: {primaryModel?.reported_model || 'Unknown'}</p>
-      {agentStatus && <p>Last bridge observation · Skynet job: {agentStatus.agent_state || 'Unknown'} · Agent: {agentStatus.agent_reachable === true ? 'reachable' : agentStatus.agent_reachable === false ? 'unreachable' : 'unverified'} · Last Qwen output {outputAge === null ? 'not observed' : jobActive ? `${outputAge}s ago` : outputTime}{agentStatus.timeout_reason ? ` · ${agentStatus.timeout_reason}` : ''}</p>}</div>
+      {runtimeExecution && <RuntimeSummary execution={runtimeExecution} onReceipt={() => setTab('decision')} />}
+      {agentStatus && <p>Historical · Last bridge observation · Skynet job: {agentStatus.agent_state || 'Unknown'} · Agent: {agentStatus.agent_reachable === true ? 'reachable' : agentStatus.agent_reachable === false ? 'unreachable' : 'unverified'} · Last Qwen output {outputAge === null ? 'not observed' : jobActive ? `${outputAge}s ago` : outputTime}{agentStatus.timeout_reason ? ` · ${agentStatus.timeout_reason}` : ''}</p>}</div>
       <div className="inspector-tabs" role="tablist" aria-label="Inspector views">
         {(['exchange', 'decision', 'guidance', 'timeline', 'router'] as Tab[]).map(value => <button key={value} type="button"
           role="tab" aria-selected={tab === value} onClick={() => setTab(value)}>{value}</button>)}</div>
@@ -206,6 +225,7 @@ export default function ExchangeInspector({ id, refreshKey, paused }: { id: stri
           </>}
         </>}
         {tab === 'decision' && <div className="decision-list">
+          {runtimeExecution && <ReconciliationDetails execution={runtimeExecution} />}
           {detail.direct_execution && <p>Direct Codex · {detail.direct_execution.bypass_reason}: {detail.direct_execution.reason || 'No additional reason supplied'}</p>}
           <h3>Routing and disposition</h3>
           {detail.decisions.map(d => <div className="fact-card" key={d.decision_id}><strong>{d.route} · {d.eligibility}</strong>

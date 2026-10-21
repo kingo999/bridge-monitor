@@ -20,17 +20,17 @@ function color(key: string): string {
   return colors[key] || 'series-8';
 }
 
-function Donut({ distribution }: { distribution: Distribution }) {
-  const { total, slices, title } = distribution;
+function Donut({ distribution, slices }: { distribution: Distribution; slices: DistributionSlice[] }) {
+  const { total, title } = distribution;
   let start = 0;
-  const arcs = slices.filter(slice => slice.count > 0).map(slice => {
+  const arcs = slices.map(slice => {
     const fraction = total > 0 ? 100 * slice.count / total : 0;
     const arc = { ...slice, start, fraction };
     start += fraction;
     return arc;
   });
   const summary = total > 0
-    ? `${title}: ${slices.filter(slice => slice.count > 0).map(slice => `${slice.label} ${slice.count} of ${total}`).join(', ')}`
+    ? `${title}: ${slices.map(slice => `${slice.label} ${slice.count} (${slice.percent ?? 0}%)`).join(', ')}; total ${total} work items`
     : `${title}: no work items in this cohort`;
   return <svg className="donut" viewBox={`0 0 ${SIZE} ${SIZE}`} width={SIZE} height={SIZE}
     role="img" aria-label={summary}>
@@ -46,23 +46,26 @@ function Donut({ distribution }: { distribution: Distribution }) {
   </svg>;
 }
 
-function LegendRow({ slice, total }: { slice: DistributionSlice; total: number }) {
-  return <li className={slice.count === 0 ? 'empty-slice' : undefined}>
+function ChartTag({ slice, total }: { slice: DistributionSlice; total: number }) {
+  return <li className="chart-tag" title={`${slice.label}: ${slice.count} of ${total} (${slice.percent ?? 0}%)`}>
     <i className={`chart-swatch ${color(slice.key)}`} aria-hidden="true" />
-    <span className="chart-legend-label">{slice.label}</span>
-    <strong>{total ? `${slice.percent ?? 0}%` : 'N/A'}</strong>
-    <small>{slice.count} / {total}</small>
+    <span className="chart-tag-label">{slice.label}</span>
+    <span className="chart-tag-count">{slice.count}</span>
+    <strong>{slice.percent ?? 0}%</strong>
   </li>;
 }
 
 function Card({ distribution }: { distribution: Distribution }) {
+  const visibleSlices = distribution.slices.filter(slice => slice.count > 0);
   return <article className="chart-card" aria-label={`${distribution.title} chart`}>
     <h3>{distribution.title}</h3>
     <div className="chart-content">
-      <Donut distribution={distribution} />
-      <ul className="chart-legend">
-        {distribution.slices.map(slice => <LegendRow key={slice.key} slice={slice} total={distribution.total} />)}
-      </ul>
+      <Donut distribution={distribution} slices={visibleSlices} />
+      {visibleSlices.length > 0
+        ? <ul className="chart-tags" aria-label={`${distribution.title} categories`}>
+          {visibleSlices.map(slice => <ChartTag key={slice.key} slice={slice} total={distribution.total} />)}
+        </ul>
+        : <p className="chart-empty">No nonzero categories</p>}
     </div>
     <p className="chart-unit">{distribution.basis}</p>
   </article>;

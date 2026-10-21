@@ -49,7 +49,23 @@ export type OutputPreview = {
   call_id: string; text: string; chunks_shown: number; missing_chunks: number;
   truncated: boolean; last_event_at: string | null;
 };
+export type ReconciliationReceipt = {
+  reconciliation_id: string; call_id: string; observed_state: string; recorded_at: string;
+  actor_kind: string; actor_id: string;
+  evidence: {
+    kind?: string; receipt_id?: string; provenance?: string; basis?: string;
+    observed_at?: string; source_sha256?: string; source_evidence_path?: string;
+    source_path?: string; terminated?: boolean; historical_runner_pid?: number | null;
+    exit_code?: number | null;
+  };
+};
+export type RuntimeExecution = {
+  call_id: string; pool: string; state: string; slot_held: boolean;
+  policy_version?: string; lease_id?: string | null; owner_incarnation?: string | null;
+  receipts: ReconciliationReceipt[]; receipts_truncated: boolean;
+};
 export type WorkDetail = {
+  runtime_executions?: RuntimeExecution[];
   direct_execution?: DirectExecution | null;
   direct_usage?: Array<{ observation_id: string; scope: string; is_cumulative: boolean;
     input_tokens: number | null; output_tokens: number | null;
