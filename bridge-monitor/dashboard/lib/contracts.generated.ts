@@ -20,7 +20,7 @@ export type Snapshot = {
 export type PoolCapacity = { active: number; queued: number; held_uncertain: number };
 export type WorkerExecution = { call_id: string; work_item_id: string | null;
   worker_instance_id: string | null; requested_model: string | null;
-  reported_model: string | null; occurred_at: string };
+  reported_model: string | null; occurred_at: string; waiting_on_local?: boolean };
 export type MetricValue = { numerator: number; denominator: number; percent: number | null };
 export type MetricSet = {
   definition_version: string; cohort: Record<string, unknown>; as_of: string;

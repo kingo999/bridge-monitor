@@ -4,7 +4,7 @@ test('guidance filter and inspector distinguish actual baseline and reviewed sup
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await page.getByLabel('Guidance group').fill('no_guidance');
   await expect(page.getByText('40 work items')).toBeVisible();
   await page.getByLabel('Guidance group').fill('not_dispatched');

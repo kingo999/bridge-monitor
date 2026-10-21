@@ -19,6 +19,14 @@ export type OperatorSession = { authenticated: boolean; work_item_max_limit?: nu
 export type RouterFilters = { modelProfile: string; promptVersion: string; verifierRef: string };
 export type ClassifierFilters = { originKind: string; model: string; profileId: string; captureMethod?: string };
 export type Dist = { samples: number; median: number | null; p95: number | null; max: number | null };
+export type ClassifierActivity = {
+  available: boolean; checked_at: string; queued: number | null; classifying: number | null;
+  uncertain: number | null;
+  latest: { observation_id: string; work_item_id: string | null; state: string;
+    requested_model: string; captured_at: string; dispatched_at: string | null;
+    completed_at: string | null; rec_route: string | null; origin_kind: string;
+    capture_method: string } | null;
+};
 export type ClassifierCohort = {
   definition_version: string; available: boolean; reason?: string; scope_note?: string;
   counts: Record<'submitted' | 'attempted' | 'completed' | 'failed' | 'skipped' | 'uncertain' | 'cancelled' | 'pending' | 'unknown_outcome', number>;
@@ -67,12 +75,13 @@ export const api = {
     if (router.verifierRef) params.set('verifier_ref', router.verifierRef);
     return request<ShadowCohort>(`/api/v1/router/cohort?${params}`);
   },
-  classifierCohort: (filters: ClassifierFilters) => {
+  classifierActivity: (signal?: AbortSignal) => request<ClassifierActivity>('/api/v1/classifier/activity', { signal }),
+  classifierCohort: (filters: ClassifierFilters, signal?: AbortSignal) => {
     const params = new URLSearchParams({ origin_kind: filters.originKind || 'all' });
     if (filters.captureMethod) params.set('capture_method', filters.captureMethod);
     if (filters.model) params.set('model', filters.model);
     if (filters.profileId) params.set('profile_id', filters.profileId);
-    return request<ClassifierCohort>(`/api/v1/classifier/cohort?${params}`);
+    return request<ClassifierCohort>(`/api/v1/classifier/cohort?${params}`, { signal });
   },
   routerAudit: (id: string) => request<RouterAudit>(`/api/v1/router/audit/${encodeURIComponent(id)}`),
   workItems: (filters: CohortFilters, offset = 0, limit = 100) => request<WorkItem[]>(`/api/v1/work-items?${queryString(filters)}&limit=${limit}&offset=${offset}`),

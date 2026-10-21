@@ -39,7 +39,7 @@ test('selected Qwen call updates its preview without moving a reader through lon
   });
   expect(first.ok()).toBe(true);
 
-  await page.getByLabel('Origin').selectOption('imported');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('imported');
   await page.getByRole('button', { name: new RegExp(work) }).first().click();
   await expect(page.locator('.body-card').filter({ hasText: 'Qwen live output' }))
     .toContainText('Alpha β');

@@ -324,3 +324,51 @@ or Claude MCP servers and ordinary chat are separate entry points; they are not 
 Runtime supervision, the pinned Gemma generation profile, GPU safety checks and live
 routing policy remain unchanged. Rollback is to disable normal_traffic_enabled and restart
 the parent, preserving observations, the additive index and lifetime accounting.
+
+## Live classifier display
+
+The orchestration graph shows Gemma on a separate dashed advisory path. Its node pulses
+only while an observation is recorded as dispatching. The advisory path animates while
+captures are queued or classifying; it cannot imply a Claude or Qwen admission. Claude
+and Qwen node pulses use their own recorded active-worker counts, and the Qwen path no
+longer animates merely because Claude is active. These are recorded working states,
+not access to a model's private reasoning. The main Codex conversation has no bridge
+turn-status signal and is not shown as thinking based on an open connection.
+
+The authenticated, read-only `/api/v1/classifier/activity` endpoint supplies queue counts
+and the latest observation's state, timestamp and recommendation, without prompt, source
+or response bodies. The flow polls it one second after each completed read, with a
+five-second browser timeout and bounded database timeouts. Failed reads clear activity
+and display "Activity unavailable" rather than retaining an active pulse. A missing
+classifier schema is unavailable, not an idle zero. Last-observation text remains after
+short requests finish so that completion can still be inspected; it is not live activity.
+For eight seconds after a recorded completion, the advisory edge also animates with an
+explicit "Result · recently completed" label. The model glow stops on completion. This
+brief result indication is never counted or labelled as an active worker. Active model
+nodes have a coloured outer glow; animated paths have visibly travelling dashes.
+
+Classifier cohort statistics refresh every two seconds after a completed read. Both
+cohort and activity reads have two-second connect, one-second statement and 200-ms lock
+timeouts, so a stalled SQL read cannot accumulate indefinitely behind browser retries. Both
+pollers stop during Pause display, abort in-flight reads on pause or unmount, and refresh
+on resume while retaining classifier filters. They do not publish production events,
+start model calls, warm the GPU, change quotas or modify routing policy. Browser reduced
+motion preferences disable pulses and animated paths while counts remain visible.
+
+All graph nodes distinguish working, waiting, idle, paused and unavailable states.
+Working models retain their coloured glow. Queued-only nodes have an amber dashed
+outline and a slowly rotating dashed ring; their label says waiting. If a pool has
+active and queued work, the active glow remains and an amber queue badge shows the
+waiting work. Held uncertainty has a static dotted outline, never an active animation.
+Reduced motion keeps the waiting label and outline but stops the ring rotation.
+
+The GPT/Codex node shows "Waiting for bridge workers" while recorded Claude calls
+are active or queued. This is a shared bridge activity indicator, not a claim about
+this chat's private thinking or an acknowledgement that the parent has consumed a
+result. A held Qwen job after a completed paid fallback does not keep GPT waiting.
+Claude's waiting label uses an exact active parent and its queued or active
+production Qwen child, matched by parent call ID, task and work item in the same
+read-only snapshot. Completed, fallback, unrelated and router-shadow jobs never
+produce that label. When all active Claude calls await a local result, the group
+uses the waiting ring; mixed groups retain the working glow and show an amber
+waiting badge and per-worker label. Runtime admission counts remain unchanged.

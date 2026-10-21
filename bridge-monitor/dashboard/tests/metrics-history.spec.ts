@@ -5,7 +5,7 @@ test('service metrics match the 100-item sample and history keeps topology curre
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await expect(page.getByRole('button', { name: /Routed to Skynet/ })).toContainText('40%');
   await expect(page.getByRole('button', { name: /Not routed/ })).toContainText('60%');
   const acceptance = page.getByRole('button', { name: /Claude-reported acceptance/ });
@@ -13,7 +13,7 @@ test('service metrics match the 100-item sample and history keeps topology curre
   await expect(acceptance).toContainText('Valid disposition records; not independently quality-reviewed');
   await expect(page.getByRole('button', { name: /Paid takeover/ })).toContainText('10%');
   await page.getByRole('button', { name: 'History' }).click();
-  await expect(page.getByText('Current topology · grouped Claude workers')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Current orchestration flow' })).toBeVisible();
   await page.getByRole('button', { name: /Not routed/ }).click();
   await expect(page.getByText('Work list filtered by Not routed')).toBeVisible();
 });
@@ -22,7 +22,7 @@ test('GPT consumer view labels missing acknowledgements as unknown', async ({ pa
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await page.getByLabel('Consumer').selectOption('gpt');
 
   const acceptance = page.getByRole('button', { name: /GPT-reported acceptance/ });
@@ -78,7 +78,7 @@ test('GPT acknowledgement shows parent-submitted answer with capture boundary', 
       content(parentContent, 'GPT kept 518')] },
   });
   expect(ingested.ok()).toBe(true);
-  await page.getByLabel('Origin').selectOption('imported');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('imported');
   await page.getByLabel('Consumer').selectOption('gpt');
   await expect(page.getByRole('button', { name: /GPT-reported acceptance/ }))
     .toContainText('Parent-reported');
@@ -103,7 +103,7 @@ test('GPT acknowledgement shows parent-submitted answer with capture boundary', 
   });
   expect(second.ok()).toBe(true);
   await page.reload();
-  await page.getByLabel('Origin').selectOption('imported');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('imported');
   await page.getByLabel('Consumer').selectOption('gpt');
   await page.getByRole('button', { name: new RegExp(work) }).first().click();
   await expect(page.locator('.inspector-footer')).toContainText('GPT disposition: Unknown');

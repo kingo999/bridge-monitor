@@ -44,7 +44,7 @@ test('router cohort remains separate from production cards and audit opens per w
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   const cohort = page.getByRole('region', { name: 'Parent router shadow cohort' });
   await expect(cohort).toContainText('3');
   await expect(cohort).toContainText('Qwen shadow queued');
@@ -71,7 +71,7 @@ test('dashboard remains available before the router backend is rolled out', asyn
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await expect(page.getByRole('button', { name: /Routed to Skynet/ })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Parent router shadow cohort' })).toHaveCount(0);
   await expect(page.getByText(/Data error:/)).toHaveCount(0);

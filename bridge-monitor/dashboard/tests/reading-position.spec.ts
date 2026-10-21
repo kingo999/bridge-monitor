@@ -26,7 +26,7 @@ test('a delayed previous cohort cannot replace the current work list and metrics
     await route.continue();
   });
 
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await syntheticSeen;
   const observedResponse = page.waitForResponse(response =>
     new URL(response.url()).pathname === '/api/v1/work-items' &&
@@ -34,7 +34,7 @@ test('a delayed previous cohort cannot replace the current work list and metrics
   const observedMetrics = page.waitForResponse(response =>
     new URL(response.url()).pathname === '/api/v1/metrics' &&
     new URL(response.url()).searchParams.get('origin') === 'observed');
-  await page.getByLabel('Origin').selectOption('observed');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('observed');
   await observedResponse;
   await observedMetrics;
   await page.waitForTimeout(200);
@@ -76,7 +76,7 @@ test('a delayed load-more page cannot enter a different cohort', async ({ page, 
   const workPanel = page.getByRole('region', { name: 'Recent and historical work' });
   const workHeading = workPanel.getByRole('heading', { name: /Recent & active work/ });
   const observedHeading = await workHeading.innerText();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await expect(workPanel.getByRole('heading', { name: /Recent & active work/ })).toContainText('(100 shown)');
 
   let releasePage!: () => void;
@@ -99,7 +99,7 @@ test('a delayed load-more page cannot enter a different cohort', async ({ page, 
   const observedMetrics = page.waitForResponse(response =>
     new URL(response.url()).pathname === '/api/v1/metrics' &&
     new URL(response.url()).searchParams.get('origin') === 'observed');
-  await page.getByLabel('Origin').selectOption('observed');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('observed');
   await observedResponse;
   await observedMetrics;
   await page.waitForTimeout(200);
@@ -118,7 +118,7 @@ test('selected exchange remains selected when the list refreshes', async ({ page
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await page.getByRole('button', { name: /demo-work-061/ }).first().click();
   await expect(page.getByText('demo-work-061').last()).toBeVisible();
   await page.getByRole('button', { name: 'History' }).click();
@@ -151,7 +151,7 @@ test('live refresh keeps older work items loaded for historical reading', async 
   };
 
   await addWork(1, 'reading-first');
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   const workPanel = page.getByRole('region', { name: 'Recent and historical work' });
   const workHeading = workPanel.getByRole('heading', { name: /Recent & active work/ });
   await expect(workHeading).toContainText('(100 shown)');

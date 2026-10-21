@@ -5,7 +5,7 @@ test('synthetic exchange has grouped flow and side-by-side response comparison',
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await expect(page.getByRole('button', { name: /Claude workers/ })).toBeVisible();
   await page.getByRole('button', { name: /demo-work-061/ }).first().click();
   await expect(page.getByText('Qwen original')).toBeVisible();
@@ -39,7 +39,7 @@ test('long timeline marks the omitted middle between early and recent events', a
     detail.events_gap_after = 100;
     await route.fulfill({ response, json: detail });
   });
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await page.getByRole('button', { name: /demo-work-061/ }).first().click();
   await page.getByRole('tab', { name: 'timeline' }).click();
   const timeline = page.locator('ol.timeline');
@@ -79,7 +79,7 @@ test('exchange inspector shows model usage with reported and unknown cache count
     ], content: [] },
   });
   expect(ingested.ok()).toBe(true);
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await page.getByRole('button', { name: /demo-work-061/ }).first().click();
   const usage = page.getByRole('region', { name: 'Model usage' });
   await expect(usage).toContainText('Cache-read input: 2,440');
@@ -140,7 +140,7 @@ test('inspector distinguishes GPT to Claude and Claude to Skynet prompts', async
     ] },
   });
   expect(ingested.ok()).toBe(true);
-  await page.getByLabel('Origin').selectOption('imported');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('imported');
   await page.getByRole('button', { name: new RegExp(work) }).first().click();
   await expect(page.locator('.body-card').filter({ hasText: 'GPT → Claude original prompt' }))
     .toContainText('GPT original question');

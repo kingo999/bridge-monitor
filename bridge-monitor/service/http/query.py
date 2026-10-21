@@ -1,4 +1,5 @@
 from datetime import datetime
+import psycopg
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
@@ -11,6 +12,7 @@ from service.queries.router import (RouterCohortFilter, query_shadow_cohort,
                                     read_router_audit)
 from service.queries.classifier import (ClassifierCohortFilter, query_classifier_cohort,
                                         read_classifier_observation)
+from service.queries.classifier_activity import query_classifier_activity
 
 
 def query_router(dsn: str, operator_token: str, sessions: dict, *,
@@ -120,6 +122,14 @@ def query_router(dsn: str, operator_token: str, sessions: dict, *,
             raise HTTPException(404, "work item not found")
         return audit
 
+    @router.get("/classifier/activity")
+    def classifier_activity(request: Request, authorization: str | None = Header(default=None)):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        try:
+            return query_classifier_activity(dsn)
+        except psycopg.Error as exc:
+            raise HTTPException(503, 'Classifier activity unavailable') from exc
+
     @router.get("/classifier/cohort")
     def classifier_cohort(request: Request, authorization: str | None = Header(default=None),
                           origin_kind: str = "all", model: str | None = None,
@@ -135,6 +145,8 @@ def query_router(dsn: str, operator_token: str, sessions: dict, *,
             return query_classifier_cohort(dsn, filters)
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(503, 'Classifier cohort unavailable') from exc
 
     @router.get("/classifier/observations/{observation_id}")
     def classifier_observation(observation_id: str, request: Request,

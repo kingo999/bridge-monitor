@@ -68,6 +68,13 @@ def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> Dashboard
             if capacity is not None:
                 executions = conn.execute("""SELECT j.call_id,j.work_item_id,j.worker_instance_id,
                     j.requested_model,j.admitted_at AS occurred_at,
+                    (j.state='active' AND j.slot_held AND EXISTS (
+                        SELECT 1 FROM runtime_jobs local
+                        WHERE local.pool='qwen' AND local.state IN ('queued','active')
+                        AND local.execution_mode='production'
+                        AND local.request->>'parent_call_id'=j.call_id
+                        AND local.task_id=j.task_id AND local.work_item_id=j.work_item_id
+                    )) AS waiting_on_local,
                     (SELECT e.reported_model FROM events e WHERE e.call_id=j.call_id
                         AND e.event_type='model.reported' ORDER BY e.occurred_at DESC LIMIT 1) AS reported_model
                     FROM runtime_jobs j JOIN work_items w ON w.work_item_id=j.work_item_id

@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import threading
 import time
@@ -6,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from contracts.events import EventType
 from contracts.work import DispatchLease, TaskPacket
+from contracts.outcomes import DispositionRecord
 from bridge.adapters.claude_cli import ClaudeCLIAdapter, SubprocessRunner, build_claude_command
 
 
@@ -249,3 +251,19 @@ def test_worker_system_prompt_requires_explicit_local_result_accounting(tmp_path
     assert "source-read" in system_prompt
     assert any(kind == EventType.MESSAGE_SENT and kw["role"] == "system"
                and kw["body"] == system_prompt.encode() for kind, kw in sink.events)
+
+
+def test_worker_system_prompt_publishes_the_repair_effort_contract(tmp_path):
+    runner, sink = Runner([{"type": "result", "result": "answer", "is_error": False}]), Sink()
+    ClaudeCLIAdapter(runner, executable="claude", model="sonnet",
+        mcp_config_path=tmp_path / "mcp.json").run(_lease(), _task(), "Check", sink)
+    command, _ = runner.commands[0]
+    prompt = command[command.index("--system-prompt") + 1]
+    choices = re.search(r"repair_effort values: (\[[^\]]+\])", prompt)
+    assert choices, "The actual worker instructions must supply the allowed repair_effort literals"
+    schema = DispositionRecord.model_json_schema()['properties']['repair_effort']
+    allowed = next(choice['enum'] for choice in schema['anyOf'] if 'enum' in choice)
+    assert json.loads(choices.group(1)) == allowed
+    assert "Omit repair_effort when unknown" in prompt
+    assert any(kind == EventType.MESSAGE_SENT and fields.get('role') == 'system'
+               and fields['body'] == prompt.encode() for kind, fields in sink.events)

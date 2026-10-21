@@ -48,8 +48,10 @@ def _available(conn) -> bool:
 
 
 def query_classifier_cohort(dsn: str, filters: ClassifierCohortFilter) -> dict:
-    with psycopg.connect(dsn, row_factory=dict_row) as conn, conn.transaction():
+    with psycopg.connect(dsn, connect_timeout=2, row_factory=dict_row) as conn, conn.transaction():
         conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+        conn.execute("SET LOCAL statement_timeout='1000ms'")
+        conn.execute("SET LOCAL lock_timeout='200ms'")
         if not _available(conn):
             return {"definition_version": DEFINITION_VERSION, "available": False,
                     "reason": "schema_not_applied"}

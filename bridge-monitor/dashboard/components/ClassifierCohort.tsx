@@ -11,15 +11,26 @@ const list = (values: Record<string, number>) => {
 };
 
 /** Advisory Gemma classifier shadow. Self-contained so a failure here never affects other panels. */
-export default function ClassifierCohort() {
+export default function ClassifierCohort({ paused = false }: { paused?: boolean }) {
   const [filters, setFilters] = useState<ClassifierFilters>({ originKind: 'all', model: '', profileId: '' });
   const [report, setReport] = useState<Report | null>(null);
   useEffect(() => {
-    let cancelled = false;
-    api.classifierCohort(filters).then(value => { if (!cancelled) setReport(value); })
-      .catch(error => { if (!cancelled && !(error instanceof AuthenticationRequired)) setReport(null); });
-    return () => { cancelled = true; };
-  }, [filters]);
+    if (paused) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    async function refresh() {
+      try {
+        const value = await api.classifierCohort(filters, AbortSignal.any([controller.signal, AbortSignal.timeout(5000)]));
+        if (!controller.signal.aborted) setReport(value);
+      } catch (error) {
+        if (!controller.signal.aborted && !(error instanceof AuthenticationRequired)) setReport(null);
+      } finally {
+        if (!controller.signal.aborted) timer = setTimeout(refresh, 2000);
+      }
+    }
+    void refresh();
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [filters, paused]);
   if (!report || !report.available) return null;
   const c = report.counts;
   return <section className="panel shadow-cohort classifier-cohort" aria-label="Gemma classifier shadow cohort">

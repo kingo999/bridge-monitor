@@ -9,6 +9,7 @@ import uuid
 from pathlib import Path
 
 from contracts.events import EventType
+from contracts.outcomes import DispositionRecord
 from bridge.adapters.base import AdapterResult, ensure_lease
 
 
@@ -74,6 +75,8 @@ def build_claude_command(executable: str, model: str, mcp_config_path: str | Pat
 def worker_system_prompt(task) -> str:
     scope = json.dumps({"category": task.category, "scope": task.scope,
                         "context": task.context}, ensure_ascii=False, sort_keys=True)
+    effort_schema = DispositionRecord.model_json_schema()["properties"]["repair_effort"]
+    effort_values = next(choice["enum"] for choice in effort_schema["anyOf"] if "enum" in choice)
     return ("You are the Claude worker for a scoped bridge task. Task metadata: " + scope + "\n"
         "The only delegated operation is mcp__bridge_monitor__delegate_local_analysis. "
         "Use it for a simple bounded check when useful. If it returns "
@@ -88,7 +91,12 @@ def worker_system_prompt(task) -> str:
         "fallback_child_call_id (string or null), and work_resolution "
         "(resolved, unresolved, or unknown). For every Qwen result actually delivered to you, "
         "include one local_results item containing result_id, input_sha256, judgment "
-        "(accepted, revised, replaced, or unused), and reason. Add repair_effort only if known. "
+        "(accepted, revised, replaced, or unused), and reason. Allowed repair_effort values: "
+        + json.dumps(effort_values) + ". Use these exact literals, not synonyms or numeric scores. "
+        "Omit repair_effort when unknown. A small substantive correction is minor. "
+        "With accepted, omit repair_effort or use none. With revised, never use "
+        "complete_replacement. With replaced, omit it or use substantial or "
+        "complete_replacement; never none or minor. "
         "Accepted means Qwen's substance is unchanged (formatting only). Revised means you "
         "retain useful Qwen substance but add a substantive explanation, correction, caveat, "
         "or integration. If you keep Qwen's code line but add a substantive explanation "

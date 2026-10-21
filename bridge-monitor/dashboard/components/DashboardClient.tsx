@@ -214,11 +214,11 @@ export default function DashboardClient() {
     <MetricStrip report={metrics} selected={selectedMetric} onSelect={setSelectedMetric}
       consumerStage={filters.consumerStage} />
     <ShadowCohort report={shadowCohort} filters={routerFilters} onChange={changeRouterFilters} />
-    <ClassifierCohort />
+    <ClassifierCohort paused={paused} />
     {selectedMetric && <p className="filter-note">Loaded work list filtered by {metricLabel(selectedMetric, filters.consumerStage)}. Numerator/denominator and coverage come from the service; result-unit metrics may map several results to one work item.</p>}
     <div className="dashboard-grid"><div className="left-column">
       <FlowGraph status={snapshot?.status || null} capacity={snapshot?.capacity || null} items={liveItems} executions={snapshot?.worker_executions || []} selectedId={selectedId}
-        expanded={expanded} onToggle={toggleExpanded} onSelect={setSelectedId}
+        expanded={expanded} onToggle={toggleExpanded} onSelect={setSelectedId} paused={paused}
         onEdge={focusEdge} />
       <WorkList items={visibleItems} selectedId={selectedId} onSelect={setSelectedId}
         search={search} onSearch={setSearch} loading={loading} more={more} onMore={() => void loadMore()} />

@@ -128,7 +128,7 @@ test('paused display freezes the selected exchange until resume', async ({ page,
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  await page.getByLabel('Origin').selectOption('synthetic');
+  await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await expect(page.locator('.connection')).toContainText('Connected');
   await page.getByRole('button', { name: /demo-work-061/ }).first().click();
   const inspector = page.getByRole('complementary', { name: 'Selected work item' });
