@@ -1,5 +1,7 @@
 # Opt-in operation lifecycle pipeline
 
+The later [explicit permanent-conflict recovery slice](permanent-conflict-recovery.md) adds isolated, opt-in quarantine with retained evidence and audit receipts. The original no-recovery boundary described below remains the default replay behavior; no operational caller is enabled.
+
 This slice extends Bridge Monitor's existing telemetry pipeline for isolated compatibility validation. It does not enable any operational producer, client endpoint, route, policy or service. The existing lifecycle contract remains [candidate-operation-lifecycle.md](candidate-operation-lifecycle.md).
 
 ## Explicit support
