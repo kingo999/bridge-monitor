@@ -144,6 +144,11 @@ def test_repeatable_read_read_only_is_established_before_data(db,monkeypatch):
             if str(q).startswith('SET TRANSACTION'):
                 assert self.c.execute('SHOW transaction_read_only').fetchone()['transaction_read_only']=='on'
                 assert self.c.execute('SHOW transaction_isolation').fetchone()['transaction_isolation']=='repeatable read'
+                # A real write is refused by PostgreSQL; the nested savepoint
+                # restores the read-only transaction for the remaining export.
+                with pytest.raises(psycopg.errors.ReadOnlySqlTransaction):
+                    with self.c.transaction():
+                        self.c.execute("UPDATE tasks SET origin='forbidden-write' WHERE task_id='t'")
                 seen.append(True)
             if 'transaction_timestamp()' in str(q):
                 with real(db) as other:other.execute("UPDATE model_executions SET reported_model='concurrent-change' WHERE model_execution_id='m-c'")
@@ -159,3 +164,91 @@ def test_manifest_is_deterministic_for_stable_snapshot(db):
     assert a['evidence']==b['evidence']
     assert a['snapshot']['kind']=='current_mvcc_snapshot'
     assert a['capture_coverage']=='selected_recorded_lineage_only_global_gaps_unattributed'
+
+@pytest.mark.parametrize('case',['part_only','cross_stage_superseded','unknown_judgment','multiple_gpt'])
+def test_acceptance_ambiguities_remain_unknown(db,case):
+    seed(db);usage(db)
+    with psycopg.connect(db) as c:
+        if case=='part_only':
+            c.execute("INSERT INTO result_parts(part_id,result_id) VALUES('p','r')")
+            c.execute("UPDATE dispositions SET part_id='p'")
+        elif case=='unknown_judgment':c.execute("UPDATE dispositions SET judgment='unknown-value'")
+        else:
+            c.execute("INSERT INTO dispositions(disposition_id,result_id,actor_id,stage,judgment,supersedes_id,recorded_at) VALUES('new','r','parent',%s,'unused',%s,%s)",('human' if case=='cross_stage_superseded' else 'gpt','disp' if case=='cross_stage_superseded' else None,BASE))
+    r=report(db)
+    assert r['denominators']['reported_accepted_deliveries']==0
+    assert r['denominators']['acceptance_unknown_deliveries']==1
+
+def test_observation_id_cannot_be_reused_across_model_owners(db):
+    seed(db,second=True);usage(db)
+    usage(db,2,model='m-child',payload={'observation_id':'u1'})
+    r=report(db)
+    assert r['incomplete_lineage']
+    assert all(m['usage']['status']=='unknown' for m in r['models'])
+    assert r['usage']['input_tokens']['known_subtotal']==0
+
+def test_null_usage_ownership_is_unknown_even_with_valid_model_id(db):
+    seed(db)
+    usage(db,task_id=None,work_item_id=None,call_id=None,attempt_id=None)
+    r=report(db)
+    assert r['incomplete_lineage']
+    assert r['models'][0]['usage']['reason']=='unresolved_lineage'
+
+@pytest.mark.parametrize('case',['result_attempt_mismatch','unmodeled_call','partial_lifecycle','unresolved_lifecycle'])
+def test_inconsistent_recorded_lineage_does_not_claim_complete_totals(db,case):
+    seed(db,second=True);usage(db);usage(db,2,model='m-child')
+    with psycopg.connect(db) as c:
+        if case=='result_attempt_mismatch':c.execute("UPDATE results SET attempt_id='a-child' WHERE result_id='r'")
+        elif case=='unmodeled_call':c.execute("INSERT INTO calls(call_id,work_item_id,created_at) VALUES('unmodeled','w',%s)",(BASE,))
+    if case.endswith('lifecycle'):
+        e=EventEnvelope(event_id='lifecycle',event_type=EventType.TOOL_COMPLETED,schema_version=1,producer_id='lifecycle',producer_incarnation='one',producer_sequence=1,occurred_at=BASE,origin='synthetic',observation_layer='bridge',capture_completeness='partial' if case=='partial_lifecycle' else 'complete',task_id='t',work_item_id='w',payload={})
+        assert ingest_batch(db,'lifecycle',[e],[])==['committed']
+        if case=='unresolved_lifecycle':
+            with psycopg.connect(db) as c:c.execute("UPDATE events SET unresolved_references=ARRAY['unresolved-fixture'] WHERE event_id='lifecycle'")
+    r=report(db)
+    assert r['incomplete_lineage']
+    assert r['usage']['input_tokens']['total'] is None
+    assert r['usage']['input_tokens']['known_subtotal']==8
+
+def test_operation_conflict_blocks_complete_lineage_total(db):
+    seed(db);usage(db)
+    assert put(db,[event('started',21),event('completed',22),event('failed',23)])==['committed']*3
+    r=report(db)
+    assert r['incomplete_lineage'] and r['usage']['input_tokens']['total'] is None
+
+def test_orphan_event_is_manifested_and_prevents_complete_total(db):
+    seed(db);usage(db)
+    # The orphan is a retained event fact, not a made-up normalized model owner.
+    with psycopg.connect(db) as c:
+        c.execute("UPDATE events SET model_execution_id='orphan-model' WHERE event_id='u-event-1'")
+    r=report(db)
+    assert r['incomplete_lineage'] and r['denominators']['orphan_usage_observations']==1
+    assert r['evidence']['events'][0]['event_id']=='u-event-1'
+    assert r['usage']['input_tokens']['total'] is None
+
+def test_exact_row_budget_and_zero_and_partial_snapshot(db):
+    seed(db);usage(db,payload={'input_tokens':0,'cache_read_input_tokens':None})
+    r=report(db)
+    assert r['usage']['input_tokens']['total']==0
+    assert r['usage']['cache_read_input_tokens']['total'] is None
+    assert report(db,max_rows=r['rows_read'])['rows_read']==r['rows_read']
+
+def test_operation_count_limit_rejects_instead_of_truncating(db):
+    seed(db)
+    assert put(db,[event('started',21+i,operation_id='op'+str(i)) for i in range(17)])==['committed']*17
+    with pytest.raises(ValueError,match='operation_budget_exceeded'):report(db)
+
+@pytest.mark.parametrize('field',['local_attempt_id','paid_result_id','decision_id'])
+def test_fallback_links_outside_recorded_cohort_make_coverage_unknown(db,field):
+    seed(db,second=True);usage(db);usage(db,2,model='m-child')
+    with psycopg.connect(db) as c:
+        c.execute("INSERT INTO calls(call_id,work_item_id,created_at) VALUES('outside-call','outside-w',%s)",(BASE,))
+        c.execute("INSERT INTO attempts VALUES('outside-attempt','outside-call',1,'completed')")
+        c.execute("INSERT INTO results(result_id,call_id,attempt_id) VALUES('outside-result','outside-call','outside-attempt')")
+        c.execute("INSERT INTO delegation_decisions(decision_id,work_item_id,route,eligibility,decided_at) VALUES('outside-decision','outside-w','paid','eligible',%s)",(BASE,))
+        c.execute("INSERT INTO runtime_jobs(call_id,task_id,work_item_id,pool,request,policy_version,state,queue_deadline_at,reserved_tokens) VALUES('child','t','w','qwen','{}','fixture-policy','completed',%s,100)",(BASE,))
+        values=dict(local_attempt_id='a-child',paid_result_id='r',decision_id='d')
+        values[field]={'local_attempt_id':'outside-attempt','paid_result_id':'outside-result','decision_id':'outside-decision'}[field]
+        c.execute("INSERT INTO runtime_fallback_transitions(child_call_id,work_item_id,local_attempt_id,state,timeout_stage,reason,threshold_at,elapsed_ms,policy_version,recipient_call_id,paid_result_id,decision_id) VALUES('child','w',%s,'completed','dispatch','fixture',%s,5,'fixture-policy','c',%s,%s)",(values['local_attempt_id'],BASE,values['paid_result_id'],values['decision_id']))
+    r=report(db)
+    assert r['incomplete_lineage'] and r['usage']['input_tokens']['total'] is None

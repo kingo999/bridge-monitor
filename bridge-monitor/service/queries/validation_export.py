@@ -78,15 +78,15 @@ def build_validation_export(dsn,task_ids,*,source_ref,allow_export=False,max_row
         decisions=rows.query('SELECT decision_id,work_item_id,child_call_id,route,eligibility,reason,policy_version,decided_at,decision_stage,execution_mode FROM delegation_decisions WHERE work_item_id=ANY(%s) OR child_call_id=ANY(%s) ORDER BY decision_id',(wids,cids))
         results=rows.query('SELECT result_id,call_id,attempt_id,delivered_at FROM results WHERE call_id=ANY(%s) ORDER BY result_id',(cids,))
         rids=[r['result_id'] for r in results]
-        dispositions=rows.query('SELECT disposition_id,result_id,actor_id,stage,judgment,supersedes_id,recorded_at FROM dispositions WHERE result_id=ANY(%s) ORDER BY disposition_id',(rids,))
+        dispositions=rows.query('SELECT disposition_id,result_id,part_id,actor_id,stage,judgment,supersedes_id,recorded_at FROM dispositions WHERE result_id=ANY(%s) ORDER BY disposition_id',(rids,))
         direct=rows.query('SELECT execution_id,work_item_id,first_observed_at FROM direct_executions WHERE work_item_id=ANY(%s) ORDER BY execution_id',(wids,))
-        fallback=rows.query('SELECT child_call_id,recipient_call_id,local_attempt_id,state,timeout_stage,elapsed_ms,policy_version,selected_model,paid_result_id,decision_id FROM runtime_fallback_transitions WHERE child_call_id=ANY(%s) OR recipient_call_id=ANY(%s) ORDER BY child_call_id',(cids,cids))
+        fallback=rows.query('SELECT child_call_id,recipient_call_id,work_item_id,local_attempt_id,state,timeout_stage,elapsed_ms,policy_version,selected_model,paid_result_id,decision_id FROM runtime_fallback_transitions WHERE child_call_id=ANY(%s) OR recipient_call_id=ANY(%s) ORDER BY child_call_id',(cids,cids))
         recovery=rows.query('SELECT recovery_call_id,child_call_id,recipient_call_id FROM runtime_recovery_links WHERE recovery_call_id=ANY(%s) OR child_call_id=ANY(%s) OR recipient_call_id=ANY(%s) ORDER BY recovery_call_id',(cids,cids,cids))
         # Only allowlisted usage fields leave the events table. Other payloads,
         # raw content, requests, gate facts and free-text dispositions are not read.
         usage_fields=('observation_id','scope','is_cumulative','provenance',*COUNTERS)
         projection=','.join("'%s',payload->'%s'"%(k,k) for k in usage_fields)
-        events=rows.query('SELECT event_id,event_type,payload_hash,task_id,work_item_id,call_id,attempt_id,model_execution_id,occurred_at,producer_id,producer_incarnation,origin,capture_completeness,unresolved_references, CASE WHEN event_type=\'usage.reported\' THEN jsonb_build_object('+projection+') ELSE NULL END AS usage FROM events WHERE task_id=ANY(%s) OR work_item_id=ANY(%s) OR call_id=ANY(%s) OR model_execution_id=ANY(%s) ORDER BY event_id',(selected,wids,cids,mids))
+        events=rows.query('SELECT event_id,event_type,payload_hash,task_id,work_item_id,call_id,attempt_id,model_execution_id,occurred_at,producer_id,producer_incarnation,origin,capture_completeness,unresolved_references, CASE WHEN event_type=\'usage.reported\' THEN jsonb_build_object('+projection+') ELSE NULL END AS usage FROM events WHERE task_id=ANY(%s) OR work_item_id=ANY(%s) OR call_id=ANY(%s) OR attempt_id=ANY(%s) OR model_execution_id=ANY(%s) ORDER BY event_id',(selected,wids,cids,aids,mids))
         windex={w['work_item_id']:w for w in works};cindex={c['call_id']:c for c in calls}
         aindex={a['attempt_id']:a for a in attempts};mindex={m['model_execution_id']:m for m in models}
         missing=sorted(set(selected)-{t['task_id'] for t in tasks})
@@ -100,18 +100,40 @@ def build_validation_export(dsn,task_ids,*,source_ref,allow_export=False,max_row
         for item in (*fallback,*recovery):
             for k in ('child_call_id','recipient_call_id','recovery_call_id'):
                 if item.get(k) and item[k] not in cindex:incomplete=True
+        for result in results:
+            attempt=aindex.get(result['attempt_id'])
+            if not attempt or attempt['call_id']!=result['call_id']:incomplete=True
+        dids={d['decision_id'] for d in decisions}
+        for item in fallback:
+            if item['work_item_id'] not in windex or item['decision_id'] not in dids:incomplete=True
+            local=aindex.get(item['local_attempt_id'])
+            if item['local_attempt_id'] and (not local or local['call_id']!=item['child_call_id']):incomplete=True
+            if item['paid_result_id'] and item['paid_result_id'] not in rids:incomplete=True
+        for decision in decisions:
+            child=cindex.get(decision['child_call_id'])
+            if decision['work_item_id'] not in windex:incomplete=True
+            if decision['child_call_id'] and (not child or child['work_item_id']!=decision['work_item_id']):incomplete=True
         modeled_attempts={m['attempt_id'] for m in models}
         if any(a['attempt_id'] not in modeled_attempts for a in attempts):incomplete=True
+        if any(not any(a['call_id']==c['call_id'] for a in attempts) for c in calls):incomplete=True
         if any(j['launch_claimed_at'] and not any(a['call_id']==j['call_id'] for a in attempts) for j in jobs):incomplete=True
+        if any(e['unresolved_references'] or e['capture_completeness']!='complete' for e in events):incomplete=True
         observations={mid:[] for mid in mids};orphans=0
+        owners={}
+        for e in events:
+            if e['event_type']=='usage.reported' and isinstance(e['usage']['observation_id'],str):
+                owners.setdefault(e['usage']['observation_id'],set()).add(e['model_execution_id'])
         for e in events:
             if e['event_type']!='usage.reported':continue
             m=mindex.get(e['model_execution_id'])
             if m is None:orphans+=1;incomplete=True;continue
             a=aindex[m['attempt_id']];c=cindex[a['call_id']];w=windex[c['work_item_id']]
             expected=dict(task_id=w['task_id'],work_item_id=w['work_item_id'],call_id=c['call_id'],attempt_id=a['attempt_id'])
-            mismatch=any(e[k] is not None and e[k]!=v for k,v in expected.items())
-            unresolved=bool(e['unresolved_references']) or mismatch
+            # This mapping requires explicit correlation, not inferred ownership.
+            mismatch=any(e[k]!=v for k,v in expected.items())
+            oid=e['usage']['observation_id']
+            reused=isinstance(oid,str) and len(owners[oid])>1
+            unresolved=bool(e['unresolved_references']) or mismatch or reused
             if unresolved:incomplete=True
             observations[e['model_execution_id']].append(dict(e['usage'],
                 **{k:e[k] for k in ('event_id','payload_hash','model_execution_id','occurred_at','producer_id','producer_incarnation','origin','capture_completeness')},unresolved=unresolved))
@@ -127,11 +149,14 @@ def build_validation_export(dsn,task_ids,*,source_ref,allow_export=False,max_row
         for d in direct:d['usage_state']='unsupported_mapping'
         delivered=[r for r in results if r['delivered_at'] is not None]
         reported_accepted=0;unknown_acceptance=0
+        superseded={d['supersedes_id'] for d in dispositions if d['supersedes_id'] is not None}
         for r in delivered:
             ds=[d for d in dispositions if d['result_id']==r['result_id'] and d['stage']=='gpt']
             # Report only one unambiguous claim. This is not parent-authenticated
             # final survival or an independent quality/acceptance verification.
-            if len(ds)==1 and ds[0]['supersedes_id'] is None:
+            if (len(ds)==1 and ds[0]['supersedes_id'] is None
+                    and ds[0]['disposition_id'] not in superseded and ds[0]['part_id'] is None
+                    and ds[0]['judgment'] in {'accepted','revised','replaced','unused'}):
                 reported_accepted+=int(ds[0]['judgment']=='accepted')
             else:unknown_acceptance+=1
         schema=rows.query("SELECT to_regclass('operation_event_facts') IS NOT NULL AND to_regclass('operation_identities') IS NOT NULL AS available")[0]['available']
@@ -150,6 +175,8 @@ def build_validation_export(dsn,task_ids,*,source_ref,allow_export=False,max_row
                 if snapshot is None:raise ValueError('operation_evidence_missing')
                 rows.take(snapshot['observation_count'])
                 if snapshot['identity']['task_id'] not in selected:raise ValueError('operation_cohort_mismatch')
+                if (snapshot['state']=='conflicted' or snapshot['unknown_observed']
+                        or snapshot['capture_states']!=['complete']):incomplete=True
                 # Existing projection supplies timing/state. Free-form payload refs
                 # and verification facts are omitted from this metadata export.
                 operations['items'].append({k:snapshot[k] for k in ('identity','state','outcomes','unknown_observed','observation_count','observation_ids','capture_states','origins','elapsed_ms','timing_state')})
