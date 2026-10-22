@@ -116,3 +116,26 @@ def test_complete_known_model_total_still_separates_cache_fields():
 def test_conflicting_execution_summary_is_not_double_counted():
     a=result(sample());b=copy.deepcopy(a);b['counters']['input_tokens']=100
     with pytest.raises(ValueError,match='duplicate_execution_summary'):summarize_usage([a,b])
+
+def test_export_default_and_options_reject_before_connection(monkeypatch):
+    from service.queries.validation_export import build_validation_export
+    import psycopg
+    calls=[]
+    def forbidden(*a,**kw):calls.append(True);raise AssertionError('unexpected connection')
+    monkeypatch.setattr(psycopg,'connect',forbidden)
+    with pytest.raises(ValueError,match='export_disabled'):build_validation_export('unused',['t'],source_ref='fixture')
+    for value in [1,'true',None]:
+        with pytest.raises(TypeError):build_validation_export('unused',['t'],source_ref='fixture',allow_export=value)
+    for ids in [[],['t','t'],[' '],[True],['x'*257],['t'+str(i) for i in range(17)]]:
+        with pytest.raises(ValueError):build_validation_export('unused',ids,source_ref='fixture',allow_export=True)
+    for value in [0,True,1.5,10001]:
+        with pytest.raises(ValueError):build_validation_export('unused',['t'],source_ref='fixture',allow_export=True,max_rows=value)
+    assert calls==[]
+
+def test_export_encoding_is_deterministic_strict_and_bounded():
+    from service.queries.validation_export import encode_validation_export
+    a={'version':'bm04-evidence-v1','unicode':'東京','unknown':None,'count':0}
+    assert encode_validation_export(a)==encode_validation_export(dict(reversed(list(a.items()))))
+    assert json.loads(encode_validation_export(a))==a
+    with pytest.raises(ValueError):encode_validation_export({'x':float('nan')})
+    with pytest.raises(ValueError,match='export_too_large'):encode_validation_export({'x':'a'*(16*1024*1024)})
