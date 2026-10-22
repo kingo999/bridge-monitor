@@ -2,6 +2,7 @@
 from contracts.events import EventEnvelope
 from contracts.event_reader import read_event
 from contracts.operations import OPERATION_EVENT_CLASSES, candidate_event_hash
+from contracts.ingest_conflicts import OperationConflict
 from psycopg.types.json import Jsonb
 
 IDENTITY_FIELDS = (
@@ -38,7 +39,7 @@ def persist_operation(conn, event) -> str:
         fact = conn.execute('SELECT 1 FROM operation_event_facts WHERE event_id=%s',
                             (event.event_id,)).fetchone()
         if existing[0] != digest or not fact:
-            raise ValueError('event ID conflict')
+            raise OperationConflict('event_id_conflict', digest)
         return 'duplicate'
     body = event.model_dump(mode='json')
     identity = {name: body[name] for name in IDENTITY_FIELDS}
@@ -47,7 +48,7 @@ def persist_operation(conn, event) -> str:
         WHERE operation_identities.identity=EXCLUDED.identity RETURNING operation_id""",
         (event.operation_id, Jsonb(identity))).fetchone()
     if not matched:
-        raise ValueError('operation identity conflict')
+        raise OperationConflict('operation_identity_conflict', digest)
     inserted = conn.execute("""INSERT INTO events
         (event_id,event_type,schema_version,producer_id,producer_incarnation,producer_sequence,
          occurred_at,received_at,origin,observation_layer,capture_completeness,task_id,work_item_id,
@@ -67,14 +68,14 @@ def persist_operation(conn, event) -> str:
         fact = conn.execute('SELECT 1 FROM operation_event_facts WHERE event_id=%s',
                             (event.event_id,)).fetchone()
         if not existing or existing[0] != digest or not fact:
-            raise ValueError('event ID conflict')
+            raise OperationConflict('event_id_conflict', digest)
         return 'duplicate'
     sequence = conn.execute("""INSERT INTO producer_sequences
         (producer_id,producer_incarnation,producer_sequence,event_id) VALUES(%s,%s,%s,%s)
         ON CONFLICT DO NOTHING RETURNING event_id""",
         (event.producer_id,event.producer_incarnation,event.producer_sequence,event.event_id)).fetchone()
     if not sequence:
-        raise ValueError('producer sequence conflict')
+        raise OperationConflict('producer_sequence_conflict', digest)
     conn.execute('INSERT INTO operation_event_facts(event_id,operation_id,envelope) VALUES(%s,%s,%s)',
                  (event.event_id,event.operation_id,Jsonb(body)))
     return 'committed'
