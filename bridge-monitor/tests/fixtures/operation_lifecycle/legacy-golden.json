@@ -1,0 +1,479 @@
+[
+  {
+    "input": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "parsed": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": null,
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": null,
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":null,\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-1\",\"event_type\":\"task.created\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"scope\":{\"nested\":[1,{\"flag\":true}],\"text\":\"\\u03b2\"}},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":1,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "c2b55789c02195a4aa456d1945f3f2ec69f03c9f05b79f476fa830949104877f"
+  },
+  {
+    "input": {
+      "event_id": "historical-tool",
+      "event_type": "tool.completed",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "boundary": "content_block_stop"
+      },
+      "call_id": "historical-call"
+    },
+    "parsed": {
+      "event_id": "historical-tool",
+      "event_type": "tool.completed",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": null,
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": "historical-call",
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "boundary": "content_block_stop"
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":\"historical-call\",\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-tool\",\"event_type\":\"tool.completed\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"boundary\":\"content_block_stop\"},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":1,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "c1341f38f874c7d3e7c140354c6e41eff7863907cd2c4b01ce6fc27c34be78e2"
+  },
+  {
+    "input": {
+      "event_id": "historical-direct",
+      "event_type": "direct_task.recorded",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "historical_fixture_marker": true
+      }
+    },
+    "parsed": {
+      "event_id": "historical-direct",
+      "event_type": "direct_task.recorded",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": null,
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": null,
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "historical_fixture_marker": true
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":null,\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-direct\",\"event_type\":\"direct_task.recorded\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"historical_fixture_marker\":true},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":1,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "214073e139b3daae5dbb10b6a0cb9c7991e4170e76280b9128bd0150fd876806"
+  },
+  {
+    "input": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 2,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "parsed": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 2,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": null,
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": null,
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":null,\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-1\",\"event_type\":\"task.created\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"scope\":{\"nested\":[1,{\"flag\":true}],\"text\":\"\\u03b2\"}},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":2,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "b74d80952b10a3e9f2d61a6b420cdd69e94a3c7be61bc1059e2c13f1ed40429c"
+  },
+  {
+    "input": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 3,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "parsed": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 3,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": null,
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": null,
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":null,\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-1\",\"event_type\":\"task.created\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"scope\":{\"nested\":[1,{\"flag\":true}],\"text\":\"\\u03b2\"}},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":3,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "ec2d4fc6f67c46b3eac0249fdfc4d70f534ddf4a916b796a7ff0982ef18c5855"
+  },
+  {
+    "input": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      },
+      "received_at": null,
+      "call_id": null
+    },
+    "parsed": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": null,
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": null,
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":null,\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-1\",\"event_type\":\"task.created\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"scope\":{\"nested\":[1,{\"flag\":true}],\"text\":\"\\u03b2\"}},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":1,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "c2b55789c02195a4aa456d1945f3f2ec69f03c9f05b79f476fa830949104877f"
+  },
+  {
+    "input": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      },
+      "received_at": "2026-10-22T00:01:00Z"
+    },
+    "parsed": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": "2026-10-22T00:01:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": null,
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":null,\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-1\",\"event_type\":\"task.created\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"scope\":{\"nested\":[1,{\"flag\":true}],\"text\":\"\\u03b2\"}},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":1,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "c2b55789c02195a4aa456d1945f3f2ec69f03c9f05b79f476fa830949104877f"
+  },
+  {
+    "input": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      },
+      "received_at": "2026-10-22T00:02:00Z"
+    },
+    "parsed": {
+      "event_id": "historical-1",
+      "event_type": "task.created",
+      "schema_version": 1,
+      "producer_id": "fixture",
+      "producer_incarnation": "historical",
+      "producer_sequence": 1,
+      "occurred_at": "2026-10-22T00:00:00Z",
+      "received_at": "2026-10-22T00:02:00Z",
+      "origin": "synthetic",
+      "observation_layer": "compatibility",
+      "capture_completeness": "complete",
+      "task_id": "historical-task",
+      "work_item_id": null,
+      "session_id": null,
+      "call_id": null,
+      "attempt_id": null,
+      "model_execution_id": null,
+      "worker_instance_id": null,
+      "parent_event_id": null,
+      "requested_model": null,
+      "reported_model": null,
+      "config_version": null,
+      "payload": {
+        "scope": {
+          "text": "\u03b2",
+          "nested": [
+            1,
+            {
+              "flag": true
+            }
+          ]
+        }
+      }
+    },
+    "canonical": "{\"attempt_id\":null,\"call_id\":null,\"capture_completeness\":\"complete\",\"config_version\":null,\"event_id\":\"historical-1\",\"event_type\":\"task.created\",\"model_execution_id\":null,\"observation_layer\":\"compatibility\",\"occurred_at\":\"2026-10-22T00:00:00Z\",\"origin\":\"synthetic\",\"parent_event_id\":null,\"payload\":{\"scope\":{\"nested\":[1,{\"flag\":true}],\"text\":\"\\u03b2\"}},\"producer_id\":\"fixture\",\"producer_incarnation\":\"historical\",\"producer_sequence\":1,\"reported_model\":null,\"requested_model\":null,\"schema_version\":1,\"session_id\":null,\"task_id\":\"historical-task\",\"work_item_id\":null,\"worker_instance_id\":null}",
+    "sha256": "c2b55789c02195a4aa456d1945f3f2ec69f03c9f05b79f476fa830949104877f"
+  }
+]

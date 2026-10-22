@@ -1,0 +1,183 @@
+[
+  {
+    "event_id": "historical-1",
+    "event_type": "task.created",
+    "schema_version": 1,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "scope": {
+        "text": "\u03b2",
+        "nested": [
+          1,
+          {
+            "flag": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "event_id": "historical-tool",
+    "event_type": "tool.completed",
+    "schema_version": 1,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "boundary": "content_block_stop"
+    },
+    "call_id": "historical-call"
+  },
+  {
+    "event_id": "historical-direct",
+    "event_type": "direct_task.recorded",
+    "schema_version": 1,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "historical_fixture_marker": true
+    }
+  },
+  {
+    "event_id": "historical-1",
+    "event_type": "task.created",
+    "schema_version": 2,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "scope": {
+        "text": "\u03b2",
+        "nested": [
+          1,
+          {
+            "flag": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "event_id": "historical-1",
+    "event_type": "task.created",
+    "schema_version": 3,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "scope": {
+        "text": "\u03b2",
+        "nested": [
+          1,
+          {
+            "flag": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "event_id": "historical-1",
+    "event_type": "task.created",
+    "schema_version": 1,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "scope": {
+        "text": "\u03b2",
+        "nested": [
+          1,
+          {
+            "flag": true
+          }
+        ]
+      }
+    },
+    "received_at": null,
+    "call_id": null
+  },
+  {
+    "event_id": "historical-1",
+    "event_type": "task.created",
+    "schema_version": 1,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "scope": {
+        "text": "\u03b2",
+        "nested": [
+          1,
+          {
+            "flag": true
+          }
+        ]
+      }
+    },
+    "received_at": "2026-10-22T00:01:00Z"
+  },
+  {
+    "event_id": "historical-1",
+    "event_type": "task.created",
+    "schema_version": 1,
+    "producer_id": "fixture",
+    "producer_incarnation": "historical",
+    "producer_sequence": 1,
+    "occurred_at": "2026-10-22T00:00:00Z",
+    "origin": "synthetic",
+    "observation_layer": "compatibility",
+    "capture_completeness": "complete",
+    "task_id": "historical-task",
+    "payload": {
+      "scope": {
+        "text": "\u03b2",
+        "nested": [
+          1,
+          {
+            "flag": true
+          }
+        ]
+      }
+    },
+    "received_at": "2026-10-22T00:02:00Z"
+  }
+]
