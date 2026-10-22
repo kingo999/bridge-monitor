@@ -2,6 +2,8 @@
 
 This is an opt-in contract and reader inside Bridge Monitor. It supports compatibility testing without enabling operation producers or changing production readers, routing, persistence or services. Event schema 2 is not another bridge product.
 
+This reference describes the original contract/reader slice. The subsequent [isolated lifecycle pipeline](operation-lifecycle-isolated.md) adds explicit opt-in emitter/spool/ingest support and a bounded operation query; operational defaults remain disabled. The consumer matrix below describes the original/default boundaries.
+
 ## Reading and serialization
 
 ```python
