@@ -1,0 +1,2210 @@
+{
+  "$defs": {
+    "CancelledEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_type": {
+          "const": "operation.cancelled",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "producer_incarnation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Incarnation",
+          "type": "string"
+        },
+        "producer_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Producer Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "observed",
+            "imported",
+            "synthetic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "observation_layer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Observation Layer",
+          "type": "string"
+        },
+        "capture_completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable",
+            "removed",
+            "unknown"
+          ],
+          "title": "Capture Completeness",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "work_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Work Item Id",
+          "type": "string"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "parent_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Operation Id"
+        },
+        "model_execution_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Execution Id"
+        },
+        "worker_instance_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Instance Id"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Event Id"
+        },
+        "requested_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Model"
+        },
+        "reported_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Model"
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Version"
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Received At"
+        },
+        "payload": {
+          "$ref": "#/$defs/CancelledPayload"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_type",
+        "event_id",
+        "producer_id",
+        "producer_incarnation",
+        "producer_sequence",
+        "occurred_at",
+        "origin",
+        "observation_layer",
+        "capture_completeness",
+        "operation_id",
+        "operation_kind",
+        "task_id",
+        "work_item_id",
+        "payload"
+      ],
+      "title": "CancelledEvent",
+      "type": "object"
+    },
+    "CancelledPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "cancelled_by": {
+          "enum": [
+            "user",
+            "parent",
+            "worker",
+            "system"
+          ],
+          "title": "Cancelled By",
+          "type": "string"
+        },
+        "reason_code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cancelled_by",
+        "reason_code"
+      ],
+      "title": "CancelledPayload",
+      "type": "object"
+    },
+    "CompletedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_type": {
+          "const": "operation.completed",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "producer_incarnation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Incarnation",
+          "type": "string"
+        },
+        "producer_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Producer Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "observed",
+            "imported",
+            "synthetic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "observation_layer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Observation Layer",
+          "type": "string"
+        },
+        "capture_completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable",
+            "removed",
+            "unknown"
+          ],
+          "title": "Capture Completeness",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "work_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Work Item Id",
+          "type": "string"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "parent_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Operation Id"
+        },
+        "model_execution_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Execution Id"
+        },
+        "worker_instance_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Instance Id"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Event Id"
+        },
+        "requested_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Model"
+        },
+        "reported_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Model"
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Version"
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Received At"
+        },
+        "payload": {
+          "$ref": "#/$defs/CompletedPayload"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_type",
+        "event_id",
+        "producer_id",
+        "producer_incarnation",
+        "producer_sequence",
+        "occurred_at",
+        "origin",
+        "observation_layer",
+        "capture_completeness",
+        "operation_id",
+        "operation_kind",
+        "task_id",
+        "work_item_id",
+        "payload"
+      ],
+      "title": "CompletedEvent",
+      "type": "object"
+    },
+    "CompletedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "result_ref": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Ref"
+        }
+      },
+      "title": "CompletedPayload",
+      "type": "object"
+    },
+    "DeliveryRecordedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_type": {
+          "const": "operation.delivery_recorded",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "producer_incarnation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Incarnation",
+          "type": "string"
+        },
+        "producer_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Producer Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "observed",
+            "imported",
+            "synthetic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "observation_layer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Observation Layer",
+          "type": "string"
+        },
+        "capture_completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable",
+            "removed",
+            "unknown"
+          ],
+          "title": "Capture Completeness",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "work_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Work Item Id",
+          "type": "string"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "parent_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Operation Id"
+        },
+        "model_execution_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Execution Id"
+        },
+        "worker_instance_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Instance Id"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Event Id"
+        },
+        "requested_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Model"
+        },
+        "reported_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Model"
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Version"
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Received At"
+        },
+        "payload": {
+          "$ref": "#/$defs/DeliveryRecordedPayload"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_type",
+        "event_id",
+        "producer_id",
+        "producer_incarnation",
+        "producer_sequence",
+        "occurred_at",
+        "origin",
+        "observation_layer",
+        "capture_completeness",
+        "operation_id",
+        "operation_kind",
+        "task_id",
+        "work_item_id",
+        "payload"
+      ],
+      "title": "DeliveryRecordedEvent",
+      "type": "object"
+    },
+    "DeliveryRecordedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "delivery_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Delivery Id",
+          "type": "string"
+        },
+        "result_ref": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Result Ref",
+          "type": "string"
+        },
+        "delivery_status": {
+          "enum": [
+            "delivered",
+            "failed",
+            "not_attempted"
+          ],
+          "title": "Delivery Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "delivery_id",
+        "result_ref",
+        "delivery_status"
+      ],
+      "title": "DeliveryRecordedPayload",
+      "type": "object"
+    },
+    "FailedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_type": {
+          "const": "operation.failed",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "producer_incarnation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Incarnation",
+          "type": "string"
+        },
+        "producer_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Producer Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "observed",
+            "imported",
+            "synthetic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "observation_layer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Observation Layer",
+          "type": "string"
+        },
+        "capture_completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable",
+            "removed",
+            "unknown"
+          ],
+          "title": "Capture Completeness",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "work_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Work Item Id",
+          "type": "string"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "parent_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Operation Id"
+        },
+        "model_execution_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Execution Id"
+        },
+        "worker_instance_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Instance Id"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Event Id"
+        },
+        "requested_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Model"
+        },
+        "reported_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Model"
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Version"
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Received At"
+        },
+        "payload": {
+          "$ref": "#/$defs/FailedPayload"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_type",
+        "event_id",
+        "producer_id",
+        "producer_incarnation",
+        "producer_sequence",
+        "occurred_at",
+        "origin",
+        "observation_layer",
+        "capture_completeness",
+        "operation_id",
+        "operation_kind",
+        "task_id",
+        "work_item_id",
+        "payload"
+      ],
+      "title": "FailedEvent",
+      "type": "object"
+    },
+    "FailedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "failure_code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Failure Code",
+          "type": "string"
+        },
+        "retryable": {
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "failure_code",
+        "retryable"
+      ],
+      "title": "FailedPayload",
+      "type": "object"
+    },
+    "StartedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_type": {
+          "const": "operation.started",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "producer_incarnation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Incarnation",
+          "type": "string"
+        },
+        "producer_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Producer Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "observed",
+            "imported",
+            "synthetic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "observation_layer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Observation Layer",
+          "type": "string"
+        },
+        "capture_completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable",
+            "removed",
+            "unknown"
+          ],
+          "title": "Capture Completeness",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "work_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Work Item Id",
+          "type": "string"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "parent_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Operation Id"
+        },
+        "model_execution_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Execution Id"
+        },
+        "worker_instance_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Instance Id"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Event Id"
+        },
+        "requested_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Model"
+        },
+        "reported_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Model"
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Version"
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Received At"
+        },
+        "payload": {
+          "$ref": "#/$defs/StartedPayload"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_type",
+        "event_id",
+        "producer_id",
+        "producer_incarnation",
+        "producer_sequence",
+        "occurred_at",
+        "origin",
+        "observation_layer",
+        "capture_completeness",
+        "operation_id",
+        "operation_kind",
+        "task_id",
+        "work_item_id",
+        "payload"
+      ],
+      "title": "StartedEvent",
+      "type": "object"
+    },
+    "StartedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "start_basis": {
+          "enum": [
+            "observed",
+            "inferred"
+          ],
+          "title": "Start Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_basis"
+      ],
+      "title": "StartedPayload",
+      "type": "object"
+    },
+    "UnknownEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_type": {
+          "const": "operation.unknown",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "producer_incarnation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Incarnation",
+          "type": "string"
+        },
+        "producer_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Producer Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "observed",
+            "imported",
+            "synthetic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "observation_layer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Observation Layer",
+          "type": "string"
+        },
+        "capture_completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable",
+            "removed",
+            "unknown"
+          ],
+          "title": "Capture Completeness",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "work_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Work Item Id",
+          "type": "string"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "parent_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Operation Id"
+        },
+        "model_execution_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Execution Id"
+        },
+        "worker_instance_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Instance Id"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Event Id"
+        },
+        "requested_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Model"
+        },
+        "reported_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Model"
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Version"
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Received At"
+        },
+        "payload": {
+          "$ref": "#/$defs/UnknownPayload"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_type",
+        "event_id",
+        "producer_id",
+        "producer_incarnation",
+        "producer_sequence",
+        "occurred_at",
+        "origin",
+        "observation_layer",
+        "capture_completeness",
+        "operation_id",
+        "operation_kind",
+        "task_id",
+        "work_item_id",
+        "payload"
+      ],
+      "title": "UnknownEvent",
+      "type": "object"
+    },
+    "UnknownPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "unknown_reason": {
+          "enum": [
+            "lost_contact",
+            "process_exit",
+            "deadline_exceeded",
+            "capture_gap",
+            "unconfirmed_effect"
+          ],
+          "title": "Unknown Reason",
+          "type": "string"
+        },
+        "last_observed_at": {
+          "format": "date-time",
+          "title": "Last Observed At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unknown_reason",
+        "last_observed_at"
+      ],
+      "title": "UnknownPayload",
+      "type": "object"
+    },
+    "VerificationRecordedEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 2,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "event_type": {
+          "const": "operation.verification_recorded",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "event_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "producer_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Id",
+          "type": "string"
+        },
+        "producer_incarnation": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Producer Incarnation",
+          "type": "string"
+        },
+        "producer_sequence": {
+          "exclusiveMinimum": 0,
+          "title": "Producer Sequence",
+          "type": "integer"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "origin": {
+          "enum": [
+            "observed",
+            "imported",
+            "synthetic"
+          ],
+          "title": "Origin",
+          "type": "string"
+        },
+        "observation_layer": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Observation Layer",
+          "type": "string"
+        },
+        "capture_completeness": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable",
+            "removed",
+            "unknown"
+          ],
+          "title": "Capture Completeness",
+          "type": "string"
+        },
+        "operation_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "operation_kind": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Operation Kind",
+          "type": "string"
+        },
+        "task_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Task Id",
+          "type": "string"
+        },
+        "work_item_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Work Item Id",
+          "type": "string"
+        },
+        "session_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id"
+        },
+        "call_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Call Id"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "decision_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decision Id"
+        },
+        "parent_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Operation Id"
+        },
+        "model_execution_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Execution Id"
+        },
+        "worker_instance_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Worker Instance Id"
+        },
+        "parent_event_id": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Event Id"
+        },
+        "requested_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requested Model"
+        },
+        "reported_model": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reported Model"
+        },
+        "config_version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Config Version"
+        },
+        "received_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Received At"
+        },
+        "payload": {
+          "$ref": "#/$defs/VerificationRecordedPayload"
+        }
+      },
+      "required": [
+        "schema_version",
+        "event_type",
+        "event_id",
+        "producer_id",
+        "producer_incarnation",
+        "producer_sequence",
+        "occurred_at",
+        "origin",
+        "observation_layer",
+        "capture_completeness",
+        "operation_id",
+        "operation_kind",
+        "task_id",
+        "work_item_id",
+        "payload"
+      ],
+      "title": "VerificationRecordedEvent",
+      "type": "object"
+    },
+    "VerificationRecordedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "verification_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Verification Id",
+          "type": "string"
+        },
+        "verifier_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Verifier Id",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "passed",
+            "failed",
+            "inconclusive"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        },
+        "input_sha256": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Input Sha256",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "verification_id",
+        "verifier_id",
+        "verdict",
+        "input_sha256",
+        "evidence_refs"
+      ],
+      "title": "VerificationRecordedPayload",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "operation.cancelled": "#/$defs/CancelledEvent",
+      "operation.completed": "#/$defs/CompletedEvent",
+      "operation.delivery_recorded": "#/$defs/DeliveryRecordedEvent",
+      "operation.failed": "#/$defs/FailedEvent",
+      "operation.started": "#/$defs/StartedEvent",
+      "operation.unknown": "#/$defs/UnknownEvent",
+      "operation.verification_recorded": "#/$defs/VerificationRecordedEvent"
+    },
+    "propertyName": "event_type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/StartedEvent"
+    },
+    {
+      "$ref": "#/$defs/CompletedEvent"
+    },
+    {
+      "$ref": "#/$defs/FailedEvent"
+    },
+    {
+      "$ref": "#/$defs/CancelledEvent"
+    },
+    {
+      "$ref": "#/$defs/UnknownEvent"
+    },
+    {
+      "$ref": "#/$defs/VerificationRecordedEvent"
+    },
+    {
+      "$ref": "#/$defs/DeliveryRecordedEvent"
+    }
+  ]
+}
