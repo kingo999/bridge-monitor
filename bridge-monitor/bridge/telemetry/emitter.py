@@ -119,7 +119,8 @@ class TelemetryEmitter:
             if self.emit(EventType.CAPTURE_GAP, payload={"gap_count": count,
                                                         "reason": "spool_overflow"}):
                 self.spool.mark_gaps_reported()
-                self.emit(EventType.CAPTURE_RECOVERED, payload={"known_gaps": self.spool.known_gaps()})
+                if not getattr(self.spool, "quarantined_count", lambda: 0)():
+                    self.emit(EventType.CAPTURE_RECOVERED, payload={"known_gaps": self.spool.known_gaps()})
 
     def may_admit_new_work(self, degraded_admission: str) -> bool:
         if degraded_admission == "allow_with_gaps":

@@ -110,3 +110,17 @@ def test_recovery_and_normal_replay_share_the_drain_fence(db,tmp_path):
         b.result(timeout=10)
     assert len(c.calls)==2 and s.pending_count()==0 and s.quarantined_count()==1
     assert counts(db)==(2,2,1,1)
+
+def test_collector_receives_no_recovered_signal_while_quarantine_exists(db,tmp_path):
+    put(db,[event()])
+    bad=event('completed',2,call_id='late')
+    s,c,r=setup(tmp_path,db,bad);recover(r,r.inspect_head(),'operation_identity_conflict')
+    bound=s.limit_bytes;s.limit_bytes=1
+    assert not s.append(bad)
+    s.limit_bytes=bound
+    emitter=TelemetryEmitter(s,c,producer_id='lab',incarnation='observer',allow_operations=True)
+    emitter.replay()
+    with psycopg.connect(db) as conn:
+        types={row[0] for row in conn.execute('SELECT event_type FROM events')}
+    assert 'capture.gap' in types and 'capture.recovered' not in types
+    assert s.unreported_gaps()==0 and emitter.health()['state']=='degraded'

@@ -46,6 +46,8 @@ The same SQLite spool receives an additive spool_recoveries table only when an a
 
 Receipts include recovery ID, action, original sequence, raw/canonical hashes, reported actor/reason, expected and actual conflict codes, collector acknowledgement when present and an aware UTC recorded_at timestamp. They imply no execution success for quarantined observations. `evidence(recovery_id)` reads the retained original strings and immutable receipt and checks their stored integrity. An identical recovery-ID retry returns the original receipt without probing or acting on the tail; changed reuse refuses. Keep the same ID after a lost local completion response.
 
+Integrity checks cover the original strings, candidate hash, receipt identity/action columns and logical byte length. They do not cryptographically attest actor/reason/request metadata or prevent privileged SQLite edits/deletion. Count and capacity queries trust stored rows. Actor/recovery identifiers preserve their literal bounded strings, including whitespace/control characters; any later display/logging surface must escape them. These are trusted-local audit records, not tamper-proof evidence or authenticated actor claims.
+
 Journal logical payload bytes (raw strings plus structured metadata) have a finite bound, defaulting to the configured spool limit and never exceeding it. Recovery reserves the larger possible receipt representation before probing, then checks actual bytes again in the write transaction. A full journal refuses without probing. Active queue and journal bounds are separate, so their combined logical payload budget can reach twice the spool limit. SQLite pages, indexes, locking and WAL overhead are not a hard disk quota. No automatic journal deletion, retention, requeue, rewrite, bulk quarantine or recovery-ID recycling is provided.
 
 ## Capture and admission remain qualified
@@ -53,6 +55,8 @@ Journal logical payload bytes (raw strings plus structured metadata) have a fini
 `DurableSpool.quarantined_count()` reads existing journal actions without provisioning schema. After the tail drains, quarantined evidence still makes emitter health degraded and adds a quarantined count. Strict reject_new_work admission remains false. The previously approved allow_with_gaps behavior is unchanged; recovery does not select or modify that policy. No-quarantine health output retains its existing shape.
 
 known_gaps keeps its prior overflow semantics. A quarantined record is separately retained withheld evidence, not a successful ingestion, a resolved operation or automatically declared data loss. There is no disposition API to relabel quarantine healthy in this slice. Thus queue obstruction is recovered while the evidence conflict remains explicit.
+
+When quarantine and overflow coexist, replay can report the overflow gap but suppresses capture.recovered while quarantine remains. Without quarantine, historical overflow reporting is unchanged. The shared drain lock coordinates cooperating emitter/recovery callers; direct acknowledge or SQLite mutation does not automatically acquire it. Such callers must honor that lock, and the recovery transaction additionally rejects a changed head. A slow collector can still make another drainer hit the existing ten-second lock timeout.
 
 ## Validation and rollback boundary
 

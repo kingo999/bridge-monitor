@@ -213,3 +213,16 @@ def test_no_quarantine_keeps_existing_health_shape_and_no_journal_schema(tmp_pat
 def test_acknowledged_recovery_is_not_an_open_quarantine(tmp_path):
     s,c,r=make(tmp_path,'duplicate');recover(r,r.inspect_head())
     assert s.quarantined_count()==0
+
+def test_overflow_reporting_never_emits_capture_recovered_with_quarantine(tmp_path):
+    from bridge.telemetry.emitter import TelemetryEmitter
+    from contracts.events import EventType
+    s,c,r=make(tmp_path);recover(r,r.inspect_head())
+    bound=s.limit_bytes;s.limit_bytes=1
+    assert not s.append(candidate())
+    s.limit_bytes=bound;c.mode='committed';c.calls=[]
+    emitter=TelemetryEmitter(s,c,producer_id='lab',incarnation='observer',allow_operations=True)
+    emitter.replay()
+    assert s.unreported_gaps()==0 and s.known_gaps()==1
+    assert [e.event_type for e in c.calls]==[EventType.CAPTURE_GAP]
+    assert emitter.health()['state']=='degraded' and s.quarantined_count()==1
