@@ -80,16 +80,23 @@ def _reconcile_unresolved(conn) -> None:
 
 def ingest_batch(dsn: str, authenticated_producer: str,
                  events: list[EventEnvelope], content: list[ContentObject],
-                 *, connection: psycopg.Connection | None = None) -> list[str]:
+                 *, connection: psycopg.Connection | None = None,
+                 allow_operations: bool = False) -> list[str]:
     if not authenticated_producer:
         raise PermissionError("authenticated producer required")
+    from service.ingest.operations import prepare_operation_events, lock_operations, persist_operation
     if any(e.producer_id != authenticated_producer for e in events):
         raise PermissionError("producer identity mismatch")
+    events = prepare_operation_events(events, allow_operations=allow_operations)
+    if content and any(not isinstance(e, EventEnvelope) for e in events):
+        raise ValueError("operation content batches are not supported")
     for event in events:
-        validate_projectable_event(event)
+        if isinstance(event, EventEnvelope):
+            validate_projectable_event(event)
     receipts: list[str] = []
     with (nullcontext(connection) if connection is not None else psycopg.connect(dsn)) as conn:
         with conn.transaction():
+            lock_operations(conn, events)
             seen_content = set()
             for item in content:
                 if item.content_id in seen_content:
@@ -125,6 +132,9 @@ def ingest_batch(dsn: str, authenticated_producer: str,
                     if not _same_content(stored, incoming):
                         raise ValueError("content ID conflict")
             for event in events:
+                if not isinstance(event, EventEnvelope):
+                    receipts.append(persist_operation(conn, event))
+                    continue
                 digest = _event_hash(event)
                 existing = conn.execute("SELECT payload_hash FROM events WHERE event_id=%s",
                                         (event.event_id,)).fetchone()
