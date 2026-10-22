@@ -37,14 +37,17 @@ def event(kind='started',seq=1,**extra):
 def put(dsn,events,**kw):
     return ingest_batch(dsn,'lab',events,[],allow_operations=True,**kw)
 
-@pytest.fixture
-def db(test_dsn):
+def reset_lab_database(test_dsn):
     migrate(test_dsn)
     sql=(ROOT/'database/candidates/operation_lifecycle_v2.sql').read_text()
     with psycopg.connect(test_dsn) as conn:
         conn.execute(sql);conn.execute(sql)
-        conn.execute('TRUNCATE events, producer_sequences, publication_stream, content_objects CASCADE')
+        conn.execute('TRUNCATE events, producer_sequences, publication_stream, content_objects, operation_identities CASCADE')
     return test_dsn
+
+@pytest.fixture
+def db(test_dsn):
+    return reset_lab_database(test_dsn)
 
 def snapshot(dsn,**kw):
     with psycopg.connect(dsn) as conn:
@@ -251,3 +254,47 @@ def test_concurrent_conflict_or_duplicate(db,mode):
     assert results.count('committed')==1
     assert ('duplicate' in results if mode=='same_id' else any('conflict' in r for r in results))
     assert counts(db)==(1,1,1,0)
+
+@pytest.mark.parametrize('view',['detail_all','detail_window','inspect'])
+def test_candidates_do_not_enter_legacy_history_windows(db,view):
+    from service.queries.history import read_work_item_detail, inspect_exchange
+    with psycopg.connect(db) as conn:
+        conn.execute("INSERT INTO tasks(task_id,origin,created_at) VALUES('hist-task','synthetic',%s) ON CONFLICT DO NOTHING",(BASE,))
+        conn.execute("INSERT INTO work_items(work_item_id,task_id,origin,created_at) VALUES('hist-work','hist-task','synthetic',%s) ON CONFLICT DO NOTHING",(BASE,))
+    legacy=[EventEnvelope(event_id='hist-'+str(i),event_type=EventType.TOOL_COMPLETED,
+        schema_version=1,producer_id='lab',producer_incarnation='one',producer_sequence=400+i,
+        occurred_at=BASE+timedelta(seconds=i),origin='synthetic',observation_layer='bridge',
+        capture_completeness='complete',task_id='hist-task',work_item_id='hist-work',payload={'stream':'boundary'}) for i in range(3)]
+    ingest_batch(db,'lab',legacy,[])
+    def read():
+        if view=='inspect':return inspect_exchange(db,'hist-work',role='operator')
+        return read_work_item_detail(db,'hist-work',**({'head_events':1,'tail_events':1} if view=='detail_window' else {}))
+    before=read()
+    put(db,[event('started',i,event_id='hist-op-'+str(i),operation_id='hist-op',
+        task_id='hist-task',work_item_id='hist-work',occurred_at=BASE+timedelta(seconds=500+i)) for i in range(1,206)])
+    after=read()
+    assert after['events']==before['events']
+    assert after['events_truncated']==before['events_truncated']
+    with psycopg.connect(db) as conn:
+        assert operation_snapshot(conn,'hist-op',allow_operations=True)['observation_count']==205
+
+def test_permanent_conflict_retains_candidate_and_legacy_tail(db,tmp_path):
+    put(db,[event(operation_id='blocked-op')])
+    class Collector:
+        def ingest_batch(self,producer,events,content):
+            return ingest_batch(db,producer,events,content,allow_operations=True)
+    s=DurableSpool(tmp_path/'conflict.sqlite',limit_bytes=100000,allow_operations=True)
+    e=TelemetryEmitter(s,Collector(),producer_id='lab',incarnation='new',allow_operations=True)
+    assert e.emit_operation('operation.completed',operation_id='blocked-op',operation_kind='stub.read',
+        task_id='t',work_item_id='w',payload={},origin='synthetic',capture_completeness='complete',call_id='late')
+    assert e.emit(EventType.TOOL_COMPLETED,payload={'stream':'boundary'})
+    e.replay()
+    assert s.pending_count()==2 and counts(db)==(1,1,1,0)
+    assert s.known_gaps()==0 and e.health()['state']=='degraded'
+    assert not e.may_admit_new_work('reject_new_work')
+    assert s.pending_count()==2
+
+def test_lab_reset_removes_stale_operation_identity(db):
+    put(db,[event(operation_id='reset-op',task_id='other')])
+    reset_lab_database(db)
+    assert put(db,[event(operation_id='reset-op')])==['committed']

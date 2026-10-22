@@ -246,13 +246,15 @@ def read_work_item_detail(dsn: str, work_item_id: str, *, head_events: int = 100
                 (work_item_id,)).fetchall()
             events = conn.execute("""SELECT event_id,event_type,occurred_at,received_at,call_id,attempt_id,
                 worker_instance_id,requested_model,reported_model,capture_completeness,payload
-                FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT %s""",
+                FROM events WHERE work_item_id=%s AND left(event_type,10)<>'operation.'
+                ORDER BY occurred_at,event_id LIMIT %s""",
                 (work_item_id, event_window + 1)).fetchall()
             events_truncated = len(events) > event_window
             if events_truncated:
                 latest_events = conn.execute("""SELECT event_id,event_type,occurred_at,received_at,
                     call_id,attempt_id,worker_instance_id,requested_model,reported_model,
                     capture_completeness,payload FROM events WHERE work_item_id=%s
+                    AND left(event_type,10)<>'operation.'
                     ORDER BY occurred_at DESC,event_id DESC LIMIT %s""",
                     (work_item_id, tail_events)).fetchall()
                 events = events[:head_events] + list(reversed(latest_events))
@@ -392,7 +394,8 @@ def inspect_exchange(dsn: str, work_item_id: str, *, role: str) -> dict | None:
                 AND dispatch.payload->>'destination'='skynet')
             ORDER BY r.delivered_at,r.result_id LIMIT 1""", (work_item_id,)).fetchone()
         event_rows = conn.execute("""SELECT event_id,event_type,occurred_at,payload
-            FROM events WHERE work_item_id=%s ORDER BY occurred_at,event_id LIMIT 201""",
+            FROM events WHERE work_item_id=%s AND left(event_type,10)<>'operation.'
+            ORDER BY occurred_at,event_id LIMIT 201""",
             (work_item_id,)).fetchall()
     original = read_content(dsn, prompt[0], role="operator") if prompt else None
     response = read_content(dsn, local[0], role="operator") if local and local[0] else None
