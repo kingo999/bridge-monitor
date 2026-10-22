@@ -67,7 +67,7 @@ canonical_candidate_bytes(event) returns the UTF-8 prefix bridge-monitor.operati
 
 ## Artifacts and consumer support
 
-The real public schema API is contracts.operations.operation_event_json_schema(). The committed artifact is contracts/schemas/operation_lifecycle_v2.schema.json; tests/fixtures/operation_lifecycle/schema-provenance.json pins its bytes, source bytes, generator entry point and runtime versions. The schema describes structural constraints. UTC-only and call-correlation rules also require the Python validator; JSON Schema alone is not the full acceptance algorithm. The existing four-model schema registry is unchanged.
+The real public schema API is contracts.operations.operation_event_json_schema(). The committed artifact is contracts/schemas/operation_lifecycle_v2.schema.json; tests/fixtures/operation_lifecycle/schema-provenance.json pins its bytes, source bytes, generator entry point and runtime versions. contracts/.gitattributes pins LF only for those two new provenance-bearing files so raw hashes survive Windows Git checkout. The schema describes structural constraints. UTC-only and call-correlation rules also require the Python validator; JSON Schema alone is not the full acceptance algorithm. The existing four-model schema registry is unchanged.
 
 Versioned examples, eight pinned historical controls and provenance are in tests/fixtures/operation_lifecycle/. Contract, reader and schema tests are under tests/contracts/.
 

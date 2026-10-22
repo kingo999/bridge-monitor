@@ -1,0 +1,3 @@
+# Raw-byte provenance must survive Git checkout on Windows.
+/operations.py text eol=lf
+/schemas/operation_lifecycle_v2.schema.json text eol=lf
