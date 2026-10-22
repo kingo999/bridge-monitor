@@ -184,3 +184,32 @@ def test_retained_evidence_corruption_is_reported(tmp_path):
     s,c,r=make(tmp_path);recover(r,r.inspect_head())
     with sqlite3.connect(s.path) as db:db.execute("UPDATE spool_recoveries SET event_json='corrupted'")
     with pytest.raises(RecoveryError,match='journal_corrupt'):r.evidence('recover-1')
+
+def test_quarantine_keeps_health_degraded_after_tail_drains(tmp_path):
+    from bridge.telemetry.emitter import TelemetryEmitter
+    from contracts.events import EventEnvelope, EventType
+    from datetime import datetime,timezone
+    s,c,r=make(tmp_path);recover(r,r.inspect_head())
+    tail=EventEnvelope(event_id='legacy',event_type=EventType.TOOL_COMPLETED,schema_version=1,
+        producer_id='lab',producer_incarnation='one',producer_sequence=10,occurred_at=datetime.now(timezone.utc),
+        origin='synthetic',observation_layer='bridge',capture_completeness='complete',payload={})
+    s.append(tail);c.mode='committed'
+    emitter=TelemetryEmitter(s,c,producer_id='lab',incarnation='one',allow_operations=True)
+    emitter.replay()
+    assert s.pending_count()==0 and s.quarantined_count()==1
+    assert emitter.health()['state']=='degraded' and emitter.health()['quarantined']==1
+    assert not emitter.may_admit_new_work('reject_new_work')
+    assert emitter.may_admit_new_work('allow_with_gaps')
+    assert s.known_gaps()==0
+
+def test_no_quarantine_keeps_existing_health_shape_and_no_journal_schema(tmp_path):
+    from bridge.telemetry.emitter import TelemetryEmitter
+    s=DurableSpool(tmp_path/'default.sqlite',limit_bytes=100000)
+    e=TelemetryEmitter(s,Collector('committed'),producer_id='lab',incarnation='one')
+    assert s.quarantined_count()==0
+    assert e.health()=={'state':'healthy','known_gaps':0,'pending':0,'spool_pressure':0.0}
+    assert e.may_admit_new_work('reject_new_work') and not exists(s)
+
+def test_acknowledged_recovery_is_not_an_open_quarantine(tmp_path):
+    s,c,r=make(tmp_path,'duplicate');recover(r,r.inspect_head())
+    assert s.quarantined_count()==0

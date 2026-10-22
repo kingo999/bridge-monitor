@@ -124,6 +124,8 @@ class TelemetryEmitter:
     def may_admit_new_work(self, degraded_admission: str) -> bool:
         if degraded_admission == "allow_with_gaps":
             return True
+        if getattr(self.spool, "quarantined_count", lambda: 0)():
+            return False
         if self.spool.unreported_gaps():
             return False
         # Multiple bridge processes can briefly share a pending spool entry.
@@ -141,6 +143,10 @@ class TelemetryEmitter:
             time.sleep(0.025)
 
     def health(self) -> dict:
-        return {"state": "healthy" if self.collector_healthy and not self.spool.pending_count() else "degraded",
+        quarantined = getattr(self.spool, "quarantined_count", lambda: 0)()
+        result = {"state": "healthy" if self.collector_healthy and not self.spool.pending_count() and not quarantined else "degraded",
                 "known_gaps": self.spool.known_gaps(), "pending": self.spool.pending_count(),
                 "spool_pressure": self.spool.pressure()}
+        if quarantined:
+            result["quarantined"] = quarantined
+        return result

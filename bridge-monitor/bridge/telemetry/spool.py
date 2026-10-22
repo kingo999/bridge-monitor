@@ -1,7 +1,7 @@
 """Bounded SQLite spool for collector outages, with durable loss accounting."""
 
 import base64
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import json
 import os
 import sqlite3
@@ -122,6 +122,13 @@ class DurableSpool:
     def pending_count(self) -> int:
         with self._connect() as db:
             return db.execute("SELECT count(*) FROM entries").fetchone()[0]
+
+    def quarantined_count(self) -> int:
+        """Read explicit retained conflicts without provisioning recovery storage."""
+        with closing(self._connect()) as db:
+            if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='spool_recoveries'").fetchone():
+                return 0
+            return db.execute("SELECT count(*) FROM spool_recoveries WHERE action='quarantined'").fetchone()[0]
 
     def pressure(self) -> float:
         with self._connect() as db:
