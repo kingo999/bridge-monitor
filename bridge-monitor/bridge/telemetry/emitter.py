@@ -9,7 +9,13 @@ from contracts.events import EventEnvelope, EventType
 
 
 class TelemetryEmitter:
-    def __init__(self, spool, collector, *, producer_id: str, incarnation: str):
+    def __init__(self, spool, collector, *, producer_id: str, incarnation: str,
+                 allow_operations: bool = False):
+        if type(allow_operations) is not bool:
+            raise TypeError("allow_operations must be a boolean")
+        if allow_operations and getattr(spool, "allow_operations", False) is not True:
+            raise ValueError("operation-enabled spool required")
+        self.allow_operations = allow_operations
         self.spool = spool
         self.collector = collector
         self.producer_id = producer_id
@@ -56,10 +62,43 @@ class TelemetryEmitter:
             self._flush_pending()
         return stored
 
+    def emit_operation(self, event_type: str, *, operation_id: str, operation_kind: str,
+                       task_id: str, work_item_id: str, payload: dict, origin: str,
+                       capture_completeness: str, **correlation) -> bool:
+        """Record an observation only; never execute the described operation."""
+        if not self.allow_operations:
+            raise ValueError("operation capture disabled")
+        allowed = {"session_id", "call_id", "attempt_id", "decision_id", "parent_operation_id",
+                   "model_execution_id", "worker_instance_id", "parent_event_id",
+                   "requested_model", "reported_model", "config_version"}
+        if not correlation.keys() <= allowed:
+            raise ValueError("unsupported operation correlation field")
+        from contracts.event_reader import read_event
+        raw = dict(correlation, schema_version=2, event_type=event_type,
+                   event_id=str(uuid.uuid4()), producer_id=self.producer_id,
+                   producer_incarnation=self.incarnation, producer_sequence=1,
+                   occurred_at=datetime.now(timezone.utc), origin=origin,
+                   observation_layer="bridge", capture_completeness=capture_completeness,
+                   operation_id=operation_id, operation_kind=operation_kind,
+                   task_id=task_id, work_item_id=work_item_id, payload=payload)
+        # Validate before allocating durable sequence state.
+        decoded = read_event(raw, allow_candidate=True)
+        if decoded.kind != "operation_v2":
+            raise ValueError("operation event required")
+        raw["producer_sequence"] = self.spool.allocate_sequence()
+        event = read_event(raw, allow_candidate=True).event
+        stored = self.spool.append(event)
+        if stored:
+            self._flush_pending()
+        return stored
+
     def _flush_pending(self) -> None:
         with self.spool.drain_lock():
             while entry := self.spool.first():
                 seq, event, content = entry
+                if not isinstance(event, EventEnvelope) and not self.allow_operations:
+                    self.collector_healthy = False
+                    break
                 try:
                     receipts = self.collector.ingest_batch(self.producer_id, [event],
                                                            [content] if content else [])

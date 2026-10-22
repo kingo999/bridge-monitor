@@ -13,7 +13,10 @@ from contracts.events import EventEnvelope
 
 
 class DurableSpool:
-    def __init__(self, path: str | Path, *, limit_bytes: int):
+    def __init__(self, path: str | Path, *, limit_bytes: int, allow_operations: bool = False):
+        if type(allow_operations) is not bool:
+            raise TypeError("allow_operations must be a boolean")
+        self.allow_operations = allow_operations
         if limit_bytes <= 0:
             raise ValueError("positive spool bound required")
         self.path = Path(path)
@@ -71,6 +74,11 @@ class DurableSpool:
             return db.execute("SELECT value FROM metadata WHERE key='next_producer_sequence'").fetchone()[0]
 
     def append(self, event: EventEnvelope, content: ContentObject | None = None) -> bool:
+        if self.allow_operations and not isinstance(event, EventEnvelope):
+            from contracts.event_reader import read_event
+            if content is not None:
+                raise ValueError("operation content is not supported")
+            event = read_event(event.model_dump(mode="json"), allow_candidate=True).event
         event_json = event.model_dump_json()
         if content:
             encoded = content.model_dump(mode="json", exclude={"raw_bytes"})
@@ -100,7 +108,12 @@ class DurableSpool:
                 encoded["raw_bytes"] = base64.b64decode(encoded.pop("raw_bytes_b64"),
                                                          validate=True)
             content = ContentObject.model_validate(encoded)
-        return row[0], EventEnvelope.model_validate_json(row[1]), content
+        if self.allow_operations:
+            from contracts.event_reader import read_event
+            event = read_event(row[1], allow_candidate=True).event
+        else:
+            event = EventEnvelope.model_validate_json(row[1])
+        return row[0], event, content
 
     def acknowledge(self, seq: int) -> None:
         with self._connect() as db:
