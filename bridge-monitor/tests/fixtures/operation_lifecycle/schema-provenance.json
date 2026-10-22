@@ -1,13 +1,13 @@
 {
   "generator": "contracts.operations.operation_event_json_schema",
   "source_path": "contracts/operations.py",
-  "source_sha256": "9279730affe17c2d97071f1df52bba511f938eaa8efed927b171365094b2b192",
+  "source_sha256": "4e531d122a3dbd19713cc7a93aeb17c0f7c887b13dc93770a8bd88af0c621963",
   "schema_path": "contracts/schemas/operation_lifecycle_v2.schema.json",
   "schema_sha256": "35574b3937decc7ee73f36f848f517380893b60c4bf9fc976f2c89e7d3f86531",
   "python_version": "3.13.7",
   "pydantic_version": "2.14.1",
   "project_name": "bridge-monitor",
   "project_version": "0.1.0",
-  "generated_at": "2026-10-22T11:30:16.701521+00:00",
+  "generated_at": "2026-10-22T11:38:07.134953+00:00",
   "scope": "Candidate structural schema from the real product API; not deployed parity or runtime activation"
 }

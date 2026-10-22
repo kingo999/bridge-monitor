@@ -3,6 +3,7 @@ import dataclasses
 import importlib
 import json
 import sqlite3
+import sys
 import traceback
 from datetime import datetime, timezone
 
@@ -167,3 +168,23 @@ def test_old_spool_preserves_candidate_and_tail_and_declared_recovery(tmp_path):
             spool.acknowledge(seq)
     assert recovered == ['operation_v2', 'legacy'] and spool.pending_count() == 0
     assert len(collector.calls) == 2
+
+
+@pytest.mark.parametrize('as_bytes', [False, True])
+def test_deep_json_has_a_stable_rejection(as_bytes):
+    depth = sys.getrecursionlimit() + 10000
+    raw = '[' * depth + '0' + ']' * depth
+    with pytest.raises(EventReadError) as error:
+        read_event(raw.encode() if as_bytes else raw, allow_candidate=True)
+    assert error.value.code == 'malformed_json'
+
+
+def test_unknown_mapping_keys_are_not_diagnostic_values():
+    for key in [9876543210123456, True, 'PRIVATE_UNKNOWN_KEY']:
+        raw = candidate(); raw[key] = 'private'
+        with pytest.raises(EventReadError) as error: read_event(raw, allow_candidate=True)
+        assert str(key) not in repr(error.value.issues)
+        assert error.value.issues == (('<extra>',),)
+    raw = candidate('verification_recorded'); raw['payload']['evidence_refs'] = [' ']
+    with pytest.raises(EventReadError) as error: read_event(raw, allow_candidate=True)
+    assert error.value.issues == (('payload', 'evidence_refs', 0),)

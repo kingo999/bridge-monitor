@@ -1,5 +1,6 @@
 """The candidate is an actual product contract; these fixtures grant no effects."""
 import copy
+from collections import deque
 import hashlib
 import json
 from datetime import datetime, timezone
@@ -10,7 +11,7 @@ from pydantic import ValidationError
 
 from contracts.operations import (
     _validate_operation_event, canonical_candidate_bytes,
-    candidate_event_hash, operation_event_json_schema,
+    candidate_event_hash, operation_event_json_schema, VerificationRecordedPayload,
 )
 
 FIXTURES = Path(__file__).parents[1] / 'fixtures' / 'operation_lifecycle'
@@ -164,3 +165,24 @@ def test_candidate_identity():
 
 def test_schema_public_function():
     assert len(operation_event_json_schema()['discriminator']['mapping']) == 7
+
+
+@pytest.mark.parametrize('container', [set, frozenset, deque, iter])
+def test_evidence_rejects_non_array_containers(container):
+    raw = example('verification_recorded')
+    raw['payload']['evidence_refs'] = container(['first', 'second'])
+    with pytest.raises(ValidationError): _validate_operation_event(raw)
+
+
+def test_prebuilt_payload_is_revalidated_and_copied():
+    raw = example('verification_recorded')
+    values = raw['payload']; refs = ['initial']; values['evidence_refs'] = refs
+    raw['payload'] = VerificationRecordedPayload.model_construct(**values)
+    event = _validate_operation_event(raw)
+    before = candidate_event_hash(event)
+    refs.append('mutated')
+    assert event.payload.evidence_refs == ('initial',)
+    assert candidate_event_hash(event) == before
+    values['verdict'] = 'invalid'
+    raw['payload'] = VerificationRecordedPayload.model_construct(**values)
+    with pytest.raises(ValidationError): _validate_operation_event(raw)

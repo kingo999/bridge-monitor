@@ -44,7 +44,7 @@ def _version(value: object) -> int:
 
 
 class _FrozenModel(BaseModel):
-    model_config = ConfigDict(extra='forbid', frozen=True)
+    model_config = ConfigDict(extra='forbid', frozen=True, revalidate_instances='always')
 
 
 class StartedPayload(_FrozenModel):
@@ -70,12 +70,18 @@ class UnknownPayload(_FrozenModel):
     last_observed_at: UtcTimestamp
 
 
+def _evidence_array(value: object) -> object:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError('evidence references require an ordered array')
+    return value
+
+
 class VerificationRecordedPayload(_FrozenModel):
     verification_id: Identifier
     verifier_id: Identifier
     verdict: Literal['passed', 'failed', 'inconclusive']
     input_sha256: Sha256
-    evidence_refs: Annotated[tuple[Identifier, ...], Field(max_length=32)]
+    evidence_refs: Annotated[tuple[Identifier, ...], Field(max_length=32), BeforeValidator(_evidence_array)]
 
 
 class DeliveryRecordedPayload(_FrozenModel):
@@ -180,7 +186,8 @@ def operation_event_json_schema() -> dict[str, object]:
 def canonical_candidate_bytes(event: OperationEvent) -> bytes:
     if not isinstance(event, OPERATION_EVENT_CLASSES):
         raise TypeError('validated operation event required')
-    body = json.dumps(event.model_dump(mode='json', exclude={'received_at'}),
+    validated = _ADAPTER.validate_python(event)
+    body = json.dumps(validated.model_dump(mode='json', exclude={'received_at'}),
                       sort_keys=True, separators=(',', ':'), ensure_ascii=True)
     return b'bridge-monitor.operation-lifecycle.v2\n' + body.encode('utf-8')
 

@@ -15,7 +15,7 @@ identity = candidate_event_hash(decoded.event)
 wire_bytes = encode_event(decoded)
 ```
 
-Only boolean True enables candidate parsing; strings, integers and None are rejected as invalid API arguments. The default read_event(raw) accepts historical names through the unchanged EventEnvelope and rejects operation candidates. Inputs are JSON bytes/text or a dictionary. The frozen DecodedEvent dataclass has kind and event fields and no forwarded legacy-envelope interface. The contained historical EventEnvelope retains its existing mutability; candidate envelopes and nested payloads are frozen, with evidence arrays stored as tuples.
+Only boolean True enables candidate parsing; strings, integers and None are rejected as invalid API arguments. The default read_event(raw) accepts historical names through the unchanged EventEnvelope and rejects operation candidates. Inputs are JSON bytes/text or a dictionary. The frozen DecodedEvent dataclass has kind and event fields and no forwarded legacy-envelope interface. The contained historical EventEnvelope retains its existing mutability; candidate envelopes and nested payloads are frozen, with evidence arrays stored as tuples. Mapping evidence inputs must be ordered lists or tuples; sets, generators and other coercible containers are rejected. Prebuilt payload instances are revalidated and copied, including instances created without validation.
 
 Known historical event names retain their existing positive numeric schema_version acceptance, including 2 or 3. This is legacy validation, not negotiation. Unknown operation names and unsupported candidate versions are rejected. Historical tool.completed remains a content-block/stream boundary and is never translated into operation completion or elapsed time.
 
@@ -48,7 +48,7 @@ EventReadError exposes only code and static field/index paths in issues. Raw inp
 | Condition, in precedence order | Result |
 | --- | --- |
 | Non-boolean opt-in argument | TypeError |
-| Malformed JSON/encoding | malformed_json |
+| Malformed JSON/encoding or parser recursion limit exceeded | malformed_json |
 | Non-object shape or missing/non-string event_type | invalid_envelope |
 | Known legacy event | Delegate to unchanged EventEnvelope; validation failure is invalid_envelope in this reader API |
 | Unknown event name | unknown_event_type |
@@ -75,7 +75,7 @@ Versioned examples, eight pinned historical controls and provenance are in tests
 | --- | --- |
 | New reader with explicit opt-in | Validated operation records; historical dispatch preserved |
 | Default/new reader and existing legacy parser | Candidate rejected |
-| Existing durable spool/emitter | Candidate head rejected and retained; later entries remain queued |
+| Existing durable spool/emitter | Untyped append can accept an explicitly unwrapped raw candidate model; rejection happens at replay, retaining the head and later entries |
 | Declared test-only SQLite recovery adapter | Reads retained bytes with the real candidate reader and acknowledges only after stub receipt; no external execution |
 | Production store, reconciliation, projector, HTTP, SSE and dashboard | Not integrated or semantically supported by this slice |
 

@@ -48,7 +48,13 @@ def _issues(error: ValidationError) -> tuple[tuple[str | int, ...], ...]:
     for issue in error.errors(include_input=False, include_context=False, include_url=False):
         parts = tuple(part for part in issue['loc'] if part not in OPERATION_EVENT_TYPES)
         # Unknown JSON keys are data too. Do not echo them into diagnostics.
-        paths.append(tuple(part if isinstance(part, int) or part in _FIELDS else '<extra>' for part in parts))
+        safe = []
+        for part in parts:
+            if type(part) is int and tuple(safe) == ('payload', 'evidence_refs'):
+                safe.append(part)
+            else:
+                safe.append(part if isinstance(part, str) and part in _FIELDS else '<extra>')
+        paths.append(tuple(safe))
     return tuple(paths)
 
 
@@ -63,7 +69,7 @@ def read_event(raw: bytes | str | dict[str, object], *, allow_candidate: bool = 
     if isinstance(raw, (str, bytes)):
         try:
             value = json.loads(raw)
-        except (ValueError, UnicodeError):
+        except (ValueError, UnicodeError, RecursionError):
             raise EventReadError('malformed_json') from None
     else:
         value = raw
