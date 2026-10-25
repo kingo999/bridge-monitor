@@ -129,6 +129,7 @@ def build_coordinator(runtime_config_path: str | Path, *,
         claude_adapter = ClaudeCLIAdapter(runner,
             executable=capabilities.claude.executable,
             model=policy.fallback.paid_model_profile,
+            profile_models=capabilities.claude.reported_models,
             cancellation_probe=lambda call_id: cancellation_requested(dsn, call_id),
             mcp_config_factory=lambda lease: create_child_mcp_config(
                 project, lease, python_executable=executable))

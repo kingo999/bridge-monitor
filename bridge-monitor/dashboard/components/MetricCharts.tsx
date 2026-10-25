@@ -7,7 +7,7 @@ const C = SIZE / 2;
 const KEYS = ['node', 'model', 'handling', 'tier'] as const;
 
 function color(key: string): string {
-  if (key === 'unknown') return 'unknown';
+  if (key.toLowerCase() === 'unknown') return 'unknown';
   if (key === 'in_progress') return 'in-progress';
   if (key === 'mixed') return 'mixed';
   const colors: Record<string, string> = {
@@ -16,6 +16,9 @@ function color(key: string): string {
     sonnet: 'series-5', qwen: 'series-6', haiku: 'series-7', other: 'series-8',
     qwen_full: 'series-3', qwen_partial: 'series-6', claude_only: 'series-2',
     codex_only: 'series-1', paid: 'series-2', local: 'series-3',
+    'gpt-6.1-sol': 'series-1', 'claude-sonnet-5-5': 'series-2',
+    'gpt-6-astra': 'series-3', 'gpt-6-luna': 'series-4', 'gpt-6-sol': 'series-6',
+    'claude-haiku-5-5': 'series-7', 'claude-opus-5-5': 'series-8',
   };
   return colors[key] || 'series-8';
 }
@@ -55,7 +58,7 @@ function ChartTag({ slice, total }: { slice: DistributionSlice; total: number })
   </li>;
 }
 
-function Card({ distribution }: { distribution: Distribution }) {
+export function DistributionChart({ distribution }: { distribution: Distribution }) {
   const visibleSlices = distribution.slices.filter(slice => slice.count > 0);
   return <article className="chart-card" aria-label={`${distribution.title} chart`}>
     <h3>{distribution.title}</h3>
@@ -75,6 +78,6 @@ export default function MetricCharts({ report }: { report: MetricSet | null }) {
   const distributions = report?.distributions;
   if (!distributions) return <p className="muted">Work distribution data is not available yet.</p>;
   return <div className="metric-charts" role="group" aria-label="Work distribution charts">
-    {KEYS.map(key => <Card key={key} distribution={distributions[key]} />)}
+    {KEYS.map(key => <DistributionChart key={key} distribution={distributions[key]} />)}
   </div>;
 }

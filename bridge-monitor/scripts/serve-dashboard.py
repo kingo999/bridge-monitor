@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from service.http.app import create_app  # noqa: E402
+from bridge.telemetry.claude_subscription import subscription_producer_ids  # noqa: E402
 
 
 def main() -> None:
@@ -46,6 +47,7 @@ def main() -> None:
         raise SystemExit("dashboard export must stay inside bridge-monitor")
     app = create_app(dsn, producer_tokens=producers, operator_token=token,
                      payload_limit_bytes=int(capture["payload_limit_bytes"]),
+                     subscription_producer_ids=subscription_producer_ids(capture),
                      dashboard_dir=export,
                      session_ttl_seconds=int(operator["session_ttl_seconds"]),
                      secure_cookies=bool(cert),

@@ -1,4 +1,4 @@
-import type { MetricSet, Origin, OutputPreview, RouterAudit, ShadowCohort, Snapshot, WorkDetail, WorkItem } from './contracts.generated';
+import type { UsageNoticeReport, CodexClaudeReport, MetricSet, Origin, OutputPreview, RouterAudit, ShadowCohort, Snapshot, WorkDetail, WorkItem } from './contracts.generated';
 
 export class AuthenticationRequired extends Error {}
 
@@ -61,6 +61,11 @@ export function queryString(filters: CohortFilters): string {
 }
 
 export const api = {
+  usageNotices: (signal?: AbortSignal) => request<UsageNoticeReport>('/api/v1/codex-claude/usage-notices', { signal }),
+  codexClaude: (params: URLSearchParams, signal?: AbortSignal) =>
+    request<CodexClaudeReport>('/api/v1/codex-claude/cohort?' + params, { signal }),
+  codexClaudeDecision: (id: string, signal?: AbortSignal) =>
+    request<Record<string, unknown>>('/api/v1/codex-claude/decisions/' + encodeURIComponent(id), { signal }),
   session: () => request<OperatorSession>('/api/v1/session'),
   login: (operatorToken: string) => request<OperatorSession>('/api/v1/session', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

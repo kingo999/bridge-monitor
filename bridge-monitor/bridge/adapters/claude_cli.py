@@ -1,6 +1,8 @@
 """Restricted Claude CLI stream adapter for a bridge-owned execution lease."""
 
 import json
+import hashlib
+from decimal import Decimal, InvalidOperation
 import os
 import signal
 import subprocess
@@ -119,7 +121,9 @@ class SubprocessRunner:
     def __init__(self, *, cwd: str | Path, timeout_seconds: int,
                  client_tool_timeout_seconds: int,
                  cancel_poll_seconds: float = 0.25,
-                 diagnostic_root: str | Path | None = None):
+                 diagnostic_root: str | Path | None = None,
+                 environment_overrides: dict[str, str] | None = None):
+        self.environment_overrides = dict(environment_overrides or {})
         self.cwd = Path(cwd)
         self.timeout_seconds = timeout_seconds
         self.client_tool_timeout_seconds = client_tool_timeout_seconds
@@ -137,13 +141,15 @@ class SubprocessRunner:
         return SubprocessRunner(cwd=cwd or self.cwd, timeout_seconds=self.timeout_seconds,
             client_tool_timeout_seconds=self.client_tool_timeout_seconds,
             cancel_poll_seconds=self.cancel_poll_seconds,
-            diagnostic_root=self.diagnostic_root)
+            diagnostic_root=self.diagnostic_root,
+            environment_overrides=self.environment_overrides)
 
     def stream(self, command: list[str], prompt: str, *, cancel_requested=None):
         env = os.environ.copy()
         env.pop("CLAUDECODE", None)
         env["MCP_TOOL_TIMEOUT"] = str(self.client_tool_timeout_seconds * 1000)
         env["CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS"] = "0"
+        env.update(self.environment_overrides)
         diagnostic = self.diagnostic_root / f"{uuid.uuid4()}.stderr.txt"
         diagnostic.parent.mkdir(parents=True, exist_ok=True)
         self.last_stderr_path = diagnostic
@@ -213,11 +219,38 @@ class SubprocessRunner:
             process.kill()
 
 
+def capture_provider_usage(final, *, emitter, common, execution_id, requested_model, reported_model):
+    if not isinstance(final,dict):return {}
+    raw=final.get("usage") if isinstance(final.get("usage"),dict) else {}
+    usage={key:raw[key] for key in ("input_tokens","output_tokens","cache_read_input_tokens",
+        "cache_creation_input_tokens") if type(raw.get(key)) is int and raw[key]>=0}
+    quote=None
+    value=final.get("total_cost_usd")
+    if type(value) in (str,int,float):
+        try:
+            number=Decimal(str(value))
+            if number.is_finite() and number>=0:quote=str(number)
+        except InvalidOperation:
+            pass
+    if usage or quote is not None:
+        receipt=json.dumps(final,sort_keys=True).encode("utf-8")
+        payload={"observation_id":str(uuid.uuid4()),"scope":"execution","is_cumulative":True,
+            "provenance":"claude_cli_result","receipt_sha256":hashlib.sha256(receipt).hexdigest(),**usage}
+        if quote is not None:
+            payload.update(api_equivalent_usd=quote,cost_basis="provider_reported_api_equivalent_not_invoice")
+        emitter.emit(EventType.USAGE_REPORTED,model_execution_id=execution_id,payload=payload,
+            body=receipt,direction="in",requested_model=requested_model,reported_model=reported_model,**common)
+    return usage
+
+
 class ClaudeCLIAdapter:
+    # Model eligibility comes only from the reviewed host runtime catalogue.
+    profile_models: tuple[str, ...] = ()
+
     def __init__(self, runner, *, executable: str, model: str,
                  mcp_config_path: str | Path | None = None,
                  mcp_config_factory=None, allowed: bool = True,
-                 cancellation_probe=None):
+                 cancellation_probe=None, profile_models=(), execution_profile=None):
         if (mcp_config_path is None) == (mcp_config_factory is None):
             raise ValueError("exactly one child MCP configuration source is required")
         self.runner = runner
@@ -227,6 +260,25 @@ class ClaudeCLIAdapter:
         self.model = model
         self.allowed = allowed
         self.cancellation_probe = cancellation_probe
+        self.profile_models = tuple(profile_models)
+        self.execution_profile = execution_profile
+
+    def run_profile(self, lease, task, prompt, emitter, *, profile):
+        if profile.model_id not in self.profile_models:
+            return AdapterResult(state="denied", uncertainty="execution_profile_unavailable")
+        runner = self.runner
+        if isinstance(runner, SubprocessRunner):
+            runner = runner.fork()
+            runner.timeout_seconds = min(runner.timeout_seconds, profile.provider_seconds)
+            runner.environment_overrides.update({
+                "CLAUDE_CODE_MAX_RETRIES":"0", "CLAUDE_CODE_RETRY_WATCHDOG":"0",
+                "MAX_STRUCTURED_OUTPUT_RETRIES":"1", "DISABLE_AUTO_COMPACT":"1",
+                "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC":"1"})
+        scoped = ClaudeCLIAdapter(runner, executable=self.executable, model=profile.model_id,
+            mcp_config_path='{"mcpServers":{}}', allowed=self.allowed,
+            cancellation_probe=self.cancellation_probe, profile_models=self.profile_models,
+            execution_profile=profile)
+        return scoped.run(lease, task, prompt, emitter)
 
     def run(self, lease, task, prompt: str, emitter, *, workspace=None) -> AdapterResult:
         ensure_lease(lease)
@@ -238,7 +290,12 @@ class ClaudeCLIAdapter:
                   "work_item_id": task.work_item_id, "config_version": lease.policy_version,
                   "attempt_id": f"{lease.call_id}:attempt:1"}
         model_execution_id = f"{lease.call_id}:model:1"
-        system_prompt = worker_system_prompt(task)
+        system_prompt = (worker_system_prompt(task) if self.execution_profile is None else
+            "Bridge-owned task: do not re-enter parent routing or route back to the originating Codex session. "
+            "Analyze only the supplied context. No tools, workers, retries or continuation calls are authorized. "
+            "Return exactly one JSON object with answer (string), local_results ([]), "
+            "route_choice (paid_direct), fallback_child_call_id (null), work_resolution "
+            "(resolved, unresolved or unknown). Do not claim checks you did not perform.")
         emitter.emit(EventType.MODEL_SELECTED, requested_model=self.model,
                      model_execution_id=model_execution_id,
                      payload={"lease_id": lease.lease_id, "fencing_token": lease.fencing_token}, **common)
@@ -259,6 +316,13 @@ class ClaudeCLIAdapter:
                            else self.mcp_config_path)
             command = build_claude_command(self.executable, self.model, config_path,
                                             system_prompt=system_prompt)
+            if self.execution_profile is not None:
+                allowed_index = command.index("--allowedTools")
+                del command[allowed_index:allowed_index+2]
+                command.extend(["--effort", self.execution_profile.effort,
+                    "--no-session-persistence", "--max-turns", "1",
+                    "--prompt-suggestions", "false"])
+                command.insert(command.index("--disallowedTools")+1, LOCAL_TOOL)
             if isinstance(runner, SubprocessRunner) and self.cancellation_probe is not None:
                 lines = runner.stream(command, prompt,
                     cancel_requested=lambda: self.cancellation_probe(lease.call_id))
@@ -308,7 +372,7 @@ class ClaudeCLIAdapter:
                         block = event.get("content_block") or {}
                         if block.get("type") == "tool_use":
                             name = block.get("name")
-                            if name != LOCAL_TOOL:
+                            if name != LOCAL_TOOL or self.execution_profile is not None:
                                 raise ValueError("Claude emitted a tool outside its granted capability")
                             tool_by_index[event.get("index")] = (block.get("id"), name)
                             local_tool_ids.add(block.get("id") or f"stream-tool:{event.get('index')}")
@@ -331,6 +395,8 @@ class ClaudeCLIAdapter:
                                  uncertainty="execution_may_have_run",
                                  terminated=getattr(runner, "terminated", False),
                                  cancelled=getattr(runner, "cancelled", False))
+        usage = capture_provider_usage(final, emitter=emitter, common=common,
+            execution_id=model_execution_id, requested_model=self.model, reported_model=reported)
         if (getattr(runner, "cancelled", False) or getattr(runner, "timed_out", False)
                 or getattr(runner, "returncode", 0)):
             emitter.emit(EventType.ATTEMPT_UNCERTAIN,
@@ -347,15 +413,6 @@ class ClaudeCLIAdapter:
                                  terminated=getattr(runner, "terminated", False))
         raw_answer = final["result"]
         answer, completion_claim = _completion_reply(raw_answer)
-        usage = final.get("usage") if isinstance(final.get("usage"), dict) else {}
-        usage = {name: usage[name] for name in ("input_tokens", "output_tokens",
-                 "cache_read_input_tokens", "cache_creation_input_tokens")
-                 if type(usage.get(name)) is int and usage[name] >= 0}
-        if usage:
-            emitter.emit(EventType.USAGE_REPORTED, model_execution_id=model_execution_id,
-                         payload={"observation_id": str(uuid.uuid4()), "scope": "execution",
-                                  "is_cumulative": True, "provenance": "claude_cli_result", **usage},
-                         **common)
         raw_content_id = str(uuid.uuid4())
         emitter.emit(EventType.RESPONSE_COMPLETED, body=raw_answer.encode("utf-8"),
                      content_id=raw_content_id,
@@ -364,4 +421,6 @@ class ClaudeCLIAdapter:
                              usage=usage, raw_answer=raw_answer,
                              raw_content_id=raw_content_id,
                              completion_claim=completion_claim,
-                             local_tool_attempts=len(local_tool_ids))
+                             local_tool_attempts=len(local_tool_ids),
+                             receipt_sha256=hashlib.sha256(
+                                 json.dumps(final, sort_keys=True).encode()).hexdigest())

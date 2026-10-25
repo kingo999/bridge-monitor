@@ -1,7 +1,7 @@
 from datetime import datetime
 import psycopg
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Request, Response
 
 from contracts.queries import CohortQuery
 from service.http.auth import require_browser_operator
@@ -121,6 +121,53 @@ def query_router(dsn: str, operator_token: str, sessions: dict, *,
         if audit is None:
             raise HTTPException(404, "work item not found")
         return audit
+
+    @router.get("/codex-claude/usage-notices")
+    def usage_notices(request: Request, authorization: str | None = Header(default=None)):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        from service.queries.usage_notices import query_usage_notices
+        return query_usage_notices(dsn)
+
+    @router.get("/codex-claude/cohort")
+    @router.get("/codex-claude/export")
+    def codex_claude_report(request: Request, authorization: str | None = Header(default=None),
+                           origin: str = "observed", created_from: datetime | None = None,
+                           created_until: datetime | None = None, as_of: datetime | None = None,
+                           completed_only: bool = False,
+                           category: str = "", project: str = "", model: str = "",
+                           profile: str = "", policy_digest: str = "", evidence: str = "",
+                           format: str = "jsonl"):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        from service.queries.codex_claude import query_codex_claude, export_codex_claude
+        try:
+            for value in (created_from, created_until, as_of):
+                if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+                    raise ValueError("timezone-aware filter timestamps required")
+            report = query_codex_claude(dsn, CohortQuery(origin=origin, created_from=created_from,
+                created_until=created_until, as_of=as_of, completed_only=completed_only,
+                consumer_stage="gpt"), category=category, project=project,
+                model=model, profile=profile, policy_digest=policy_digest, evidence=evidence)
+            if request.url.path.endswith("/export"):
+                media = "application/x-ndjson" if format == "jsonl" else "text/csv"
+                return Response(export_codex_claude(report, format), media_type=media,
+                    headers={"Content-Disposition": f'attachment; filename="codex-claude.{format}"',
+                             "Cache-Control": "no-store"})
+            return report
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @router.get("/codex-claude/decisions/{work_item_id}")
+    def codex_claude_decision(work_item_id: str, request: Request,
+                             authorization: str | None = Header(default=None)):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        with psycopg.connect(dsn) as conn:
+            if not conn.execute("SELECT to_regclass('cc_decisions')").fetchone()[0]:
+                raise HTTPException(404, "No Codex/Claude decision recorded")
+            row = conn.execute("SELECT decision_id,payload,prompt_sha256,recorded_at FROM cc_decisions "
+                               "WHERE work_item_id=%s", (work_item_id,)).fetchone()
+        if not row:
+            raise HTTPException(404, "No Codex/Claude decision recorded")
+        return dict(decision_id=row[0], decision=row[1], prompt_sha256=row[2], recorded_at=row[3])
 
     @router.get("/classifier/activity")
     def classifier_activity(request: Request, authorization: str | None = Header(default=None)):

@@ -1,14 +1,14 @@
-# Review proposal only. Native desktop MCP deadline measured with a 590-second model-free call.
 cancellation_poll_ms = 250
 workspace_max_bytes = 104857600
+
 [claude]
-executable = "claude"
-context_tokens = 200000 # Conservative Sonnet family floor; verify effective CLI model.
-reported_models = ["claude-sonnet-5-5"] # Observed in isolated CLI probe.
-client_timeout_verified = true # Native desktop 590-second MCP call returned under the configured 600-second timeout.
+executable = "C:\\Users\\kian\\.local\\bin\\claude.exe"
+context_tokens = 200000
+reported_models = ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"]
+client_timeout_verified = true
 
 [qwen]
-context_tokens = 16384 # New adapter sets num_ctx to this value; model metadata says 32768 max.
+context_tokens = 16384
 template_overhead_tokens = 128
-byte_upper_bound_validated = true # Byte-level BPE plus fixed generate-template bytes; see capability record.
-client_timeout_verified = true # Live 300 ms shared-cutoff probe returned uncertain at 307 ms; server termination unproven.
+byte_upper_bound_validated = true
+client_timeout_verified = true

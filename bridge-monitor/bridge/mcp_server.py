@@ -135,11 +135,19 @@ class BridgeCoordinator:
                         reserve_tokens: int, source_id: str | None = None,
                         _call_id: str | None = None,
                         _captured_prompt_content_id: str | None = None,
-                        _expected_policy_version: str | None = None) -> dict:
+                        _expected_policy_version: str | None = None,
+                        _codex_claude_profile: str | None = None) -> dict:
         self._refresh_policy()
         if _expected_policy_version and self.policy_version != _expected_policy_version:
             return {"state": "rejected", "reason": "policy_changed"}
-        if requested_model != self.policy.fallback.paid_model_profile:
+        if _codex_claude_profile is not None:
+            config = self.policy.codex_claude
+            profile = config.profiles.get(_codex_claude_profile) if config and config.enabled else None
+            if (not profile or not profile.enabled or profile.model_id != requested_model
+                    or requested_model not in getattr(self.claude_adapter, "profile_models", ())
+                    or not callable(getattr(self.claude_adapter, "run_profile", None))):
+                return {"state": "rejected", "reason": "unavailable_execution_profile"}
+        elif requested_model != self.policy.fallback.paid_model_profile:
             return {"state": "rejected", "reason": "unvalidated_paid_model_choice"}
         if task.context.get("source_id") and source_id != task.context["source_id"]:
             return {"state": "rejected", "reason": "source_binding_required"}
@@ -186,8 +194,12 @@ class BridgeCoordinator:
                    reserve_tokens: int, output_contract: str,
                    verifier_ref: str | None = None,
                    source_id: str | None = None) -> dict:
-        """Return only the paid answer; queue a separate, undelivered shadow case."""
+        """Use the opt-in workflow, or preserve the historical shadow experiment."""
         self._refresh_policy()
+        if getattr(self.policy, "codex_claude", None) and self.policy.codex_claude.enabled:
+            return self._route_codex_claude(task, prompt, requested_model=requested_model,
+                reserve_tokens=reserve_tokens, output_contract=output_contract,
+                verifier_ref=verifier_ref, source_id=source_id)
         paid_id, shadow_id, decision_id = router_call_ids(task)
         prior = existing_parent_decision(self.dsn, task.work_item_id)
         if prior:
@@ -300,6 +312,10 @@ class BridgeCoordinator:
         if not decision.eligible or paid.get("state") != "completed" or not paid.get("delivered"):
             return response
         return self._enqueue_router_shadow(task, case, decision, paid_id, shadow_id, response)
+
+    def _route_codex_claude(self, task, prompt, **kwargs):
+        from bridge.runtime.codex_claude_routing import route_codex_claude
+        return route_codex_claude(self, task, prompt, **kwargs)
 
     def _enqueue_router_shadow(self, task: TaskPacket, case, decision, paid_id: str,
                                shadow_id: str, response: dict) -> dict:
@@ -720,7 +736,22 @@ class BridgeCoordinator:
             return {"state": "uncertain", "call_id": lease.call_id,
                     "reason": "adapter_unavailable"}
         self.owned_calls.add(lease.call_id)
-        if pool == "claude":
+        bounded_profile = None
+        if pool == "claude" and getattr(self.policy, "codex_claude", None) and self.policy.codex_claude.enabled:
+            with psycopg.connect(self.dsn) as conn:
+                pinned = conn.execute("SELECT d.payload FROM cc_reservations h JOIN cc_decisions d "
+                    "ON d.work_item_id=h.work_item_id WHERE h.call_id=%s", (lease.call_id,)).fetchone()
+            if pinned:
+                from contracts.codex_claude import CodexClaudePolicy
+                pinned_policy = CodexClaudePolicy.model_validate(pinned[0]["policy_snapshot"])
+                bounded_profile = pinned_policy.profiles[pinned[0]["selected_profile"]]
+        if bounded_profile is not None:
+            from bridge.runtime.codex_claude_execution import execute_profile
+            result = execute_profile(self.dsn, adapter, lease, task, prompt, self.emitter, bounded_profile)
+            if result.state != "completed":
+                mark_execution_uncertain(self.dsn, lease.call_id, reason=result.uncertainty or result.state)
+                return {"state": result.state, "call_id": lease.call_id, "reason": result.uncertainty}
+        elif pool == "claude":
             result = (adapter.run(lease, task, prompt, self.emitter)
                       if workspace is None else
                       adapter.run(lease, task, prompt, self.emitter, workspace=workspace))

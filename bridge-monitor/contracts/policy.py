@@ -3,9 +3,21 @@ import json
 import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator, model_serializer
 
 from contracts.router import RouterPolicy
+from contracts.codex_claude import CodexClaudePolicy
+
+
+class CompatiblePolicyModel(BaseModel):
+    @model_serializer(mode="wrap")
+    def omit_absent_extension(self, handler):
+        data = handler(self)
+        if data.get("codex_claude") is None:
+            data.pop("codex_claude", None)
+        elif self.codex_claude is not None:
+            data["codex_claude"] = self.codex_claude.model_dump(mode="json")
+        return data
 
 
 class Limits(BaseModel):
@@ -105,7 +117,7 @@ class GuidancePolicy(BaseModel):
     max_bytes: int = Field(default=0, ge=0)
 
 
-class PolicyInput(BaseModel):
+class PolicyInput(CompatiblePolicyModel):
     model_config = ConfigDict(extra="forbid")
     limits: Limits = Field(default_factory=Limits)
     deployment: Deployment
@@ -113,6 +125,8 @@ class PolicyInput(BaseModel):
     review: Review
     guidance: GuidancePolicy = Field(default_factory=GuidancePolicy)
     router: RouterPolicy = Field(default_factory=RouterPolicy)
+
+    codex_claude: CodexClaudePolicy | None = None
 
     @model_validator(mode="after")
     def check_agent_deadlines(self):
@@ -129,7 +143,7 @@ class PolicyInput(BaseModel):
         return self
 
 
-class PolicySnapshot(BaseModel):
+class PolicySnapshot(CompatiblePolicyModel):
     version: str
     source_hash: str
     limits: Limits
@@ -138,6 +152,7 @@ class PolicySnapshot(BaseModel):
     review: Review
     guidance: GuidancePolicy = Field(default_factory=GuidancePolicy)
     router: RouterPolicy = Field(default_factory=RouterPolicy)
+    codex_claude: CodexClaudePolicy | None = None
 
 
 class PolicyValidation(BaseModel):

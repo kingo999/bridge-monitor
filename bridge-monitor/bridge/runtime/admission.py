@@ -100,6 +100,17 @@ def admit_call(dsn: str, request: CallRequest, policy: PolicyInput | PolicySnaps
         if pool == "qwen" and local_cutoff_at is None:
             # The scheduler never invents a local cutoff: the owner must provide one.
             return answer("rejected", "local_cutoff_required")
+        queue_seconds = (policy.router.queue_deadline_seconds if execution_mode == "shadow" else
+                         policy.deployment.queue_deadline_seconds)
+        extension = getattr(policy, "codex_claude", None)
+        if pool == "claude" and extension is not None and extension.enabled:
+            reservation = conn.execute("SELECT profile FROM cc_reservations WHERE call_id=%s",
+                                       (request.call_id,)).fetchone()
+            if reservation:
+                profile = extension.profiles[reservation[0]]
+                if not profile.enabled or profile.model_id != request.requested_model:
+                    return answer("rejected", "profile_binding_mismatch")
+                queue_seconds = min(queue_seconds, profile.queue_seconds)
         conn.execute("UPDATE runtime_task_budgets SET calls_reserved=calls_reserved+1, "
                      "tokens_reserved=tokens_reserved+%s WHERE task_id=%s", (reserve_tokens, task.task_id))
         conn.execute("INSERT INTO runtime_jobs(call_id,task_id,work_item_id,pool,request,requested_model,"
@@ -108,8 +119,7 @@ def admit_call(dsn: str, request: CallRequest, policy: PolicyInput | PolicySnaps
                      "VALUES(%s,%s,%s,%s,%s,%s,%s,'queued',now()+(%s * interval '1 second'),%s,%s,%s,%s,%s,%s)",
                      (request.call_id, task.task_id, task.work_item_id, pool, Jsonb(request.model_dump()),
                       request.requested_model, policy_version,
-                      (policy.router.queue_deadline_seconds if execution_mode == "shadow" else
-                       policy.deployment.queue_deadline_seconds),
+                      queue_seconds,
                       local_cutoff_at, reserve_tokens, source_snapshot, source_mode, prompt_content_id,
                       execution_mode))
         if guidance_manifest is not None:

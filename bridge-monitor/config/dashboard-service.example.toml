@@ -1,3 +1,4 @@
+
 [listen]
 host = "127.0.0.1"
 port = 8873
@@ -12,6 +13,7 @@ session_ttl_seconds = 3600
 dsn_env = "BRIDGE_MONITOR_DSN"
 producer_tokens_env = "BRIDGE_MONITOR_PRODUCER_TOKENS_JSON"
 payload_limit_bytes = 1048576
+subscription_producer_ids = ["claude-subscription-statusline"]
 
 [dashboard]
 export_dir = "dashboard/out"

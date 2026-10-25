@@ -15,6 +15,7 @@ class AdapterResult:
     local_tool_attempts: int | None = None
     terminated: bool = False
     cancelled: bool = False
+    receipt_sha256: str | None = None
 
 
 def ensure_lease(lease, expected_call_id: str | None = None) -> None:

@@ -1,4 +1,33 @@
 // Mirrors the versioned Python query DTOs; regenerate when those contracts change.
+export type UsageNoticeReport = {
+  available: boolean; as_of: string; notification_only: boolean;
+  daily: { triggered: boolean; known_subtotal_usd: string | null; threshold_usd: string;
+    status: string; timezone: string; scope: string; unknown_usage_calls: number | null;
+    period_start?: string; period_end?: string };
+  subscription: { triggered: boolean; status: string; reason: string | null;
+    windows: { provider: string; window_id: string; consumed_percent: string | null;
+      status: string; resets_at: string; observed_at?: string }[] };
+  notices: { id: string; condition: string; title: string; message: string; basis: string; period_end?: string }[];
+};
+export type CodexClaudeRow = {
+  work_item_id: string; task_id: string; category: string | null; created_at: string;
+  executor: string; requested_model: string | null; reported_model: string | null;
+  project: string | null; complexity: string | null; risk: string | null; profile: string | null;
+  policy_digest: string | null; route_reason: string; override: string | null; decision_id: string | null;
+  status: string; caller_reported_complete: boolean; parent_accepted: boolean;
+  human_accepted: boolean | null; checks_passed: boolean | null; rework: boolean;
+  duration_seconds: number | null; cost_usd_equivalent: string | null;
+  usage: Record<string, number | null>; receipt_hashes: string[]; evidence_status: string;
+};
+export type CodexClaudeReport = {
+  definition_version: string; as_of: string; filters: Record<string, unknown>; total: number;
+  rows: CodexClaudeRow[]; models: Record<string, number>; executors: Record<string, number>;
+  outcomes: { caller_reported_complete: number; parent_accepted: number; rework: number;
+    checks_passed: number | null; human_accepted: number | null };
+  latency_seconds: { samples: number; median: number | null; p95: number | null };
+  cost: { basis: string; known_subtotal: string; known_workflows: number; unknown_workflows: number };
+  readiness: { routing_enabled: boolean; reason: string }; scope_note: string;
+};
 export type Origin = 'observed' | 'imported' | 'synthetic' | 'all';
 export type DirectExecution = { execution_id: string; record_id: string; session_id: string;
   project_root: string; summary: string; status: string; bypass_reason: string; reason: string;

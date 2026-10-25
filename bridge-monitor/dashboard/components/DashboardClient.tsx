@@ -14,6 +14,8 @@ import ShadowCohort from './ShadowCohort';
 import ClassifierCohort from './ClassifierCohort';
 import CollapsiblePanel from './CollapsiblePanel';
 import MetricCharts from './MetricCharts';
+import CodexClaudeOverview from './CodexClaudeOverview';
+import UsageNotices from './UsageNotices';
 
 const initialFilters: CohortFilters = {
   origin: 'observed', consumerStage: 'claude', createdFrom: '', createdUntil: '', completedOnly: false,
@@ -24,6 +26,8 @@ const initialRouterFilters: RouterFilters = { modelProfile: '', promptVersion: '
 export default function DashboardClient() {
   const [auth, setAuth] = useState<'checking' | 'login' | 'ready'>('checking');
   const [operatorToken, setOperatorToken] = useState('');
+  const [tab, setTab] = useState<'codex_claude' | 'experiments'>('codex_claude');
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('view') === 'experiments') setTab('experiments'); }, []);
   const [loginError, setLoginError] = useState('');
   const [filters, setFilters] = useState<CohortFilters>(initialFilters);
   const [routerFilters, setRouterFilters] = useState<RouterFilters>(initialRouterFilters);
@@ -202,8 +206,23 @@ export default function DashboardClient() {
     <header className="app-header"><div className="brand"><span className="brand-mark">↗</span><h1>Bridge Monitor</h1>
       <span className={`connection ${streamState}`} role="status"><i className="dot" /> {streamState === 'live' ? 'Connected' : streamState}</span></div>
       <div className="header-actions"><CohortControls filters={filters} onChange={changeFilters} mode={mode} onMode={setMode}
-        paused={paused} onPause={togglePause} />
+        paused={paused} onPause={togglePause} experiment={tab === 'experiments'} />
         <button className="logout" type="button" onClick={async () => { await api.logout(); setAuth('login'); }}>Sign out</button></div></header>
+    <div className="monitor-tabs" role="tablist" aria-label="Monitor views" onKeyDown={event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'codex_claude' : event.key === 'End' ? 'experiments' : tab === 'codex_claude' ? 'experiments' : 'codex_claude';
+      setTab(next); document.getElementById('tab-' + next)?.focus();
+    }}>
+      <button type="button" role="tab" id="tab-codex_claude" aria-controls="view-codex_claude" aria-selected={tab === 'codex_claude'} tabIndex={tab === 'codex_claude' ? 0 : -1} onClick={() => setTab('codex_claude')}>Codex / Claude</button>
+      <button type="button" role="tab" id="tab-experiments" aria-controls="view-experiments" aria-selected={tab === 'experiments'} tabIndex={tab === 'experiments' ? 0 : -1} onClick={() => setTab('experiments')}>Experiments</button>
+    </div>
+    <UsageNotices refreshKey={snapshot?.as_of || ''} />
+    {tab === 'codex_claude' && <div id="view-codex_claude" role="tabpanel" aria-labelledby="tab-codex_claude">
+      <CodexClaudeOverview filters={filters} refreshKey={snapshot?.as_of || ''} paused={paused} onSelect={setSelectedId} />
+      {selectedId && <ExchangeInspector id={selectedId} refreshKey={detailRefresh} paused={paused} />}
+    </div>}
+    {tab === 'experiments' && <div id="view-experiments" role="tabpanel" aria-labelledby="tab-experiments">
     <div className="status-line"><span>{mode === 'history' ? 'Historical cohort' : 'Live monitor'} · {filters.origin} · {metrics?.metrics.direct_execution?.denominator ?? metrics?.metrics.routed.denominator ?? 0} work items · Bridge-delegated: {metrics?.metrics.bridge_execution?.numerator ?? 'Unknown'} · Direct Codex: {metrics?.metrics.direct_execution?.numerator ?? 'Unknown'}</span>
       {snapshot && <span>Snapshot {new Date(snapshot.as_of).toLocaleString()}</span>}</div>
     {(error || pendingDisplay || streamState === 'offline' || streamState === 'gap' || snapshot?.status.capture_state === 'degraded' || !!snapshot?.status.known_gaps) &&
@@ -236,7 +255,8 @@ export default function DashboardClient() {
       <ShadowCohort report={shadowCohort} filters={routerFilters} onChange={changeRouterFilters} />
       <ClassifierCohort paused={paused} />
     </div><ExchangeInspector id={selectedId} refreshKey={detailRefresh} paused={paused} /></div>
-    <footer className="app-footer"><span>Current topology remains live while historical filters control metrics and work list.</span>
+    </div>}
+    <footer className="app-footer"><span>{tab === 'experiments' ? 'Current topology remains live while historical filters control metrics and work list.' : 'Usage notices use current measurements independently of cohort filters.'}</span>
       <span>Definition {metrics?.definition_version || '—'} · As of {metrics ? new Date(metrics.as_of).toLocaleString() : '—'}</span></footer>
   </main>;
 }

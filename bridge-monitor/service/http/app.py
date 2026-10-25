@@ -17,7 +17,8 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
                session_ttl_seconds: int = 3600, secure_cookies: bool = False,
                preview_max_chunks: int = 80, preview_max_bytes: int = 16384,
                timeline_head_events: int = 100, timeline_tail_events: int = 400,
-               work_item_max_limit: int = 100) -> FastAPI:
+               work_item_max_limit: int = 100,
+               subscription_producer_ids: frozenset[str] = frozenset()) -> FastAPI:
     if payload_limit_bytes <= 0:
         raise ValueError("a positive configured payload limit is required")
     if (not isinstance(operator_token, str) or not operator_token.strip()
@@ -38,6 +39,23 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
         raise ValueError("work-item query limit out of bounds")
     app = FastAPI(title="Bridge Monitor Capture", version="0.1.0")
     sessions: dict[str, float] = {}
+    if not subscription_producer_ids.issubset(producer_tokens):
+        raise ValueError("subscription producers must have existing authenticated producer credentials")
+
+    @app.post("/api/v1/subscription-usage")
+    def subscription_usage(body: dict, authorization: str | None = Header(default=None)):
+        from contracts.codex_claude import SubscriptionObservation
+        from service.queries.usage_notices import record_subscription_observation
+        from pydantic import ValidationError
+        producer = authenticated_producer(bearer(authorization), producer_tokens)
+        if producer not in subscription_producer_ids:
+            raise HTTPException(403, "Trusted provider telemetry producer required")
+        try:
+            observation = SubscriptionObservation.model_validate(body)
+            return record_subscription_observation(dsn, observation, producer_id=producer,
+                                                   trusted_producers=subscription_producer_ids)
+        except (ValidationError, ValueError) as exc:
+            raise HTTPException(422, "Invalid or conflicting subscription observation") from exc
 
     @app.post("/api/v1/events/batch")
     def events_batch(body: dict, authorization: str | None = Header(default=None)):
