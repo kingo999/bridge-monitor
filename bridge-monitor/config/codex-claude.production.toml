@@ -1,0 +1,142 @@
+
+[limits]
+qwen_active = 1
+qwen_waiting = 4
+claude_waiting = 8
+claude_global_active = 2
+claude_per_root_active = 1
+qwen_execution_seconds = 120
+claude_execution_seconds = 540
+local_outstanding_per_claude = 1
+
+[review]
+reviewer = "pending-user-approval"
+approval_reference = "pending:codex-claude-rollout-20261025"
+
+[router]
+mode = "shadow"
+scopes = ["analysis"]
+categories = ["single_file_python_fix"]
+prompt_prefix = "Fix the stated bug in this single Python module. Return exactly one JSON object with one key, answer, whose string value is the complete replacement Python source. Do not return a patch, explanation, Markdown, or test output.\n\n"
+prompt_version = "complete-module-envelope-v2"
+retention_days = 30
+sample_percent = 100.0
+withdrawn_refs = []
+worker_poll_ms = 1000
+output_contract = "complete_python_module_v1"
+max_prompt_bytes = 16384
+max_source_bytes = 16384
+execution_seconds = 120
+max_context_tokens = 8192
+shadow_reserve_tokens = 2048
+queue_deadline_seconds = 30
+
+[router.verifier]
+cpus = 1.0
+image = "python@sha256:2d9aefe2fef018a7eb2c13064c89c71929800fd2e5dccdbf52ea5da5bb8d929a"
+max_tests = 32
+memory_mb = 256
+pids_limit = 64
+max_test_bytes = 16384
+daemon_endpoint = "npipe:////./pipe/dockerDesktopLinuxEngine"
+timeout_seconds = 12.0
+max_result_bytes = 65536
+max_source_bytes = 16384
+
+[fallback]
+paid_model_profile = "sonnet"
+
+[guidance]
+packs = []
+max_bytes = 0
+required_categories = []
+
+[deployment]
+queue_poll_ms = 200
+qwen_endpoint = "http://192.168.0.78:11434"
+retention_days = 30
+qwen_keep_alive = "10m"
+postgres_dsn_ref = "env:BRIDGE_MONITOR_DSN"
+qwen_ack_seconds = 5.0
+qwen_temperature = 0.0
+qwen_model_digest = "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849"
+qwen_poll_seconds = 2.0
+spool_limit_bytes = 52428800
+degraded_admission = "reject_new_work"
+qwen_model_profile = "qwen2.5-coder:14b-instruct-q4_K_M"
+qwen_output_tokens = 2048
+qwen_poll_failures = 2
+payload_limit_bytes = 1048576
+qwen_agent_endpoint = "http://192.168.0.78:8874"
+context_wait_seconds = 10
+qwen_agent_token_ref = "env:BRIDGE_MONITOR_SKYNET_TOKEN"
+spool_overflow_policy = "reject_new_work"
+client_timeout_seconds = 600
+queue_deadline_seconds = 30
+delivery_margin_seconds = 30
+qwen_idle_output_seconds = 20.0
+fallback_allowance_tokens = 4096
+qwen_first_output_seconds = 45.0
+qwen_poll_timeout_seconds = 3.0
+fallback_allowance_seconds = 60
+
+[codex_claude]
+enabled = true
+spending_mode = "statistics_only"
+reference_workflow_usd = "1.25"
+reference_rolling_7d_usd = "15"
+opus_reference_rolling_24h_usd = "1"
+max_active_workers = 1
+daily_notice_usd = "10"
+subscription_notice_percent = 80
+timezone = "Europe/Prague"
+
+[codex_claude.profiles]
+
+[codex_claude.profiles.haiku]
+model_id = "claude-haiku-5-5"
+enabled = true
+effort = "low"
+reference_input_tokens = 20000
+reference_output_tokens = 2000
+reference_usd = "0.02"
+deadline_seconds = 60
+provider_seconds = 40
+queue_seconds = 10
+delivery_seconds = 10
+input_per_million = "0.50"
+output_per_million = "2.50"
+cache_write_per_million = "1.00"
+rate_card_version = "anthropic-20261025-conservative-upper-v1"
+
+[codex_claude.profiles.sonnet]
+model_id = "claude-sonnet-5-5"
+enabled = true
+effort = "medium"
+reference_input_tokens = 40000
+reference_output_tokens = 8000
+reference_usd = "0.30"
+deadline_seconds = 180
+provider_seconds = 160
+queue_seconds = 10
+delivery_seconds = 10
+input_per_million = "2"
+output_per_million = "10"
+cache_write_per_million = "4"
+rate_card_version = "anthropic-20261025-conservative-upper-v1"
+
+[codex_claude.profiles.opus]
+model_id = "claude-opus-5-5"
+enabled = true
+effort = "medium"
+reference_input_tokens = 60000
+reference_output_tokens = 12000
+reference_usd = "1.00"
+deadline_seconds = 480
+provider_seconds = 460
+queue_seconds = 10
+delivery_seconds = 10
+input_per_million = "4"
+output_per_million = "20"
+cache_write_per_million = "8"
+rate_card_version = "anthropic-20261025-conservative-upper-v1"

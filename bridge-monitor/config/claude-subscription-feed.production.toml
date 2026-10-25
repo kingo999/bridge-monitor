@@ -1,0 +1,6 @@
+
+[subscription_feed]
+enabled = true
+endpoint = "http://127.0.0.1:8873/api/v1/subscription-usage"
+credential_env = "BRIDGE_CLAUDE_SUBSCRIPTION_TOKEN"
+state_path = "var/spool/claude-subscription.sqlite"
