@@ -1,0 +1,77 @@
+{
+  "status": "proposed_design_not_execution_approved",
+  "at": "2026-10-23T15:18:45.060421+00:00",
+  "pdf_sha256": "265cb45b402d1d9f0d9833956c46ff68d8bca5a47088461d5aa20544510791d1",
+  "planning_assumptions": {
+    "familywise_one_sided_alpha": 0.05,
+    "primary_contrasts": 4,
+    "per_contrast_alpha": 0.0125,
+    "power": 0.8,
+    "method": "Normal approximation for paired binary planning only; not an exact power guarantee"
+  },
+  "sample_size_planning": [
+    {
+      "discordance": 0.1,
+      "margin_pp": 5,
+      "independent_tasks": 381
+    },
+    {
+      "discordance": 0.1,
+      "margin_pp": 10,
+      "independent_tasks": 96
+    },
+    {
+      "discordance": 0.2,
+      "margin_pp": 5,
+      "independent_tasks": 761
+    },
+    {
+      "discordance": 0.2,
+      "margin_pp": 10,
+      "independent_tasks": 191
+    },
+    {
+      "discordance": 0.3,
+      "margin_pp": 5,
+      "independent_tasks": 1141
+    },
+    {
+      "discordance": 0.3,
+      "margin_pp": 10,
+      "independent_tasks": 286
+    }
+  ],
+  "state": {
+    "git_head": "9793f12e0353e1c2190e870562138591db527367",
+    "git_status": "?? bridge-monitor/bridge/adapters/pinned_dispatch.py\n?? bridge-monitor/contracts/catalogue.py\n?? bridge-monitor/contracts/pinned_context.py\n?? bridge-monitor/docs/specifications/bounded-dispatch.md\n?? bridge-monitor/docs/specifications/module-catalogue.md\n?? bridge-monitor/docs/specifications/pinned-context.md\n?? bridge-monitor/service/queries/catalogue.py\n?? bridge-monitor/service/queries/pinned_context.py\n?? bridge-monitor/tests/adapters/test_pinned_dispatch.py\n?? bridge-monitor/tests/contracts/test_catalogue.py\n?? bridge-monitor/tests/contracts/test_pinned_context.py\n?? bridge-monitor/tests/integration/test_pinned_dispatch.py\n?? gpt-claude-mcp-bridge-v2/.baseline_local00/bridge/__pycache__/\n?? gpt-claude-mcp-bridge-v2/.superpowers/sdd/2026-10-15-local00-implementation/__pycache__/\n?? gpt-claude-mcp-bridge-v2/bridge/__pycache__/\n?? gpt-claude-mcp-bridge-v2/bridge/local_worker/__pycache__/\n?? gpt-claude-mcp-bridge-v2/docs/evidence/local00/plain-code-fix/__pycache__/\n?? gpt-claude-mcp-bridge-v2/docs/evidence/local00/registered-e2e-20261015T145755Z/__pycache__/\n?? gpt-claude-mcp-bridge-v2/tools/claude-bridge/.receipts/42208bf1-2fbf-4f82-ba62-c96c2cb64ce5.json\n?? gpt-claude-mcp-bridge-v2/tools/claude-bridge/.receipts/8a153977-0806-44e2-a45f-9a004631fca5.json\n?? gpt-claude-mcp-bridge-v2/tools/claude-bridge/.receipts/9acfa205-0c05-4f5e-86e5-1d93c90a0011.json\n?? gpt-claude-mcp-bridge-v2/tools/claude-bridge/.receipts/db278125-c1a6-4694-9a2e-0e987a751c53.json\n?? gpt-claude-mcp-bridge/__pycache__/\n?? tmp/claude-pdf-review-20261023/\n?? tmp/framework-value-review-20261023/\n?? tmp/gpt-claude-skynet-20261015T153114Z/workspace/\n",
+    "selected_hashes": {
+      "bridge/adapters/claude_cli.py": "69fcf7619704280dd847c60fec7759c5b5780bbcc011592f8c8016a4db653f5d",
+      "service/queries/distributions.py": "82f9c5ef9e903368dbf83bd09338401be084ceed3abb3cd5265ad81d8056273d",
+      "service/queries/metrics.py": "b696a017cc75a02c4df36a8f6c03e6bb2838aca4818586a63590182c2670839f",
+      "service/queries/history.py": "50e92c885d2db60577b508c41347ba840f708daff8831049f89fb0732609fa56",
+      "contracts/measurement.py": "72ec7a388af9d1b05513d97f1f50fb09a431044b888529aefda11ad6eaa4ba6d",
+      "bridge/classifier/scenarios.py": "a03142e54ffb1ab0baf4f76d46f4251ecf2e654d15f8fe47160bdab6f9a7160e",
+      "var/hook-rollout-20261019/capture.local.toml": "02ab6697eeb028ba9846e62a8aa6f908ae502af9ce710cc207e7fc6cfbf7aa95",
+      "var/shadow-checks/gemma-value-v4-20261021/manifest.json": "18f1bc82c72ce72307131c28b16da56716d577dbe4f3826b2376a5c92b02ba6d",
+      "var/shadow-checks/gemma-value-v4-20261021/monitor.py": "db5b2af3e38ee3345d8bdc7b8275926fadebb00fb0e8e36648b274f917f2be31"
+    }
+  },
+  "bridge_reviews": [
+    {
+      "call_id": "8265937e-c3f3-5e42-8b3a-2d27b129b182",
+      "result_id": "4b33daec-689c-4063-adcc-bff90dab4ce1",
+      "result_sha256": "d3aac97baabbd61aa397f047bb368e60abbcc9942f5926744298b05d8a0a8f97",
+      "requested_model": "sonnet",
+      "reported_model": "claude-sonnet-5-5",
+      "scope": "v5 design, read-only"
+    },
+    {
+      "call_id": "b753ff96-c041-5a96-91d0-774686685d12",
+      "result_id": "7243eacd-5d06-4df7-8056-080cda09c4a6",
+      "result_sha256": "33efbcdb34caf269844b9982df9c0533fb4977f64b944ccc3676c46d0bac0fed",
+      "requested_model": "sonnet",
+      "reported_model": "claude-sonnet-5-5",
+      "scope": "cache/Qwen value and five-arm study design, read-only"
+    }
+  ]
+}

@@ -1,0 +1,2019 @@
+{
+  "summary": {
+    "retrieved_at": "2026-10-23T15:12:36.416577+00:00",
+    "selected_work_items": 41,
+    "local_retained_work_items": 12,
+    "local_retained_with_reported_claude_execution": 12,
+    "local_retained_with_claude_requested_call": 12,
+    "local_retained_with_cache_read_observation": 7,
+    "snapshot_unresolved": 29,
+    "snapshot_unresolved_current_runtime_states": {
+      "completed": 15,
+      "cancelled": 1,
+      "queued": 1,
+      "uncertain": 1
+    },
+    "snapshot_unresolved_with_current_held_slot": 1,
+    "snapshot_unresolved_current_resolutions": {
+      "null": 29
+    }
+  },
+  "work_items": [
+    {
+      "work_item_id": "gemma-shadow-fixes-v5-token-aware-design-31b0fd7a",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:gemma-shadow-fixes-v5-design-20261023-31b0fd7a",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "8265937e-c3f3-5e42-8b3a-2d27b129b182",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "8265937e-c3f3-5e42-8b3a-2d27b129b182:model:1",
+          "call_id": "8265937e-c3f3-5e42-8b3a-2d27b129b182",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "8265937e-c3f3-5e42-8b3a-2d27b129b182:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 2,
+          "output_tokens": 4128,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 4010,
+          "provenance": "claude_cli_result"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "8265937e-c3f3-5e42-8b3a-2d27b129b182",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "daveify-20261022-voice-6f9a-revision",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "026237aa-e154-5bcb-964f-6ab1b059d8f5",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "bm02-step3-isolated-pg-20261021-01a15eac-01",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:bm02-step3-pg-scope-20261021-01a15eac-01",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e24b282e-cd39-5387-9d5b-df57e66a9791",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": [
+        {
+          "call_id": "e24b282e-cd39-5387-9d5b-df57e66a9791",
+          "pool": "claude",
+          "state": "cancelled",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "phase5-incremental-backlog-20261021-01a15eac",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:phase5-monitor-backlog-20261021-01a15eac",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "2bbf1334-ae7e-5e26-9a77-d04c2341744e",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "c7e04a6d-cb3e-4191-9bdd-6b666d2bf20d",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "2bbf1334-ae7e-5e26-9a77-d04c2341744e:model:1",
+          "call_id": "2bbf1334-ae7e-5e26-9a77-d04c2341744e",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "c7e04a6d-cb3e-4191-9bdd-6b666d2bf20d:model:1",
+          "call_id": "c7e04a6d-cb3e-4191-9bdd-6b666d2bf20d",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "2bbf1334-ae7e-5e26-9a77-d04c2341744e:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 13971,
+          "cache_read_input_tokens": 12385,
+          "cache_creation_input_tokens": 13328,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "c7e04a6d-cb3e-4191-9bdd-6b666d2bf20d:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 68,
+          "output_tokens": 262,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "2bbf1334-ae7e-5e26-9a77-d04c2341744e",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "c7e04a6d-cb3e-4191-9bdd-6b666d2bf20d",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "gemma-shadow-fixes-design-20261021-02",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:gemma-shadow-fixes-design-20261021-02",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "1855d01c-d01a-523f-b3da-c60beda332fd",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": [
+        {
+          "call_id": "1855d01c-d01a-523f-b3da-c60beda332fd",
+          "pool": "claude",
+          "state": "queued",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "gemma-shadow-fixes-design-20261021-01",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:gemma-shadow-fixes-design-20261021-01",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "8477d96e-7b80-5476-94e3-625454ffdbcd",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "8477d96e-7b80-5476-94e3-625454ffdbcd:model:1",
+          "call_id": "8477d96e-7b80-5476-94e3-625454ffdbcd",
+          "requested_model": "sonnet",
+          "reported_model": null,
+          "status": "started"
+        }
+      ],
+      "usage": [],
+      "runtime": [
+        {
+          "call_id": "8477d96e-7b80-5476-94e3-625454ffdbcd",
+          "pool": "claude",
+          "state": "uncertain",
+          "slot_held": true
+        }
+      ]
+    },
+    {
+      "work_item_id": "gemma-scenario-blind-reference-validation-20261021-1",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:gemma-scenario-blind-reference-validation-20261021-1",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "c7d02cf5-17c2-5134-a5fc-335e1981dac2",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "c7d02cf5-17c2-5134-a5fc-335e1981dac2:model:1",
+          "call_id": "c7d02cf5-17c2-5134-a5fc-335e1981dac2",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "c7d02cf5-17c2-5134-a5fc-335e1981dac2:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 2,
+          "output_tokens": 355,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 2931,
+          "provenance": "claude_cli_result"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "c7d02cf5-17c2-5134-a5fc-335e1981dac2",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "fresh-bridge-19x23",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:skynet-reconciled-smoke-20261021-bc76",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "fb2c8efe-0b39-4e6d-8a9d-4f45748e392c",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "59130320-6af7-462d-833b-93b4f752b2c0",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "59130320-6af7-462d-833b-93b4f752b2c0:model:1",
+          "call_id": "59130320-6af7-462d-833b-93b4f752b2c0",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "fb2c8efe-0b39-4e6d-8a9d-4f45748e392c:model:1",
+          "call_id": "fb2c8efe-0b39-4e6d-8a9d-4f45748e392c",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "fb2c8efe-0b39-4e6d-8a9d-4f45748e392c:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 466,
+          "cache_read_input_tokens": 2236,
+          "cache_creation_input_tokens": 2644,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "59130320-6af7-462d-833b-93b4f752b2c0:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 44,
+          "output_tokens": 4,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "fb2c8efe-0b39-4e6d-8a9d-4f45748e392c",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "59130320-6af7-462d-833b-93b4f752b2c0",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "agent-preflight-smoke-02",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "b36a5b41-f426-4e92-a7b8-6746632ff9d6",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "chart-attribution-mvhxgfk2-analysis",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:chart-attribution-mvhxgfk2",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "65cc66e9-629d-5351-86de-c810f5ca8158",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "65cc66e9-629d-5351-86de-c810f5ca8158:model:1",
+          "call_id": "65cc66e9-629d-5351-86de-c810f5ca8158",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "65cc66e9-629d-5351-86de-c810f5ca8158:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 2,
+          "output_tokens": 2215,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 2510,
+          "provenance": "claude_cli_result"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "65cc66e9-629d-5351-86de-c810f5ca8158",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "ui-monitor-charts-review-20261021",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:ui-monitor-charts-review-20261021",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "8fb23317-9aae-473c-8cd8-0a5872729173",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "8fb23317-9aae-473c-8cd8-0a5872729173:model:1",
+          "call_id": "8fb23317-9aae-473c-8cd8-0a5872729173",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "8fb23317-9aae-473c-8cd8-0a5872729173:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 2,
+          "output_tokens": 732,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 2512,
+          "provenance": "claude_cli_result"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "8fb23317-9aae-473c-8cd8-0a5872729173",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "9ac7dfe8-76f3-47d2-ad64-aa285c57ea84",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:68daf935-f95a-45cd-b415-168ae771e241",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "d054bd0b-f747-5204-a218-02672f43fede",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "67652828-67d3-4b7b-a582-232ab84c8911",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "67652828-67d3-4b7b-a582-232ab84c8911:model:1",
+          "call_id": "67652828-67d3-4b7b-a582-232ab84c8911",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "d054bd0b-f747-5204-a218-02672f43fede:model:1",
+          "call_id": "d054bd0b-f747-5204-a218-02672f43fede",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "d054bd0b-f747-5204-a218-02672f43fede:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 451,
+          "cache_read_input_tokens": 2203,
+          "cache_creation_input_tokens": 2657,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "67652828-67d3-4b7b-a582-232ab84c8911:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 68,
+          "output_tokens": 13,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "d054bd0b-f747-5204-a218-02672f43fede",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "67652828-67d3-4b7b-a582-232ab84c8911",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "8543292a-7873-456f-9329-4a69915fd1c1",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:5383e78a-5b95-495c-80b8-ca800e779592",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "7732f925-bdec-534a-b31e-caa74d0293af",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e5024bdc-4c11-4c5b-a7ee-6e0c5dc86029",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "7732f925-bdec-534a-b31e-caa74d0293af:model:1",
+          "call_id": "7732f925-bdec-534a-b31e-caa74d0293af",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "e5024bdc-4c11-4c5b-a7ee-6e0c5dc86029:model:1",
+          "call_id": "e5024bdc-4c11-4c5b-a7ee-6e0c5dc86029",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "7732f925-bdec-534a-b31e-caa74d0293af:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 549,
+          "cache_read_input_tokens": 4094,
+          "cache_creation_input_tokens": 486,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "e5024bdc-4c11-4c5b-a7ee-6e0c5dc86029:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 76,
+          "output_tokens": 13,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "7732f925-bdec-534a-b31e-caa74d0293af",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "e5024bdc-4c11-4c5b-a7ee-6e0c5dc86029",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "6ea3c233-9742-4083-a08a-1f7bf05ca1a7",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:53324993-744d-4fa1-b60c-13dde6d12e04",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "6daa1041-ce86-5065-9bbd-d1d091ed2906",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "910aad88-6166-4411-97cb-6007c5d4722f",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "6daa1041-ce86-5065-9bbd-d1d091ed2906:model:1",
+          "call_id": "6daa1041-ce86-5065-9bbd-d1d091ed2906",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "910aad88-6166-4411-97cb-6007c5d4722f:model:1",
+          "call_id": "910aad88-6166-4411-97cb-6007c5d4722f",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "6daa1041-ce86-5065-9bbd-d1d091ed2906:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 553,
+          "cache_read_input_tokens": 2137,
+          "cache_creation_input_tokens": 3068,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "910aad88-6166-4411-97cb-6007c5d4722f:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 97,
+          "output_tokens": 367,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "6daa1041-ce86-5065-9bbd-d1d091ed2906",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "910aad88-6166-4411-97cb-6007c5d4722f",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "1f1fa118-83a3-4d74-8990-8e7488c179b2",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:945f5402-3ab2-4d7b-8898-faf2c3adb2b0",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e7ed8a78-1871-56d8-939b-b6a12adee9d9",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "34b89f47-f93c-4e68-ab23-38e988a08d41",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:0036867a-2787-486c-9315-6e3b47f26368",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "fa08f44c-6197-5065-96fd-f89785fcfa3b",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "d9573892-b130-46b1-90aa-bc53988e1c96",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:6fda2fc0-61c9-425c-b2d9-93eb296fa701",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e2a594de-0fe7-5634-90c5-bfb2687ef319",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "26f0eaac-b4d5-41d0-881f-d81ffd4d3638",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:f8b6c18b-14e8-4107-875c-022aad37268b",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "9377471a-36f6-40bd-a97b-91970a1878f6",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "f166e41f-3f58-4591-b6e6-63b0e4aea735",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:7f4cb7cb-2071-4b0e-92ba-5802f36bb264",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "70237d88-0c79-5f11-86b8-5d1e86a8cacc",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "7421b058-b127-4602-b5fd-77a2c989bf1a",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:5788c6d5-8543-4011-b74f-73badf9344cf",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "958c84fe-81f8-5fd2-a968-cd3f29b0a006",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "8c6f8a20-0fba-4259-b642-bd578edf91b3",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:67e3990d-7f4a-46be-9a25-480ad0f7d980",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "3bf5e207-657f-527c-a37c-5d279d5c5dde",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "31d38360-5861-430c-8fde-f44fbfa6aa89",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:b4cef3f3-1ad1-4f2d-9ec8-d267e82eb3b0",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e03770be-de68-514d-a68c-7e2de1587004",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "75f051ec-83ac-4a83-965b-a5b28254b0b3",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:8f3357da-b68a-409d-af08-e6b9295719af",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "d870ea42-30ed-4bc6-a939-224ba2dd6726",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "094d1a95-44b7-4fd0-ad11-4ac0a11ca7a2",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:de0b81da-cec2-4a6f-99db-71521273e0b4",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "701eb02f-b86d-5b34-a11a-b70fa0b7c1dc",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "eef9601d-a773-4a05-8c7c-2b769b5cef7e",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:3ebe8f3b-85de-40c3-8fd5-83e169250103",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "316190cf-7c41-5b39-9894-0818178f5a9d",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "28a217bc-b4ad-4237-96cf-d2382a8bd80d",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:bd2f7e5f-bcd4-40bf-a7f6-5e359c01327d",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "dfab6d4a-b787-5d1d-8fc5-3fbc46373491",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "3acc00cf-fe68-41cd-b658-c0c0b656c0a8",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:49bf5c1d-90c0-4174-b5a4-3861ab7dcdbe",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "beb6efd0-3504-53cf-bd6c-30c66f2d4756",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "e94d857c-f780-4772-a1e8-169702a579bb",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:2d7c6eee-f41b-4c08-95ff-c1dfd8d38b5b",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e975d6c6-a5bf-533c-87b1-33ff9e2968a8",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [],
+      "usage": [],
+      "runtime": []
+    },
+    {
+      "work_item_id": "57ad66fa-fb2e-4c2e-8a4e-e79bd811c5cc",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:99bd7ac1-8af0-4a8c-bcdc-758d4b29f708",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "76670fea-25c5-4541-bab7-93f9eb1b1ab8",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "2662f563-5a26-4a26-8e04-67705ee4c315",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "2662f563-5a26-4a26-8e04-67705ee4c315:model:1",
+          "call_id": "2662f563-5a26-4a26-8e04-67705ee4c315",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "76670fea-25c5-4541-bab7-93f9eb1b1ab8:model:1",
+          "call_id": "76670fea-25c5-4541-bab7-93f9eb1b1ab8",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "76670fea-25c5-4541-bab7-93f9eb1b1ab8:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 300,
+          "cache_read_input_tokens": 1795,
+          "cache_creation_input_tokens": 2207,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "2662f563-5a26-4a26-8e04-67705ee4c315:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 44,
+          "output_tokens": 4,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "76670fea-25c5-4541-bab7-93f9eb1b1ab8",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "2662f563-5a26-4a26-8e04-67705ee4c315",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "11038f32-35c0-4c86-9877-dd9dcc10a7d8",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:7ac6c26a-3e64-4635-904e-4e37cd178321",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "50fe5a2f-092a-4874-a9d2-15aeb5a58182",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "45cc6eae-0881-4997-ab7d-1cf87c741f9b",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "45cc6eae-0881-4997-ab7d-1cf87c741f9b:model:1",
+          "call_id": "45cc6eae-0881-4997-ab7d-1cf87c741f9b",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "50fe5a2f-092a-4874-a9d2-15aeb5a58182:model:1",
+          "call_id": "50fe5a2f-092a-4874-a9d2-15aeb5a58182",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "50fe5a2f-092a-4874-a9d2-15aeb5a58182:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 284,
+          "cache_read_input_tokens": 2864,
+          "cache_creation_input_tokens": 1142,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "45cc6eae-0881-4997-ab7d-1cf87c741f9b:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 44,
+          "output_tokens": 4,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "50fe5a2f-092a-4874-a9d2-15aeb5a58182",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "45cc6eae-0881-4997-ab7d-1cf87c741f9b",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "d4c252e0-13d3-4f86-9047-ef383a4d1705",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:a8c839b6-205c-4111-94fe-f8be5d2fce8b",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "438ec3d8-c4a1-4db8-9318-86883a326914",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e4b6b94d-3dfc-4e14-8d76-8b84d8477835",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "438ec3d8-c4a1-4db8-9318-86883a326914:model:1",
+          "call_id": "438ec3d8-c4a1-4db8-9318-86883a326914",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "e4b6b94d-3dfc-4e14-8d76-8b84d8477835:model:1",
+          "call_id": "e4b6b94d-3dfc-4e14-8d76-8b84d8477835",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "438ec3d8-c4a1-4db8-9318-86883a326914:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 299,
+          "cache_read_input_tokens": 2813,
+          "cache_creation_input_tokens": 1087,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "e4b6b94d-3dfc-4e14-8d76-8b84d8477835:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 44,
+          "output_tokens": 4,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "438ec3d8-c4a1-4db8-9318-86883a326914",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "e4b6b94d-3dfc-4e14-8d76-8b84d8477835",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "7e77b80e-628c-439d-9a1f-06f51a2e4edd",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:309e174e-0588-461a-81b0-b36160d6753c",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "cb270054-1c2d-4db3-902b-7776e0124751",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "0b0235bc-3439-4cb3-9e1e-e070393e1de4",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "0b0235bc-3439-4cb3-9e1e-e070393e1de4:model:1",
+          "call_id": "0b0235bc-3439-4cb3-9e1e-e070393e1de4",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "cb270054-1c2d-4db3-902b-7776e0124751:model:1",
+          "call_id": "cb270054-1c2d-4db3-902b-7776e0124751",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "cb270054-1c2d-4db3-902b-7776e0124751:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 304,
+          "cache_read_input_tokens": 1794,
+          "cache_creation_input_tokens": 2227,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "0b0235bc-3439-4cb3-9e1e-e070393e1de4:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 44,
+          "output_tokens": 66,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "cb270054-1c2d-4db3-902b-7776e0124751",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "0b0235bc-3439-4cb3-9e1e-e070393e1de4",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "e02ad7bf-0bea-4afa-b738-9b3ce9b02b8e",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:7af6fd9d-76f9-4ed9-829c-f7cf8e07ed9c",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "dca94796-1122-4845-b3fa-b8ea58863d1a",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "150689b9-1237-47f5-b60c-db17be9dea65",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "150689b9-1237-47f5-b60c-db17be9dea65:model:1",
+          "call_id": "150689b9-1237-47f5-b60c-db17be9dea65",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "dca94796-1122-4845-b3fa-b8ea58863d1a:model:1",
+          "call_id": "dca94796-1122-4845-b3fa-b8ea58863d1a",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "dca94796-1122-4845-b3fa-b8ea58863d1a:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 275,
+          "cache_read_input_tokens": 2815,
+          "cache_creation_input_tokens": 1044,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "150689b9-1237-47f5-b60c-db17be9dea65:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 42,
+          "output_tokens": 3,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "dca94796-1122-4845-b3fa-b8ea58863d1a",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "150689b9-1237-47f5-b60c-db17be9dea65",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "8ddb8025-856e-4068-9dd3-f1c0889d854d",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:2985202e-a7fc-46b8-af64-5c0e0f8ac5f1",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "a61b5f21-8591-4a8f-99fa-435941ee5b10",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "4dd426b9-e67a-4ec5-9e63-3b74adb275f1",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "4dd426b9-e67a-4ec5-9e63-3b74adb275f1:model:1",
+          "call_id": "4dd426b9-e67a-4ec5-9e63-3b74adb275f1",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "a61b5f21-8591-4a8f-99fa-435941ee5b10:model:1",
+          "call_id": "a61b5f21-8591-4a8f-99fa-435941ee5b10",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "a61b5f21-8591-4a8f-99fa-435941ee5b10:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 264,
+          "cache_read_input_tokens": 1745,
+          "cache_creation_input_tokens": 2106,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "4dd426b9-e67a-4ec5-9e63-3b74adb275f1:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 42,
+          "output_tokens": 3,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "a61b5f21-8591-4a8f-99fa-435941ee5b10",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "4dd426b9-e67a-4ec5-9e63-3b74adb275f1",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "7c285ddd-2594-48a2-8d4d-62fd22fd2a90",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:f10ad353-157c-4468-8963-3d1854327213",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "c8416721-c9fe-4842-9096-31ace2484864",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "88ebd104-822b-49b6-af60-0b0336b9f837",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "88ebd104-822b-49b6-af60-0b0336b9f837:model:1",
+          "call_id": "88ebd104-822b-49b6-af60-0b0336b9f837",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "c8416721-c9fe-4842-9096-31ace2484864:model:1",
+          "call_id": "c8416721-c9fe-4842-9096-31ace2484864",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "c8416721-c9fe-4842-9096-31ace2484864:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 492,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "88ebd104-822b-49b6-af60-0b0336b9f837:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 135,
+          "output_tokens": 36,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "c8416721-c9fe-4842-9096-31ace2484864",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "88ebd104-822b-49b6-af60-0b0336b9f837",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "c6b9334a-6d22-4452-a1b6-9a1a03da3041",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:6afa3e8e-093e-4702-ac8c-28630bf7f33a",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "5df27fe9-9ac4-42c4-a64f-fd790b319b66",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "b2db5a88-d46a-454a-9191-c9e4d775a584",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        },
+        {
+          "call_id": "e2e1aa91-43dc-4b61-86b3-f0311b0df47d",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "5df27fe9-9ac4-42c4-a64f-fd790b319b66:model:1",
+          "call_id": "5df27fe9-9ac4-42c4-a64f-fd790b319b66",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "b2db5a88-d46a-454a-9191-c9e4d775a584:model:1",
+          "call_id": "b2db5a88-d46a-454a-9191-c9e4d775a584",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "5df27fe9-9ac4-42c4-a64f-fd790b319b66:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 6,
+          "output_tokens": 1178,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "b2db5a88-d46a-454a-9191-c9e4d775a584:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 73,
+          "output_tokens": 18,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "5df27fe9-9ac4-42c4-a64f-fd790b319b66",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "b2db5a88-d46a-454a-9191-c9e4d775a584",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "79d4c1c0-c321-4603-a518-ad0476cfb67f",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:992d643a-dd48-4e59-b986-b33810c3c984",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "41ab6f08-af89-42ad-9721-de2574a1acb0",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "384bf219-46d9-41a3-a083-a2dcc97a61f8",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "384bf219-46d9-41a3-a083-a2dcc97a61f8:model:1",
+          "call_id": "384bf219-46d9-41a3-a083-a2dcc97a61f8",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "41ab6f08-af89-42ad-9721-de2574a1acb0:model:1",
+          "call_id": "41ab6f08-af89-42ad-9721-de2574a1acb0",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "41ab6f08-af89-42ad-9721-de2574a1acb0:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 517,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "384bf219-46d9-41a3-a083-a2dcc97a61f8:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 68,
+          "output_tokens": 82,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "41ab6f08-af89-42ad-9721-de2574a1acb0",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "384bf219-46d9-41a3-a083-a2dcc97a61f8",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "77623ead-fcdd-4304-8de7-0eca1e918d00",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:220813b1-46ac-4dd5-acff-2cb6c75b04b6",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "e96ef007-a956-4d20-bb91-00348e06d7c4",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "6a392db5-3068-474a-a8bd-b4d9d94ff743",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "6a392db5-3068-474a-a8bd-b4d9d94ff743:model:1",
+          "call_id": "6a392db5-3068-474a-a8bd-b4d9d94ff743",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "e96ef007-a956-4d20-bb91-00348e06d7c4:model:1",
+          "call_id": "e96ef007-a956-4d20-bb91-00348e06d7c4",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "e96ef007-a956-4d20-bb91-00348e06d7c4:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 347,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "6a392db5-3068-474a-a8bd-b4d9d94ff743:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 74,
+          "output_tokens": 38,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "e96ef007-a956-4d20-bb91-00348e06d7c4",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "6a392db5-3068-474a-a8bd-b4d9d94ff743",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "f9ca3079-aba3-4ec1-b1c7-fdfc53036460",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:55676ac9-fff3-41cb-82e5-3fda5fd40356",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "77522954-d78c-41dc-851c-6431f49550fe",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "ee729d0d-e956-4524-91c6-b689b54332b4",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "77522954-d78c-41dc-851c-6431f49550fe:model:1",
+          "call_id": "77522954-d78c-41dc-851c-6431f49550fe",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "ee729d0d-e956-4524-91c6-b689b54332b4:model:1",
+          "call_id": "ee729d0d-e956-4524-91c6-b689b54332b4",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "77522954-d78c-41dc-851c-6431f49550fe:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 254,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "ee729d0d-e956-4524-91c6-b689b54332b4:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 42,
+          "output_tokens": 3,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "77522954-d78c-41dc-851c-6431f49550fe",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "ee729d0d-e956-4524-91c6-b689b54332b4",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "a5da9c13-861c-4d85-a1f0-b27dcef3c4d4",
+      "snapshot_resolution": "local_retained",
+      "current_resolution": "local_retained",
+      "calls": [
+        {
+          "call_id": "gpt:0fea155a-505d-42b1-9604-497f665dd925",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "3533533f-24da-420b-91d0-481e11a552fd",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "590432c4-8813-4151-94fc-065c239bf8bb",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": true
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "3533533f-24da-420b-91d0-481e11a552fd:model:1",
+          "call_id": "3533533f-24da-420b-91d0-481e11a552fd",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        },
+        {
+          "model_execution_id": "590432c4-8813-4151-94fc-065c239bf8bb:model:1",
+          "call_id": "590432c4-8813-4151-94fc-065c239bf8bb",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "reported_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "3533533f-24da-420b-91d0-481e11a552fd:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 255,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "claude_cli_result"
+        },
+        {
+          "model_execution_id": "590432c4-8813-4151-94fc-065c239bf8bb:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 42,
+          "output_tokens": 3,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "agent_ollama_terminal"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "3533533f-24da-420b-91d0-481e11a552fd",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        },
+        {
+          "call_id": "590432c4-8813-4151-94fc-065c239bf8bb",
+          "pool": "qwen",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    },
+    {
+      "work_item_id": "24c59e93-7481-42ab-a8e0-02c46607c463",
+      "snapshot_resolution": null,
+      "current_resolution": null,
+      "calls": [
+        {
+          "call_id": "gpt:4c528d3f-356c-47a7-9d83-faa32978b8e8",
+          "requested_model": null,
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "0e195318-6a09-45d0-b57d-4ca8a3ecb30f",
+          "requested_model": "sonnet",
+          "execution_mode": "production",
+          "local_dispatch": false
+        },
+        {
+          "call_id": "d8a24647-863d-4141-809d-5ed0d5670976",
+          "requested_model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "execution_mode": "production",
+          "local_dispatch": false
+        }
+      ],
+      "models": [
+        {
+          "model_execution_id": "0e195318-6a09-45d0-b57d-4ca8a3ecb30f:model:1",
+          "call_id": "0e195318-6a09-45d0-b57d-4ca8a3ecb30f",
+          "requested_model": "sonnet",
+          "reported_model": "claude-sonnet-5-5",
+          "status": "started"
+        }
+      ],
+      "usage": [
+        {
+          "model_execution_id": "0e195318-6a09-45d0-b57d-4ca8a3ecb30f:model:1",
+          "scope": "execution",
+          "is_cumulative": true,
+          "input_tokens": 4,
+          "output_tokens": 215,
+          "cache_read_input_tokens": null,
+          "cache_creation_input_tokens": null,
+          "provenance": "claude_cli_result"
+        }
+      ],
+      "runtime": [
+        {
+          "call_id": "0e195318-6a09-45d0-b57d-4ca8a3ecb30f",
+          "pool": "claude",
+          "state": "completed",
+          "slot_held": false
+        }
+      ]
+    }
+  ]
+}
