@@ -1,0 +1,6 @@
+# Local scratch work and experiment artifacts; tracked files remain tracked.
+/tmp/
+
+# Generated Python bytecode.
+__pycache__/
+*.py[cod]
