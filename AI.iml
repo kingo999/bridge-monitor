@@ -125,6 +125,7 @@
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/hook-rollout-20261019/pytest-full/test_parent_runtime_uses_activ0/bridge-monitor/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/tests/mri3-fence-01a173e5-20261025/test_child_config_is_project_l0/bridge-monitor/.venv" />
       <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/tests/mri3-fence-01a173e5-20261025/test_parent_config_is_project_0/bridge-monitor/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/bridge-monitor/var/integrations/semgrep/mri3/.venv" />
     </content>
     <orderEntry type="jdk" jdkName="C:\AI\.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
