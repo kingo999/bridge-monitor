@@ -2,6 +2,7 @@
 
 import json
 import hashlib
+import re
 from decimal import Decimal, InvalidOperation
 import os
 import signal
@@ -36,6 +37,19 @@ def _completion_reply(raw_answer: str) -> tuple[str, dict | None]:
         parsed = None
     if shaped(parsed):
         return parsed["answer"], parsed
+
+    # A single outer Markdown fence is presentation, not part of the envelope.
+    # Parse the complete fenced body; never select one object from mixed content.
+    fenced = re.fullmatch(r"```(?:json)?[ \t]*\r?\n(.*?)\r?\n```",
+                          raw_answer.strip(), flags=re.DOTALL | re.IGNORECASE)
+    if fenced:
+        try:
+            parsed = json.loads(fenced.group(1))
+        except (ValueError, TypeError):
+            parsed = None
+        if shaped(parsed, embedded=True):
+            return parsed["answer"], parsed
+        return raw_answer, None
 
     decoder = json.JSONDecoder()
     candidates = []
