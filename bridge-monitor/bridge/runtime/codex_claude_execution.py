@@ -18,7 +18,7 @@ def execute_profile(dsn, adapter, lease, task, prompt, emitter, profile):
                     {"call_id":lease.call_id,"receipt_sha256":result.receipt_sha256,
                      "requested_model":profile.model_id,"reported_model":result.reported_model,
                      "counters":result.usage,"reason":"model_drift_or_unreported_model"})
-        return AdapterResult(state="uncertain",uncertainty="bounded_model_identity_unverified")
+        return AdapterResult(state="uncertain",uncertainty="bounded_model_identity_unverified",terminated=result.terminated,cancelled=result.cancelled)
     amount=price_usage(profile,result.usage)
     if amount is not None and result.receipt_sha256:
         settle_codex_claude_receipt(dsn,call_id=lease.call_id,
@@ -27,5 +27,5 @@ def execute_profile(dsn, adapter, lease, task, prompt, emitter, profile):
             counters=result.usage,observed_at=datetime.now(timezone.utc))
     if (result.state=="completed" and (result.reported_model!=profile.model_id
             or result.local_tool_attempts or result.completion_claim is None)):
-        return AdapterResult(state="uncertain",uncertainty="bounded_result_validation_failed")
+        return AdapterResult(state="uncertain",uncertainty="bounded_result_validation_failed",terminated=result.terminated,cancelled=result.cancelled)
     return result

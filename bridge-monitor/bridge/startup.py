@@ -45,6 +45,7 @@ class RuntimeCapabilities(BaseModel):
     cancellation_poll_ms: int = Field(default=250, ge=25, le=5000)
     workspace_max_bytes: int = Field(default=104857600, ge=1)
     sources: dict[str, str] = Field(default_factory=dict)
+    repository: dict = Field(default_factory=dict)
     claude: ClaudeCapabilities
     qwen: QwenCapabilities
 
@@ -133,6 +134,12 @@ def build_coordinator(runtime_config_path: str | Path, *,
             cancellation_probe=lambda call_id: cancellation_requested(dsn, call_id),
             mcp_config_factory=lambda lease: create_child_mcp_config(
                 project, lease, python_executable=executable))
+        from bridge.repository import RepositoryPolicy
+        claude_adapter.repository_policy = RepositoryPolicy.model_validate(capabilities.repository)
+        if claude_adapter.repository_policy.enabled:
+            import json
+            reader_file = project / 'var' / 'secrets' / 'repository-reader.json'
+            claude_adapter.repository_reader_dsn = json.loads(reader_file.read_text(encoding='utf-8'))['dsn']
     else:
         deployment = policy.deployment
         common = dict(

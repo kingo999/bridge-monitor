@@ -12,3 +12,50 @@ context_tokens = 16384
 template_overhead_tokens = 128
 byte_upper_bound_validated = true
 client_timeout_verified = true
+
+# Explicitly authorized 2026-10-27 for the MRI P1 plan; no general shell/Git writes.
+[repository]
+# Explicit finite allowance for verbose synthetic MRI test logs; default remains 8 MiB.
+max_log_bytes = 33554432
+ui_upload_parser_install = true
+enabled = true
+maven = 'C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.12\bin\mvn.cmd'
+pnpm = 'C:\Program Files\nodejs\pnpm.CMD'
+java_home = 'C:\Program Files\Eclipse Adoptium\jdk-25.0.2.10-hotspot'
+max_file_bytes = 524288
+command_timeout_seconds = 500
+
+[repository.roots]
+mri3 = 'D:\IdeaProjects\mine\mri3'
+mri_test = 'D:\IdeaProjects\mri\mri-java-services-4'
+mri = 'D:\IdeaProjects\mri\mri-java-services-3'
+ui = 'D:\IdeaProjects\mri\mri-node-ui-services'
+
+[repository.check_kinds]
+mri3 = "maven"
+mri_test = "maven"
+mri = "maven"
+ui = "ui"
+
+[repository.write_prefixes]
+mri3 = ["src/", "ui/", "docs/", "scripts/"]
+mri_test = ["security-ai/"]
+mri = ["report-application/", "work/p1/", "docs/architecture/decisions/"]
+ui = ["frontend/ui-server/"]
+
+# MRI3 is a standalone Maven root, unlike the existing services reactor.
+[repository.maven_modules]
+mri3 = []
+
+# MRI3's MCP component is outside the authorized instruction scope. Raw report
+# and database seed directories are excluded from worker file access.
+[repository.denied_prefixes]
+mri3 = ["mcp/", "report/", "seed_db/"]
+
+# Local migration resources only; no SQL execution capability. MRI P1 authorization.
+[repository.sql_write_prefixes]
+mri = ["report-application/src/main/resources/db/"]
+
+# User-authorized setup test only; fixed operations, no fix/approval/Git writes.
+[repository.security_ai_campaigns]
+mri_test = ["2026-10-29-bin082-installation-test"]

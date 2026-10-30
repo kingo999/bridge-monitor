@@ -79,6 +79,8 @@ class HostRoutingFacts(StrictModel):
     supplied_context_only: bool = False
     needs_repository: bool = False
     needs_tools: bool = False
+    repository_execution_available: bool = False
+    repository_binding: str | None = None
     durable_logging_available: bool = True
     profile_models: list[str] = Field(default_factory=list)
 

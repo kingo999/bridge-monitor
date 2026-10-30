@@ -36,6 +36,13 @@ def configure_agent_token(settings: dict, policy, project: Path) -> None:
 
 
 def main() -> int:
+    import argparse
+    parser = argparse.ArgumentParser(description="Existing Bridge launcher / durable one-shot route_work")
+    parser.add_argument("--task-json")
+    parser.add_argument("--receipt-json")
+    args = parser.parse_args()
+    if bool(args.task_json) != bool(args.receipt_json):
+        parser.error("task-json and receipt-json must be supplied together")
     try:
         settings = json.loads(SETTINGS.read_text(encoding="utf-8"))
         if (not isinstance(settings, dict) or
@@ -61,6 +68,23 @@ def main() -> int:
     # This credential authenticates this process's internal recovery calls.
     # It does not need to persist or appear in the Codex registration.
     os.environ["BRIDGE_MONITOR_SYSTEM_TOKEN"] = secrets.token_urlsafe(48)
+    if args.task_json:
+        from bridge.startup import build_coordinator
+        from contracts.work import TaskPacket
+        task_path = Path(args.task_json).resolve(strict=True)
+        receipt_path = Path(args.receipt_json).resolve()
+        if not task_path.is_relative_to(PROJECT / "var") or not receipt_path.is_relative_to(PROJECT / "var"):
+            raise ValueError("one-shot request and receipt must belong to Bridge var")
+        packet = json.loads(task_path.read_text(encoding="utf-8"))
+        coordinator = build_coordinator(RUNTIME, audience="parent")
+        try:
+            result = coordinator.route_work(TaskPacket.model_validate(packet.pop("task")), **packet)
+            receipt_path.parent.mkdir(parents=True, exist_ok=True)
+            receipt_path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+            print(json.dumps({key:result[key] for key in ("state","call_id","decision_id","reason","reported_model") if key in result}))
+            return 0 if result.get("state") == "completed" else 1
+        finally:
+            coordinator.close()
     from bridge.mcp_server import main as run_server
 
     return run_server(["--audience", "parent"])

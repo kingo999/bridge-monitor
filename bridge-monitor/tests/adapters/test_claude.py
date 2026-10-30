@@ -43,6 +43,30 @@ def _task():
                       scope=["source-read"], token_budget=1000, call_budget=2)
 
 
+def test_explicit_synthetic_api_error_is_not_a_reported_model_change(tmp_path):
+    runner = Runner([
+        {'type': 'system', 'model': 'claude-sonnet-5-5'},
+        {'type': 'assistant', 'error': 'rate_limit',
+         'message': {'model': '<synthetic>', 'content': [{'type': 'text', 'text': 'API Error: 429'}]}},
+        {'type': 'result', 'is_error': True, 'result': 'API Error: 429'},
+    ])
+    sink = Sink()
+    result = ClaudeCLIAdapter(runner, executable='claude', model='claude-sonnet-5-5',
+        mcp_config_path=tmp_path/'mcp.json').run(_lease(), _task(), 'review', sink)
+    assert result.state == 'failed'
+    assert result.reported_model == 'claude-sonnet-5-5'
+    assert any(kind == EventType.CALL_FAILED and data['payload'].get('provider_error_code') == 'rate_limit'
+               for kind, data in sink.events)
+
+
+def test_synthetic_model_without_explicit_api_error_remains_rejected(tmp_path):
+    runner = Runner([{'type': 'system', 'model': 'claude-sonnet-5-5'},
+                     {'type': 'assistant', 'message': {'model': '<synthetic>', 'content': []}}])
+    result = ClaudeCLIAdapter(runner, executable='claude', model='claude-sonnet-5-5',
+        mcp_config_path=tmp_path/'mcp.json').run(_lease(), _task(), 'review', Sink())
+    assert result.state == 'uncertain'
+
+
 def test_command_restricts_worker_to_named_child_capability(tmp_path):
     command = build_claude_command("claude", "opus", tmp_path / "mcp.json")
     assert "--restricted" in command

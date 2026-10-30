@@ -3,15 +3,15 @@
 qwen_active = 1
 qwen_waiting = 4
 claude_waiting = 8
-claude_global_active = 2
-claude_per_root_active = 1
+claude_global_active = 4
+claude_per_root_active = 4
 qwen_execution_seconds = 120
-claude_execution_seconds = 540
+claude_execution_seconds = 900
 local_outstanding_per_claude = 1
 
 [review]
-reviewer = "pending-user-approval"
-approval_reference = "pending:codex-claude-rollout-20261025"
+reviewer = "User instruction relayed by Codex session 01a17d3a-0e69-7e13-8328-7bb941bfdb06"
+approval_reference = "user-approved-permanent-effective-opus900-deadline:2026-10-29"
 
 [router]
 mode = "shadow"
@@ -86,7 +86,7 @@ spending_mode = "statistics_only"
 reference_workflow_usd = "1.25"
 reference_rolling_7d_usd = "15"
 opus_reference_rolling_24h_usd = "1"
-max_active_workers = 1
+max_active_workers = 4
 daily_notice_usd = "10"
 subscription_notice_percent = 80
 timezone = "Europe/Prague"
@@ -132,8 +132,8 @@ effort = "medium"
 reference_input_tokens = 60000
 reference_output_tokens = 12000
 reference_usd = "1.00"
-deadline_seconds = 480
-provider_seconds = 460
+deadline_seconds = 920
+provider_seconds = 900
 queue_seconds = 10
 delivery_seconds = 10
 input_per_million = "4"

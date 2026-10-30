@@ -138,6 +138,8 @@ class BridgeCoordinator:
                         _expected_policy_version: str | None = None,
                         _codex_claude_profile: str | None = None) -> dict:
         self._refresh_policy()
+        if task.scope == ['repository-execution'] and _codex_claude_profile is None:
+            return {'state':'rejected','reason':'repository_requires_route_work_profile'}
         if _expected_policy_version and self.policy_version != _expected_policy_version:
             return {"state": "rejected", "reason": "policy_changed"}
         if _codex_claude_profile is not None:
@@ -152,6 +154,13 @@ class BridgeCoordinator:
         if task.context.get("source_id") and source_id != task.context["source_id"]:
             return {"state": "rejected", "reason": "source_binding_required"}
         source_snapshot = None
+        if task.scope == ["repository-execution"]:
+            from bridge.repository_worker import binding
+            try:
+                repository_policy = self.claude_adapter.repository_policy.for_task(task)
+            except (AttributeError, PermissionError, ValueError, OSError):
+                return {"state": "rejected", "reason": "repository_scope_not_approved"}
+            task = task.model_copy(update={"context": {**task.context, "repository_binding": binding(repository_policy)}})
         if source_id:
             if source_id not in self.source_roots or "source-read" not in task.scope:
                 return {"state": "rejected", "reason": "source_scope_not_approved"}
@@ -713,6 +722,16 @@ class BridgeCoordinator:
                 abort_unlaunched(self.dsn, lease)
                 return {"state": "rejected", "call_id": lease.call_id,
                         "reason": "source_snapshot_changed_or_unavailable"}
+        repository_policy = None
+        if task.scope == ["repository-execution"]:
+            from bridge.repository_worker import binding, acquire
+            try:
+                repository_policy = adapter.repository_policy.for_task(task)
+                if task.context.get("repository_binding") != binding(repository_policy) or not acquire(self.dsn, lease, repository_policy):
+                    raise PermissionError("repository binding changed or busy")
+            except (AttributeError, PermissionError, ValueError, OSError):
+                abort_unlaunched(self.dsn, lease)
+                return {"state":"rejected", "call_id":lease.call_id, "reason":"repository_binding_changed_or_busy"}
         if not claim_launch(self.dsn, lease):
             return {"state": "uncertain", "call_id": lease.call_id,
                     "reason": "launch_already_claimed"}
@@ -749,6 +768,20 @@ class BridgeCoordinator:
             from bridge.runtime.codex_claude_execution import execute_profile
             result = execute_profile(self.dsn, adapter, lease, task, prompt, self.emitter, bounded_profile)
             if result.state != "completed":
+                if result.terminated and os.environ.get('BRIDGE_MONITOR_SYSTEM_TOKEN'):
+                    from bridge.runtime.reconciliation import reconcile_execution
+                    try:
+                        state = reconcile_execution(self.dsn, lease.call_id,
+                            {'kind':'process_exit_with_call_correlation','call_id':lease.call_id,
+                             'lease_id':lease.lease_id,'owner_incarnation':lease.owner_incarnation,'terminated':True},
+                            actor_kind='system',actor_id='bounded-profile-coordinator',auth_token=os.environ['BRIDGE_MONITOR_SYSTEM_TOKEN'])
+                    except Exception as exc:
+                        mark_execution_uncertain(self.dsn, lease.call_id,
+                            reason='termination_reconciliation_failed:'+type(exc).__name__)
+                        return {'state':'uncertain','call_id':lease.call_id,
+                                'reason':'termination_reconciliation_failed','automatic_retry':False}
+                    return {'state':state,'call_id':lease.call_id,'reason':result.uncertainty or result.state,
+                            'automatic_retry':False}
                 mark_execution_uncertain(self.dsn, lease.call_id, reason=result.uncertainty or result.state)
                 return {"state": result.state, "call_id": lease.call_id, "reason": result.uncertainty}
         elif pool == "claude":
@@ -813,6 +846,9 @@ class BridgeCoordinator:
                                        "delivered_content_id": content_id}, **common)
         self.emitter.emit(EventType.CALL_COMPLETED, attempt_id=attempt_id,
                           payload={"result_id": result_id}, **common)
+        if repository_policy is not None:
+            from bridge.repository_worker import release
+            release(self.dsn, lease.call_id)
         if source_mode:
             release_source(self.dsn, lease.call_id, task.context["source_id"])
         return {"state": "completed", "call_id": lease.call_id, "result_id": result_id,

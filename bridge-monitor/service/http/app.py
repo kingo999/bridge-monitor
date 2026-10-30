@@ -1,4 +1,5 @@
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse
@@ -37,10 +38,28 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
         raise ValueError("timeline event window out of bounds")
     if not 100 <= work_item_max_limit <= 2000:
         raise ValueError("work-item query limit out of bounds")
-    app = FastAPI(title="Bridge Monitor Capture", version="0.1.0")
+    from bridge.runtime.queue_maintenance import QueueExpiryMonitor
+    queue_monitor = QueueExpiryMonitor(dsn)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        queue_monitor.start()
+        try:
+            yield
+        finally:
+            import asyncio
+            await asyncio.to_thread(queue_monitor.close)
+
+    app = FastAPI(title="Bridge Monitor Capture", version="0.1.0", lifespan=lifespan)
+    app.state.queue_monitor = queue_monitor
     sessions: dict[str, float] = {}
     if not subscription_producer_ids.issubset(producer_tokens):
         raise ValueError("subscription producers must have existing authenticated producer credentials")
+
+    @app.get("/api/v1/queue-maintenance")
+    def queue_maintenance(request: Request, authorization: str | None = Header(default=None)):
+        require_browser_operator(request, authorization, operator_token, sessions)
+        return queue_monitor.snapshot()
 
     @app.post("/api/v1/subscription-usage")
     def subscription_usage(body: dict, authorization: str | None = Header(default=None)):

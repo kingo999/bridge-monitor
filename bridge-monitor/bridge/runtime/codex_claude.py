@@ -67,13 +67,24 @@ def reserve_codex_claude_call(dsn, *, call_id, work_item_id, workflow_id, profil
         raise ValueError("unknown execution profile")
     with psycopg.connect(dsn) as conn,conn.transaction():
         conn.execute("SELECT pg_advisory_xact_lock(%s)",(ARBITRATION_LOCK,))
+        _reconcile_unlaunched_queue(conn)
         old=conn.execute("SELECT work_item_id,workflow_id,profile,amount,state FROM cc_reservations WHERE call_id=%s",
                          (call_id,)).fetchone()
         if old:
             if old[:4]!=(work_item_id,workflow_id,profile,amount):
                 raise ValueError("reservation identity conflict")
             return {"state":old[4],"call_id":call_id}
-        held=conn.execute("SELECT count(*),COALESCE(sum(amount),0) FROM cc_reservations WHERE state='held'").fetchone()
+        # Unknown usage remains held for accounting, but proven stopped executions
+        # no longer occupy worker concurrency. Missing/uncorrelated proof stays held.
+        held=conn.execute("SELECT count(*),COALESCE(sum(r.amount),0) FROM cc_reservations r "
+            "WHERE r.state='held' AND NOT EXISTS (SELECT 1 FROM runtime_jobs j "
+            "JOIN runtime_reconciliations x ON x.call_id=j.call_id "
+            "WHERE j.call_id=r.call_id AND j.state='terminated' AND NOT j.slot_held "
+            "AND x.observed_state='terminated' "
+            "AND x.evidence->>'kind' IN ('adapter_termination_receipt','process_exit_with_call_correlation') "
+            "AND x.evidence->>'terminated'='true' AND x.evidence->>'call_id'=j.call_id "
+            "AND x.evidence->>'lease_id'=j.lease_id::text "
+            "AND x.evidence->>'owner_incarnation'=j.owner_incarnation)").fetchone()
         if held[0]>=policy.max_active_workers:
             return {"state":"rejected","reason":"worker_limit"}
         # The amount is a reference estimate, never a spending authorization or cap.
@@ -84,6 +95,40 @@ def reserve_codex_claude_call(dsn, *, call_id, work_item_id, workflow_id, profil
             "workflow_id":workflow_id,"profile":profile,"reference_amount":amount,
             "spending_mode":"statistics_only"})
         return {"state":"held","call_id":call_id}
+
+def _reconcile_unlaunched_queue(conn):
+    """Caller holds ARBITRATION_LOCK, shared with dispatch/cancel/admission.
+
+    Missing jobs, live/uncertain jobs and launched cancellations stay held.
+    Only durable unlaunched terminal state proves the provider was not invoked.
+    """
+    expired = conn.execute("SELECT j.call_id,j.task_id,j.reserved_tokens FROM runtime_jobs j "
+        "JOIN cc_reservations r USING(call_id) WHERE r.state='held' AND j.state='queued' "
+        "AND j.queue_deadline_at<=now() AND j.lease_id IS NULL "
+        "AND j.launch_claimed_at IS NULL AND NOT j.slot_held ORDER BY j.call_id").fetchall()
+    for call_id, task_id, tokens in expired:
+        conn.execute("UPDATE runtime_jobs SET state='cancelled' WHERE call_id=%s", (call_id,))
+        conn.execute("UPDATE runtime_task_budgets SET calls_reserved=calls_reserved-1,"
+            "tokens_reserved=tokens_reserved-%s WHERE task_id=%s", (tokens, task_id))
+    released = conn.execute("UPDATE cc_reservations r SET state='released',terminal_at=now() "
+        "FROM runtime_jobs j WHERE r.call_id=j.call_id AND r.state='held' "
+        "AND j.state='cancelled' AND j.launch_claimed_at IS NULL AND NOT j.slot_held "
+        "RETURNING r.call_id").fetchall()
+    for (call_id,) in released:
+        _record(conn, 'release:'+call_id, 'release', {'call_id':call_id,
+            'termination_confirmed':True, 'no_charge_confirmed':True,
+            'reason':'unlaunched_queue_terminal'})
+    return {'expired': [row[0] for row in expired], 'released': [row[0] for row in released]}
+
+
+def reconcile_expired_codex_claude_queue(dsn):
+    """Maintenance-only sweep; no worker launch or inference replay."""
+    with psycopg.connect(dsn, connect_timeout=5) as conn, conn.transaction():
+        conn.execute("SET LOCAL statement_timeout='5s'")
+        conn.execute("SET LOCAL lock_timeout='1s'")
+        conn.execute("SELECT pg_advisory_xact_lock(%s)", (ARBITRATION_LOCK,))
+        return _reconcile_unlaunched_queue(conn)
+
 
 def claim_codex_claude_dispatch(dsn, call_id):
     """One durable launch intention; a lost pre-admission owner must be reconciled."""

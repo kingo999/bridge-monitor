@@ -29,7 +29,7 @@ def evaluate_codex_claude(policy: CodexClaudePolicy, facts: CodexClaudeTaskFacts
     if override not in {"auto", "codex", "haiku", "sonnet", "opus"}:
         return result("blocked", "invalid_override")
     # Overrides cannot create missing tools, context or authority.
-    if host.needs_repository or host.needs_tools or not host.supplied_context_only:
+    if (host.needs_repository or host.needs_tools or not host.supplied_context_only) and not host.repository_execution_available:
         return result("keep_owner", "owner_tools_required")
     if override == "codex":
         return result("keep_owner", "caller_keep_owner")
@@ -48,7 +48,16 @@ def prepare_codex_claude_route(policy, task, prompt, adapter):
         risk=task.context.get("risk", "unknown"),
         project_root=task.context.get("project_root"),
         rationale=task.context.get("routing_rationale", "")[:1000])
-    host = HostRoutingFacts(authorized=bool(task.scope) and set(task.scope) <= {"analysis"},
+    repository_policy = None
+    if task.scope == ["repository-execution"]:
+        try:
+            repository_policy = adapter.repository_policy.for_task(task)
+        except (AttributeError, PermissionError, ValueError, OSError):
+            pass
+    from bridge.repository_worker import binding
+    host = HostRoutingFacts(authorized=bool(repository_policy) or (bool(task.scope) and set(task.scope) <= {"analysis"}),
+        repository_execution_available=repository_policy is not None,
+        repository_binding=binding(repository_policy) if repository_policy else None,
         context_available=bool(prompt.strip()), supplied_context_only=not bool(task.context.get("source_id")),
         needs_repository=bool(task.context.get("source_id")),
         profile_models=list(getattr(adapter, "profile_models", ())))
