@@ -1,5 +1,6 @@
 """Task permissions must narrow the host allowlist and fail closed."""
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -104,11 +105,47 @@ def test_explicit_root_maven_profile_has_no_legacy_module_selector(tmp_path):
         '-Dsurefire.failIfNoSpecifiedTests=false','test']
 
 
-def test_linked_or_overlapping_host_roots_are_denied(tmp_path):
-    nested = tmp_path/'nested'
-    nested.mkdir()
+@pytest.mark.parametrize('register_child', [False, True])
+def test_child_checkout_inherits_topmost_grant_exclusions_and_lease(tmp_path, register_child):
+    from bridge.repository_worker import lock_ids
+    child = tmp_path/'projects'/'MRI3'
+    child.mkdir(parents=True)
+    roots = {'outer':str(tmp_path)}
+    if register_child:
+        roots['child'] = str(child)
+    key = 'child' if register_child else 'outer'
+    configured = RepositoryPolicy(enabled=True, roots=roots,
+        write_prefixes={'outer':['projects/']}, denied_prefixes={'outer':['projects/MRI3/mcp/']})
+    grant = configured.for_task(task(child,'read-write', repository_ids=key,
+        repository_write_prefixes=json.dumps({key:['src/','mcp/']})))
+    assert Path(grant.roots[key]) == child
+    parent = configured.for_task(task(tmp_path, repository_ids='outer'))
+    assert lock_ids(grant) == lock_ids(parent)
+    repo = RepositoryTools(grant, lambda:True)
+    repo.write_file(key, 'src/Test.java', 'in child')
+    assert (child/'src/Test.java').read_text() == 'in child'
+    with pytest.raises(PermissionError):
+        repo.write_file(key,'mcp/Secret.java','denied')
+    outside = tmp_path/'projects-other'
+    outside.mkdir()
+    with pytest.raises(PermissionError):
+        configured.for_task(task(outside,'read-write',repository_ids='outer',
+            repository_write_prefixes='{"outer":["src/"]}'))
+
+
+def test_nested_root_cannot_escalate_parent_or_select_excluded_project(tmp_path):
+    child = tmp_path/'private'
+    child.mkdir()
+    policy = RepositoryPolicy(enabled=True, roots={'outer':str(tmp_path),'child':str(child)},
+        write_prefixes={'child':['src/']})
+    with pytest.raises(PermissionError):
+        policy.for_task(task(child,'read-write',repository_ids='child',
+            repository_write_prefixes='{"child":["src/"]}'))
+    policy.denied_prefixes = {'outer':['private/']}
+    with pytest.raises(PermissionError):
+        policy.for_task(task(child, repository_ids='child'))
     with pytest.raises(ValueError):
-        RepositoryPolicy(enabled=True, roots={'first':str(tmp_path),'second':str(nested)})
+        RepositoryPolicy(enabled=True, roots={'first':str(tmp_path),'alias':str(tmp_path)})
 
 
 def test_hardlinked_files_are_not_a_read_escape(tmp_path):
@@ -178,3 +215,18 @@ def test_read_only_git_status_does_not_execute_fsmonitor_hook(tmp_path):
     grant = host(root).for_task(task(root))
     assert RepositoryTools(grant, lambda:True).git_status('mri3')['head']
     assert not marker.exists(), 'read-only status executed a repository-configured hook'
+
+
+def test_git_status_is_scoped_to_leased_project_inside_monorepo(tmp_path):
+    import subprocess
+    subprocess.run(['git','-C',str(tmp_path),'init','--quiet'],check=True)
+    child = tmp_path/'project'
+    child.mkdir()
+    (child/'visible.md').write_text('project')
+    (tmp_path/'sibling.md').write_text('another project')
+    subprocess.run(['git','-C',str(tmp_path),'-c','user.name=fixture',
+                    '-c','user.email=fixture@example.invalid','commit','--quiet',
+                    '--allow-empty','-m','test'],check=True)
+    state = RepositoryTools(host(tmp_path).for_task(task(child)), lambda:True).git_status('mri3')
+    assert 'visible.md' in state['status']
+    assert 'sibling.md' not in state['status']

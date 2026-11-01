@@ -225,6 +225,34 @@ first and preserve any uncertain receipts and held capacity for reconciliation;
 do not free a slot merely because the agent stopped. Restore the backed-up
 direct policy and restart the bridge only after checking active calls.
 
+## Repository roots and child projects
+
+Use the actual checkout as `project_root`. A child checkout inherits the file-write prefixes of its topmost registered ancestor. Requested write prefixes are relative to the checkout. Ancestor and child grants share one source lock, and protected paths and host exclusions still apply. A child cannot grant itself write access beyond its parent. An unregistered descendant may also be selected using its ancestor ID and its exact checkout path. Build profiles are attached to exact registrations.
+
+`mri3` selects `D:\IdeaProjects\mine\mri3` and inherits the `mine/` grant under `ideaprojects`. MRI3's Maven profile supplies only the installed Neo4j test distribution location to the isolated fixture. `bridge-monitor` selects `C:\AI\bridge-monitor` with task-bounded source/configuration writes; its private runtime and environment directories are excluded. Start a fresh registered Bridge process after changing runtime policy.
+
+## Local security-ai release rehearsal
+
+Set `repository.release_rehearsal_commit` to the reviewed, full 1.1.0 commit at the
+head of `mri/mri-java-services-2` and restart the Bridge. An empty pin disables
+the command. Both source and target must be clean.
+
+Use the usual `repository-execution` lease with `project_root=D:\IdeaProjects`,
+`repository_ids=ideaprojects`, `repository_access=read-write`, and the string
+`release_rehearsal=true` in the task context. The sole requested write prefix
+must be `mri/mri-java-services-4/.security-ai-rehearsal/`. The worker calls
+`run_checks(repository="ideaprojects", kind="security-ai-release", goal="rehearse")`.
+
+The operation packages a private checkout of the pinned source, runs the installer
+tests, and checks fresh 1.1.0 installation and a 1.0.0 to 1.1.0 upgrade in
+disposable copies of the target under `-4`. The baseline is the pinned 1.0.0
+archive in the source release directory. The result includes both archive hashes,
+the source and target commits, and verified file counts. The resulting ZIP,
+checksum, and release metadata are retained under the call's log directory in
+`release/`. If a process is forcibly
+killed and leaves the reserved scratch folder behind, inspect it before removing
+it. A later run refuses to overwrite an existing scratch folder.
+
 ## Direct Codex execution records
 
 Direct execution is a separate observation, not a Bridge worker, queue entry or

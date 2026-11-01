@@ -137,12 +137,17 @@ class RepositoryPolicy(BaseModel):
     enabled: bool = False
     access: Literal['read-only', 'read-write'] = 'read-only'
     roots: dict[str, str] = Field(default_factory=dict)
+    # Populated from host configuration when a task is bound, never from caller context.
+    lease_roots: dict[str, str] = Field(default_factory=dict, exclude_if=lambda value: not value)
+    isolated_neo4j_test_homes: dict[str, str] = Field(default_factory=dict, exclude_if=lambda value: not value)
     denied_prefixes: dict[str, list[str]] = Field(default_factory=dict)
     check_kinds: dict[str, str] = Field(default_factory=dict)
     maven_modules: dict[str, list[str]] = Field(default_factory=dict)
     write_prefixes: dict[str, list[str]] = Field(default_factory=dict)
     sql_write_prefixes: dict[str, list[str]] = Field(default_factory=dict)
     security_ai_campaigns: dict[str, list[str]] = Field(default_factory=dict)
+    release_rehearsal_commit: str = Field(default="", pattern=r"^(?:[0-9a-f]{40})?$",
+                                          exclude_if=lambda value: not value)
     maven: str = ''
     pnpm: str = ''
     ui_upload_parser_install: bool = False
@@ -161,9 +166,8 @@ class RepositoryPolicy(BaseModel):
                 roots = [approved_root(value) for value in self.roots.values()]
             except (OSError, PermissionError) as exc:
                 raise ValueError('repository roots must be existing unlinked local directories') from exc
-            if any(a.is_relative_to(b) or b.is_relative_to(a)
-                   for i, a in enumerate(roots) for b in roots[i+1:]):
-                raise ValueError('repository roots must not overlap or alias')
+            if len(set(roots)) != len(roots):
+                raise ValueError('repository roots must not alias')
         for prefixes in (self.write_prefixes, self.sql_write_prefixes, self.denied_prefixes):
             for values in prefixes.values():
                 for value in values:
@@ -182,9 +186,33 @@ class RepositoryPolicy(BaseModel):
         access = task.context.get('repository_access')
         if access not in ('read-only', 'read-write'):
             raise PermissionError('explicit repository_access read-only or read-write required')
-        selected = {key: str(approved_root(self.roots[key])) for key in ids}
-        if approved_root(task.context.get('project_root', '')) not in {Path(p) for p in selected.values()}:
+        registered = {key: approved_root(path) for key,path in self.roots.items()}
+        project = approved_root(task.context.get('project_root', ''))
+        selected = {key:registered[key] for key in ids}
+        if project not in selected.values():
+            if len(ids) != 1 or not project.is_relative_to(selected[ids[0]]):
+                raise PermissionError('project root is not a selected approved repository')
+            selected[ids[0]] = project
+        if any(a.is_relative_to(b) or b.is_relative_to(a)
+               for i,a in enumerate(selected.values()) for b in list(selected.values())[i+1:]):
             raise PermissionError('project root is not a selected approved repository')
+        owners = {key:min((k for k,p in registered.items() if root.is_relative_to(p)),
+                          key=lambda k:len(registered[k].parts)) for key,root in selected.items()}
+        denied = {}
+        for key,root in selected.items():
+            parts = root.relative_to(registered[owners[key]]).parts
+            if any(s.lower() in DENIED_PARTS or s.lower().startswith(('.env','env-local'))
+                   or s.endswith((' ','.')) or '~' in s for s in parts):
+                raise PermissionError('repository project is inside a protected directory')
+            exclusions = set()
+            for registered_id, base in registered.items():
+                for prefix in self.denied_prefixes.get(registered_id, []):
+                    blocked = base / prefix.rstrip('/')
+                    if root.is_relative_to(blocked):
+                        raise PermissionError('repository project is excluded by host policy')
+                    if blocked.is_relative_to(root):
+                        exclusions.add(blocked.relative_to(root).as_posix() + ('/' if prefix.endswith('/') else ''))
+            denied[key] = sorted(exclusions)
         writes = {}
         if access == 'read-write':
             try:
@@ -196,18 +224,29 @@ class RepositoryPolicy(BaseModel):
                         raise ValueError('nonempty prefix lists required')
                     for prefix in prefixes:
                         valid_prefix(prefix)
-                        if not any(within_prefix(prefix, host) for host in self.write_prefixes.get(key, [])):
+                        owner = owners[key]
+                        relative = (selected[key] / prefix.rstrip('/')).relative_to(registered[owner]).as_posix()
+                        if not any(within_prefix(relative, host) and (host.endswith('/') or not prefix.endswith('/'))
+                                   for host in self.write_prefixes.get(owner, [])):
                             raise PermissionError('task write scope exceeds host grant')
                     writes[key] = list(prefixes)
             except (TypeError, ValueError) as exc:
                 raise PermissionError('explicit bounded repository_write_prefixes JSON required') from exc
-        scoped = self.model_copy(deep=True, update={'roots':selected, 'access':access,
+        exact = {k for k in ids if selected[k] == registered[k]}
+        rehearsal = ('ideaprojects' in exact and task.context.get('release_rehearsal') == 'true' and
+                     writes == {'ideaprojects': ['mri/mri-java-services-4/.security-ai-rehearsal/']})
+        scoped = self.model_copy(deep=True, update={'roots':{k:str(p) for k,p in selected.items()}, 'access':access,
+            'lease_roots':{k:str(registered[owners[k]]) for k in ids if selected[k] != registered[owners[k]]},
+            'denied_prefixes':denied,
+            'isolated_neo4j_test_homes':{k:self.isolated_neo4j_test_homes[k] for k in writes
+                                        if k in exact and k in self.isolated_neo4j_test_homes},
+            'release_rehearsal_commit': self.release_rehearsal_commit if rehearsal else '',
             'write_prefixes':writes,
-            'sql_write_prefixes':({k:list(self.sql_write_prefixes.get(k, [])) for k in ids}
+            'sql_write_prefixes':({k:list(self.sql_write_prefixes.get(k, [])) for k in exact if owners[k]==k}
                                   if access == 'read-write' else {}),
-            'security_ai_campaigns':({k:list(self.security_ai_campaigns.get(k, [])) for k in writes}
+            'security_ai_campaigns':({k:list(self.security_ai_campaigns.get(k, [])) for k in writes if k in exact and owners[k]==k}
                                       if access == 'read-write' else {}),
-            'check_kinds':({k:self.check_kinds[k] for k in writes if k in self.check_kinds}
+            'check_kinds':({k:self.check_kinds[k] for k in writes if k in exact and k in self.check_kinds}
                             if access == 'read-write' else {})})
         return scoped
 
@@ -258,7 +297,7 @@ class RepositoryTools:
             raise PermissionError('repository component excluded by host policy')
         if (any(part.lower().startswith('.env') or part.lower().startswith('env-local') for part in parts)
                 or lower.endswith(('.npmrc', '.p12', '.jks', '.pem', '.der', '.key'))
-                or lower == '.mvn/settings.xml'):
+                or lower.split('/')[-2:] == ['.mvn', 'settings.xml']):
             raise PermissionError('secret/configuration path denied')
         root = approved_root(self.policy.roots[repository])
         current = root
@@ -386,6 +425,13 @@ class RepositoryTools:
         return {'matches': found, 'truncated': listing['truncated']}
 
     def build_command(self, repository, kind, goal, tests='', offline=True):
+        if kind == 'security-ai-release':
+            if (not self.policy.release_rehearsal_commit or repository != 'ideaprojects'
+                    or repository not in self.policy.roots or goal != 'rehearse' or tests or not offline):
+                raise PermissionError('release rehearsal not granted')
+            import sys
+            return [sys.executable, '-I', '-B', str(Path(__file__).with_name('release_rehearsal.py')),
+                    self.policy.release_rehearsal_commit]
         if repository not in self.policy.roots or kind != self.policy.check_kinds.get(repository):
             raise ValueError('check kind not granted for repository')
         if tests and not re.fullmatch(r'[A-Za-z0-9_.$,*#-]{1,500}', tests):
@@ -417,6 +463,8 @@ class RepositoryTools:
     def run_checks(self, repository: str, kind: str, goal: str, tests: str = '', offline: bool = True):
         self.check_mutation()
         command = self.build_command(repository, kind, goal, tests, offline)
+        if kind == 'security-ai-release' and self.log_root is not None:
+            command.append(str(self.log_root.resolve() / 'release'))
         return self._run_command(repository, command)
 
     def run_framework(self, repository: str, campaign: str, action: str, payload: dict | None = None):
@@ -444,6 +492,11 @@ class RepositoryTools:
         run_id = str(uuid.uuid4())
         log = self.log_root/(run_id+'.log')
         env=build_environment(self.policy.java_home)
+        if repository in self.policy.isolated_neo4j_test_homes:
+            home = approved_root(self.policy.isolated_neo4j_test_homes[repository])
+            if not (home/'lib').is_dir():
+                raise PermissionError('isolated Neo4j test distribution is unavailable')
+            env['MRI3_TEST_NEO4J_HOME'] = str(home)
         started = time.monotonic()
         bound = self.policy.command_timeout_seconds
         if self.deadline_epoch is not None:
@@ -516,4 +569,4 @@ class RepositoryTools:
         root=str(approved_root(self.policy.roots[repository]))
         return {name:subprocess.check_output(['git','--no-optional-locks','-c','core.fsmonitor=false','-C',root,*args],text=True,
                 timeout=15,env=build_environment(),stdin=subprocess.DEVNULL).strip()[:16000]
-                for name,args in [('head',['rev-parse','HEAD']),('status',['status','--porcelain=v1','--untracked-files=all']),('diff_stat',['diff','--stat'])]}
+                for name,args in [('head',['rev-parse','HEAD']),('status',['status','--porcelain=v1','--untracked-files=all','--','.']),('diff_stat',['diff','--stat','--','.'])]}

@@ -20,8 +20,9 @@ def binding(policy):
 
 
 def lock_ids(policy):
-    return ['repository:'+hashlib.sha256(os.path.normcase(str(Path(p).resolve())).encode()).hexdigest()
-            for p in policy.roots.values()]
+    roots = {policy.lease_roots.get(k,p) for k,p in policy.roots.items()}
+    return sorted('repository:'+hashlib.sha256(os.path.normcase(str(Path(p).resolve())).encode()).hexdigest()
+                  for p in roots)
 
 
 def acquire(dsn, lease, policy):
