@@ -16,7 +16,7 @@ from bridge.runtime.admission import ARBITRATION_LOCK
 
 
 def binding(policy):
-    return hashlib.sha256(json.dumps(policy.model_dump(), sort_keys=True).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(policy.model_dump(mode='json'), sort_keys=True).encode()).hexdigest()
 
 
 def lock_ids(policy):
@@ -51,7 +51,7 @@ def create_config(policy, lease, project, deadline_seconds=240):
     folder=Path(project)/'var'/'mcp'/('repository-'+lease.lease_id)
     folder.mkdir(parents=True,exist_ok=True)
     grant=folder/'grant.json'
-    grant.write_text(json.dumps({'policy':policy.model_dump(),'lease':lease.model_dump(),
+    grant.write_text(json.dumps({'policy':policy.model_dump(mode='json'),'lease':lease.model_dump(),
                                 'deadline_epoch':time.time()+deadline_seconds-5}),encoding='utf-8')
     config=folder/'repository.json'
     config.write_text(json.dumps({'mcpServers':{'repository':{

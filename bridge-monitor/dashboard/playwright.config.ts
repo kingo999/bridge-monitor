@@ -11,7 +11,7 @@ export default defineConfig({
     channel: process.env.BRIDGE_MONITOR_PLAYWRIGHT_CHANNEL || undefined,
     baseURL: 'http://127.0.0.1:8874', trace: 'retain-on-failure' },
   webServer: {
-    command: '..\\.venv\\Scripts\\python.exe tests\\server.py',
+    command: 'node tests/start-server.cjs',
     url: 'http://127.0.0.1:8874/',
     reuseExistingServer: false,
     timeout: 120_000,

@@ -13,6 +13,16 @@ SETTINGS = PROJECT / "var" / "secrets" / "desktop-mcp.json"
 RUNTIME = PROJECT / "config" / "runtime-capabilities.proposal.toml"
 
 
+def select_runtime(project: Path, candidate: str | None) -> Path:
+    path = Path(candidate) if candidate else project / 'config' / RUNTIME.name
+    if not path.is_absolute():
+        path = project / path
+    chosen = path.resolve(strict=True)
+    if not chosen.is_relative_to((project / 'config').resolve(strict=True)) or chosen.suffix != '.toml' or not chosen.is_file():
+        raise ValueError('runtime configuration must be a project config TOML file')
+    return chosen
+
+
 def configure_agent_token(settings: dict, policy, project: Path) -> None:
     """Load only the agent credential named by the active policy."""
     if not policy.deployment.qwen_agent_endpoint:
@@ -40,6 +50,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Existing Bridge launcher / durable one-shot route_work")
     parser.add_argument("--task-json")
     parser.add_argument("--receipt-json")
+    parser.add_argument("--runtime-config", help="Reviewed project/config TOML; defaults to the registered runtime")
     args = parser.parse_args()
     if bool(args.task_json) != bool(args.receipt_json):
         parser.error("task-json and receipt-json must be supplied together")
@@ -51,8 +62,7 @@ def main() -> int:
             raise ValueError("desktop MCP settings require a DSN and optional agent token file")
         if not settings["dsn"].strip():
             raise ValueError("desktop MCP DSN is empty")
-        if not RUNTIME.is_file():
-            raise FileNotFoundError(RUNTIME)
+        runtime = select_runtime(PROJECT, args.runtime_config)
         sys.path.insert(0, str(PROJECT))
         from bridge.runtime.policy_startup import active_policy
         policy = active_policy(settings["dsn"])
@@ -64,7 +74,7 @@ def main() -> int:
         return 2
 
     os.environ["BRIDGE_MONITOR_DSN"] = settings["dsn"]
-    os.environ["BRIDGE_MONITOR_RUNTIME_CONFIG"] = str(RUNTIME)
+    os.environ["BRIDGE_MONITOR_RUNTIME_CONFIG"] = str(runtime)
     # This credential authenticates this process's internal recovery calls.
     # It does not need to persist or appear in the Codex registration.
     os.environ["BRIDGE_MONITOR_SYSTEM_TOKEN"] = secrets.token_urlsafe(48)
@@ -76,7 +86,7 @@ def main() -> int:
         if not task_path.is_relative_to(PROJECT / "var") or not receipt_path.is_relative_to(PROJECT / "var"):
             raise ValueError("one-shot request and receipt must belong to Bridge var")
         packet = json.loads(task_path.read_text(encoding="utf-8"))
-        coordinator = build_coordinator(RUNTIME, audience="parent")
+        coordinator = build_coordinator(runtime, audience="parent")
         try:
             result = coordinator.route_work(TaskPacket.model_validate(packet.pop("task")), **packet)
             receipt_path.parent.mkdir(parents=True, exist_ok=True)

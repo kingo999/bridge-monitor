@@ -12,9 +12,12 @@ import subprocess
 import tempfile
 import time
 import uuid
+from datetime import datetime, timezone
+from copy import deepcopy
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, TypeAdapter
+from bridge.selftests import SelfTestProfile
 
 TOOL_NAMES = ('read_file', 'write_file', 'replace_text', 'find_files', 'search_text', 'run_checks', 'run_framework', 'read_run_log', 'git_status')
 REPOSITORY_TOOLS = tuple('mcp__repository__' + name for name in TOOL_NAMES)
@@ -142,6 +145,9 @@ class RepositoryPolicy(BaseModel):
     isolated_neo4j_test_homes: dict[str, str] = Field(default_factory=dict, exclude_if=lambda value: not value)
     denied_prefixes: dict[str, list[str]] = Field(default_factory=dict)
     check_kinds: dict[str, str] = Field(default_factory=dict)
+    selftest_profiles: dict[str, SelfTestProfile] = Field(default_factory=dict, exclude_if=lambda value: not value)
+    worktree_origins: dict[str, str] = Field(default_factory=dict, exclude_if=lambda value: not value)
+    worktree_expirations: dict[str, datetime] = Field(default_factory=dict, exclude_if=lambda value: not value)
     maven_modules: dict[str, list[str]] = Field(default_factory=dict)
     write_prefixes: dict[str, list[str]] = Field(default_factory=dict)
     sql_write_prefixes: dict[str, list[str]] = Field(default_factory=dict)
@@ -156,6 +162,30 @@ class RepositoryPolicy(BaseModel):
     command_timeout_seconds: int = Field(default=180, ge=1, le=500)
     max_log_bytes: int = Field(default=8 * 1024 * 1024, ge=65536, le=32 * 1024 * 1024)
 
+    @model_validator(mode='before')
+    @classmethod
+    def retire_expired_worktrees(cls, data):
+        if not isinstance(data, dict):
+            return data
+        expired = []
+        for key in data.get('worktree_origins', {}):
+            raw = data.get('worktree_expirations', {}).get(key)
+            try:
+                deadline = TypeAdapter(datetime).validate_python(raw)
+                if deadline is not None and deadline.tzinfo is not None and deadline <= datetime.now(timezone.utc):
+                    expired.append(key)
+            except (ValueError, TypeError, AttributeError):
+                pass  # Invalid configuration is still rejected by normal validation.
+        if not expired:
+            return data
+        data = deepcopy(data)
+        for field in ('roots', 'lease_roots', 'worktree_origins', 'worktree_expirations',
+                      'write_prefixes', 'denied_prefixes', 'check_kinds', 'selftest_profiles',
+                      'sql_write_prefixes', 'security_ai_campaigns', 'maven_modules', 'isolated_neo4j_test_homes'):
+            for key in expired:
+                data.get(field, {}).pop(key, None)
+        return data
+
     @model_validator(mode='after')
     def validate_roots(self):
         if any(not re.fullmatch(r'[a-z][a-z0-9_-]*', key) or not Path(value).is_absolute()
@@ -168,6 +198,14 @@ class RepositoryPolicy(BaseModel):
                 raise ValueError('repository roots must be existing unlinked local directories') from exc
             if len(set(roots)) != len(roots):
                 raise ValueError('repository roots must not alias')
+            if set(self.worktree_origins) != set(self.worktree_expirations):
+                raise ValueError('worktree registrations require an explicit expiration')
+            from bridge.worktrees import verify
+            for key, origin in self.worktree_origins.items():
+                if key not in self.roots:
+                    raise ValueError('worktree registration must name an explicit root')
+                verify(approved_root(self.roots[key]), approved_root(origin),
+                       environment=build_environment(), expires_at=self.worktree_expirations[key])
         for prefixes in (self.write_prefixes, self.sql_write_prefixes, self.denied_prefixes):
             for values in prefixes.values():
                 for value in values:
@@ -198,13 +236,32 @@ class RepositoryPolicy(BaseModel):
             raise PermissionError('project root is not a selected approved repository')
         owners = {key:min((k for k,p in registered.items() if root.is_relative_to(p)),
                           key=lambda k:len(registered[k].parts)) for key,root in selected.items()}
+        source_selected = dict(selected)
+        profile_keys = {key:key for key in ids}
+        worktree_origins = {}
+        from bridge.worktrees import verify
+        for key in ids:
+            if key not in self.worktree_origins:
+                continue
+            origin = approved_root(self.worktree_origins[key])
+            verify(registered[key], origin, environment=build_environment(),
+                   expires_at=self.worktree_expirations[key])
+            origin_keys = [k for k,p in registered.items() if p == origin and k != key]
+            if not origin_keys:
+                raise PermissionError('worktree origin must also be registered')
+            source_selected[key] = origin / selected[key].relative_to(registered[key])
+            worktree_origins[key] = str(source_selected[key])
+            profile_keys[key] = origin_keys[0]
+            owners[key] = min((k for k,p in registered.items() if origin.is_relative_to(p)),
+                              key=lambda k:len(registered[k].parts))
         denied = {}
         for key,root in selected.items():
-            parts = root.relative_to(registered[owners[key]]).parts
+            parts = source_selected[key].relative_to(registered[owners[key]]).parts
             if any(s.lower() in DENIED_PARTS or s.lower().startswith(('.env','env-local'))
                    or s.endswith((' ','.')) or '~' in s for s in parts):
                 raise PermissionError('repository project is inside a protected directory')
             exclusions = set()
+            source_root = source_selected[key]
             for registered_id, base in registered.items():
                 for prefix in self.denied_prefixes.get(registered_id, []):
                     blocked = base / prefix.rstrip('/')
@@ -212,6 +269,10 @@ class RepositoryPolicy(BaseModel):
                         raise PermissionError('repository project is excluded by host policy')
                     if blocked.is_relative_to(root):
                         exclusions.add(blocked.relative_to(root).as_posix() + ('/' if prefix.endswith('/') else ''))
+                    if source_root.is_relative_to(blocked):
+                        raise PermissionError('worktree origin is excluded by host policy')
+                    if blocked.is_relative_to(source_root):
+                        exclusions.add(blocked.relative_to(source_root).as_posix() + ('/' if prefix.endswith('/') else ''))
             denied[key] = sorted(exclusions)
         writes = {}
         if access == 'read-write':
@@ -225,10 +286,15 @@ class RepositoryPolicy(BaseModel):
                     for prefix in prefixes:
                         valid_prefix(prefix)
                         owner = owners[key]
-                        relative = (selected[key] / prefix.rstrip('/')).relative_to(registered[owner]).as_posix()
+                        relative = (source_selected[key] / prefix.rstrip('/')).relative_to(registered[owner]).as_posix()
                         if not any(within_prefix(relative, host) and (host.endswith('/') or not prefix.endswith('/'))
                                    for host in self.write_prefixes.get(owner, [])):
                             raise PermissionError('task write scope exceeds host grant')
+                        task_relative = (selected[key] / prefix.rstrip('/')).relative_to(registered[key]).as_posix()
+                        if key in worktree_origins and not any(within_prefix(task_relative, host)
+                                and (host.endswith('/') or not prefix.endswith('/'))
+                                for host in self.write_prefixes.get(key, [])):
+                            raise PermissionError('task write scope exceeds worktree grant')
                     writes[key] = list(prefixes)
             except (TypeError, ValueError) as exc:
                 raise PermissionError('explicit bounded repository_write_prefixes JSON required') from exc
@@ -237,6 +303,8 @@ class RepositoryPolicy(BaseModel):
                      writes == {'ideaprojects': ['mri/mri-java-services-4/.security-ai-rehearsal/']})
         scoped = self.model_copy(deep=True, update={'roots':{k:str(p) for k,p in selected.items()}, 'access':access,
             'lease_roots':{k:str(registered[owners[k]]) for k in ids if selected[k] != registered[owners[k]]},
+            'worktree_origins':worktree_origins,
+            'worktree_expirations':{k:self.worktree_expirations[k] for k in worktree_origins},
             'denied_prefixes':denied,
             'isolated_neo4j_test_homes':{k:self.isolated_neo4j_test_homes[k] for k in writes
                                         if k in exact and k in self.isolated_neo4j_test_homes},
@@ -246,8 +314,11 @@ class RepositoryPolicy(BaseModel):
                                   if access == 'read-write' else {}),
             'security_ai_campaigns':({k:list(self.security_ai_campaigns.get(k, [])) for k in writes if k in exact and owners[k]==k}
                                       if access == 'read-write' else {}),
-            'check_kinds':({k:self.check_kinds[k] for k in writes if k in exact and k in self.check_kinds}
-                            if access == 'read-write' else {})})
+            'check_kinds':({k:self.check_kinds[profile_keys[k]] for k in writes if k in exact and profile_keys[k] in self.check_kinds}
+                            if access == 'read-write' else {}),
+            'selftest_profiles':({k:self.selftest_profiles[profile_keys[k]] for k in writes
+                                 if k in exact and profile_keys[k] in self.selftest_profiles}
+                                if access == 'read-write' else {})})
         return scoped
 
 
@@ -270,8 +341,15 @@ class RepositoryTools:
         self.deadline_epoch = deadline_epoch
 
     def check(self):
-        if not self.policy.enabled or not self.authorize():
+        if not self.policy.enabled or not self.policy.roots or not self.authorize():
             raise PermissionError('repository lease unavailable or revoked')
+        from bridge.worktrees import verify
+        for key, origin in self.policy.worktree_origins.items():
+            try:
+                verify(approved_root(self.policy.roots[key]), approved_root(origin),
+                    environment=build_environment(), expires_at=self.policy.worktree_expirations[key])
+            except (ValueError, OSError):
+                raise PermissionError('worktree registration unavailable, changed or expired') from None
 
     def check_mutation(self):
         self.check()
@@ -434,6 +512,11 @@ class RepositoryTools:
                     self.policy.release_rehearsal_commit]
         if repository not in self.policy.roots or kind != self.policy.check_kinds.get(repository):
             raise ValueError('check kind not granted for repository')
+        if kind == 'bridge-selftest':
+            if not offline:
+                raise ValueError('self-tests do not grant online installation or live models')
+            from bridge.selftests import command
+            return command(self, repository, goal, tests)
         if tests and not re.fullmatch(r'[A-Za-z0-9_.$,*#-]{1,500}', tests):
             raise ValueError('invalid test selector')
         if kind == 'maven' and goal in ('compile', 'test', 'verify', 'version') and self.policy.maven:
@@ -462,6 +545,33 @@ class RepositoryTools:
 
     def run_checks(self, repository: str, kind: str, goal: str, tests: str = '', offline: bool = True):
         self.check_mutation()
+        if kind == 'bridge-selftest':
+            from bridge.selftests import environment, test_counts, browser_counts
+            profile = self.policy.selftest_profiles.get(repository)
+            if kind != self.policy.check_kinds.get(repository) or profile is None:
+                raise PermissionError('self-test profile not granted')
+            env = environment(profile, goal)
+            command = self.build_command(repository, kind, goal, tests, offline)
+            if self.log_root is None:
+                raise PermissionError('run log binding required')
+            self.log_root.mkdir(parents=True, exist_ok=True)
+            report = self.log_root / (str(uuid.uuid4()) + '.xml')
+            backend = goal.startswith('backend-')
+            if backend:
+                command += ['--junitxml=' + str(report)]
+            elif goal == 'dashboard-e2e':
+                report = report.with_suffix('.json')
+                env['PLAYWRIGHT_JSON_OUTPUT_NAME'] = str(report)
+            cwd = None if backend else approved_root(str(Path(self.policy.roots[repository]) / 'dashboard'))
+            result = self._run_command(repository, command, environment=env, working_directory=cwd,
+                isolated_environment=True, windows_browser_profile=goal == 'dashboard-e2e')
+            counts = test_counts(report) if backend else browser_counts(report) if goal == 'dashboard-e2e' else None
+            result['test_counts'] = counts
+            result['verification'] = ('failed' if result['exit_code'] != 0 or result['timed_out'] or result['log_limit'] or counts and (counts['failures'] or counts['errors'])
+                else 'partial' if counts and counts['skipped'] else 'completed' if goal in ('dashboard-typecheck', 'dashboard-build') or counts and counts['tests'] else 'unknown')
+            (self.log_root / (result['run_id'] + '.json')).write_text(json.dumps(
+                {k:v for k,v in result.items() if k != 'tail'}), encoding='utf-8')
+            return result
         command = self.build_command(repository, kind, goal, tests, offline)
         if kind == 'security-ai-release' and self.log_root is not None:
             command.append(str(self.log_root.resolve() / 'release'))
@@ -483,7 +593,8 @@ class RepositoryTools:
                    '--root', str(root), '--request', str(path)]
         return self._run_command(repository, command)
 
-    def _run_command(self, repository, command):
+    def _run_command(self, repository, command, *, environment=None, working_directory=None,
+                     isolated_environment=False, windows_browser_profile=False):
         self.check_mutation()
         approved_root(self.policy.roots[repository])
         if self.log_root is None:
@@ -492,6 +603,21 @@ class RepositoryTools:
         run_id = str(uuid.uuid4())
         log = self.log_root/(run_id+'.log')
         env=build_environment(self.policy.java_home)
+        if isolated_environment:
+            allowed = {'PATH','PATHEXT','SYSTEMROOT','WINDIR','COMSPEC','TEMP','TMP',
+                       'PROGRAMFILES','PROGRAMFILES(X86)','PROGRAMDATA',
+                       'NUMBER_OF_PROCESSORS','PROCESSOR_ARCHITECTURE'}
+            env = {k:v for k,v in env.items() if k.upper() in allowed}
+            home = self.log_root / ('home-' + run_id)
+            (home / 'appdata').mkdir(parents=True)
+            (home / 'localappdata').mkdir()
+            env.update(USERPROFILE=str(home), HOME=str(home), APPDATA=str(home/'appdata'),
+                       LOCALAPPDATA=str(home/'localappdata'), PYTHONNOUSERSITE='1')
+            if windows_browser_profile and os.name == 'nt' and os.environ.get('USERPROFILE'):
+                # Edge needs Windows profile discovery. Keep APPDATA and browser data isolated.
+                env['USERPROFILE'] = os.environ['USERPROFILE']
+        if environment:
+            env.update(environment)
         if repository in self.policy.isolated_neo4j_test_homes:
             home = approved_root(self.policy.isolated_neo4j_test_homes[repository])
             if not (home/'lib').is_dir():
@@ -507,7 +633,7 @@ class RepositoryTools:
         revoked = False
         log_limit = False
         with log.open('wb') as handle:
-            process = subprocess.Popen(command, cwd=self.policy.roots[repository], env=env,
+            process = subprocess.Popen(command, cwd=working_directory or self.policy.roots[repository], env=env,
                 stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT,
                 creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)|(0x4 if os.name=='nt' else 0), start_new_session=os.name!='nt')
             job = None

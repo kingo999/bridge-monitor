@@ -38,6 +38,13 @@ bridge-monitor = ["bridge/", "config/", "contracts/", "dashboard/", "database/",
 
 [repository.check_kinds]
 mri3 = "maven"
+bridge-monitor = "bridge-selftest"
+
+[repository.selftest_profiles.bridge-monitor]
+python = 'C:\AI\bridge-monitor\.venv\Scripts\python.exe'
+node = 'C:\Program Files\nodejs\node.exe'
+browser_channel = 'msedge'
+test_dsn_file = 'C:\AI\bridge-monitor\var\secrets\selftest-33d5-20261101.json'
 
 [repository.maven_modules]
 mri3 = []
