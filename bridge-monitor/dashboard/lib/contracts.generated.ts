@@ -18,6 +18,32 @@ export type CodexClaudeRow = {
   human_accepted: boolean | null; checks_passed: boolean | null; rework: boolean;
   duration_seconds: number | null; cost_usd_equivalent: string | null;
   usage: Record<string, number | null>; receipt_hashes: string[]; evidence_status: string;
+  // Additive codex-claude-efficiency-v1 fields; optional for older backends/historical fixtures.
+  task_preset?: CodexClaudeTaskPreset | null; applied_preset?: string | null;
+  preset_evidence?: CodexClaudePresetEvidence; configured_model?: string | null;
+  configured_effort?: string | null; effort_source?: 'decision_snapshot' | null;
+  reported_models?: string[]; efficiency_model?: string; efficiency_effort?: string;
+  parent_outcome?: CodexClaudeOutcome;
+  coverage?: { duration: boolean; cost: 'receipt_backed' | 'unknown'; counters: Record<string, boolean> };
+};
+export type CodexClaudeTaskPreset = { requested: string; applied: string | null; version: string;
+  status: 'applied' | 'overridden' | 'blocked' | 'not_applied'; reason: string; profile: string | null };
+export type CodexClaudePresetEvidence = 'applied' | 'overridden' | 'blocked' | 'not_applied'
+  | 'legacy_no_preset' | 'missing_decision' | 'unknown';
+export type CodexClaudeOutcome = 'accepted' | 'revised' | 'replaced' | 'unused' | 'pending' | 'unknown' | 'ambiguous';
+export type CodexClaudeCounterEvidence = { known_sum: number | null; covered_workflows: number; unknown_workflows: number };
+export type CodexClaudeEfficiencyGroup = {
+  applied_preset: string; reported_model: string; configured_effort: string;
+  workflows: number; outcomes: Record<CodexClaudeOutcome, number>; outcome_denominator: number;
+  human_accepted: number | null; checks_passed: number | null;
+  duration_seconds: { samples: number; median: number | null; p95: number | null };
+  counters: Record<'input_tokens' | 'output_tokens' | 'cache_read_input_tokens' | 'cache_creation_input_tokens', CodexClaudeCounterEvidence>;
+  api_equivalent_usd: { basis: string; known_subtotal: string | null; covered_workflows: number;
+    unknown_workflows: number; is_total_job_cost: false };
+};
+export type CodexClaudeEfficiency = {
+  definition_version: string; unit: 'workflows'; group_by: string[];
+  groups: CodexClaudeEfficiencyGroup[]; parent_coordinator_overhead: 'unmeasured'; note: string;
 };
 export type CodexClaudeReport = {
   definition_version: string; as_of: string; filters: Record<string, unknown>; total: number;
@@ -27,6 +53,7 @@ export type CodexClaudeReport = {
   latency_seconds: { samples: number; median: number | null; p95: number | null };
   cost: { basis: string; known_subtotal: string; known_workflows: number; unknown_workflows: number };
   readiness: { routing_enabled: boolean; reason: string }; scope_note: string;
+  efficiency?: CodexClaudeEfficiency;
 };
 export type Origin = 'observed' | 'imported' | 'synthetic' | 'all';
 export type DirectExecution = { execution_id: string; record_id: string; session_id: string;

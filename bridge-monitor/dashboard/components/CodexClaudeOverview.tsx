@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api, type CohortFilters } from '@/lib/api';
-import type { CodexClaudeReport, CodexClaudeRow } from '@/lib/contracts.generated';
+import type { CodexClaudeEfficiency, CodexClaudeEfficiencyGroup, CodexClaudeOutcome, CodexClaudeReport, CodexClaudeRow } from '@/lib/contracts.generated';
 import ModelBreakdownChart from './ModelBreakdownChart';
 
 type Props = { filters: CohortFilters; refreshKey: string; onSelect: (id: string) => void; paused: boolean };
@@ -60,6 +60,7 @@ export default function CodexClaudeOverview({ filters, refreshKey, onSelect, pau
       <p>Spending and token usage are statistics. The $10 daily and 80% allowance notices do not block work.</p>
       <p className="cc-readiness">{report?.readiness.reason || 'Automatic routing remains inactive pending explicit rollout approval.'}</p></div>
     {report ? <ModelBreakdownChart models={report.models} /> : <p className="muted">Loading model breakdown…</p>}
+    <EfficiencyComparison efficiency={report?.efficiency} loading={loading && !report} time={time} />
     <div className="cc-filters">{Object.entries(extra).map(([key, value]) => <label key={key}>
       {({ category: 'Task kind', project: 'Project', model: 'Model', profile: 'Profile', policy_digest: 'Policy digest', evidence: 'Evidence' } as Record<string,string>)[key]}
       <input value={value} onChange={event => setExtra(current => ({ ...current, [key]: event.target.value }))} /></label>)}</div>
@@ -79,8 +80,53 @@ export default function CodexClaudeOverview({ filters, refreshKey, onSelect, pau
     {selected && <details className="cc-decision" open><summary>Routing and usage evidence · {selected.work_item_id}</summary>
       <p>Policy digest: {unknown(selected.policy_digest)} · Receipt hashes: {selected.receipt_hashes.join(', ') || 'Unknown'}</p>
       <p>Scoped tokens: {Object.entries(selected.usage).map(([key, value]) => key + ': ' + unknown(value)).join(' · ')}</p>
+      <p>Preset: {presetLabel(selected.applied_preset || selected.preset_evidence)} · Configured effort: {unknown(selected.configured_effort)}
+        {' '}· Parent outcome: {unknown(selected.parent_outcome)}</p>
       {decision ? <pre>{JSON.stringify(decision, null, 2)}</pre> : <p>{selected.decision_id ? 'Loading routing record…' : 'No versioned routing decision recorded for this historical workflow.'}</p>}
     </details>}
     <p className="cc-definition">{report?.definition_version || 'codex-claude-v1'} · As of {report ? new Date(report.as_of).toLocaleString() : '—'}</p>
+  </section>;
+}
+
+const PRESET_EVIDENCE: Record<string, string> = { legacy_no_preset: 'Legacy (no preset)', missing_decision: 'Missing decision',
+  overridden: 'Overridden', blocked: 'Blocked', not_applied: 'Not applied', unknown: 'Unknown' };
+function presetLabel(value: string | null | undefined) { return value == null ? 'Unknown' : PRESET_EVIDENCE[value] || value; }
+const MODEL_LABEL: Record<string, string> = { unknown: 'Unknown model', mixed: 'Mixed models' };
+const EFFORT_LABEL: Record<string, string> = { unknown: 'Unknown effort', unattributed: 'Unattributed' };
+const OUTCOME_ORDER: CodexClaudeOutcome[] = ['accepted', 'revised', 'replaced', 'unused', 'pending', 'ambiguous', 'unknown'];
+const COUNTER_LABEL: [keyof CodexClaudeEfficiencyGroup['counters'], string][] = [['input_tokens', 'Input'],
+  ['output_tokens', 'Output'], ['cache_read_input_tokens', 'Cache read'], ['cache_creation_input_tokens', 'Cache creation']];
+
+function EfficiencyComparison({ efficiency, loading, time }: { efficiency: CodexClaudeEfficiency | undefined;
+  loading: boolean; time: (value: number | null | undefined) => string }) {
+  return <section className="cc-efficiency" aria-label="Efficiency comparison">
+    <h3>Efficiency comparison</h3>
+    {!efficiency ? <p className="muted">{loading ? 'Loading efficiency comparison…'
+      : 'Efficiency comparison unavailable for this report: values are unknown, not zero.'}</p> : <>
+      <p>Grouped by preset (or preset evidence), reported model and configured effort; counts are workflows, listed in no ranked order.
+        {' '}API-equivalent subtotals and token sums cover recorded scope only — not total job cost or subscription bill.
+        {' '}Parent coordinator overhead: {efficiency.parent_coordinator_overhead}.</p>
+      <div className="cc-table-wrap"><table className="cc-table"><thead><tr><th>Preset / evidence</th><th>Reported model</th>
+        <th>Configured effort</th><th>Workflows</th><th>Parent outcomes</th><th>Duration median / p95</th><th>Token counters</th>
+        <th>API-equivalent subtotal</th></tr></thead><tbody>
+        {efficiency.groups.map(group => {
+          const cost = group.api_equivalent_usd;
+          return <tr key={[group.applied_preset, group.reported_model, group.configured_effort].join('|')}>
+            <td>{presetLabel(group.applied_preset)}</td>
+            <td>{MODEL_LABEL[group.reported_model] || group.reported_model}</td>
+            <td>{EFFORT_LABEL[group.configured_effort] || group.configured_effort}</td>
+            <td>{group.workflows}</td>
+            <td>{OUTCOME_ORDER.map(name => name + ' ' + (group.outcomes?.[name] ?? 'Unknown')).join(' · ')}
+              <small>of {group.outcome_denominator} workflows</small>
+              <small>Human verification: {unknown(group.human_accepted)} · Checks: {unknown(group.checks_passed)}</small></td>
+            <td>{time(group.duration_seconds.median)} / {time(group.duration_seconds.p95)}<small>n={group.duration_seconds.samples}</small></td>
+            <td>{COUNTER_LABEL.map(([key, label]) => { const c = group.counters?.[key];
+              return <small key={key}>{label}: {c ? unknown(c.known_sum) + ' (' + c.covered_workflows + ' covered · ' + c.unknown_workflows + ' unknown)' : 'Unknown'}</small>; })}</td>
+            <td>{cost.known_subtotal == null ? 'Unknown' : '$' + Number(cost.known_subtotal).toFixed(4)}
+              <small>{cost.covered_workflows} receipt-covered · {cost.unknown_workflows} unknown</small></td>
+          </tr>;
+        })}
+        {!efficiency.groups.length && <tr><td colSpan={8}>No workflows in this cohort.</td></tr>}
+      </tbody></table></div></>}
   </section>;
 }

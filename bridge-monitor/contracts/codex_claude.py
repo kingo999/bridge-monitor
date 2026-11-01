@@ -2,7 +2,7 @@
 from decimal import Decimal
 from typing import Annotated, Literal
 from datetime import datetime, timedelta
-from pydantic import field_validator
+from pydantic import field_validator, model_serializer
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Money = Annotated[Decimal, Field(gt=0, allow_inf_nan=False)]
@@ -110,6 +110,18 @@ class SubscriptionObservation(StrictModel):
             raise ValueError("subscription freshness may not exceed 15 minutes")
         return self
 
+# Static, versioned named presets. They only choose among the existing approved
+# profile slots; model/effort/deadlines stay whatever the policy snapshot pins.
+TASK_PRESET_VERSION = "task-presets-v1"
+TASK_PRESETS = {
+    # Only for caller-reported known low complexity and low risk.
+    "mechanical": {"profile": "haiku", "requires": {"complexity": "low", "risk": "low"}},
+    # Never downgrades a legacy Opus (complex) requirement.
+    "standard": {"profile": "sonnet", "requires": {}},
+    # May request the strongest existing profile.
+    "deep_review": {"profile": "opus", "requires": {}},
+}
+
 class CodexClaudeDecision(StrictModel):
     action: Literal["claude", "keep_owner", "blocked"]
     reason: str
@@ -121,3 +133,13 @@ class CodexClaudeDecision(StrictModel):
     facts: dict
     host_facts: dict
     candidates: list[dict]
+    # Present only when the caller supplied context["task_preset"]; omitted from
+    # serialization when absent so legacy payloads/replay identity are unchanged.
+    task_preset: dict | None = None
+
+    @model_serializer(mode="wrap")
+    def _omit_absent_task_preset(self, handler):
+        data = handler(self)
+        if isinstance(data, dict) and data.get("task_preset") is None:
+            data.pop("task_preset", None)
+        return data

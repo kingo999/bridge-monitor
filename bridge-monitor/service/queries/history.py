@@ -7,8 +7,42 @@ from service.queries.guidance import work_guidance, matches_guidance_filters
 from service.ingest.store import read_content
 
 
+VALID_JUDGMENTS = ("accepted", "revised", "replaced", "unused")
+
+
+def _classify_judgment_evidence(by_work: dict, by_result: dict) -> dict[str, str]:
+    """Pure: delivered work -> one effective judgment, 'pending' or 'ambiguous'.
+
+    Same evidence rule as _gpt_work_judgments: exactly one delivered result and
+    exactly one non-superseded validated disposition; anything else is never
+    promoted to a judgment.
+    """
+    evidence = {}
+    for work_id, delivered in by_work.items():
+        if len(delivered) != 1:
+            evidence[work_id] = "ambiguous"
+            continue
+        rows = by_result.get(delivered[0], [])
+        superseded = {target for _, _, target in rows if target}
+        effective = [judgment for identifier, judgment, _ in rows if identifier not in superseded]
+        if not effective:
+            evidence[work_id] = "pending"
+        elif len(effective) == 1 and effective[0] in VALID_JUDGMENTS:
+            evidence[work_id] = effective[0]
+        else:
+            evidence[work_id] = "ambiguous"
+    return evidence
+
+
 def _gpt_work_judgments(conn, work_ids: list[str], as_of) -> dict[str, str]:
     """Show one judgment only when the work has one delivered Claude result."""
+    return {work_id: status for work_id, status in
+            _gpt_work_judgment_evidence(conn, work_ids, as_of).items()
+            if status in VALID_JUDGMENTS}
+
+
+def _gpt_work_judgment_evidence(conn, work_ids: list[str], as_of) -> dict[str, str]:
+    """Delivered work only; absent work has no delivered-result evidence (unknown)."""
     if not work_ids:
         return {}
     deliveries = conn.execute("""SELECT c.work_item_id,r.result_id FROM results r
@@ -42,16 +76,7 @@ def _gpt_work_judgments(conn, work_ids: list[str], as_of) -> dict[str, str]:
     by_result = {}
     for disposition_id, result_id, judgment, supersedes_id in candidates:
         by_result.setdefault(result_id, []).append((disposition_id, judgment, supersedes_id))
-    selected = {}
-    for work_id, delivered in by_work.items():
-        if len(delivered) != 1:
-            continue
-        rows = by_result.get(delivered[0], [])
-        superseded = {target for _, _, target in rows if target}
-        effective = [judgment for identifier, judgment, _ in rows if identifier not in superseded]
-        if len(effective) == 1:
-            selected[work_id] = effective[0]
-    return selected
+    return _classify_judgment_evidence(by_work, by_result)
 
 
 def derive_agent_statuses(events: list[dict]) -> list[dict]:
