@@ -2,32 +2,128 @@
 
 The collector observes connections and sends on the local Windows host. Bridge hooks add logical application requests and run identities. Records live in a separate SQLite file. The operator selects its location, access permissions and retention. Use a directory accessible only to the collector, Bridge and authorized readers. The database, WAL and related files share that directory.
 
-## Continuous collection on this installation
+## Privileged installation: disabled pending review
 
-On 2026-11-04 the operator enabled `BridgeMonitor-OutboundAudit`. It runs as
-SYSTEM with startup and current-user sign-in triggers, no execution time limit,
-and duplicate-instance protection. The supervisor at
-`C:\AI\bridge-monitor\var\audit\run-collector.ps1` restarts the existing collector
-ten seconds after exit. Task Scheduler also restarts the supervisor after failure.
+The original always-on installation was unsafe: its SYSTEM task executed a
+supervisor, Python interpreter and imports from a user-writable checkout. The
+operator stopped and disabled it. Do not restore that execution chain.
 
-The live journal is `C:\AI\bridge-monitor\var\audit\outbound.sqlite`.
-The directory permits SYSTEM, administrators and the configuring user. Collector
-diagnostics are in `collector.log` and restart records in `supervisor.log` in
-that directory. Retention remains operator-managed.
+The replacement separates the privileged native producer from ordinary-user
+ingestion. `BridgeMonitor-OutboundAudit` runs only Windows PowerShell and the
+native reader in `C:\Program Files\BridgeMonitorAudit`. The directory, supervisor,
+reader and existing files are owned by Administrators, with write access only for
+SYSTEM and Administrators. The named operator has read/execute access to files
+and read-only access to both task definitions. Its working directory, temporary
+directory and executable search path are protected. Its imported DLLs are Windows
+system DLLs. No Python, repository code, SQLite journal or user configuration is
+read by the privileged producer.
+
+The producer appends metadata to the protected `data\metadata.tsv` spool. The
+ordinary-user `BridgeMonitor-OutboundAudit-Ingest` task reads it with
+`python -m bridge.audit_spool`, using a limited interactive token. It writes the
+existing journal `C:\AI\bridge-monitor\var\audit\outbound.sqlite` and checkpoint
+`spool-cursor.json` in that journal directory. The journal remains writable by the
+operator and Bridge; it is never opened by the SYSTEM producer.
+
+**Both tasks are installed disabled and stopped.** Installation and verification
+never start them. The repair does not authorize activation. Obtain security review
+and explicit operator approval before enabling either task. The privileged task
+cannot be enabled, executed or modified by an unelevated operator token. An
+administrator who explicitly elevates through UAC can maintain these files and
+tasks; this design does not defend against an already-elevated administrator.
+
+`scripts/outbound-audit/install-protected-reader.ps1` installs only into a fresh
+protected destination, requires reproducible-build evidence, checks pinned inputs before and after
+copying, rejects reparse-point ancestry, and registers disabled definitions.
+Its installation bootstrap first copies the installer into an administrator-owned
+staging directory, verifies its pinned hash there, and only then executes it.
+Protected directories and files receive their administrator owner and DACL in
+the creation operation, including bootstrap copies, revisions and receipts. The
+installer never relies on fixing a user-owned executable's permissions afterward.
+Windows policy is respected; the task uses process-level RemoteSigned rather than
+Bypass. Existing Group Policy takes precedence. Updates require an administrator
+to stage and review a new protected build; editing the checkout cannot update the
+privileged executable. Do not change permissions on the development checkout to
+try to make it a privileged deployment.
+
+The reviewed `elevated-install-bootstrap.ps1` text is passed in the explicitly
+UAC-approved encoded command. It copies and hash-checks fixed management scripts
+in an administrator-owned staging directory before executing them there.
+`update-protected-reader.ps1` accepts updates only with both tasks disabled and
+the existing protected files matching their receipt. It preserves prior files
+under protected `revisions`, pins the new build and supervisor, then leaves both
+task DACLs read-only for the operator. An interrupted installation/update stays
+disabled and retains evidence. Inspect the protected receipt, revision and hashes
+as administrator before any recovery; never delete or restore a partial tree
+blindly, and never restore the archived unsafe task definition.
+
+Build evidence is generated as an ordinary user with
+`python scripts/outbound-audit/build-evidence.py --output var\audit-build-NEW`.
+It records the installed MSVC toolchain, signed compiler/linker identities, source
+snapshot/hash, exact commands/log hashes and two byte-identical outputs. It never
+runs the reader. This is local build provenance, not an independent compiler or
+complete supply-chain attestation. The installed manifest and source are checked
+by the normal-user verifier.
+
+Spool ingestion accepts metadata as data only. It waits for complete lines,
+bounds malformed records, and checkpoints after committed batches. Delivery can
+replay records after a crash between database commit and checkpoint; deduplicate
+when calculating totals across such a boundary. Consumer restart and detected
+spool replacement/truncation emit gap evidence. Cached DNS names reflect the
+consumer's local cache at ingestion time, not necessarily the historical send.
+Checkpoints are flushed with `fsync` before replacement; malformed checkpoints
+emit a gap and replay the retained spool instead of failing permanently. The
+oversized-record discard state survives restart. The 65,536-byte record limit
+includes its newline. Native identity frames restore attribution before later
+network frames after a consumer restart; a gap remains explicit during recovery.
+Retention is operator-managed for both spool and journal; no automatic deletion
+has been added. An administrator must archive the protected spool while both
+tasks are stopped, then reconcile the consumer checkpoint. Disk monitoring and
+retention limits remain prerequisites for sustained collection.
 
 The user environment and Codex's `mcp_servers.bridge_monitor.env` both persist
 `BRIDGE_OUTBOUND_AUDIT_DB` with this journal path. Existing MCP server processes
-need to reconnect to receive the environment change. Host capture runs independently
-of Codex. This configuration enables observation; policy evaluation stays audit-only.
+need to reconnect to receive the environment change. Application hooks can record
+while host capture is disabled; that is partial coverage. Policy evaluation stays
+audit-only.
 
-Installation, heartbeat, synthetic request and restart receipts are under ignored
-`var/audit-setup-20261104/`. Automatic restart was verified by stopping the actual
-collector process and observing a new collector PID and fresh heartbeats.
+The old activation receipts remain in ignored `var/audit-setup-20261104/`; they
+do not validate the replacement. Repair receipts, ACL evidence and task definitions
+are in `var/audit-hardening-20261104/`. See the
+[repair verification](../verification/2026-11-04-audit-installation-hardening.md).
+The replacement has not been live-started, reboot-tested or crash-restart-tested.
 
-From an elevated PowerShell, inspect with
-`Get-ScheduledTask -TaskName BridgeMonitor-OutboundAudit`. To disable collection,
-stop that task and disable its triggers with `Disable-ScheduledTask`; remove the
-persisted journal environment settings when disabling application hooks.
+Inspect from an **ordinary, non-elevated PowerShell** window with
+`Get-ScheduledTask -TaskName BridgeMonitor-OutboundAudit,BridgeMonitor-OutboundAudit-Ingest`.
+Administrative task changes require separate elevation; never source a checkout
+script in an elevated window. Both tasks are already stopped and disabled.
+
+Run the verifier below from that **non-elevated** window. It refuses an elevated
+token and refuses existing reports, output outside this project's `var`, and
+reparse-point output ancestry. Choose a fresh report filename each time:
+
+~~~powershell
+.\scripts\outbound-audit\verify-protected-reader.ps1 -ReportPath .\var\audit-hardening-check.json
+~~~
+
+`access-evidence.py --configuration <that-report> --report <new-var-report>`
+records the actual unelevated token SID/groups/elevation/integrity, access masks,
+successful read controls, denied write/delete/permission changes, and effective
+permissions on both task descriptors. Administrator process/ETW and startup-route
+inventory is performed only by the hash-verified protected management script,
+with other applications' command bodies omitted from its evidence.
+
+Before any future unattended activation, agree a spool/journal retention limit
+and disk monitoring. No limit or automatic deletion was configured by this repair.
+For an explicitly authorized future archive: stop both tasks, confirm producer
+and consumer exit, retain a journal backup and the cursor, then copy the protected
+spool to an administrator-owned archive with a recorded hash. Verify whether the
+cursor reached that exact file's identity and length before deciding what can be
+retired. Preserve undrained archives for separate replay; do not reuse their
+offset against a different file. A new spool identity resets ingestion to zero
+with a gap marker. Truncation is also reported. Archive/reconcile work does not
+automatically re-enable either task. The append-only producer must be stopped
+before moving its open spool.
 
 ## Start an isolated observation
 
@@ -36,6 +132,11 @@ From the Bridge Monitor project directory, build the reader in an x64 Visual Stu
 ~~~cmd
 scripts\outbound-audit\build.cmd var\audit-bin
 ~~~
+
+The following direct `collect` command is a development diagnostic, not an
+unattended privileged installation. Never register it as SYSTEM or as an elevated
+scheduled task from a writable checkout. Use the protected producer/ordinary-user
+consumer split for an unattended installation.
 
 In PowerShell, choose an existing private directory and start collection. The examples use a local Python environment with Bridge Monitor's dependencies installed.
 

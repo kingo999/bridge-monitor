@@ -1,0 +1,1824 @@
+{
+  "configuration": {
+    "elevated": false,
+    "unreadable_python_command_lines": 0,
+    "visible_collector_processes": 0,
+    "user_sid": "S-1-5-21-522404855-1915800051-2531809892-1001",
+    "at": "2026-11-04T13:38:23.1282933+01:00",
+    "process_scope": "ordinary-token visible processes; use protected administrator inventory for full command-line coverage",
+    "files": [
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;OICIID;FA;;;SY)(A;OICIID;FA;;;BA)(A;OICIID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;OICIID;FA;;;SY)(A;OICIID;FA;;;BA)(A;OICIID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;OICIID;FA;;;SY)(A;OICIID;FA;;;BA)(A;OICIID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\bridge-outbound-reader.exe",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\build-evidence.json",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\installation.json",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\previous-disabled-task.xml",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\verification-admin.json",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;OICIID;FA;;;SY)(A;OICIID;FA;;;BA)(A;OICIID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\bridge-outbound-reader.exe",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\build-evidence.json",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\installation.json",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\run-protected-reader.ps1",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\bridge-outbound-reader.exe",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\installation.json",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\run-protected-reader.ps1",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      }
+    ],
+    "activated": false,
+    "verified": true,
+    "tasks": [
+      {
+        "enabled": false,
+        "sddl": "O:BAG:BAD:(A;;FA;;;SY)(A;;FA;;;BA)(A;;FR;;;S-1-5-21-522404855-1915800051-2531809892-1001)(A;;FR;;;SY)",
+        "run_level": "Highest",
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\r\n<Task version=\"1.3\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\r\n  <RegistrationInfo>\r\n    <Description>Protected native metadata producer. Disabled pending security review; never executes checkout code.</Description>\r\n    <URI>\\BridgeMonitor-OutboundAudit</URI>\r\n  </RegistrationInfo>\r\n  <Principals>\r\n    <Principal id=\"Author\">\r\n      <UserId>S-1-5-18</UserId>\r\n      <RunLevel>HighestAvailable</RunLevel>\r\n    </Principal>\r\n  </Principals>\r\n  <Settings>\r\n    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\r\n    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\r\n    <Enabled>false</Enabled>\r\n    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>\r\n    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\r\n    <RestartOnFailure>\r\n      <Count>999</Count>\r\n      <Interval>PT1M</Interval>\r\n    </RestartOnFailure>\r\n    <StartWhenAvailable>true</StartWhenAvailable>\r\n    <IdleSettings>\r\n      <Duration>PT10M</Duration>\r\n      <WaitTimeout>PT1H</WaitTimeout>\r\n      <StopOnIdleEnd>true</StopOnIdleEnd>\r\n      <RestartOnIdle>false</RestartOnIdle>\r\n    </IdleSettings>\r\n    <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>\r\n  </Settings>\r\n  <Triggers>\r\n    <BootTrigger />\r\n    <LogonTrigger>\r\n      <UserId>DAVES-RIG\\dave</UserId>\r\n    </LogonTrigger>\r\n  </Triggers>\r\n  <Actions Context=\"Author\">\r\n    <Exec>\r\n      <Command>C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\powershell.exe</Command>\r\n      <Arguments>-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File \"C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1\"</Arguments>\r\n      <WorkingDirectory>C:\\Program Files\\BridgeMonitorAudit</WorkingDirectory>\r\n    </Exec>\r\n  </Actions>\r\n</Task>",
+        "logon_type": "ServiceAccount",
+        "working_directory": "C:\\Program Files\\BridgeMonitorAudit",
+        "state": "Disabled",
+        "name": "BridgeMonitor-OutboundAudit",
+        "execute": "C:\\Windows\\system32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "arguments": "-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File \"C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1\"",
+        "user": "SYSTEM"
+      },
+      {
+        "enabled": false,
+        "sddl": "O:BAG:BAD:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;FR;;;S-1-5-21-522404855-1915800051-2531809892-1001)",
+        "run_level": "Limited",
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\r\n<Task version=\"1.3\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">\r\n  <RegistrationInfo>\r\n    <Description>Ordinary-user audit metadata ingestion. Disabled pending security review.</Description>\r\n    <URI>\\BridgeMonitor-OutboundAudit-Ingest</URI>\r\n  </RegistrationInfo>\r\n  <Principals>\r\n    <Principal id=\"Author\">\r\n      <UserId>S-1-5-21-522404855-1915800051-2531809892-1001</UserId>\r\n      <LogonType>InteractiveToken</LogonType>\r\n    </Principal>\r\n  </Principals>\r\n  <Settings>\r\n    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>\r\n    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>\r\n    <Enabled>false</Enabled>\r\n    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>\r\n    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>\r\n    <RestartOnFailure>\r\n      <Count>999</Count>\r\n      <Interval>PT1M</Interval>\r\n    </RestartOnFailure>\r\n    <StartWhenAvailable>true</StartWhenAvailable>\r\n    <IdleSettings>\r\n      <Duration>PT10M</Duration>\r\n      <WaitTimeout>PT1H</WaitTimeout>\r\n      <StopOnIdleEnd>true</StopOnIdleEnd>\r\n      <RestartOnIdle>false</RestartOnIdle>\r\n    </IdleSettings>\r\n    <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>\r\n  </Settings>\r\n  <Triggers>\r\n    <LogonTrigger>\r\n      <UserId>DAVES-RIG\\dave</UserId>\r\n    </LogonTrigger>\r\n  </Triggers>\r\n  <Actions Context=\"Author\">\r\n    <Exec>\r\n      <Command>C:\\AI\\bridge-monitor\\.venv\\Scripts\\python.exe</Command>\r\n      <Arguments>-m bridge.audit_spool --db \"C:\\AI\\bridge-monitor\\var\\audit\\outbound.sqlite\" --spool \"C:\\Program Files\\BridgeMonitorAudit\\data\\metadata.tsv\" --checkpoint \"C:\\AI\\bridge-monitor\\var\\audit\\spool-cursor.json\"</Arguments>\r\n      <WorkingDirectory>C:\\AI\\bridge-monitor</WorkingDirectory>\r\n    </Exec>\r\n  </Actions>\r\n</Task>",
+        "logon_type": "Interactive",
+        "working_directory": "C:\\AI\\bridge-monitor",
+        "state": "Disabled",
+        "name": "BridgeMonitor-OutboundAudit-Ingest",
+        "execute": "C:\\AI\\bridge-monitor\\.venv\\Scripts\\python.exe",
+        "arguments": "-m bridge.audit_spool --db \"C:\\AI\\bridge-monitor\\var\\audit\\outbound.sqlite\" --spool \"C:\\Program Files\\BridgeMonitorAudit\\data\\metadata.tsv\" --checkpoint \"C:\\AI\\bridge-monitor\\var\\audit\\spool-cursor.json\"",
+        "user": "dave"
+      }
+    ],
+    "hashes": {
+      "run-protected-reader.ps1": "640FB1529559774D1CF6EE5E9488D3309460CBB1DFFE03BCA9DDCA41902A34FC",
+      "bridge-outbound-reader.exe": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237",
+      "build-evidence.json": "795198FFFD1CB6D78C8549CF7E659297C6EDB16EB2D27F0C76C5A71D8F8F476B"
+    }
+  },
+  "access": {
+    "at": "2026-11-04T12:38:23.268134+00:00",
+    "verified": true,
+    "token": {
+      "user_sid": "S-1-5-21-522404855-1915800051-2531809892-1001",
+      "elevated": false,
+      "elevation_type": 3,
+      "integrity_sid": "S-1-16-8192",
+      "groups": [
+        {
+          "sid": "S-1-5-21-522404855-1915800051-2531809892-513",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-1-0",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-114",
+          "attributes_hex": "0x00000010",
+          "deny_only": true,
+          "enabled": false
+        },
+        {
+          "sid": "S-1-5-21-522404855-1915800051-2531809892-1003",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "attributes_hex": "0x00000010",
+          "deny_only": true,
+          "enabled": false
+        },
+        {
+          "sid": "S-1-5-32-559",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-32-547",
+          "attributes_hex": "0x00000010",
+          "deny_only": true,
+          "enabled": false
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-4",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-2-1",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-11",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-15",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-113",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-5-0-578301",
+          "attributes_hex": "0xC0000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-2-0",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-64-10",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-16-8192",
+          "attributes_hex": "0x00000060",
+          "deny_only": false,
+          "enabled": false
+        }
+      ]
+    },
+    "file_checks": [
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "create_file",
+        "requested_access": "0x00000002",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "create_subdirectory",
+        "requested_access": "0x00000004",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\bridge-outbound-reader.exe",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\bridge-outbound-reader.exe",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\bridge-outbound-reader.exe",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\bridge-outbound-reader.exe",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\bridge-outbound-reader.exe",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\build-evidence.json",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\build-evidence.json",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\build-evidence.json",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\build-evidence.json",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\build-evidence.json",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "create_file",
+        "requested_access": "0x00000002",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "create_subdirectory",
+        "requested_access": "0x00000004",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\data",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\installation.json",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\installation.json",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\installation.json",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\installation.json",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\installation.json",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\previous-disabled-task.xml",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\previous-disabled-task.xml",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\previous-disabled-task.xml",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\previous-disabled-task.xml",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\previous-disabled-task.xml",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "create_file",
+        "requested_access": "0x00000002",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "create_subdirectory",
+        "requested_access": "0x00000004",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\run-protected-reader.ps1",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "create_file",
+        "requested_access": "0x00000002",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "create_subdirectory",
+        "requested_access": "0x00000004",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\scratch",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\verification-admin.json",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\verification-admin.json",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\verification-admin.json",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\verification-admin.json",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\verification-admin.json",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "create_file",
+        "requested_access": "0x00000002",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "create_subdirectory",
+        "requested_access": "0x00000004",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "create_file",
+        "requested_access": "0x00000002",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "create_subdirectory",
+        "requested_access": "0x00000004",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\bridge-outbound-reader.exe",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\bridge-outbound-reader.exe",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\bridge-outbound-reader.exe",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\bridge-outbound-reader.exe",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\bridge-outbound-reader.exe",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\build-evidence.json",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\build-evidence.json",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\build-evidence.json",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\build-evidence.json",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\build-evidence.json",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\installation.json",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\installation.json",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\installation.json",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\installation.json",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\installation.json",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\run-protected-reader.ps1",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\run-protected-reader.ps1",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\run-protected-reader.ps1",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\run-protected-reader.ps1",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\run-protected-reader.ps1",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\bridge-outbound-reader.exe",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\bridge-outbound-reader.exe",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\bridge-outbound-reader.exe",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\bridge-outbound-reader.exe",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\bridge-outbound-reader.exe",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\installation.json",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\installation.json",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\installation.json",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\installation.json",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\installation.json",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\run-protected-reader.ps1",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\run-protected-reader.ps1",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\run-protected-reader.ps1",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\run-protected-reader.ps1",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\run-protected-reader.ps1",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\logman.exe",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Windows\\System32\\logman.exe",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\logman.exe",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\logman.exe",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\logman.exe",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\ADVAPI32.dll",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Windows\\System32\\ADVAPI32.dll",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\ADVAPI32.dll",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\ADVAPI32.dll",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\ADVAPI32.dll",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\tdh.dll",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Windows\\System32\\tdh.dll",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\tdh.dll",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\tdh.dll",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\tdh.dll",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WS2_32.dll",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Windows\\System32\\WS2_32.dll",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WS2_32.dll",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WS2_32.dll",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WS2_32.dll",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\KERNEL32.dll",
+        "right": "read",
+        "requested_access": "0x80000000",
+        "allowed": true,
+        "windows_error": 0
+      },
+      {
+        "path": "C:\\Windows\\System32\\KERNEL32.dll",
+        "right": "write",
+        "requested_access": "0x40000000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\KERNEL32.dll",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\KERNEL32.dll",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\KERNEL32.dll",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Program Files",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+        "right": "delete_child",
+        "requested_access": "0x00000040",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false,
+        "windows_error": 5
+      },
+      {
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false,
+        "windows_error": 5
+      }
+    ],
+    "task_checks": [
+      {
+        "task": "BridgeMonitor-OutboundAudit",
+        "right": "read",
+        "requested_access": "0x00120089",
+        "allowed": true
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit",
+        "right": "execute",
+        "requested_access": "0x001200A0",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit",
+        "right": "write",
+        "requested_access": "0x00120116",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit-Ingest",
+        "right": "read",
+        "requested_access": "0x00120089",
+        "allowed": true
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit-Ingest",
+        "right": "execute",
+        "requested_access": "0x001200A0",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit-Ingest",
+        "right": "write",
+        "requested_access": "0x00120116",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit-Ingest",
+        "right": "delete",
+        "requested_access": "0x00010000",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit-Ingest",
+        "right": "change_acl",
+        "requested_access": "0x00040000",
+        "allowed": false
+      },
+      {
+        "task": "BridgeMonitor-OutboundAudit-Ingest",
+        "right": "change_owner",
+        "requested_access": "0x00080000",
+        "allowed": false
+      }
+    ],
+    "configuration_sha256": "7B2A104A797C36AEF7530BAA861417D8EAC9A516508021F778F955088BCAC51A",
+    "harness_sha256": "E651418CDFFC0E8E7BF621F8C905300EDBF1425B93FC81921BD5BC06F454966D",
+    "method": "CreateFileW OPEN_EXISTING and Windows AccessCheck with duplicated current token; no data writes or task mutations"
+  },
+  "administrator_inventory": {
+    "logman_exit": 0,
+    "user_sid": "S-1-5-21-522404855-1915800051-2531809892-1001",
+    "elevated": true,
+    "route_redaction": "Other route command bodies omitted; only hashes retained. Unrelated routes are not modified.",
+    "verifier_elevation_rejected": true,
+    "staging": [
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-78ac5e7e23b64cc28f233a85dba84ebc",
+        "sha256": null,
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-78ac5e7e23b64cc28f233a85dba84ebc\\install-protected-reader.ps1",
+        "sha256": "1E431BB9777CF596FB7196DBAA2F310F1FF2D78360A7DEC9592727EA14409F2E",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-78ac5e7e23b64cc28f233a85dba84ebc\\result.json",
+        "sha256": "FA819E2D42A835BD763897100C20AE4F38814D8A4A8114D990FA6949FED89409",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-a6728e2165e64420a192fbd2b7d734ed",
+        "sha256": null,
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-a6728e2165e64420a192fbd2b7d734ed\\inventory-protected-audit.ps1",
+        "sha256": "94DBE39A355E65079B413269449E4CC0438C2A8D47F7507FC967D219A96D006C",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-a6728e2165e64420a192fbd2b7d734ed\\result.json",
+        "sha256": "76E7F6895484FCB5E95371C456130193B1BF505384FDC2A44B77BCCA97EB5A4F",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-a6728e2165e64420a192fbd2b7d734ed\\update-protected-reader.ps1",
+        "sha256": "43D94E31760BAB48A8C6B2FF69725252FAB11FF80E7FB1FA05C70698BDC0550D",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-a6728e2165e64420a192fbd2b7d734ed\\verify-protected-reader.ps1",
+        "sha256": "6CF2A60ADD65989AF696EFFA9D95E2C6882DF039C5054595B761CEBAFBDDEDCB",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:S-1-5-21-522404855-1915800051-2531809892-513D:AI(A;ID;FA;;;SY)(A;ID;FA;;;BA)(A;ID;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-f6050cbb6aff4502823730334fc9df3d",
+        "sha256": null,
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-f6050cbb6aff4502823730334fc9df3d\\inventory-protected-audit.ps1",
+        "sha256": "F77206AFC4715851D0D785CFAB9B23A79CE85F59354A2668B56EB41B1AE6B4ED",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-f6050cbb6aff4502823730334fc9df3d\\protected-file-utils.ps1",
+        "sha256": "CBA8990AAD8E81C433EC53F2CFE0C450015723F071A15CBD3271E4444FD57915",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-f6050cbb6aff4502823730334fc9df3d\\update-protected-reader.ps1",
+        "sha256": "ADB40EE63D0D0C27308DB4C7818818B1C973B6130A150C143184CEA9C7D52232",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      },
+      {
+        "path": "C:\\Program Files\\BridgeMonitorAudit.Setup-f6050cbb6aff4502823730334fc9df3d\\verify-protected-reader.ps1",
+        "sha256": "9FFD5F38F3489B8208CDB6D67A0B2F03E9F078AC500CE9563260C2698F2A6BEB",
+        "owner": "S-1-5-32-544",
+        "sddl": "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x1200a9;;;S-1-5-21-522404855-1915800051-2531809892-1001)"
+      }
+    ],
+    "unreadable_process_command_lines": [],
+    "audit_processes": [],
+    "activated": false,
+    "route_scope": "Scheduled tasks, services, HKLM/HKU operator Run/RunOnce, common/operator Startup byte inventory; not a universal persistence scan",
+    "at": "2026-11-04T13:37:33.4883622+01:00",
+    "audit_etw_sessions": [],
+    "checkout_routes": [
+      {
+        "command_sha256": "E11F838590F6D0C2A40F67B44E269B006FAE38F293E1AA561AA2B7502D0B134F",
+        "name": "\\BridgeMonitor-Dashboard",
+        "run_level": "Limited",
+        "is_named_audit_task": false,
+        "kind": "task",
+        "state": "Ready",
+        "user": "dave"
+      },
+      {
+        "command_sha256": "84B4A5674D21260535751BDDE70AEBDF1C78E1CBB8FC6350736D3B5A5095783C",
+        "name": "\\BridgeMonitor-GemmaClassifier",
+        "run_level": "Limited",
+        "is_named_audit_task": false,
+        "kind": "task",
+        "state": "Disabled",
+        "user": "dave"
+      },
+      {
+        "command_sha256": "02D23D6F595836A36DF13D0DF5599AAD33ABA67564A34AF3BEAC3B8CB5F9D61F",
+        "name": "\\BridgeMonitor-OutboundAudit",
+        "run_level": "Highest",
+        "is_named_audit_task": true,
+        "kind": "task",
+        "state": "Disabled",
+        "user": "SYSTEM"
+      },
+      {
+        "command_sha256": "A8E6E419088E0059A5AF7513BFA3C8ABFD321504FEEA2E77E74AADCA0658CA0B",
+        "name": "\\BridgeMonitor-OutboundAudit-Ingest",
+        "run_level": "Limited",
+        "is_named_audit_task": true,
+        "kind": "task",
+        "state": "Disabled",
+        "user": "dave"
+      },
+      {
+        "command_sha256": "5731B8A8CEEF507E1664C5F050F1341B97C1026C1D9B0A3FC6A5C60354AB9597",
+        "name": "\\BridgeMonitor-Postgres",
+        "run_level": "Limited",
+        "is_named_audit_task": false,
+        "kind": "task",
+        "state": "Ready",
+        "user": "dave"
+      },
+      {
+        "command_sha256": "4793C65DBFA87EF815048B5C4E3953E65075DACAE9232CCF0E22E18CFC7EBF47",
+        "name": "\\BridgeMonitor-RouterShadow",
+        "run_level": "Limited",
+        "is_named_audit_task": false,
+        "kind": "task",
+        "state": "Ready",
+        "user": "dave"
+      }
+    ],
+    "tasks": [
+      {
+        "last_run": "2026-11-04T12:16:51.0000000+01:00",
+        "enabled": false,
+        "name": "BridgeMonitor-OutboundAudit",
+        "state": "Disabled"
+      },
+      {
+        "last_run": "1999-11-30T00:00:00.0000000+01:00",
+        "enabled": false,
+        "name": "BridgeMonitor-OutboundAudit-Ingest",
+        "state": "Disabled"
+      }
+    ]
+  },
+  "installation_result": {
+    "error": null,
+    "at": "2026-11-04T13:37:33.4948749+01:00",
+    "verifier_elevation_rejected": true,
+    "installed": true,
+    "activated": false
+  },
+  "package": {
+    "setup": "C:\\Program Files\\BridgeMonitorAudit.Setup-f6050cbb6aff4502823730334fc9df3d",
+    "operator_sid": "S-1-5-21-522404855-1915800051-2531809892-1001",
+    "reader": "C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\first\\bridge-outbound-reader.exe",
+    "supervisor": "C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\run-protected-reader.ps1",
+    "build": "C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\build-evidence.json",
+    "reader_sha256": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237",
+    "supervisor_sha256": "640FB1529559774D1CF6EE5E9488D3309460CBB1DFFE03BCA9DDCA41902A34FC",
+    "build_sha256": "795198FFFD1CB6D78C8549CF7E659297C6EDB16EB2D27F0C76C5A71D8F8F476B",
+    "scripts": [
+      {
+        "name": "update-protected-reader.ps1",
+        "source": "C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\update-protected-reader.ps1",
+        "sha256": "ADB40EE63D0D0C27308DB4C7818818B1C973B6130A150C143184CEA9C7D52232"
+      },
+      {
+        "name": "inventory-protected-audit.ps1",
+        "source": "C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\inventory-protected-audit.ps1",
+        "sha256": "F77206AFC4715851D0D785CFAB9B23A79CE85F59354A2668B56EB41B1AE6B4ED"
+      },
+      {
+        "name": "verify-protected-reader.ps1",
+        "source": "C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\verify-protected-reader.ps1",
+        "sha256": "9FFD5F38F3489B8208CDB6D67A0B2F03E9F078AC500CE9563260C2698F2A6BEB"
+      },
+      {
+        "name": "protected-file-utils.ps1",
+        "source": "C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\protected-file-utils.ps1",
+        "sha256": "CBA8990AAD8E81C433EC53F2CFE0C450015723F071A15CBD3271E4444FD57915"
+      }
+    ],
+    "bootstrap_sha256": "80785879D2CA5EB6D98A47FE3B1D51C99EE27D7813035810844EBFE798A98EC8"
+  },
+  "protected_installation": {
+    "supervisor_sha256": "640FB1529559774D1CF6EE5E9488D3309460CBB1DFFE03BCA9DDCA41902A34FC",
+    "build_evidence_sha256": "795198FFFD1CB6D78C8549CF7E659297C6EDB16EB2D27F0C76C5A71D8F8F476B",
+    "previous_revision": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7",
+    "project_root": "C:\\AI\\bridge-monitor",
+    "root": "C:\\Program Files\\BridgeMonitorAudit",
+    "activated": false,
+    "at": "2026-11-04T13:37:30.0531290+01:00",
+    "reader_sha256": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237",
+    "operator_sid": "S-1-5-21-522404855-1915800051-2531809892-1001",
+    "tasks": [
+      "BridgeMonitor-OutboundAudit",
+      "BridgeMonitor-OutboundAudit-Ingest"
+    ],
+    "installed": true
+  },
+  "build": {
+    "at": "2026-11-04T12:20:40.861105+00:00",
+    "ran_reader": false,
+    "elevated": false,
+    "source_path": "C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\collector.cpp",
+    "source_snapshot": "C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\collector.cpp",
+    "source_sha256": "DE799FDE58956251C6C562B61BAC654C81DB9F503F712CEF64931CA7CA386FC8",
+    "git_head": "c9e9b35a1bc1b1760c351ea19e52f1fad754a292",
+    "source_git_blob": "e3686b6eae12dbd52c7ba5382b5235d70b9b3aba",
+    "previously_reviewed_source_git_blob": "e3686b6eae12dbd52c7ba5382b5235d70b9b3aba",
+    "compiler_tools": [
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "signature": "Valid",
+        "version": "19.44.35217.0",
+        "sha256": "EDFDE23829794777A8F4872CDEFE1D569546FF4BF0FA49F5AF872B6DA7B8EABB"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\link.exe",
+        "signature": "Valid",
+        "version": "14.44.35217.0",
+        "sha256": "27C21D5D9F1C44952EC038D8ACDEEBB0F90AF670908B48BA858D268C0FCA0978"
+      }
+    ],
+    "developer_environment_sha256": "C004278E64444BF3524360F960511B5CE7B1D0306910F08A4EBCF1C42FF9BD6D",
+    "builds": [
+      {
+        "directory": "C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\first",
+        "command": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe\" /nologo /Bv /EHsc /W4 /std:c++17 /O2 /MT /Brepro \"C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\collector.cpp\" /Fo\"C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\first\\collector.obj\" /Fe\"C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\first\\bridge-outbound-reader.exe\" /link /Brepro /INCREMENTAL:NO",
+        "returncode": 0,
+        "log_sha256": "3CF5B007321D937B66D1C7F6F9BC767FCA528D42E79017FFFFDA72467D62E458",
+        "executable_sha256": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237"
+      },
+      {
+        "directory": "C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\second",
+        "command": "\"C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe\" /nologo /Bv /EHsc /W4 /std:c++17 /O2 /MT /Brepro \"C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\collector.cpp\" /Fo\"C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\second\\collector.obj\" /Fe\"C:\\AI\\bridge-monitor\\var\\audit-hardening-20261104\\reproducible-build-v2\\second\\bridge-outbound-reader.exe\" /link /Brepro /INCREMENTAL:NO",
+        "returncode": 0,
+        "log_sha256": "3CF5B007321D937B66D1C7F6F9BC767FCA528D42E79017FFFFDA72467D62E458",
+        "executable_sha256": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237"
+      }
+    ],
+    "reproducible": true,
+    "native_imports": [
+      "ADVAPI32.dll",
+      "KERNEL32.dll",
+      "tdh.dll",
+      "WS2_32.dll"
+    ],
+    "limits": "Local reproducibility with one signed MSVC toolchain; not independent compiler or supply-chain attestation"
+  },
+  "build_logs": [
+    {
+      "sha256": "3CF5B007321D937B66D1C7F6F9BC767FCA528D42E79017FFFFDA72467D62E458",
+      "text": "collector.cpp\nCompiler Passes:\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe:        Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1.dll:        Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1xx.dll:      Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c2.dll:        Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1xx.dll:      Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\link.exe:      Version 14.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\mspdb140.dll:  Version 14.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\clui.dll: Version 19.44.35217.0\n\n"
+    },
+    {
+      "sha256": "3CF5B007321D937B66D1C7F6F9BC767FCA528D42E79017FFFFDA72467D62E458",
+      "text": "collector.cpp\nCompiler Passes:\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe:        Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1.dll:        Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1xx.dll:      Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c2.dll:        Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1xx.dll:      Version 19.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\link.exe:      Version 14.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\mspdb140.dll:  Version 14.44.35217.0\n C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\clui.dll: Version 19.44.35217.0\n\n"
+    }
+  ],
+  "bootstrap_source_sha256": "80785879D2CA5EB6D98A47FE3B1D51C99EE27D7813035810844EBFE798A98EC8",
+  "encoded_command_source_sha256": "1C85469DF02D53BBF396CEA2BC83BCB60F9BE79AAE249AF162C643E0380A7499",
+  "original_bootstrap_text": "$ErrorActionPreference='Stop'\n$setup='C:\\Program Files\\BridgeMonitorAudit.Setup-78ac5e7e23b64cc28f233a85dba84ebc'\nif(Test-Path -LiteralPath $setup) { throw 'Setup path already exists' }\n$acl=New-Object Security.AccessControl.DirectorySecurity\n$acl.SetSecurityDescriptorSddlForm('O:BAG:BAD:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;S-1-5-21-522404855-1915800051-2531809892-1001)')\n$dir=New-Object IO.DirectoryInfo($setup)\n$dir.Create($acl)\n$ok=$false\n$errorText=$null\ntry {\n $copy=Join-Path $setup 'install-protected-reader.ps1'\n Copy-Item -LiteralPath 'C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\install-protected-reader.ps1' -Destination $copy\n $fileAcl=Get-Acl -LiteralPath $copy\n $fileAcl.SetOwner((New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')))\n Set-Acl -LiteralPath $copy -AclObject $fileAcl\n if((Get-FileHash -LiteralPath $copy).Hash -ne '1E431BB9777CF596FB7196DBAA2F310F1FF2D78360A7DEC9592727EA14409F2E') {throw 'Protected installer hash mismatch'}\n & $copy -ReaderSource 'C:\\AI\\bridge-monitor\\var\\outbound-audit-build\\bridge-outbound-reader.exe' -SupervisorSource 'C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\run-protected-reader.ps1' -ReaderSHA256 '4A7C75F02511C292172896350E25C25B17506318E31E43E5D834FE5C5175BFE3' -SupervisorSHA256 '565404F4C820276888612FC2051001CA89D8371D54684DFCAD53B0F22F79CEDA' -OperatorSid 'S-1-5-21-522404855-1915800051-2531809892-1001' -ProjectRoot 'C:\\AI\\bridge-monitor'\n $ok=$true\n} catch {$errorText=$_.Exception.Message}\n@{installed=$ok;error=$errorText;at=(Get-Date -Format o)} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $setup 'result.json') -Encoding UTF8\n$resultAcl=Get-Acl -LiteralPath (Join-Path $setup 'result.json')\n$resultAcl.SetOwner((New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')))\nSet-Acl -LiteralPath (Join-Path $setup 'result.json') -AclObject $resultAcl\nif(-not $ok){exit 1}\n",
+  "binding_checks": {
+    "all_four_management_copies_match_reviewed_sources": true,
+    "installed_supervisor_matches_reviewed_source": true,
+    "installed_reader_matches_both_reproducible_builds": true,
+    "bootstrap_matches_executed_command_source": true
+  },
+  "parent_post_review_reconciliation": {
+    "history": {
+      "withdrawn_activation_receipt": {
+        "db": "C:\\AI\\bridge-monitor\\var\\audit\\outbound.sqlite",
+        "task": "BridgeMonitor-OutboundAudit",
+        "installed": true,
+        "at": "2026-11-04T12:16:51.2452588+01:00"
+      },
+      "protected_installation_history": [
+        {
+          "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8a31143ce97b46699b93a16ddac5d5f7\\installation.json",
+          "at": "2026-11-04T13:26:00.0283517+01:00",
+          "reader_sha256": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237"
+        },
+        {
+          "path": "C:\\Program Files\\BridgeMonitorAudit\\revisions\\8c5450c65bd148d2a34ff34e366f6206\\installation.json",
+          "at": "2026-11-04T12:42:43.3608413+01:00",
+          "reader_sha256": "4A7C75F02511C292172896350E25C25B17506318E31E43E5D834FE5C5175BFE3"
+        }
+      ],
+      "administrator_task_history": [
+        {
+          "last_run": "2026-11-04T12:16:51.0000000+01:00",
+          "enabled": false,
+          "name": "BridgeMonitor-OutboundAudit",
+          "state": "Disabled"
+        },
+        {
+          "last_run": "1999-11-30T00:00:00.0000000+01:00",
+          "enabled": false,
+          "name": "BridgeMonitor-OutboundAudit-Ingest",
+          "state": "Disabled"
+        }
+      ],
+      "conclusion": "Producer LastRunTime equals the withdrawn 12:16 activation and predates all protected installations/builds. Consumer shows the never-run sentinel. No replacement task start is recorded.",
+      "creation_coverage": "Fresh installer atomic path was statically reviewed, not re-run against the existing tree. Bootstrap/update FileStream and new revision-directory atomic paths were exercised. Legacy data/scratch/revisions objects retain safe inherited DACLs; owner BA and effective read-only operator rights verified. Group field is informational; no untrusted write ACE."
+    },
+    "raw_source": {
+      "baseline_commit": "783a504dd7a3a7f753156e7de389bb9799a46f75",
+      "baseline_raw_sha256": "448D5DA3C5894E2E73DBB428CCD282F73E992D87150D07B0035769B00B074E5D",
+      "working_raw_sha256": "DE799FDE58956251C6C562B61BAC654C81DB9F503F712CEF64931CA7CA386FC8",
+      "raw_bytes_equal": false,
+      "equal_after_CRLF_to_LF_only": true,
+      "method": "git cat-file blob without clean filters; raw comparison and CRLF-only normalization"
+    },
+    "final_tests": {
+      "at": "2026-11-04T12:44:04.351701+00:00",
+      "command": [
+        "C:\\AI\\bridge-monitor\\.venv\\Scripts\\python.exe",
+        "-m",
+        "pytest",
+        "tests/test_audit_installation.py",
+        "tests/test_audit_spool.py",
+        "tests/test_outbound_audit.py",
+        "tests/test_audit_integration.py",
+        "tests/test_audit_smoke.py",
+        "tests/test_audit_review_regressions.py",
+        "tests/adapters/test_qwen.py",
+        "tests/test_audit_grpc.py",
+        "-q"
+      ],
+      "returncode": 0,
+      "log_sha256": "032cd141661d84b38058a5c3952201023bb27b7fa423d48f75821f3c014d8c8c",
+      "summary": "44 passed, 1 skipped in 4.93s"
+    },
+    "review_job_id": "48efeb96-1217-4123-8461-5b521514fd9a",
+    "review_verification": {
+      "unchanged": true,
+      "files_checked": 2789,
+      "head": "c9e9b35a1bc1b1760c351ea19e52f1fad754a292",
+      "tool_both_roots_unchanged": true
+    },
+    "scope": "Parent read-only evidence after review; no implementation change or activation"
+  }
+}

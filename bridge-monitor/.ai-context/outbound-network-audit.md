@@ -4,7 +4,12 @@
 
 Correlate host connections with application calls. Preserve unknowns, keep sensitive payloads out of logs, and distinguish an attempted connection from an observed transfer. Operators can replay a draft allowlist and evaluate it live in observe mode before deciding whether to introduce enforcement.
 
-**Status on 2026-11-04.** Implemented on the isolated feature branch. The Windows collector, Bridge hooks and SQLite journal support inspect, register, live policy and replay commands. The host account verified a PID-scoped Winsock attempt to a controlled receiver. Live kernel process and byte evidence requires a Windows account with provider access; the send decoder was exercised using the installed event manifest. Production activation is pending. Retention is operator-managed.
+**Current status on 2026-11-04.** The feature is integrated. Both audit tasks are
+stopped and disabled. The unsafe initial SYSTEM installation has been replaced
+by protected native production and ordinary-user ingestion. Security-review
+follow-ups are authorized and applied; final review found no disabled-repair blocker. Retention and
+live-start/reboot validation remain separate activation prerequisites. The
+chronological verification history below does not authorize activation.
 
 See the [approved design and acceptance scenarios](../docs/superpowers/specs/2026-11-04-outbound-network-audit-design.md).
 
@@ -26,6 +31,57 @@ Final feature suite: 958 passed, 460 skipped, five failures reproduced on an unt
 
 **Integrated on 2026-11-04.** Main fast-forwarded to `783a504` after the user approved fixes and integration. Integrated suite: 988 passed, 525 skipped, and the identical 22 pre-existing failures. Original unrelated working-tree files and non-audit index entries were preserved. See the [review and integration evidence](../docs/verification/2026-11-04-outbound-audit-integration.md). Collection remains opt-in; operator setup and enforcement are separate steps.
 
-**Continuous collection enabled on 2026-11-04.** The user requested always-on audit collection. Operational configuration uses the existing collector, without changing routing or product code. `BridgeMonitor-OutboundAudit` runs as SYSTEM at boot and user sign-in, with no time limit and duplicate-instance protection. Its local supervisor restarts collector exits after ten seconds; scheduler restart covers supervisor failure. Journal `C:\AI\bridge-monitor\var\audit\outbound.sqlite` is protected for SYSTEM, administrators and the configuring user. User-level and Codex MCP environment settings persist the journal path. Existing MCP processes require a reconnect to inherit the new setting.
+**Historical activation on 2026-11-04 — withdrawn.** The first always-on
+configuration ran a writable supervisor, Python interpreter and checkout as
+SYSTEM. The user subsequently stopped and disabled it after a valid security
+warning. Its activation receipts are historical evidence only; it must not be
+restored. The journal and persistent application-hook settings were preserved.
 
-Verified live capture and fresh heartbeats, plus two application and five host records for one synthetic Google verification run. Automatic recovery was verified by stopping collector PID 35868 and observing replacement PID 41648, followed by new heartbeats and increasing journal rows. Receipts are in ignored `var/audit-setup-20261104/`. The startup triggers were inspected; a machine reboot was not performed. Observation is active now. Retention remains operator-managed; enforcement remains separately authorized future work.
+The withdrawn configuration captured a synthetic Google run and recovered after
+a collector exit (`var/audit-setup-20261104/`). Those tests do not validate the
+replacement installation. No reboot was performed. Enforcement remains future work.
+
+**Security correction on 2026-11-04; supersedes the activation status above.** The
+original SYSTEM task executed user-writable supervisor/Python/checkout files,
+creating an unsafe privilege boundary. The user stopped and disabled it and
+authorized a safe repair, explicitly retaining disabled status until review.
+The protected replacement uses an administrator-owned native producer/supervisor
+under `C:\Program Files\BridgeMonitorAudit` and an ordinary-user spool ingestion
+task. SYSTEM never imports the checkout or opens its mutable SQLite journal.
+The operator can read but cannot run/enable/change the producer task. Both task
+definitions were registered disabled, and no collector was started by repair.
+Forty-three real ordinary-token filesystem access checks denied writes, deletes,
+ownership and ACL changes; effective task permissions deny execute/write/delete/
+ownership/ACL changes. Native imports are four Windows system DLLs. Read-only
+verification confirmed hashes/ownership/DACLs, no collector processes and zero
+audit ETW sessions. Spool and existing audit regression tests: 27 passed.
+Read-only review `4a882574-610c-4dc3-904a-812eb220244a` found no reusable
+unelevated-user-to-SYSTEM execution path, and requested stronger verification.
+Both reviewed Git roots were unchanged. The user explicitly authorized follow-ups:
+ordinary-token verifier guards, full task checks, both task DACLs read-only,
+reviewable protected UAC bootstrap/update/inventory, and token/access evidence
+with read controls. The reader was rebuilt twice with signed MSVC tools; both
+outputs hash to `F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237`.
+The native source matches the previously reviewed integrated source. The protected
+update copied this build and the corrected supervisor without starting either task.
+The administrator inventory found zero audit processes/ETW sessions, no unreadable
+Python/PowerShell command lines, and no additional privileged checkout startup
+route in the enumerated tasks/services/Run keys/Startup entries. Other matching
+Bridge tasks run Limited and were left untouched. Normal-token evidence includes
+161 filesystem checks and 12 effective task checks. Protected file/directory
+creation supplies the administrator owner and DACL atomically, including bootstrap
+copies and receipts; it does not rely on repairing a temporary user owner.
+Current focused tests: 44 passed.
+Final read-only review `48efeb96-1217-4123-8461-5b521514fd9a` found no blocker to
+the disabled repair and no reusable unelevated-to-SYSTEM route. Both roots and
+2,789 parent-snapshotted files were unchanged during review. Parent reconciliation
+confirmed legacy inherited DACLs remain safe (fresh-installer atomic creation was
+not live-exercised), and producer LastRunTime `12:16:51` belongs to the withdrawn
+activation, preceding the first protected install at `12:42:43`. The consumer has
+never-run history. Direct raw-source comparison to full reviewed commit
+`783a504dd7a3a7f753156e7de389bb9799a46f75` differs only in CRLF/LF endings.
+No implementation changes followed final review. Future activation additionally
+requires a constrained/recorded build environment and dependency verification,
+ETW session-control checks, supervisor round-trip/gap cleanup, retention and live
+start/restart/logon/reboot validation. Both tasks remain disabled. No live capture/reboot/restart verification is claimed
+for this replacement. See the [repair verification](../docs/verification/2026-11-04-audit-installation-hardening.md).
