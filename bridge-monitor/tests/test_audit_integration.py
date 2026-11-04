@@ -138,3 +138,40 @@ def test_invalid_policy_preserves_previous_version(tmp_path):
         Policy(default="deny", rules=[{"id":"r","effect":"allow","url":"https://secret"}])
     book.record(Observation(kind="attempt", hostname="example.net"))
     assert next(book.records())["version"] == original.version
+
+
+def test_bad_reader_record_marks_gap_and_keeps_collecting(tmp_path):
+    journal = Journal(tmp_path / "reader.db")
+    collector = Collector(journal)
+    collector.line("net\tbroken")
+    collector.line(f"net\t{EPOCH+100}\t123\t10\t192.0.2.8\t443\t7")
+    rows = [r["evidence"] for r in journal.records()]
+    assert [r["kind"] for r in rows] == ["gap", "transfer"]
+    assert rows[1]["bytes_out"] == 7
+
+
+def test_reader_shutdown_stops_its_trace_after_exit_timeout(monkeypatch):
+    from bridge.audit_cli import stop_reader
+    from unittest.mock import Mock
+    child = Mock(pid=123)
+    child.poll.return_value = None
+    child.wait.side_effect = [subprocess.TimeoutExpired("reader", 15), 1]
+    cleanup = Mock()
+    monkeypatch.setattr(subprocess, "run", cleanup)
+    assert stop_reader(child) == 1
+    child.kill.assert_called_once()
+    assert cleanup.call_args.args[0] == ["logman.exe", "stop", "BridgeOutboundAudit-123", "-ets"]
+
+
+def test_crashed_reader_still_has_its_trace_cleaned_up(monkeypatch):
+    from bridge.audit_cli import stop_reader
+    from unittest.mock import Mock
+    child = Mock(pid=456)
+    child.poll.return_value = 1
+    child.wait.return_value = 1
+    cleanup = Mock()
+    monkeypatch.setattr(subprocess, "run", cleanup)
+    assert stop_reader(child) == 1
+    child.kill.assert_not_called()
+    child.send_signal.assert_not_called()
+    assert cleanup.call_args.args[0] == ["logman.exe", "stop", "BridgeOutboundAudit-456", "-ets"]

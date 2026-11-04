@@ -34,6 +34,22 @@ def refresh_addresses(collector):
     collector.cached_names = {ip: tuple(sorted(items)) for ip, items in names.items()}
 
 
+def stop_reader(child):
+    try:
+        if child.poll() is None:
+            child.send_signal(signal.CTRL_BREAK_EVENT)
+        rc = child.wait(timeout=15)
+    except (OSError, subprocess.TimeoutExpired):
+        child.kill()
+        rc = child.wait(timeout=5)
+    if rc:
+        # An abnormal ETW producer exit can leave its kernel session alive. This name is
+        # derived solely from the child we launched, never from reader output.
+        subprocess.run(["logman.exe", "stop", f"BridgeOutboundAudit-{child.pid}", "-ets"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5, check=False)
+    return rc
+
+
 def observe(journal, reader):
     collector = Collector(journal, batch_size=128)
     refresh_addresses(collector)
@@ -52,9 +68,7 @@ def observe(journal, reader):
                         collector.status("gap", "local network tables unavailable")
                 collector.line(line)
         finally:
-            if child.poll() is None:
-                child.send_signal(signal.CTRL_BREAK_EVENT)
-            rc = child.wait(timeout=15)
+            rc = stop_reader(child)
             collector.status("gap", "collector stopped")
     if rc:
         raise SystemExit(f"ETW reader exited with code {rc}")

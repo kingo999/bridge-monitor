@@ -14,6 +14,8 @@
 #include <stdexcept>
 #include <thread>
 #include <atomic>
+#include <mutex>
+#include <unordered_map>
 #pragma comment(lib,"advapi32.lib")
 #pragma comment(lib,"tdh.lib")
 #pragma comment(lib,"ws2_32.lib")
@@ -23,6 +25,8 @@ static const GUID processes = {0x22fb2cd6,0x0e7b,0x422b,{0xa0,0xc7,0x2f,0xad,0x1
 static TRACEHANDLE session;
 static ULONG onlyPid; // Optional restricted smoke test. Never emit unrelated process or flow records.
 static bool processProviderMissing;
+static std::unordered_map<ULONG, ULONGLONG> knownProcesses;
+static std::mutex evidenceMutex;
 static const GUID winsock = {0xe53c6823,0x7bb8,0x44bb,{0x90,0xdc,0x3f,0x86,0x09,0x0d,0x48,0xa6}};
 static std::wstring name;
 struct Properties { EVENT_TRACE_PROPERTIES p; wchar_t text[128]; };
@@ -89,10 +93,13 @@ static void liveProcess(ULONG pid, ULONGLONG latest, unsigned depth=0) {
         for (auto &c:ent.szExeFile) if (c && (c<32 || c==127)) c=L'?';
         WideCharToMultiByte(CP_UTF8,0,ent.szExeFile,-1,image,sizeof(image),nullptr,nullptr);
         printf("start\t%lu\t%llu\t%lu\t%s\n",pid,birth.QuadPart,ent.th32ParentProcessID,image);
+        if (!processProviderMissing) knownProcesses[pid]=birth.QuadPart;
     } else printf("unknown\t%lu\n",pid);
     CloseHandle(process);
 }
 static void WINAPI consume(EVENT_RECORD* r) {
+    // Keep complete identity/flow groups ordered relative to a loss marker.
+    std::lock_guard<std::mutex> lock(evidenceMutex);
     const auto &h = r->EventHeader;
     auto id = h.EventDescriptor.Id;
     auto t = h.TimeStamp.QuadPart;
@@ -101,8 +108,14 @@ static void WINAPI consume(EVENT_RECORD* r) {
             auto pid = number<ULONG>(r,L"ProcessID");
             if (onlyPid && pid!=onlyPid) return;
             auto born = number<ULONGLONG>(r,L"CreateTime");
-            if (id==2) { printf("end\t%lu\t%llu\n",pid,born); return; }
+            if (id==2) {
+                auto old = knownProcesses.find(pid);
+                if (old!=knownProcesses.end() && old->second==born) knownProcesses.erase(old);
+                printf("end\t%lu\t%llu\n",pid,born); return;
+            }
             auto parent = number<ULONG>(r,L"ParentProcessID");
+            if (!onlyPid && parent!=pid && knownProcesses.find(parent)==knownProcesses.end())
+                liveProcess(parent,born-1);
             auto bytes = field(r,L"ImageName");
             std::wstring image(reinterpret_cast<wchar_t*>(bytes.data()),bytes.size()/2);
             image = image.substr(0,image.find(L'\0'));
@@ -112,13 +125,15 @@ static void WINAPI consume(EVENT_RECORD* r) {
             std::string utf8(image.size()*4+1,'\0');
             WideCharToMultiByte(CP_UTF8,0,image.c_str(),-1,&utf8[0],int(utf8.size()),nullptr,nullptr);
             printf("start\t%lu\t%llu\t%lu\t%s\n",pid,born,parent,utf8.c_str());
+            knownProcesses[pid]=born;
         } else if (IsEqualGUID(h.ProviderId,network) || IsEqualGUID(h.ProviderId,winsock)) {
             const bool attempt = IsEqualGUID(h.ProviderId,winsock);
             const bool sockaddrEvent = id==1018 || id==1021;
             if (attempt ? (id!=4 && id!=5 && !sockaddrEvent) : (id!=10 && id!=26 && id!=12 && id!=28 && id!=42 && id!=58)) return;
             auto pid = attempt ? h.ProcessId : number<ULONG>(r,L"PID");
             if (onlyPid && pid!=onlyPid) return;
-            if (processProviderMissing) liveProcess(pid,t);
+            if (processProviderMissing || knownProcesses.find(pid)==knownProcesses.end())
+                liveProcess(pid,t);
             auto ip = field(r,attempt ? L"Address" : L"daddr");
             char dest[INET6_ADDRSTRLEN]{};
             if (sockaddrEvent) {
@@ -151,7 +166,7 @@ static void WINAPI consume(EVENT_RECORD* r) {
                 printf("net\t%lld\t%lu\t%u\t%s\t%u\t%lu\t%s\t%u\n",t,pid,id,dest,port,size,local,sport);
             }
         } else return;
-    } catch (const std::exception&) { puts("gap\tdecode"); }
+    } catch (const std::exception&) { knownProcesses.clear(); puts("gap\tdecode"); }
 }
 static ULONG WINAPI flushed(EVENT_TRACE_LOGFILEW*) { fflush(stdout); return TRUE; }
 int wmain(int argc, wchar_t** argv) {
@@ -204,12 +219,15 @@ int wmain(int argc, wchar_t** argv) {
                 ULONG lost = 0;
                 while (!finished) {
                     auto stats = props();
+                    bool pipeClosed = false;
                     if (!ControlTraceW(session,name.c_str(),&stats.p,EVENT_TRACE_CONTROL_QUERY)) {
+                        std::lock_guard<std::mutex> lock(evidenceMutex);
                         auto count = stats.p.EventsLost + stats.p.RealTimeBuffersLost;
-                        if (count!=lost) { puts("gap\tloss"); lost=count; }
+                        if (count!=lost) { knownProcesses.clear(); puts("gap\tloss"); lost=count; }
                         puts("health"); fflush(stdout);
-                        if (ferror(stdout)) { stop(CTRL_BREAK_EVENT); return; }
+                        pipeClosed = ferror(stdout)!=0;
                     }
+                    if (pipeClosed) { stop(CTRL_BREAK_EVENT); return; }
                     Sleep(1000);
                 }
             });

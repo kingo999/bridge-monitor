@@ -36,6 +36,13 @@ class Collector:
         self.journal.record(Observation(kind=kind, layer="collector", operation=operation))
 
     def line(self, raw):
+        try:
+            self._line(raw)
+        except (ValueError, IndexError):
+            self.processes.clear()
+            self.status("gap", "invalid reader metadata")
+
+    def _line(self, raw):
         parts = raw.rstrip("\r\n").split("\t")
         tag = parts[0]
         if tag == "health":
