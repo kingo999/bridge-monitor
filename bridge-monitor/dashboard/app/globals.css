@@ -4,6 +4,7 @@
 @media(max-width:900px){.dashboard{padding:0 10px 15px}.dashboard-grid{grid-template-columns:1fr}.left-column{grid-template-rows:auto auto}.inspector{min-height:500px}.flow-canvas{height:320px}.metric-strip{grid-template-columns:repeat(2,1fr)}.metric:nth-child(2n){border-right:0}.toolbar{justify-content:flex-start}.header-actions{flex-wrap:wrap}.app-footer{flex-direction:column}.comparison{grid-template-columns:1fr}}
 
 .flow-canvas{height:470px}
+.chatgpt-handoffs{background:transparent;border:1px solid #2b4e69;border-radius:12px;color:var(--teal);font-size:.7rem;line-height:1.4;padding:2px 8px}.chatgpt-handoffs:hover{background:#14344d;border-color:var(--teal)}
 .gemma-activity .node-orb{width:44px;height:44px;font-size:1.8rem;background:#675021;border-color:#e2ba69;color:#ffe2a1}
 .gemma-activity small{display:block}
 .is-working .node-orb,.is-working .worker-glyph{animation:model-working 1.4s ease-in-out infinite}
