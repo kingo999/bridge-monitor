@@ -7,6 +7,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+from bridge.audit_hooks import agent_run, observe_client
 from contracts.events import EventType
 from bridge.adapters.base import AdapterResult, ensure_lease
 
@@ -32,7 +33,7 @@ class QwenAdapter:
             raise ValueError("output reservation must fit context")
         if expected_digest and not re.fullmatch(r"[0-9a-f]{64}", expected_digest):
             raise ValueError("expected model digest must be 64 lowercase hex characters")
-        self.client = client
+        self.client = observe_client(client, type(self).__name__)
         self.endpoint = endpoint.rstrip("/")
         self.model = model
         self.context_tokens = context_tokens
@@ -65,6 +66,7 @@ class QwenAdapter:
         except Exception:
             return ModelPreflight(False, "model_metadata_unavailable")
 
+    @agent_run
     def run(self, lease, prompt: str, emitter, task=None,
             deadline_at: datetime | None = None) -> AdapterResult:
         ensure_lease(lease)

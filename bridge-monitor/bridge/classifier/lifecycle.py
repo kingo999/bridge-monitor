@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
+from bridge.audit_hooks import observe_client
 
 from bridge.classifier import winproc
 from bridge.classifier.config import RuntimeConfig
@@ -60,7 +61,7 @@ class RuntimeController:
         self.log_dir = cfg.path("log_dir")
         self.exe = cfg.path("runtime_dir") / "ollama.exe"
         self.current = self.state_dir / "current.json"
-        self.http = httpx.Client(timeout=5.0, trust_env=False)
+        self.http = observe_client(httpx.Client(timeout=5.0, trust_env=False), type(self).__name__)
 
     # -- receipt and identity -------------------------------------------------
     def read_receipt(self) -> dict | None:

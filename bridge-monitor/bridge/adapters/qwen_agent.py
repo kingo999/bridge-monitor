@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 
 from bridge.adapters.base import AdapterResult, ensure_lease
 from bridge.adapters.qwen_runtime import ModelPreflight
+from bridge.audit_hooks import agent_run, observe_client
 from contracts.events import EventType
 
 
@@ -29,7 +30,7 @@ class QwenAgentAdapter:
         if min(timeout_seconds, first_output_seconds, idle_output_seconds, ack_seconds,
                poll_seconds, poll_timeout_seconds, poll_failures) <= 0:
             raise ValueError("positive agent deadline and poll limits required")
-        self.client = client
+        self.client = observe_client(client, type(self).__name__)
         self.endpoint = endpoint.rstrip("/")
         self.token = token
         self.model = model
@@ -76,6 +77,7 @@ class QwenAgentAdapter:
         except Exception:
             return False
 
+    @agent_run
     def run(self, lease, prompt: str, emitter, task=None,
             deadline_at: datetime | None = None) -> AdapterResult:
         ensure_lease(lease)

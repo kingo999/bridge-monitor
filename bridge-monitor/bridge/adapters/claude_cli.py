@@ -11,6 +11,7 @@ import threading
 import uuid
 from pathlib import Path
 
+from bridge.audit_hooks import agent_run, register_process
 from contracts.events import EventType
 from contracts.outcomes import DispositionRecord
 from bridge.adapters.base import AdapterResult, ensure_lease
@@ -172,6 +173,7 @@ class SubprocessRunner:
 
     def stream(self, command: list[str], prompt: str, *, cancel_requested=None):
         env = os.environ.copy()
+        env.pop("BRIDGE_OUTBOUND_AUDIT_DB", None)
         if self.environment_overrides.get('BRIDGE_REPOSITORY_MODE') == '1':
             env = {k:v for k,v in env.items() if not k.upper().startswith(('BRIDGE_', 'SKYNET_', 'QWEN_'))}
         env.pop("CLAUDECODE", None)
@@ -188,6 +190,7 @@ class SubprocessRunner:
                                        **({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW |
                                            (0x4 if self.environment_overrides.get('BRIDGE_REPOSITORY_MODE') == '1' else 0)}
                                           if os.name == "nt" else {"start_new_session": True}))
+            register_process(process)
             repository_job = None
             if self.environment_overrides.get('BRIDGE_REPOSITORY_MODE') == '1':
                 from bridge.repository import _ProcessJob
@@ -346,6 +349,7 @@ class ClaudeCLIAdapter:
             scoped.mcp_config_path = create_config(policy, lease, Path(__file__).resolve().parents[2], deadline_seconds=profile.provider_seconds)
         return scoped.run(lease, task, prompt, emitter)
 
+    @agent_run
     def run(self, lease, task, prompt: str, emitter, *, workspace=None) -> AdapterResult:
         ensure_lease(lease)
         if not self.allowed:

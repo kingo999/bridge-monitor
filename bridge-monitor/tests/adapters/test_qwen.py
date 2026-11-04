@@ -84,6 +84,20 @@ def test_qwen_missing_model_is_unknown_and_connection_loss_is_uncertain():
     assert any(kind == EventType.ATTEMPT_UNCERTAIN for kind, _ in sink.events)
 
 
+def test_outbound_audit_attaches_run_to_adapter_http_call(tmp_path, monkeypatch):
+    from bridge.outbound_audit import Journal
+    path = tmp_path / "isolated.db"
+    monkeypatch.setenv("BRIDGE_OUTBOUND_AUDIT_DB", str(path))
+    client = FakeClient(FakeResponse([{"response": "ok", "done": True, "model": "any-model"}]))
+    adapter = QwenAdapter(client, endpoint="https://new-endpoint.invalid", model="any-model",
+                          context_tokens=1000, output_tokens=100, timeout_seconds=30)
+    assert adapter.run(_lease(), "private test prompt", EventSink()).state == "completed"
+    rows = [r["evidence"] for r in Journal(path).records()]
+    assert [r["kind"] for r in rows] == ["attempt", "completed"]
+    assert all(r["agent"] == "QwenAdapter" and r["run"] == "call-1" and r["model"] == "any-model" for r in rows)
+    assert "private test prompt" not in str(rows)
+
+
 def test_qwen_capability_denial_does_not_send_request():
     sink = EventSink()
     client = FakeClient(FakeResponse([]))

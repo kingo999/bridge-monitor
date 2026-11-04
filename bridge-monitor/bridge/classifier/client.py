@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 import httpx
+from bridge.audit_hooks import observe_client
 
 from bridge.classifier.rubric import RESPONSE_SCHEMA, RUBRIC
 from contracts.classifier import GenerationProfile
@@ -99,9 +100,9 @@ class OllamaClassifier:
         self.request_timeout = request_timeout
         self.max_response_bytes = max_response_bytes
         self._owns_client = client is None
-        self.http = client or httpx.Client(
+        self.http = observe_client(client or httpx.Client(
             timeout=httpx.Timeout(connect=connect_timeout, read=request_timeout,
-                                  write=5.0, pool=connect_timeout), trust_env=False)
+                                  write=5.0, pool=connect_timeout), trust_env=False), type(self).__name__)
 
     def close(self) -> None:
         if self._owns_client:
