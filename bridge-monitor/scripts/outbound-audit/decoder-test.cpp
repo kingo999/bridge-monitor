@@ -44,6 +44,16 @@ int wmain(int argc, wchar_t** argv) {
             return 0;
         }
     }
+    if (argc>1 && !wcscmp(argv[1],L"--stale-cache"))
+        remember(Identity{GetCurrentProcessId(),1,0,"old.exe"});
     consume(&record);
+    if (argc>1 && !wcscmp(argv[1],L"--stale-cache") &&
+            knownProcesses.at(GetCurrentProcessId()).self.born!=currentBirth(GetCurrentProcessId()))
+        return 3;
+    if (argc>1 && !wcscmp(argv[1],L"--recover")) {
+        // A Python-side malformed-input gap must not depend on resetting native caches.
+        puts("malformed");
+        consume(&record);
+    }
     return 0;
 }

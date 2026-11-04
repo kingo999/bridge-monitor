@@ -25,8 +25,45 @@ static const GUID processes = {0x22fb2cd6,0x0e7b,0x422b,{0xa0,0xc7,0x2f,0xad,0x1
 static TRACEHANDLE session;
 static ULONG onlyPid; // Optional restricted smoke test. Never emit unrelated process or flow records.
 static bool processProviderMissing;
-static std::unordered_map<ULONG, ULONGLONG> knownProcesses;
+static ULONGLONG currentBirth(ULONG pid) {
+    HANDLE process=OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,FALSE,pid);
+    if (!process) return 0;
+    FILETIME start{},end{},kernel{},user{};
+    ULARGE_INTEGER birth{};
+    if (GetProcessTimes(process,&start,&end,&kernel,&user)) {
+        birth.LowPart=start.dwLowDateTime; birth.HighPart=start.dwHighDateTime;
+    }
+    CloseHandle(process);
+    return birth.QuadPart;
+}
+struct Identity { ULONG pid; ULONGLONG born; ULONG parent; std::string image; };
+struct ProcessEvidence { Identity self; std::vector<Identity> ancestors; };
+static std::unordered_map<ULONG, ProcessEvidence> knownProcesses;
 static std::mutex evidenceMutex;
+static void emitIdentity(const Identity& v) {
+    printf("start\t%lu\t%llu\t%lu\t%s\n",v.pid,v.born,v.parent,v.image.c_str());
+}
+static void remember(const Identity& v) {
+    ProcessEvidence evidence{v,{}};
+    auto parent=knownProcesses.find(v.parent);
+    if (parent!=knownProcesses.end() && parent->second.self.born<v.born) {
+        evidence.ancestors=parent->second.ancestors;
+        evidence.ancestors.push_back(parent->second.self);
+    }
+    knownProcesses[v.pid]=evidence;
+}
+static void emitKnown(ULONG pid, ULONGLONG at) {
+    auto evidence=knownProcesses.at(pid);
+    for (const auto& ancestor:evidence.ancestors) {
+        auto current=knownProcesses.find(ancestor.pid);
+        auto live=currentBirth(ancestor.pid);
+        if (current!=knownProcesses.end() && current->second.self.born==ancestor.born &&
+                (!live || live==ancestor.born || live>at))
+            emitIdentity(ancestor);
+        else printf("end\t%lu\t%llu\t%llu\n",ancestor.pid,ancestor.born,at);
+    }
+    emitIdentity(evidence.self);
+}
 static const GUID winsock = {0xe53c6823,0x7bb8,0x44bb,{0x90,0xdc,0x3f,0x86,0x09,0x0d,0x48,0xa6}};
 static std::wstring name;
 struct Properties { EVENT_TRACE_PROPERTIES p; wchar_t text[128]; };
@@ -74,7 +111,7 @@ static void liveProcess(ULONG pid, ULONGLONG latest, unsigned depth=0) {
     }
     if (!birth.QuadPart || birth.QuadPart>latest) {
         if (process) CloseHandle(process);
-        printf("unknown\t%lu\n",pid);
+        printf("unknown\t%lu\t%llu\n",pid,latest);
         return;
     }
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
@@ -92,9 +129,10 @@ static void liveProcess(ULONG pid, ULONGLONG latest, unsigned depth=0) {
         char image[4*MAX_PATH]{};
         for (auto &c:ent.szExeFile) if (c && (c<32 || c==127)) c=L'?';
         WideCharToMultiByte(CP_UTF8,0,ent.szExeFile,-1,image,sizeof(image),nullptr,nullptr);
-        printf("start\t%lu\t%llu\t%lu\t%s\n",pid,birth.QuadPart,ent.th32ParentProcessID,image);
-        if (!processProviderMissing) knownProcesses[pid]=birth.QuadPart;
-    } else printf("unknown\t%lu\n",pid);
+        Identity identity{pid,birth.QuadPart,ent.th32ParentProcessID,image};
+        emitIdentity(identity);
+        remember(identity);
+    } else printf("unknown\t%lu\t%llu\n",pid,latest);
     CloseHandle(process);
 }
 static void WINAPI consume(EVENT_RECORD* r) {
@@ -110,8 +148,8 @@ static void WINAPI consume(EVENT_RECORD* r) {
             auto born = number<ULONGLONG>(r,L"CreateTime");
             if (id==2) {
                 auto old = knownProcesses.find(pid);
-                if (old!=knownProcesses.end() && old->second==born) knownProcesses.erase(old);
-                printf("end\t%lu\t%llu\n",pid,born); return;
+                if (old!=knownProcesses.end() && old->second.self.born==born) knownProcesses.erase(old);
+                printf("end\t%lu\t%llu\t%lld\n",pid,born,t); return;
             }
             auto parent = number<ULONG>(r,L"ParentProcessID");
             if (!onlyPid && parent!=pid && knownProcesses.find(parent)==knownProcesses.end())
@@ -124,16 +162,24 @@ static void WINAPI consume(EVENT_RECORD* r) {
             for (auto &c : image) if (c < 32 || c==127) c=L'?';
             std::string utf8(image.size()*4+1,'\0');
             WideCharToMultiByte(CP_UTF8,0,image.c_str(),-1,&utf8[0],int(utf8.size()),nullptr,nullptr);
-            printf("start\t%lu\t%llu\t%lu\t%s\n",pid,born,parent,utf8.c_str());
-            knownProcesses[pid]=born;
+            Identity identity{pid,born,parent,utf8.c_str()};
+            emitIdentity(identity);
+            remember(identity);
         } else if (IsEqualGUID(h.ProviderId,network) || IsEqualGUID(h.ProviderId,winsock)) {
             const bool attempt = IsEqualGUID(h.ProviderId,winsock);
             const bool sockaddrEvent = id==1018 || id==1021;
             if (attempt ? (id!=4 && id!=5 && !sockaddrEvent) : (id!=10 && id!=26 && id!=12 && id!=28 && id!=42 && id!=58)) return;
             auto pid = attempt ? h.ProcessId : number<ULONG>(r,L"PID");
             if (onlyPid && pid!=onlyPid) return;
+            auto cached=knownProcesses.find(pid);
+            if (cached!=knownProcesses.end()) {
+                auto live=currentBirth(pid);
+                if (live && live<=static_cast<ULONGLONG>(t) && live!=cached->second.self.born)
+                    knownProcesses.erase(cached);
+            }
             if (processProviderMissing || knownProcesses.find(pid)==knownProcesses.end())
                 liveProcess(pid,t);
+            else emitKnown(pid,t);
             auto ip = field(r,attempt ? L"Address" : L"daddr");
             char dest[INET6_ADDRSTRLEN]{};
             if (sockaddrEvent) {
@@ -209,6 +255,7 @@ int wmain(int argc, wchar_t** argv) {
         EVENT_TRACE_LOGFILEW log{};
         log.LoggerName = &name[0];
         log.ProcessTraceMode = PROCESS_TRACE_MODE_REAL_TIME | PROCESS_TRACE_MODE_EVENT_RECORD;
+        // ProcessTrace converts QPC to FILETIME unless RAW_TIMESTAMP is requested.
         log.EventRecordCallback = consume;
         log.BufferCallback = flushed;
         auto trace = OpenTraceW(&log);

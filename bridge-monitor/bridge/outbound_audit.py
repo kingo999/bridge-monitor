@@ -63,7 +63,12 @@ class Observation(Fields):
     request_id: str | None = None
     status: int | None = None
     bytes_out: int | None = Field(default=None, ge=0)
+    lost_events: int | None = Field(default=None, ge=0)
+    attribution: Literal["registered", "process_lineage"] | None = None
     category: Literal["task brief", "control"] | None = None
+
+    _normalize_local_ip = field_validator("local_ip")(address)
+    _normalize_peer_ip = field_validator("peer_ip")(address)
 
 
 class Rule(Fields):
@@ -120,11 +125,14 @@ class Journal:
                     version TEXT, decision TEXT, matched TEXT);
                 CREATE TABLE IF NOT EXISTS roots(host TEXT, pid INTEGER, birth INTEGER, owner TEXT NOT NULL,
                     PRIMARY KEY(host,pid,birth));
+                CREATE TABLE IF NOT EXISTS process_state(host TEXT, pid INTEGER, birth INTEGER,
+                    shared INTEGER NOT NULL DEFAULT 0, ended_ns INTEGER,
+                    PRIMARY KEY(host,pid,birth));
             """)
 
     @contextmanager
-    def connect(self):
-        with closing(sqlite3.connect(self.path, timeout=1)) as db, db:
+    def connect(self, timeout=1):
+        with closing(sqlite3.connect(self.path, timeout=timeout)) as db, db:
             yield db
 
     def activate(self, policy):
@@ -138,15 +146,50 @@ class Journal:
     def record_many(self, events):
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            row = db.execute("SELECT version,document FROM active JOIN policy USING(version)").fetchone()
-            policy = Policy.model_validate_json(row[1]) if row else None
-            for event in events:
-                version = decision = matched = None
-                if policy and event.layer != "collector":
-                    version = row[0]
-                    decision, matched = policy.evaluate(event)
-                db.execute("INSERT INTO observations(evidence,version,decision,matched) VALUES (?,?,?,?)",
-                           (event.model_dump_json(exclude_none=True), version, decision, matched))
+            self._append(db, events)
+
+    def _append(self, db, events):
+        row = db.execute("SELECT version,document FROM active JOIN policy USING(version)").fetchone()
+        policy = Policy.model_validate_json(row[1]) if row else None
+        for event in events:
+            version = decision = matched = None
+            if policy and event.layer != "collector":
+                version = row[0]
+                decision, matched = policy.evaluate(event)
+            db.execute("INSERT INTO observations(evidence,version,decision,matched) VALUES (?,?,?,?)",
+                       (event.model_dump_json(exclude_none=True), version, decision, matched))
+
+    def record_collected(self, pending, ended):
+        # One non-blocking transaction and one owner read per distinct identity in
+        # the batch. A busy database leaves the collector's queue untouched.
+        with self.connect(timeout=0) as db:
+            db.execute("BEGIN IMMEDIATE")
+            host = socket.gethostname()
+            for (pid, birth), at in ended.items():
+                db.execute("""INSERT INTO process_state(host,pid,birth,ended_ns) VALUES (?,?,?,?)
+                    ON CONFLICT(host,pid,birth) DO UPDATE SET ended_ns=
+                    CASE WHEN ended_ns IS NULL THEN excluded.ended_ns ELSE min(ended_ns,excluded.ended_ns) END""",
+                    (host, pid, birth, at))
+            identities = {key for _, ancestry in pending for key in ancestry}
+            owners = {}
+            for pid, birth in identities:
+                owner = db.execute("SELECT owner FROM roots WHERE host=? AND pid=? AND birth=?",
+                                   (host, pid, birth)).fetchone()
+                state = db.execute("SELECT shared,ended_ns FROM process_state WHERE host=? AND pid=? AND birth=?",
+                                   (host, pid, birth)).fetchone()
+                owners[(pid, birth)] = (json.loads(owner[0]) if owner else None, state)
+            events = []
+            for event, ancestry in pending:
+                for position, identity in enumerate(ancestry):
+                    owner, state = owners[identity]
+                    if state and (state[0] or (state[1] is not None and event.at_ns >= state[1])):
+                        break
+                    if owner:
+                        event = event.model_copy(update={**owner, "attribution":
+                            "registered" if position == 0 else "process_lineage"})
+                        break
+                events.append(event)
+            self._append(db, events)
 
     def records(self, policy=None, after=0):
         with self.connect() as db:
@@ -171,3 +214,9 @@ class Journal:
             row = db.execute("SELECT owner FROM roots WHERE host=? AND pid=? AND birth=?",
                              (socket.gethostname(), pid, birth)).fetchone()
             return json.loads(row[0]) if row else None
+
+    def register_shared(self, pid, birth):
+        with self.connect() as db:
+            db.execute("""INSERT INTO process_state(host,pid,birth,shared) VALUES (?,?,?,1)
+                ON CONFLICT(host,pid,birth) DO UPDATE SET shared=1""",
+                (socket.gethostname(), pid, birth))

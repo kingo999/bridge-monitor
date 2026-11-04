@@ -70,6 +70,11 @@ def observe(journal, reader):
         finally:
             rc = stop_reader(child)
             collector.status("gap", "collector stopped")
+            deadline = time.monotonic() + 5
+            while not collector.flush():
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("audit journal remained busy at shutdown; buffered evidence could not be saved")
+                time.sleep(0.05)
     if rc:
         raise SystemExit(f"ETW reader exited with code {rc}")
 
@@ -84,8 +89,9 @@ def main(argv=None):
     commands.add_parser("collect").add_argument("reader", type=Path)
     root = commands.add_parser("register", help="associate a running Windows worker with its agent and run")
     root.add_argument("--pid", required=True, type=int)
-    root.add_argument("--agent", required=True)
-    root.add_argument("--run", required=True)
+    root.add_argument("--agent")
+    root.add_argument("--run")
+    root.add_argument("--shared", action="store_true", help="mark this process as a shared attribution boundary")
     root.add_argument("--task")
     args = parser.parse_args(argv)
     draft = Policy.model_validate_json(args.file.read_text(encoding="utf-8")) if hasattr(args, "file") else None
@@ -96,6 +102,8 @@ def main(argv=None):
     elif args.command == "register":
         if os.name != "nt" or args.pid <= 0:
             parser.error("a positive Windows process ID is required")
+        if (args.shared and (args.agent or args.run or args.task)) or (not args.shared and not (args.agent and args.run)):
+            parser.error("supply --shared alone, or both --agent and --run")
         from bridge.audit_hooks import creation_time
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel.OpenProcess.restype = ctypes.c_void_p
@@ -103,8 +111,11 @@ def main(argv=None):
         if not handle:
             raise ctypes.WinError(ctypes.get_last_error())
         try:
-            journal.register(args.pid, creation_time(handle),
-                             dict(agent=args.agent, run=args.run, task=args.task))
+            birth = creation_time(handle)
+            if args.shared:
+                journal.register_shared(args.pid, birth)
+            else:
+                journal.register(args.pid, birth, dict(agent=args.agent, run=args.run, task=args.task))
         finally:
             kernel.CloseHandle(ctypes.c_void_p(handle))
     elif args.command == "collect":

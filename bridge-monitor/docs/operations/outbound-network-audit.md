@@ -29,6 +29,14 @@ Bridge registers its CLI worker process by PID and Windows creation time. The ho
 python -m bridge.audit_cli --db $db register --pid 1234 --agent research --run run-17
 ~~~
 
+Mark a persistent helper used by multiple runs as a shared boundary with
+`python -m bridge.audit_cli --db $db register --pid 1234 --shared`.
+That process and descendants without a closer explicit registration have unknown
+run ownership. The marker applies to that exact process instance. Root exit
+evidence also ends inherited ownership. Owned rows label direct registration
+as `registered` and inferred ancestry as `process_lineage`; ancestry alone
+cannot identify which client called an unmarked shared service.
+
 Host mode observes all processes, including unattributed traffic. The HTTP adapters and classifier attach application evidence where instrumented. Other clients can wrap an individual logical RPC with `bridge.audit_hooks.application_call`, supplying a static operation name, endpoint and known category. Operation names and operator labels must contain metadata only. Use `category=None` when unknown. Two RPCs on a shared connection have individual request IDs. Only host send events carry byte counts.
 
 ## Evaluate a policy
@@ -63,6 +71,14 @@ python -m bridge.audit_cli --db $db show --after 50
 - Keep the query string, path parameters, headers, credentials, prompts and message bodies outside this journal. It does not perform packet capture or TLS interception. Files show host, process, endpoint and time metadata and require appropriate access controls. Stop writers before archiving or deleting a journal. Size and retention are operator-managed.
 
 The collector records malformed reader input as a gap and continues collecting. On abnormal reader exit, the controller attempts to stop that reader's exact ETW session. Shutdown flushes pending evidence.
+
+Transient SQLite locks are retried without stopping capture. Pending observations
+and process-end updates each have a 4096-entry bound. Observation overflow records
+a gap and dropped-event count when storage recovers. Process-lifetime overflow
+disables attribution until restart, including buffered observations. Shutdown
+retries persistence for five seconds, then fails visibly if storage remains busy.
+Permanent storage errors remain fatal. Operator retention and disk monitoring are
+required for sustained collection.
 
 To check ETW installation, run `python scripts/outbound-audit/smoke.py var/audit-bin/bridge-outbound-reader.exe --require-kernel --result var/audit-smoke.json` with the path to your built executable. The smoke test restricts output to its own PID and uses a loopback receiver. It verifies sender identity and compares received bytes with kernel send counts. `--require-kernel` fails when any requested provider is unavailable. Without that switch, attempt-only evidence returns status `partial` and exit code 2. Full success returns 0; failure returns 1.
 

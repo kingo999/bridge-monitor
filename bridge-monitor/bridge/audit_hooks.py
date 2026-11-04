@@ -58,6 +58,17 @@ def creation_time(handle):
     return stamps[0].value
 
 
+@functools.lru_cache(maxsize=1)
+def current_birth():
+    if os.name != "nt":
+        return None
+    try:
+        return creation_time(ctypes.windll.kernel32.GetCurrentProcess())
+    except OSError:
+        log.warning("Outbound audit process creation time unavailable")
+        return None
+
+
 def register_process(process):
     def register(journal):
         if os.name != "nt":
@@ -84,6 +95,7 @@ def application_call(endpoint, operation, *, category=None, transport="tcp"):
             if host and host.rstrip(".").lower() != "localhost" and not (ip and ip.is_loopback):
                 safe_operation = operation if re.fullmatch(r"/?[A-Za-z][\w.-]*(?:/[A-Za-z][\w.-]*)?", operation) else None
                 details = dict(layer="application", pid=os.getpid(), parent_pid=os.getppid(),
+                               birth=current_birth(),
                                image=os.path.basename(sys.executable),
                                request_id=str(uuid.uuid4()), operation=safe_operation,
                                category=category, transport=transport, **current.get(),
