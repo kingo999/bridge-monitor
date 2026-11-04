@@ -9,3 +9,5 @@ Correlate host connections with application calls. Preserve unknowns, keep sensi
 See the [approved design and acceptance scenarios](../docs/superpowers/specs/2026-11-04-outbound-network-audit-design.md).
 
 See the [operator guide](../docs/operations/outbound-network-audit.md) for setup, attribution boundaries, provider coverage and draft policy examples.
+
+**Privileged verification on 2026-11-04.** An administrator-token smoke test passed with all requested providers available. The test receiver read the canary and the kernel emitted a matching TCP send for the test PID, destination and 12-byte payload. The reader emitted only the test PID's events. The temporary session stopped afterward. Receipt is in the local ignored `var/privileged-verification/result.json`. This verifies the live kernel send path on loopback; an off-machine receiver comparison is still pending.
