@@ -2,6 +2,33 @@
 
 The collector observes connections and sends on the local Windows host. Bridge hooks add logical application requests and run identities. Records live in a separate SQLite file. The operator selects its location, access permissions and retention. Use a directory accessible only to the collector, Bridge and authorized readers. The database, WAL and related files share that directory.
 
+## Continuous collection on this installation
+
+On 2026-11-04 the operator enabled `BridgeMonitor-OutboundAudit`. It runs as
+SYSTEM with startup and current-user sign-in triggers, no execution time limit,
+and duplicate-instance protection. The supervisor at
+`C:\AI\bridge-monitor\var\audit\run-collector.ps1` restarts the existing collector
+ten seconds after exit. Task Scheduler also restarts the supervisor after failure.
+
+The live journal is `C:\AI\bridge-monitor\var\audit\outbound.sqlite`.
+The directory permits SYSTEM, administrators and the configuring user. Collector
+diagnostics are in `collector.log` and restart records in `supervisor.log` in
+that directory. Retention remains operator-managed.
+
+The user environment and Codex's `mcp_servers.bridge_monitor.env` both persist
+`BRIDGE_OUTBOUND_AUDIT_DB` with this journal path. Existing MCP server processes
+need to reconnect to receive the environment change. Host capture runs independently
+of Codex. This configuration enables observation; policy evaluation stays audit-only.
+
+Installation, heartbeat, synthetic request and restart receipts are under ignored
+`var/audit-setup-20261104/`. Automatic restart was verified by stopping the actual
+collector process and observing a new collector PID and fresh heartbeats.
+
+From an elevated PowerShell, inspect with
+`Get-ScheduledTask -TaskName BridgeMonitor-OutboundAudit`. To disable collection,
+stop that task and disable its triggers with `Disable-ScheduledTask`; remove the
+persisted journal environment settings when disabling application hooks.
+
 ## Start an isolated observation
 
 From the Bridge Monitor project directory, build the reader in an x64 Visual Studio developer prompt with the Windows SDK installed:

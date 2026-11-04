@@ -5,7 +5,7 @@ Read the relevant topic before work; update its existing row when it changes.
 
 | Topic | Decision | Implementation | Reviewed |
 | --- | --- | --- | --- |
-| [Outbound network audit](outbound-network-audit.md) | Approved audit-only first release; reviewed and integrated | 988 tests passed on integrated main; unchanged 22 baseline failures; privileged HTTPS verified; collection opt-in | 2026-11-04 |
+| [Outbound network audit](outbound-network-audit.md) | Approved audit-only first release; reviewed, integrated and activated | Always-on SYSTEM startup task running; live capture and automatic restart verified; existing MCP server reconnect applies new per-run environment | 2026-11-04 |
 | [Persistent Markdown context](persistent-markdown-context.md) | Approved | Applied; documentation checks passed | 2026-11-01 |
 
 For an existing or new ChatGPT conversation, attach or paste this index and the
