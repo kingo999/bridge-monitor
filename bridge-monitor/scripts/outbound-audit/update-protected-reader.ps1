@@ -15,8 +15,7 @@ $admin = New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole($admin)) { throw 'Elevation required' }
 $staging = Get-Item -LiteralPath $PSScriptRoot
 if ($staging.Parent.FullName -ne 'C:\Program Files' -or $staging.Name -notmatch '^BridgeMonitorAudit\.Setup-[a-f0-9]{32}$') { throw 'Protected staging required' }
-. (Join-Path $PSScriptRoot 'protected-file-utils.ps1')
-foreach ($item in @($staging, (Get-Item -LiteralPath $root)) + @(Get-ChildItem -LiteralPath $root -Recurse -Force)) {
+foreach ($item in @($staging, (Get-Item -LiteralPath $root)) + @(Get-ChildItem -LiteralPath $staging.FullName -Force) + @(Get-ChildItem -LiteralPath $root -Recurse -Force)) {
     if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Installation reparse point rejected' }
     $acl = Get-Acl -LiteralPath $item.FullName
     if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trusted) { throw 'Untrusted installation owner' }
@@ -25,6 +24,7 @@ foreach ($item in @($staging, (Get-Item -LiteralPath $root)) + @(Get-ChildItem -
             ([long]$rule.FileSystemRights -band 0x500D0156)) { throw 'Untrusted installation write access' }
     }
 }
+. (Join-Path $PSScriptRoot 'protected-file-utils.ps1')
 $names = @('BridgeMonitor-OutboundAudit', 'BridgeMonitor-OutboundAudit-Ingest')
 foreach ($name in $names) {
     $task = Get-ScheduledTask -TaskName $name
@@ -51,7 +51,10 @@ foreach ($inputFile in $inputs) {
     }
     if ((Get-FileHash -LiteralPath $inputFile.source).Hash -ne $inputFile.hash) { throw 'Pinned input hash mismatch' }
 }
-$build = Get-Content -LiteralPath $BuildEvidenceSource -Raw | ConvertFrom-Json
+$protectedBuild=Join-Path $PSScriptRoot 'candidate-build-evidence.json'
+Copy-ProtectedFile $BuildEvidenceSource $protectedBuild $BuildEvidenceSHA256 (Get-Content -LiteralPath (Join-Path $root 'installation.json') -Raw|ConvertFrom-Json).operator_sid
+$build = Get-Content -LiteralPath $protectedBuild -Raw | ConvertFrom-Json
+$inputs[2].source=$protectedBuild
 if (-not $build.reproducible -or $build.ran_reader -or @($build.builds).Count -ne 2 -or
     $build.builds[0].executable_sha256 -ne $ReaderSHA256 -or $build.builds[1].executable_sha256 -ne $ReaderSHA256 -or
     $build.source_git_blob -ne $build.previously_reviewed_source_git_blob) { throw 'Reproducible reviewed-source build evidence required' }

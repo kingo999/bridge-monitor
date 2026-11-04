@@ -7,8 +7,11 @@ Correlate host connections with application calls. Preserve unknowns, keep sensi
 **Current status on 2026-11-04.** The feature is integrated. Both audit tasks are
 stopped and disabled. The unsafe initial SYSTEM installation has been replaced
 by protected native production and ordinary-user ingestion. Security-review
-follow-ups are authorized and applied; final review found no disabled-repair blocker. Retention and
-live-start/reboot validation remain separate activation prerequisites. The
+follow-ups are authorized and applied; final review found no disabled-repair blocker.
+Controlled rebuild and bounded SYSTEM runtime/crash/controller-failure checks now
+pass. The operator could stop the test ETW session without elevation, so session
+control hardening remains. Retention is selected (30 days/72 hours/5 GB) but not
+enforced. Boot/reboot and sustained full-host capture remain untested. The
 chronological verification history below does not authorize activation.
 
 See the [approved design and acceptance scenarios](../docs/superpowers/specs/2026-11-04-outbound-network-audit-design.md).
@@ -85,3 +88,29 @@ requires a constrained/recorded build environment and dependency verification,
 ETW session-control checks, supervisor round-trip/gap cleanup, retention and live
 start/restart/logon/reboot validation. Both tasks remain disabled. No live capture/reboot/restart verification is claimed
 for this replacement. See the [repair verification](../docs/verification/2026-11-04-audit-installation-hardening.md).
+
+**Controlled rebuild/runtime checkpoint on 2026-11-04.** Explicit compiler argv
+and allowlisted environment exclude inherited compiler/linker options and user
+search paths. Sixty-four signed/hashed support binaries and 4,374 SDK/header/library
+inputs were recorded; the two builds match installed reader hash F34588F8….
+Read-only preflight `2d4c8fd1-01ac-4ff5-8ad9-4cd19111a878` preserved both roots.
+The user authorized its deadline/cleanup/pin guards before execution.
+
+A no-trigger, 90-second temporary SYSTEM task, created with protected owner/DACL
+atomically, ran the supervisor in an isolated PID/spool scope. Two HTTPS Google
+requests returned 200/TLS1.3, each matching 678 kernel bytes to independent TLS
+accounting with correct sender birth, parent and agent/run. Forced reader restart
+passed. A separate controller-exit-91 drill proved independent watchdog cleanup
+at 60 seconds. Both temporary tasks were removed; final checks found zero native
+readers/ETW sessions and both production tasks disabled with zero instances and
+unchanged last-run history. No production task was started by this checkpoint.
+No malformed reader gaps or unavailable providers occurred. Tests: 47 passed,
+one optional grpcio skip; access checks: 336 filesystem and 12 task probes.
+
+The unelevated operator queried/stopped the disposable SYSTEM ETW session
+(ControlTrace status0); EventAccessQuery returned5. No ACL or group changes were
+applied. Before activation, harden/verify ETW control and implement/test selected
+30-day journal, 72-hour post-ingestion spool and 5GB budget with pause-and-gap at
+capacity, preserving un-ingested evidence. No deletion/cap enforcement was enabled.
+See the [runtime report](../docs/verification/2026-11-04-audit-controlled-runtime.md)
+and its evidence; local receipts are in ignored `var/audit-runtime-20261104/`.

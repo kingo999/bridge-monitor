@@ -4,6 +4,12 @@ The collector observes connections and sends on the local Windows host. Bridge h
 
 ## Privileged installation: disabled pending review
 
+**Current update:** controlled rebuild and bounded SYSTEM runtime/failure-cleanup
+checks passed on 2026-11-04. See the [runtime verification](../verification/2026-11-04-audit-controlled-runtime.md).
+Both production tasks remain stopped and disabled. ETW control hardening and
+retention enforcement remain before activation: the unelevated operator could
+stop the disposable test session. No ETW rights or group memberships were changed.
+
 The original always-on installation was unsafe: its SYSTEM task executed a
 supervisor, Python interpreter and imports from a user-writable checkout. The
 operator stopped and disabled it. Do not restore that execution chain.
@@ -91,7 +97,9 @@ The old activation receipts remain in ignored `var/audit-setup-20261104/`; they
 do not validate the replacement. Repair receipts, ACL evidence and task definitions
 are in `var/audit-hardening-20261104/`. See the
 [repair verification](../verification/2026-11-04-audit-installation-hardening.md).
-The replacement has not been live-started, reboot-tested or crash-restart-tested.
+The replacement was exercised in bounded PID-scoped SYSTEM tests, including reader
+crash/restart and controller-failure cleanup, without running either production
+task. Boot/logon, reboot and sustained full-host capture remain untested.
 
 Inspect from an **ordinary, non-elevated PowerShell** window with
 `Get-ScheduledTask -TaskName BridgeMonitor-OutboundAudit,BridgeMonitor-OutboundAudit-Ingest`.
@@ -113,8 +121,11 @@ permissions on both task descriptors. Administrator process/ETW and startup-rout
 inventory is performed only by the hash-verified protected management script,
 with other applications' command bodies omitted from its evidence.
 
-Before any future unattended activation, agree a spool/journal retention limit
-and disk monitoring. No limit or automatic deletion was configured by this repair.
+The operator selected 30 days for the searchable journal, 72 hours for raw spool
+after verified ingestion, and a 5 GB combined budget. At capacity, capture should
+pause and report a gap while retaining un-ingested evidence. These values are
+recorded; deletion, rotation and capacity enforcement are not implemented/enabled
+by these verification tests. Implement and validate that policy before activation.
 For an explicitly authorized future archive: stop both tasks, confirm producer
 and consumer exit, retain a journal backup and the cursor, then copy the protected
 spool to an administrator-owned archive with a recorded hash. Verify whether the

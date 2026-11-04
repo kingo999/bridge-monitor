@@ -31,7 +31,12 @@ function Copy-PinnedManagementFile([string]$Source, [string]$Destination, [strin
 }
 try {
     # Only these fixed script roles can execute. Each copied byte stream is pinned.
-    foreach ($name in @('update-protected-reader.ps1', 'inventory-protected-audit.ps1', 'verify-protected-reader.ps1', 'protected-file-utils.ps1')) {
+    $roles=@('update-protected-reader.ps1','inventory-protected-audit.ps1','verify-protected-reader.ps1','protected-file-utils.ps1')
+    if($payload.runtime_run) {
+        if($payload.runtime_run -notmatch '^[a-f0-9]{32}$' -or $payload.test_pid -le 0){throw 'Invalid runtime scope'}
+        $roles+=@('run-runtime-tests.ps1','test-system-runtime.ps1','cleanup-runtime-test.ps1')
+    }
+    foreach ($name in $roles) {
         $source = @($payload.scripts | Where-Object { $_.name -eq $name })
         if ($source.Count -ne 1) { throw 'Missing or ambiguous pinned management script' }
         $destination = Join-Path $payload.setup $name
@@ -44,6 +49,10 @@ try {
     catch { if ($_.Exception.Message -like '*non-elevated*') { $guardRejected = $true } else { throw } }
     if (-not $guardRejected -or (Test-Path -LiteralPath 'C:\Program Files\BridgeMonitorAudit\must-not-be-created.json')) { throw 'Verifier elevation guard failed' }
     & (Join-Path $payload.setup 'inventory-protected-audit.ps1') -StagingDirectory $payload.setup -VerifierElevationRejected $guardRejected
+    if($payload.runtime_run) {
+        & (Join-Path $payload.setup 'run-runtime-tests.ps1') -RunId $payload.runtime_run -TestPid $payload.test_pid -WatchdogDrill:([bool]$payload.watchdog_drill)
+        & (Join-Path $payload.setup 'inventory-protected-audit.ps1') -StagingDirectory $payload.setup -VerifierElevationRejected $guardRejected
+    }
     $ok = $true
 } catch { $errorText = $_.Exception.Message }
 $result = @{ installed=$ok; activated=$false; at=(Get-Date -Format o); error=$errorText; verifier_elevation_rejected=$guardRejected } | ConvertTo-Json

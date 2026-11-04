@@ -1,0 +1,866 @@
+{
+  "controlled_build": {
+    "at": "2026-11-04T13:05:18.532829+00:00",
+    "ran_reader": false,
+    "elevated": false,
+    "source_path": "C:\\AI\\bridge-monitor\\scripts\\outbound-audit\\collector.cpp",
+    "source_snapshot": "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\collector.cpp",
+    "source_sha256": "DE799FDE58956251C6C562B61BAC654C81DB9F503F712CEF64931CA7CA386FC8",
+    "git_head": "7c0e9acc6b78c1956b604e45e0119a335f37eb88",
+    "source_git_blob": "e3686b6eae12dbd52c7ba5382b5235d70b9b3aba",
+    "previously_reviewed_source_git_blob": "e3686b6eae12dbd52c7ba5382b5235d70b9b3aba",
+    "compiler_tools": [
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\atlprovui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "E8D20B1BFCC360D180F3F314748AF555557AA167E17919BD59D41D3C7A04BCFB"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\bscmakeui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "A10563A8E1DF81CAE326B9687C8A5C749AAA07620699AA4C9BB57A1F1EA71BCB"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\clui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "19.44.35217.0",
+        "sha256": "42FA1576E15ABA69F77AB36D36687837446117815D0D9DDD650465B9EC86E7C3"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\ConcurrencyCheckui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "85C13E039C888B950CFD787C310649DA6AE77F364EE9E930B8E020D33FCB2BFA"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\CppCoreCheckui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "F7F809BFBBE51B2048830F545FB0F6F40A6760DCAAFF869DD857F1E963AC3690"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\cvtresui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "91517BA4B5BF0B52F4A52D00B4B71F22520F7229407CFE50DCE865795D88E514"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\EnumIndexui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "BEC1276ABEA214CCDFB780094195E701C2415C7A303B004DD5CC61C9BF60F70E"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\EspxEngineui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "F988B3DBB8FE31ACBC939AF5895F6D7B21B2E55734103DA4C2B8539DCFD824BD"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\HResultCheckui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "965A958AB4B36024ACFCA0BBE27320B352AC64085A2CDCEA4AE7189BFB2A05D4"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\linkui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "69CF7D7AC2B33FEE64CBD146DE715366E14CC5C112D3E9EA3EF31F772432F469"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\mspdbcmfui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "1BA2C9B8EE0A143A9C4CA4B571B215F44311A90409E14BE362131317A924CB50"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\mspft140ui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "3C94637A0600E6E8A0909DB3F321FBA5CC12EAE89AA1B7C129C39A374C6348C3"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\nmakeui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "1CC0736D0B08B0036998C0D4D54C52D1332EDA4976D82D61F1F239D426E3181E"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\pgort140ui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35208.0",
+        "sha256": "A7EDB1B674617D629F583029B0988CC3F0556BDC1E7AE4F0459AE1318BDCA436"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\pgoui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35208.0",
+        "sha256": "95D163262F023F91BBBDF46FA7BEFCE13EE992FF4D2EABC3665DF032B7D8AC7D"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\SecurityChecksui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "26179729BE3CD12FA38792F5ADA9126626A24452BF87DE3E66B43EB3B5F2E6DC"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\1033\\VariantClearui.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "D432D864FC7D6A7A79B88DCFEE79BCC3573F7EB2A55EDEBEB488D86DE6607067"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\atlprov.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "8D637365BDF0B96004BBA61C17EDFA012DBAD9C4CF24FDA913FDB5D5BCF0DC99"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "19.44.35217.0",
+        "sha256": "314E64534E9B4C8DED57DEE2BCA5E8E95223234031D0ACB3C486BA69AD591CD5"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c1xx.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "19.44.35217.0",
+        "sha256": "E982290879C47F49C898F1EEB02671E18EFE33B2C4F383F1D2B1942A76C57FFA"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c2.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "19.44.35217.0",
+        "sha256": "54AE1E9426FD00CBC968FAABD06000FBBCEC40D336E071C74995C69DD3B33206"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\c2dd.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "19.44.35217.0",
+        "sha256": "77632EA215CB8D7BD436AD5F8AE3E923170574679A83833C97A30637AEE8B040"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cfgpersist.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "",
+        "sha256": "12B0BA2977B3DF21B3399E34AF95B9BC151490D9DDEC6F42BB23A5FDD9818214"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "19.44.35217.0",
+        "sha256": "EDFDE23829794777A8F4872CDEFE1D569546FF4BF0FA49F5AF872B6DA7B8EABB"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dbg_dynamic-x86_64.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": null,
+        "sha256": "E3FC8B29ED3BEF6A86461D957CCA6422C692F4F2EA1004FA58F87FA270EFFBAE"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\clang_rt.asan_dynamic-x86_64.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": null,
+        "sha256": "E0F566666CC6D184648D298D04CD7EE887565E964DAA039B1D862C34A7668AB2"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\ConcurrencyCheck.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "6D42CD490C56D11E640D7524D8CA701A129BB5A4DE2C97150862FC7F5E0FA303"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\CppBuildInsights.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.42.34431.0",
+        "sha256": "C83504679E7FCA14A6F60480D0F75EB94DEC9994ED900DBA0FF94125D468FC07"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\CppCoreCheck.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "68AF7EC79D86D2D69D86B83B2A317F1D5EC2B64120C2F55ED11AC45260FED187"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\d3dcompiler_47.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "10.0.10150.0 (th1.150616-1659)",
+        "sha256": "8C88C162010A8D6B80F2C0433D4CE973CE626AFCBC8DA5BE68BFA2BA68341EBA"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\dpcmi.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "C12DDDF833DDB9FBB680682B6CFF375C4905634B98BACE9FBD29333ED7FDE26F"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\EnumIndex.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "75E2511AB5D6B035F8A40878609774F4B228EC523D25DD38E189896A508044EA"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\EspXEngine.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "18A6AC873124A291AE22BE9F0D1729FDB6A784478EFB428C8DF7D66184B1BBB2"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\HResultCheck.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "C5BF47AD49CEF86638BC24D979CCC1A5249725D0A8872A29F7FF89CF0C939980"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\KernelTraceControl.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "10.0.17763.1 (WinBuild.160101.0800)",
+        "sha256": "E462F4C4FFF915C6FA742E218A254E5A3D5D051EADF5292B649904F602CE7F8E"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\link.exe",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "27C21D5D9F1C44952EC038D8ACDEEBB0F90AF670908B48BA858D268C0FCA0978"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\Microsoft.Diagnostics.Tracing.EventSource.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "1.1.28.0",
+        "sha256": "A20F6D6C0DAE7AC9C7C295B819D085BDFC7CFAB123E8FC4CA4DDFD0A88701D04"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\Microsoft.VisualStudio.RemoteControl.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "16.3.52.20732",
+        "sha256": "CC52E19735D6152702672FEB5911C8BA77F60FDC73DF5ED0D601B37415F3A7ED"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\Microsoft.VisualStudio.Telemetry.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "17.14.8.58212",
+        "sha256": "C6B09BDB01FB84406FB95F77BEFD68B4F8F0B5D715BB00DF817B5E691501C50D"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\Microsoft.VisualStudio.Utilities.Internal.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "16.3.90.25995",
+        "sha256": "4D1D5EFD28D72C332BA87E1993CB35E46404753543C5563700B98A97AA3C42A6"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\msobj140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "C223D6DA70A09390D6C9EFAC3E6C2EA7F24DF6E640597A312FC9564AD08B07E6"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\mspdb140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "B148ECAD26C05B329DF5005B45C5E3ADE6A9C1368AD6AE9DB3BC829F615281E2"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\mspdbcore.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "996F0C6E9BCEF039E25138A82E41A03FE6AD24DCDAB435A3D19BA89BD6CD3A60"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\mspdbst.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "DBC1637AD7CB0268AE69F364C9510B5DDD365293014E6526895158B59B5C03C7"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\mspft140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "141CA50648FA7D0BB5EC4CD44D90DA8F426281FDD5D78CD99E4158B24E2DB46A"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\msvcdis140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "45A91C6DE10846932B961DE5710C4E1512357C59E873DDF5BE378029E720A050"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\msvcp140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "173E0EFA998DC33612E518408BFD190C1CEF6875DB611ACA2E05F17D946487BF"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\msvcp140_1.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "D512DDE4B6655B488311CF1FD6B17211FFE1EDE61D45CDDCBDF56A3F05B1FCDA"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\msvcp140_2.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "0252C889C5B85E8899E3E6EF4CF4339106AB1B2F811EACE3985D4FC387CE3184"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\msvcp140_atomic_wait.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "FDB14FE7E13E7BE63DF374D32949AB769A8EB2845989F9B6D80D6D4F85B0E73E"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\msvcp140_codecvt_ids.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "C3868FD106D0C2078D4C1759BC5B0642CF9DA59CAE32D864863C792F660B3B64"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\Newtonsoft.Json.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "13.0.3.27908",
+        "sha256": "EAC7FCC1F3F9CF6616859B0F312A164B9290E33422DBC2BD3E57608BAC83D19A"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\onecore\\pgort140.dll",
+        "signature": "Valid",
+        "signer": "CN=Windows Phone, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35208.0",
+        "sha256": "818F5227B0B42C85AF5AF7152CB7E8F91E6A83019DF04C5F865D0A22BE9FC42F"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\pgodb140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35208.0",
+        "sha256": "E17ADCBD1ED1C619ED8CBF336BB1B65E0B0104D860D09D8A14CE00A28B7A7376"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\pgort140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35208.0",
+        "sha256": "0FB96C0B61F0CD533A27204F716B703730AA313F1A55F5226E70EAAC6B72A180"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\SecurityChecks.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "2452CB217044522553FDA785F2CE5ABA786964BFDECAB7A8ADB1F33C5007B386"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\System.Memory.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "4.6.31308.01",
+        "sha256": "06EA95F8388A6B031ACB2449FD5663D9D26D720AE13DF80C800805F896734430"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\System.Runtime.CompilerServices.Unsafe.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "5.0.20.51904",
+        "sha256": "3CADCB6B8A7335141C7C357A1D77AF1FF49B59B872DF494F5025580191D1C0D5"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\tbbmalloc.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "2021.4",
+        "sha256": "B6AC2CA0863B2DB5DFDD0D7F2DEE2335BFCF2DCDAFD3CDF659C839E3EEB9C2DE"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\VariantClear.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35214.00",
+        "sha256": "7DD21E35B22C2165F73E8A9F99ECC48A6A0B28406AC02B2DC4E5C446246B78CB"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\vcmeta.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "919F621134BE36FC6F3A5DF0F4A5E8FB4C5DEC1526ED6AB4A83ADEF757F09ADA"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\vcruntime140.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "4D24E8CE86C39A5E6FA0CC4A70EBEC193AEA3CC471825495C3ED5296B0698687"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\vcruntime140_1.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "B16D0AFE12493198E72F9CC2F6A807D8DC5F2B55B74E2620CF9392B67DBFC90A"
+      },
+      {
+        "path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\vcruntime140_threads.dll",
+        "signature": "Valid",
+        "signer": "CN=Microsoft Windows Software Compatibility Publisher, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+        "version": "14.44.35217.0",
+        "sha256": "31EC650BB09FE608B5B77E952ACFB8B998A3D0D7469888638F00E2F8866035F3"
+      }
+    ],
+    "controlled_environment": {
+      "SystemRoot": "C:\\Windows",
+      "windir": "C:\\Windows",
+      "SystemDrive": "C:",
+      "ComSpec": "C:\\Windows\\System32\\cmd.exe",
+      "PATH": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64;C:\\Windows\\System32",
+      "TEMP": "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\tmp",
+      "TMP": "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\tmp",
+      "VSLANG": "1033",
+      "INCLUDE": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\include;C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt;C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\shared;C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\um;C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\winrt",
+      "LIB": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\ucrt\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\um\\x64"
+    },
+    "environment_policy": "Explicit allowlist; no inherited compiler/linker options, no command interpreter or generated batch script",
+    "input_roots": [
+      "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\include",
+      "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x64",
+      "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\ucrt",
+      "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\shared",
+      "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\um",
+      "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.26100.0\\winrt",
+      "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\ucrt\\x64",
+      "C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\um\\x64"
+    ],
+    "input_count": 4374,
+    "inputs_sha256": "1425FF60A30498DAD596861C1447CCB4CC795EA02F8C3937BD3868EABECBE232",
+    "sdk_version": "10.0.26100.0",
+    "baseline_full_commit": "783a504dd7a3a7f753156e7de389bb9799a46f75",
+    "baseline_raw_sha256": "448D5DA3C5894E2E73DBB428CCD282F73E992D87150D07B0035769B00B074E5D",
+    "source_comparison": "raw cat-file bytes, allowing CRLF/LF differences only",
+    "builds": [
+      {
+        "directory": "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\first",
+        "command": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+          "/nologo",
+          "/Bv",
+          "/EHsc",
+          "/W4",
+          "/std:c++17",
+          "/O2",
+          "/MT",
+          "/Brepro",
+          "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\collector.cpp",
+          "/FoC:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\first\\collector.obj",
+          "/FeC:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\first\\bridge-outbound-reader.exe",
+          "/link",
+          "/Brepro",
+          "/INCREMENTAL:NO"
+        ],
+        "returncode": 0,
+        "log_sha256": "3CF5B007321D937B66D1C7F6F9BC767FCA528D42E79017FFFFDA72467D62E458",
+        "executable_sha256": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237"
+      },
+      {
+        "directory": "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\second",
+        "command": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\cl.exe",
+          "/nologo",
+          "/Bv",
+          "/EHsc",
+          "/W4",
+          "/std:c++17",
+          "/O2",
+          "/MT",
+          "/Brepro",
+          "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\collector.cpp",
+          "/FoC:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\second\\collector.obj",
+          "/FeC:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\controlled-build\\second\\bridge-outbound-reader.exe",
+          "/link",
+          "/Brepro",
+          "/INCREMENTAL:NO"
+        ],
+        "returncode": 0,
+        "log_sha256": "3CF5B007321D937B66D1C7F6F9BC767FCA528D42E79017FFFFDA72467D62E458",
+        "executable_sha256": "F34588F8AA3771A2599198B43447FE674B94FC22238F26AE02005B6540455237"
+      }
+    ],
+    "reproducible": true,
+    "native_imports": [
+      "ADVAPI32.dll",
+      "KERNEL32.dll",
+      "tdh.dll",
+      "WS2_32.dll"
+    ],
+    "limits": "Controlled local build; trusts installed Microsoft toolchain/SDK and the approved source. Not isolation from an actively compromised build owner."
+  },
+  "runtime": {
+    "run_id": "18f1754992ec4167b34ab42c6ef19c15",
+    "pid": 31080,
+    "parent_pid": 23472,
+    "birth": 134382729240560048,
+    "phases": [
+      {
+        "phase": 1,
+        "reader": {
+          "supervisor_pid": 43312,
+          "system_pid": 4900,
+          "reader_pid": 36744,
+          "system_sid": "S-1-5-18"
+        },
+        "request": {
+          "ip": "142.251.151.119",
+          "port": 443,
+          "local_port": 65006,
+          "tls_wire_bytes": 678,
+          "application_bytes": 59,
+          "http_status": 200,
+          "tls_version": "TLSv1.3",
+          "certificate_verified": true
+        },
+        "kernel_bytes": 678,
+        "sender_verified": true
+      },
+      {
+        "phase": 2,
+        "reader": {
+          "restarted": true,
+          "supervisor_pid": 43312,
+          "system_pid": 4900,
+          "reader_pid": 23416,
+          "system_sid": "S-1-5-18"
+        },
+        "request": {
+          "ip": "142.251.151.119",
+          "port": 443,
+          "local_port": 63697,
+          "tls_wire_bytes": 678,
+          "application_bytes": 59,
+          "http_status": 200,
+          "tls_version": "TLSv1.3",
+          "certificate_verified": true
+        },
+        "kernel_bytes": 678,
+        "sender_verified": true
+      }
+    ],
+    "production_tasks_started": false,
+    "etw_phase1": {
+      "session": "BridgeOutboundAudit-36744",
+      "query_status": 0,
+      "elevated": false,
+      "security_query_status": 5,
+      "security_scope": "EventAccessQuery GUID permissions; Windows defaults apply when no explicit GUID entry exists"
+    },
+    "etw_phase2": {
+      "session": "BridgeOutboundAudit-23416",
+      "query_status": 0,
+      "elevated": false,
+      "security_query_status": 5,
+      "security_scope": "EventAccessQuery GUID permissions; Windows defaults apply when no explicit GUID entry exists",
+      "stop_status": 0
+    },
+    "controller": {
+      "error": null,
+      "at": "2026-11-04T14:36:11.4849138+01:00",
+      "verifier_elevation_rejected": true,
+      "installed": true,
+      "activated": false
+    },
+    "system": {
+      "at": "2026-11-04T14:36:08.1798751+01:00",
+      "reader_generations": [
+        {
+          "birth": "2026-11-04T14:35:35.1887640+01:00",
+          "pid": 36744
+        },
+        {
+          "birth": "2026-11-04T14:35:57.7554830+01:00",
+          "pid": 23416
+        }
+      ],
+      "forced_reader_crash": true,
+      "error": null,
+      "system_sid": "S-1-5-18",
+      "production_tasks_started": false
+    },
+    "cleanup": {
+      "at": "2026-11-04T14:36:08.7353152+01:00",
+      "temporary_task_removed": true,
+      "audit_sessions": [],
+      "error": null,
+      "logman_exit": 0,
+      "production_tasks_started": false
+    },
+    "status": "passed",
+    "bootstrap_final": {
+      "error": null,
+      "at": "2026-11-04T14:36:11.4849138+01:00",
+      "verifier_elevation_rejected": true,
+      "installed": true,
+      "activated": false
+    }
+  },
+  "controller_failure_drill": {
+    "run_id": "6b1a119fc9534769a67326e6f100b942",
+    "pid": 12256,
+    "parent_pid": 26500,
+    "birth": 134382736227247543,
+    "phases": [],
+    "production_tasks_started": false,
+    "watchdog": {
+      "at": "2026-11-04T14:48:14.3533235+01:00",
+      "run": "6b1a119fc9534769a67326e6f100b942",
+      "temporary_task_absent": true,
+      "independent_deadline_seconds": 60,
+      "reader_pids": [
+        17600
+      ],
+      "remaining_audit_sessions": [],
+      "supervisors": [
+        {
+          "system_pid": 40072,
+          "pid": 24796
+        }
+      ]
+    },
+    "controller_exit": 91,
+    "status": "passed",
+    "bootstrap_final": {
+      "at": "2026-11-04T14:48:14.3533235+01:00",
+      "run": "6b1a119fc9534769a67326e6f100b942",
+      "temporary_task_absent": true,
+      "independent_deadline_seconds": 60,
+      "reader_pids": [
+        17600
+      ],
+      "remaining_audit_sessions": [],
+      "supervisors": [
+        {
+          "system_pid": 40072,
+          "pid": 24796
+        }
+      ]
+    }
+  },
+  "retention": {
+    "journal_days": 30,
+    "raw_hours_after_verified_ingestion": 72,
+    "combined_budget_bytes": 5000000000,
+    "at_capacity": "pause_capture_and_record_gap",
+    "discard_uningested": false,
+    "deletion_enabled": false,
+    "implementation_status": "selected_not_enforced"
+  },
+  "handoff": {
+    "At": "2026-11-04T14:58:59.5208194+01:00",
+    "Production": [
+      {
+        "Task": "BridgeMonitor-OutboundAudit",
+        "Enabled": false,
+        "State": 1,
+        "RunningInstances": 0,
+        "LastRunTime": "2026-11-04T12:16:51.0000000"
+      },
+      {
+        "Task": "BridgeMonitor-OutboundAudit-Ingest",
+        "Enabled": false,
+        "State": 1,
+        "RunningInstances": 0,
+        "LastRunTime": "1999-11-30T00:00:00.0000000"
+      }
+    ],
+    "TemporaryTasks": [],
+    "NativeReaders": []
+  },
+  "spool_checks": {
+    "journal_kinds": {
+      "gap": 3,
+      "health": 1,
+      "attempt": 2,
+      "connected": 2,
+      "transfer": 6
+    },
+    "raw_tags": {
+      "gap": 2,
+      "health": 16,
+      "start": 10,
+      "net": 10
+    },
+    "invalid_reader_metadata": 0,
+    "unavailable_providers": 0,
+    "only_test_pid_network_records": true,
+    "images": [
+      "python.exe"
+    ]
+  },
+  "access_checks": {
+    "file_checks": 336,
+    "task_checks": 12,
+    "source": "C:\\AI\\bridge-monitor\\var\\audit-runtime-20261104\\handoff-access.json",
+    "token": {
+      "user_sid": "S-1-5-21-522404855-1915800051-2531809892-1001",
+      "elevated": false,
+      "elevation_type": 3,
+      "integrity_sid": "S-1-16-8192",
+      "groups": [
+        {
+          "sid": "S-1-5-21-522404855-1915800051-2531809892-513",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-1-0",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-114",
+          "attributes_hex": "0x00000010",
+          "deny_only": true,
+          "enabled": false
+        },
+        {
+          "sid": "S-1-5-21-522404855-1915800051-2531809892-1003",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-32-544",
+          "attributes_hex": "0x00000010",
+          "deny_only": true,
+          "enabled": false
+        },
+        {
+          "sid": "S-1-5-32-559",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-32-547",
+          "attributes_hex": "0x00000010",
+          "deny_only": true,
+          "enabled": false
+        },
+        {
+          "sid": "S-1-5-32-545",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-4",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-2-1",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-11",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-15",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-113",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-5-0-578301",
+          "attributes_hex": "0xC0000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-2-0",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-5-64-10",
+          "attributes_hex": "0x00000007",
+          "deny_only": false,
+          "enabled": true
+        },
+        {
+          "sid": "S-1-16-8192",
+          "attributes_hex": "0x00000060",
+          "deny_only": false,
+          "enabled": false
+        }
+      ]
+    }
+  },
+  "preflight_review": "2d4c8fd1-01ac-4ff5-8ad9-4cd19111a878",
+  "guard_fixes_authorized": true,
+  "important_finding": "Unelevated operator successfully stopped disposable ETW session; no ETW ACL/group changes applied"
+}

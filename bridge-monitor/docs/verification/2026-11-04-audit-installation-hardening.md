@@ -1,5 +1,10 @@
 # Privileged audit installation repair — 2026-11-04
 
+**Later checkpoint:** [controlled build and bounded SYSTEM runtime verification](2026-11-04-audit-controlled-runtime.md)
+has passed, with both production tasks still stopped/disabled. ETW stop-right
+hardening and unimplemented retention remain before activation. Earlier unrun
+checks below describe their original repair checkpoint.
+
 User authorization: repair the stopped privileged installation safely; keep the
 audit task disabled until reviewed. This repair grants no activation approval.
 
