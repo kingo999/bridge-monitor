@@ -3,18 +3,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Background, Controls, Position, ReactFlow, type Edge, type Node, type ReactFlowInstance } from '@xyflow/react';
 import type { DashboardStatus, PoolCapacity, WorkerExecution, WorkItem } from '@/lib/contracts.generated';
+import { MarkerType } from '@xyflow/react';
+import { useHandoffPage } from '@/lib/useHandoffPage';
 import WorkerGroup from './WorkerGroup';
+import { useServiceAvailability } from '@/lib/useServiceAvailability';
 import ClassifierActivity from './ClassifierActivity';
 import { useClassifierActivity } from '@/lib/useClassifierActivity';
 import NodeActivityStatus, { nodeActivityClass, nodeActivityState } from './NodeActivityStatus';
 
-export default function FlowGraph({ status, capacity, items, executions, selectedId, expanded, onToggle, onSelect, onEdge, paused = false }: {
+export default function FlowGraph({ status, capacity, items, executions, selectedId, expanded, onToggle, onSelect, onEdge, onHandoffs, paused = false }: {
   status: DashboardStatus | null; capacity: Record<'claude' | 'qwen', PoolCapacity> | null;
   items: WorkItem[]; executions: WorkerExecution[]; selectedId: string | null;
   expanded: boolean; onToggle: () => void; onSelect: (id: string) => void;
   onEdge: (route: 'routed' | 'not_routed') => void;
+  onHandoffs: () => void;
   paused?: boolean;
 }) {
+  const { page: handoffs, error: handoffError } = useHandoffPage('limit=0', !paused);
+  const total = handoffs?.total;
+  const services = useServiceAvailability(paused);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [instance, setInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
   const active = capacity?.claude.active ?? status?.active ?? 0;
@@ -38,7 +45,14 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
     observer.observe(canvasRef.current);
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   }, [instance]);
-  const nodes = useMemo<Node[]>(() => [
+  const allNodes = useMemo<Node[]>(() => [
+    { id: 'chatgpt', position: { x: -250, y: 85 }, type: 'input', sourcePosition: Position.Right,
+      draggable: false, style: { width: 160 }, data: { label: <div className="flow-node origin-node">
+        <strong>ChatGPT</strong><small>Design Mode</small>
+        <button className="nodrag" type="button" onClick={onHandoffs} aria-label="Open Design Mode handoff audit">
+          {total != null ? `${total.toLocaleString()} handoff${total === 1 ? '' : 's'}` :
+            handoffError || handoffs ? 'Count unavailable' : 'View handoffs'}
+        </button></div> } },
     { id: 'gpt', position: { x: 0, y: 85 }, sourcePosition: Position.Right, targetPosition: Position.Left, data: { label: <div className={`flow-node origin-node${nodeActivityClass(originState)}`}><div className="node-orb gpt">◎</div><strong>GPT / Codex</strong><small>Main conversation</small>
       <NodeActivityStatus state={originState} label={originState === 'waiting' ? 'Waiting for bridge workers' : undefined} /></div> }, type: 'default', draggable: false, style: { width: 160 } },
     { id: 'claude', position: { x: 215, y: 0 }, data: { label: <WorkerGroup active={active} queued={claudeQueued}
@@ -49,8 +63,10 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
       {capacity && <small>{capacity.qwen.active} active · {capacity.qwen.queued} queued · {capacity.qwen.held_uncertain} held uncertain</small>}</div> }, type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 170 } },
     { id: 'gemma', position: { x: 215, y: 265 }, data: { label: <ClassifierActivity activity={activity} failed={failed} paused={paused} /> },
       type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 250 } },
-  ], [active, claudeQueued, qwenActive, originState, qwenState, status, capacity, executions, expanded, onToggle, onSelect, activity, failed, paused]);
-  const edges = useMemo<Edge[]>(() => [
+  ], [total, handoffError, handoffs, onHandoffs, active, claudeQueued, qwenActive, originState, qwenState, status, capacity, executions, expanded, onToggle, onSelect, activity, failed, paused]);
+  const allEdges = useMemo<Edge[]>(() => [
+    { id: 'chatgpt-gpt', source: 'chatgpt', target: 'gpt', label: 'Handoffs',
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#05d7c0' }, style: { stroke: '#05d7c0', strokeWidth: 2 } },
     { id: 'gpt-claude', source: 'gpt', target: 'claude', label: 'Delegate', animated: !paused && active > 0,
       style: { stroke: '#05d7c0', strokeWidth: selectedId ? 3 : 2 }, labelStyle: { fill: '#91d7d4' } },
     { id: 'claude-qwen', source: 'claude', target: 'qwen', label: 'Request / return', animated: !paused && qwenActive > 0,
@@ -60,15 +76,20 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
       animated: gemmaActive || recentResult, selectable: false, style: { stroke: '#e2ba69', strokeDasharray: '5 5' },
       labelStyle: { fill: '#e2ba69' } },
   ], [active, qwenActive, gemmaActive, recentResult, paused, selectedId, items]);
+  const nodes = allNodes.filter(node => node.id === 'chatgpt' || node.id === 'gpt' || services[node.id as keyof typeof services]);
+  const visibleIds = new Set(nodes.map(node => node.id));
+  const edges = allEdges.filter(edge => visibleIds.has(edge.source) && visibleIds.has(edge.target));
+  const nodeKey = nodes.map(node => node.id).join(',');
+  useEffect(() => { if (instance) void instance.fitView({ padding: 0.12, maxZoom: 1, duration: 0 }); }, [instance, nodeKey]);
   return <section className="panel flow-panel" aria-label="Current orchestration flow">
-    <div className="panel-heading"><div><h2>Live orchestration flow</h2><p>Recorded worker activity · Gemma observes separately</p></div>
+    <div className="panel-heading"><div><h2>Live orchestration flow</h2><p>Recorded worker activity · available configured services</p></div>
       <span className="flow-legend"><i className="dot teal" /> Request <i className="dot violet" /> Return</span></div>
-    <div className="flow-canvas" ref={canvasRef} role="img" aria-label="GPT and Codex delegate to Claude and Skynet; Gemma observes an advisory copy">
-      <ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{ padding: 0.12 }}
+    <div className="flow-canvas" ref={canvasRef} role="img" aria-label={nodes.map(node => node.id === 'chatgpt' ? 'ChatGPT' : node.id === 'gpt' ? 'GPT / Codex' : node.id === 'qwen' ? 'Skynet / Qwen' : node.id === 'gemma' ? 'Gemma advisory observer' : 'Claude').join(' · ')}>
+      <ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{ padding: 0.12, maxZoom: 1 }}
         onInit={setInstance}
         panActivationKeyCode={null}
         nodesDraggable={false} nodesConnectable={false} elementsSelectable
-        onEdgeClick={(_, edge) => { if (edge.id !== 'gpt-gemma') onEdge(edge.id === 'claude-qwen' ? 'routed' : 'not_routed'); }}
+        onEdgeClick={(_, edge) => { if (edge.id === 'chatgpt-gpt') onHandoffs(); else if (edge.id !== 'gpt-gemma') onEdge(edge.id === 'claude-qwen' ? 'routed' : 'not_routed'); }}
         proOptions={{ hideAttribution: true }}>
         <Background color="#1a4770" gap={22} size={1} /><Controls showInteractive={false} />
       </ReactFlow>

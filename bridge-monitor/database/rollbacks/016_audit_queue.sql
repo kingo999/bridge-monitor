@@ -1,0 +1,2 @@
+-- Keep the safe append-only queue. Roll back the complete derived feature with 015 rollback.
+-- Downgrading the queue to shared-key upserts can block production writers.

@@ -22,3 +22,9 @@ preview_max_bytes = 16384
 timeline_head_events = 100
 timeline_tail_events = 400
 work_item_max_limit = 1000
+# Optional Design Mode "Awaiting my decision" filter (single-operator display preference, not
+# authorization). Copy your exact owner_id from a Design Mode workflow detail (format
+# "<producer_id>@<OS account>") and uncomment. Matching is exact and case-sensitive; a typo
+# matches nothing. To disable, leave the line commented out: an empty, whitespace-only or
+# whitespace-padded value is invalid and stops startup (unlike tls_cert_path = "").
+# design_mode_owner_id = "<producer_id>@<OS account>"

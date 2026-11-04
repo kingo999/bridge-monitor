@@ -3,6 +3,9 @@ import { expect, test, type Page } from '@playwright/test';
 test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'ignoreErrors' }); });
 
 async function openFlow(page: Page, { active = 0, queued = 0, uncertain = 0, available = true, waiting = 0 } = {}) {
+  await page.route('**/api/v1/services', route => route.fulfill({ json: {
+    checked_at: new Date().toISOString(), services: { claude: available, qwen: available, gemma: available },
+  } }));
   await page.route('**/api/v1/snapshot?*', async route => {
     const response = await route.fetch();
     const snapshot = await response.json();
@@ -25,7 +28,9 @@ async function openFlow(page: Page, { active = 0, queued = 0, uncertain = 0, ava
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
-  return page.locator('.origin-node, .worker-group, .skynet-node, .gemma-activity');
+  const nodes = page.locator('.origin-node, .worker-group, .skynet-node, .gemma-activity');
+  await expect(nodes).toHaveCount(available ? 4 : 1);
+  return nodes;
 }
 
 test('queued nodes and the delegating parent show waiting, distinct from idle and working', async ({ page }) => {

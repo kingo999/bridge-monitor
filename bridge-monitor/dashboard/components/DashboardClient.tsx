@@ -1,4 +1,7 @@
 'use client';
+import AuditView from './AuditView';
+import DesignWorkflows from './DesignWorkflows';
+import type { AuditLaunch } from '@/lib/audit';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, AuthenticationRequired, type CohortFilters, type RouterFilters } from '@/lib/api';
@@ -26,8 +29,14 @@ const initialRouterFilters: RouterFilters = { modelProfile: '', promptVersion: '
 export default function DashboardClient() {
   const [auth, setAuth] = useState<'checking' | 'login' | 'ready'>('checking');
   const [operatorToken, setOperatorToken] = useState('');
-  const [tab, setTab] = useState<'codex_claude' | 'experiments'>('codex_claude');
-  useEffect(() => { if (new URLSearchParams(window.location.search).get('view') === 'experiments') setTab('experiments'); }, []);
+  const [auditLaunch, setAuditLaunch] = useState<AuditLaunch | null>(null);
+  const [tab, setTab] = useState<'codex_claude' | 'experiments' | 'audit' | 'design'>('codex_claude');
+  useEffect(() => { const view = new URLSearchParams(window.location.search).get('view');
+    if (view === 'experiments' || view === 'design' || view === 'audit') setTab(view); }, []);
+  const openHandoffs = useCallback(() => {
+    setAuditLaunch({ key: Date.now(), view: 'handoffs' });
+    setTab('audit');
+  }, []);
   const [loginError, setLoginError] = useState('');
   const [filters, setFilters] = useState<CohortFilters>(initialFilters);
   const [routerFilters, setRouterFilters] = useState<RouterFilters>(initialRouterFilters);
@@ -211,17 +220,31 @@ export default function DashboardClient() {
     <div className="monitor-tabs" role="tablist" aria-label="Monitor views" onKeyDown={event => {
       if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
       event.preventDefault();
-      const next = event.key === 'Home' ? 'codex_claude' : event.key === 'End' ? 'experiments' : tab === 'codex_claude' ? 'experiments' : 'codex_claude';
+      const tabs = ['codex_claude', 'design', 'audit', 'experiments'] as const;
+      const next = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs[tabs.length - 1] :
+        tabs[(tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
       setTab(next); document.getElementById('tab-' + next)?.focus();
     }}>
       <button type="button" role="tab" id="tab-codex_claude" aria-controls="view-codex_claude" aria-selected={tab === 'codex_claude'} tabIndex={tab === 'codex_claude' ? 0 : -1} onClick={() => setTab('codex_claude')}>Codex / Claude</button>
+      <button type="button" role="tab" id="tab-design" aria-controls="view-design" aria-selected={tab === 'design'} tabIndex={tab === 'design' ? 0 : -1} onClick={() => setTab('design')}>Design workflows</button>
+      <button type="button" role="tab" id="tab-audit" aria-controls="view-audit" aria-selected={tab === 'audit'} tabIndex={tab === 'audit' ? 0 : -1} onClick={() => setTab('audit')}>Audit</button>
       <button type="button" role="tab" id="tab-experiments" aria-controls="view-experiments" aria-selected={tab === 'experiments'} tabIndex={tab === 'experiments' ? 0 : -1} onClick={() => setTab('experiments')}>Experiments</button>
     </div>
     <UsageNotices refreshKey={snapshot?.as_of || ''} />
     {tab === 'codex_claude' && <div id="view-codex_claude" role="tabpanel" aria-labelledby="tab-codex_claude">
-      <CodexClaudeOverview filters={filters} refreshKey={snapshot?.as_of || ''} paused={paused} onSelect={setSelectedId} />
+      <CodexClaudeOverview filters={filters} refreshKey={snapshot?.as_of || ''} paused={paused} onSelect={setSelectedId}
+        orchestration={<FlowGraph status={snapshot?.status || null} capacity={snapshot?.capacity || null}
+          items={liveItems} executions={snapshot?.worker_executions || []} selectedId={selectedId}
+          expanded={expanded} onToggle={toggleExpanded} onSelect={setSelectedId} paused={paused} onEdge={focusEdge} onHandoffs={openHandoffs} />}
+        onAudit={launch => { setAuditLaunch(launch); setTab('audit'); }} />
       {selectedId && <ExchangeInspector id={selectedId} refreshKey={detailRefresh} paused={paused} />}
     </div>}
+    <div id="view-design" role="tabpanel" aria-labelledby="tab-design" hidden={tab !== 'design'}>
+      <DesignWorkflows active={tab === 'design'} />
+    </div>
+    <div id="view-audit" role="tabpanel" aria-labelledby="tab-audit" hidden={tab !== 'audit'}>
+      <AuditView launch={auditLaunch} visible={tab === 'audit'} />
+    </div>
     {tab === 'experiments' && <div id="view-experiments" role="tabpanel" aria-labelledby="tab-experiments">
     <div className="status-line"><span>{mode === 'history' ? 'Historical cohort' : 'Live monitor'} · {filters.origin} · {metrics?.metrics.direct_execution?.denominator ?? metrics?.metrics.routed.denominator ?? 0} work items · Bridge-delegated: {metrics?.metrics.bridge_execution?.numerator ?? 'Unknown'} · Direct Codex: {metrics?.metrics.direct_execution?.numerator ?? 'Unknown'}</span>
       {snapshot && <span>Snapshot {new Date(snapshot.as_of).toLocaleString()}</span>}</div>
@@ -244,7 +267,7 @@ export default function DashboardClient() {
     <div className="dashboard-grid"><div className="left-column">
       <FlowGraph status={snapshot?.status || null} capacity={snapshot?.capacity || null} items={liveItems} executions={snapshot?.worker_executions || []} selectedId={selectedId}
         expanded={expanded} onToggle={toggleExpanded} onSelect={setSelectedId} paused={paused}
-        onEdge={focusEdge} />
+        onEdge={focusEdge} onHandoffs={openHandoffs} />
       <WorkList items={visibleItems} selectedId={selectedId} onSelect={setSelectedId}
         search={search} onSearch={setSearch} loading={loading} more={more} onMore={() => void loadMore()} />
       {selectedMetric && <p className="filter-note">Loaded work list filtered by {metricLabel(selectedMetric, filters.consumerStage)}. Numerator/denominator and coverage come from the service; result-unit metrics may map several results to one work item.</p>}

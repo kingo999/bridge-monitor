@@ -1,10 +1,17 @@
 import { expect, test } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/services', route => route.fulfill({ json: {
+    checked_at: new Date().toISOString(), services: { claude: true, qwen: true, gemma: true },
+  } }));
+});
 import { randomUUID } from 'node:crypto';
 
 test('synthetic exchange has grouped flow and side-by-side response comparison', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('tab', { name: 'Experiments', exact: true }).click();
   await page.locator('.toolbar').getByLabel('Origin').selectOption('synthetic');
   await expect(page.getByRole('button', { name: /Claude workers/ })).toBeVisible();
   await page.getByRole('button', { name: /demo-work-061/ }).first().click();
@@ -28,6 +35,7 @@ test('long timeline marks the omitted middle between early and recent events', a
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('tab', { name: 'Experiments', exact: true }).click();
   await page.route('**/api/v1/work-items/demo-work-061', async route => {
     const response = await route.fetch();
     const detail = await response.json();
@@ -53,6 +61,7 @@ test('exchange inspector shows model usage with reported and unknown cache count
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('tab', { name: 'Experiments', exact: true }).click();
   const detailResponse = await page.request.get('/api/v1/work-items/demo-work-061');
   expect(detailResponse.ok()).toBe(true);
   const detail = await detailResponse.json();
@@ -94,6 +103,7 @@ test('inspector distinguishes GPT to Claude and Claude to Skynet prompts', async
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('tab', { name: 'Experiments', exact: true }).click();
   const nonce = randomUUID();
   const task = `chain-task-${nonce}`;
   const work = `chain-work-${nonce}`;

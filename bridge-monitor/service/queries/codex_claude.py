@@ -7,6 +7,7 @@ import io
 import json
 import math
 import statistics
+from contextlib import nullcontext
 import psycopg
 from psycopg.rows import dict_row
 from contracts.queries import CohortQuery
@@ -73,26 +74,27 @@ def efficiency_summary(rows):
                "cache/reasoning subsets are reported separately and never added to totals. No savings or ranking claims."}
 
 def query_codex_claude(dsn, query: CohortQuery, *, category="", project="", model="",
-                       profile="", policy_digest="", evidence=""):
+                       profile="", policy_digest="", evidence="", connection=None, work_item_ids=None):
     as_of=cutoff(query)
     rows=[]
     readiness={"routing_enabled":False,"reason":"Automatic routing disabled by active policy; spending and token values are statistics only"}
-    with psycopg.connect(dsn) as conn,conn.transaction():
-        conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+    with (nullcontext(connection) if connection is not None else psycopg.connect(dsn)) as conn,conn.transaction():
+        if connection is None:
+            conn.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
         active=conn.execute("SELECT c.policy FROM runtime_active_policy a JOIN config_versions c "
             "ON c.version=a.version WHERE a.singleton=true").fetchone()
         extension=(active[0].get("codex_claude") or {}) if active else {}
         if extension.get("enabled"):
             readiness={"routing_enabled":True,"reason":"Policy enabled; dispatch requires an approved runtime model and authorized supplied context"}
-        ids=leaf_work_items(conn,query,as_of)
+        ids=leaf_work_items(conn,query,as_of, work_item_ids=work_item_ids)
         facts=execution_metadata(conn,ids,as_of)
         outcome_evidence=_gpt_work_judgment_evidence(conn,ids,as_of)
         migrated=bool(conn.execute("SELECT to_regclass('cc_decisions')").fetchone()[0])
         decisions={}
         if migrated:
             decisions={w:{"decision_id":d,"decision":p,"created_at":created} for w,d,p,created in conn.execute(
-                "SELECT work_item_id,decision_id,payload,recorded_at FROM cc_decisions WHERE recorded_at<=%s",
-                (as_of,))}
+                "SELECT work_item_id,decision_id,payload,recorded_at FROM cc_decisions WHERE recorded_at<=%s AND (%s::text[] IS NULL OR work_item_id=ANY(%s))",
+                (as_of,work_item_ids,work_item_ids))}
         with conn.cursor(row_factory=dict_row) as cur:
             work=[dict(r) for r in cur.execute("SELECT work_item_id,task_id,category,origin,created_at FROM work_items "
                 "WHERE work_item_id=ANY(%s) ORDER BY created_at DESC,work_item_id",(ids,))]
@@ -109,12 +111,12 @@ def query_codex_claude(dsn, query: CohortQuery, *, category="", project="", mode
         receipts=defaultdict(list)
         if migrated:
             for w,amount,counters,receipt in conn.execute("SELECT h.work_item_id,r.amount,r.counters,r.receipt_sha256 "
-                "FROM cc_receipts r JOIN cc_reservations h USING(call_id) WHERE r.observed_at<=%s AND r.recorded_at<=%s",
-                (as_of,as_of)):
+                "FROM cc_receipts r JOIN cc_reservations h USING(call_id) WHERE r.observed_at<=%s AND r.recorded_at<=%s AND (%s::text[] IS NULL OR h.work_item_id=ANY(%s))",
+                (as_of,as_of,work_item_ids,work_item_ids)):
                 receipts[w].append((amount,counters,receipt))
         from service.queries.provider_cost import provider_quotes
         settled_calls={row[0] for row in conn.execute("SELECT call_id FROM cc_receipts WHERE recorded_at<=%s",(as_of,))} if migrated else set()
-        for quote in provider_quotes(conn,as_of,exclude_calls=settled_calls):
+        for quote in provider_quotes(conn,as_of,exclude_calls=settled_calls,work_item_ids=work_item_ids):
             receipts[quote["work_item_id"]].append((quote["amount"],quote["counters"],quote["receipt_sha256"]))
         # Include blocked/keep-owner decisions even when no worker call was admitted.
         existing={w["work_item_id"] for w in work}

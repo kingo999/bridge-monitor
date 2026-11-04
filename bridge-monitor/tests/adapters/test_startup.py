@@ -128,6 +128,10 @@ def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, monkeypat
                     return {item.name for item in (await session.list_tools()).tools}
 
         assert asyncio.run(listed("parent")) == {
-            "delegate_claude", "complete_work", "acknowledge_claude_result",
-            "get_execution_status", "cancel_work", "route_work"}
+            "record_direct_task", "route_work", "delegate_claude", "complete_work",
+            "acknowledge_claude_result", "get_execution_status", "cancel_work",
+            "design_mode_submit", "design_mode_status", "design_mode_list",
+            "design_mode_read_evidence", "design_mode_save_plan", "design_mode_pause",
+            "design_mode_resume", "design_mode_retrieve", "design_mode_confirm_delivery",
+            "design_mode_decide", "design_mode_cancel"}
         assert asyncio.run(listed("claude")) == {"delegate_local_analysis"}

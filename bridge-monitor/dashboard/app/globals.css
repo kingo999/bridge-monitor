@@ -130,3 +130,29 @@
 @media (max-width: 480px) {
   .chart-tags { grid-template-columns: minmax(0, 1fr); }
 }
+/* Audit filters, immutable result pages and captured evidence. */
+.audit-summary, .audit-view-controls, .audit-pagination { display:flex; flex-wrap:wrap; gap:.65rem; align-items:center; margin:.8rem 0; }
+.audit-summary { font-size:.85rem; color:var(--text-muted, #9eabbc); }
+.audit-summary button, .audit-view-controls button, .audit-pagination button, .audit-filters button,
+.audit-cohort button, .audit-detail button { padding:.5rem .8rem; cursor:pointer; border:1px solid #435166; border-radius:6px; background:#182335; color:#e7edf5; }
+.audit-view-controls [aria-pressed="true"] { background:#29426b; border-color:#729bd4; }
+.audit-filters { display:flex; flex-wrap:wrap; gap:.8rem; margin:1rem 0; padding:1rem; background:#111b2b; border-radius:8px; }
+.audit-filters label { display:flex; flex-direction:column; gap:.3rem; font-size:.8rem; }
+.audit-filters input, .audit-filters select { padding:.5rem; min-width:130px; max-width:240px; border:1px solid #435166; border-radius:5px; background:#0c1422; color:#e7edf5; }
+.audit-filters button { align-self:end; }
+.audit-coverage { font-size:.8rem; line-height:1.5; color:#b8c4d7; }
+.audit-coverage p { margin:.3rem 0; }
+.audit-cohort { border-left:3px solid #729bd4; padding:.75rem; margin:1rem 0; }
+.audit-detail { border:1px solid #435166; border-radius:8px; margin:1rem 0; padding:1rem; }
+.audit-detail dl > div { display:grid; grid-template-columns:minmax(110px, 180px) minmax(0,1fr); gap:1rem; padding:.4rem 0; }
+.audit-detail dt { font-weight:600; text-transform:capitalize; }
+.audit-detail dd { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; font: .85rem ui-monospace, monospace; }
+.audit button:focus-visible, .audit-summary button:focus-visible { outline:2px solid #90bfff; outline-offset:3px; }
+.audit button:disabled { opacity:.5; cursor:default; }
+@media(max-width:650px) { .audit-detail dl > div { grid-template-columns:1fr; gap:.2rem; } }
+.design-workflows .cc-filters select,.design-workflows > section > button,.design-workflows .cc-filters > button{background:#0c2135;border:1px solid #2b4e69;color:var(--text);border-radius:8px;padding:8px 10px}
+.design-workflows .cc-filters > button{align-self:end}
+.design-workflows .design-decision-filter{justify-content:center}
+.design-workflows .design-decision-filter span{display:flex;align-items:center;gap:8px}
+.design-workflows .design-decision-filter input{width:auto;margin:0}
+.design-workflows h3{font-size:.95rem;margin:18px 0 12px}

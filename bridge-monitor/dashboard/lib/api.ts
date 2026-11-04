@@ -1,4 +1,5 @@
 import type { UsageNoticeReport, CodexClaudeReport, MetricSet, Origin, OutputPreview, RouterAudit, ShadowCohort, Snapshot, WorkDetail, WorkItem } from './contracts.generated';
+import type { DesignWorkflowDetail, DesignWorkflowReport } from './designMode';
 
 export class AuthenticationRequired extends Error {}
 
@@ -61,6 +62,10 @@ export function queryString(filters: CohortFilters): string {
 }
 
 export const api = {
+  designWorkflows: (params: URLSearchParams, signal?: AbortSignal) =>
+    request<DesignWorkflowReport>('/api/v1/design-mode/workflows' + (params.size ? '?' + params : ''), { signal }),
+  designWorkflow: (id: string, signal?: AbortSignal) =>
+    request<DesignWorkflowDetail>('/api/v1/design-mode/workflows/' + encodeURIComponent(id), { signal }),
   usageNotices: (signal?: AbortSignal) => request<UsageNoticeReport>('/api/v1/codex-claude/usage-notices', { signal }),
   codexClaude: (params: URLSearchParams, signal?: AbortSignal) =>
     request<CodexClaudeReport>('/api/v1/codex-claude/cohort?' + params, { signal }),

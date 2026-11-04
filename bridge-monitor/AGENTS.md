@@ -1,5 +1,12 @@
 # Project context
 
+This file governs Bridge Monitor work only. Each explicitly selected project owns
+its own `.ai-context/INDEX.md` and topics in its selected root. Never use Bridge
+Monitor as a fallback or central store for another project's notes, and never
+infer a project root from the Bridge installation, working directory or a Git
+parent root. Reusable guidance: [project Markdown context](docs/operations/project-markdown-context.md).
+Nothing here adopts the convention in another repository or edits one.
+
 Before substantive work, read [.ai-context/INDEX.md](.ai-context/INDEX.md) and the
 topics relevant to the task. Search existing topics and project documentation
 before creating a new note.

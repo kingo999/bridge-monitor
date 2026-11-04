@@ -3,120 +3,83 @@
 Project: Bridge Monitor, `C:\AI\bridge-monitor` (Git root `C:\AI`).
 Purpose: share significant technical decisions between Codex and ChatGPT
 conversations without depending on chat history. Last reviewed: 2026-11-01.
-Source paths below are relative to the project root unless stated otherwise.
-
-## Decision and approval
-
-**Approved:** the user's request on 2026-11-01 establishes this lightweight
-Markdown convention: one index and small files for individual topics, maintained
-as decisions change. The user then replied "yes" to direct application of the
-reviewed three-file patch and documentation checks. This approval does not cover
-unrelated proposals or alter runtime policy. **Proposals:** none.
-
-Use **Approved**, **Proposed (discussion required)** or **Superseded** for
-decisions, with the approval source and date when known. Unknown approval means
-Proposed. Record proposals separately from approved choices. User approval
-determines decision status; writing a note or implementing an idea is not approval.
-When a choice is superseded, retain a brief reason and link to its replacement.
-
-## Maintaining topics
-
-- Read the index and relevant topics before substantive work. Search existing
-  topics and canonical documentation first; update them rather than duplicate them.
-- Record decisions that would change a later session's design or technical work:
-  important constraints, chosen/rejected options, trade-offs, material evidence,
-  unresolved questions, or changed implementation status. Skip trivial edits,
-  routine progress, raw transcripts and speculative historical backfill.
-- Use stable descriptive filenames, such as `topic-name.md`, and one focused topic
-  per file. Keep the index to navigation and a short state summary.
-- Make each topic understandable by itself: name the project, explain the problem
-  and current choice, state its approval and implementation separately, and link
-  relevant source files, tests, documents and actual Git revisions.
-- Update relevant topics and the index before handoff after significant changes,
-  only through the existing authorized execution path. Read-only work reports
-  proposed updates. Blocked writes are reported, never treated as permission
-  to change grants, routing or auditing.
-- Keep detailed specifications/runbooks canonical. Link rather than copy them.
-  Check facts against current source; note stale or conflicting evidence.
-  Do not store secrets or private conversation dumps.
-
-## Reasoning and trade-offs
-
-Small repository files are easy to review, revise and share selectively. They
-require deliberate maintenance and manual sharing with ChatGPT. Review dates,
-source links and Git references expose stale context; they do not prove freshness.
-One topic per file avoids a growing session log and duplicate decisions.
-
-These notes are separate from [BM-06 pinned context](../docs/specifications/pinned-context.md).
-They add no loader, synchronization, automatic prompt assembly or runtime input.
-Existing [runbook](../docs/operations/runbook.md),
-[repository execution](../docs/operations/repository-execution.md), and
-[project access guidance](../docs/operations/project-access-and-queue-maintenance.md)
-remain canonical for Bridge behaviour.
-
-## Implementation and verification
-
-- State: the three convention files are applied; documentation checks passed.
-- Baseline revision: `5f5d8556a7c495ca90803983bc1b4a195dca9b2b` in Git root
-  `C:\AI`. Existing staged/unstaged work is unrelated. This change is uncommitted;
-  there is no implementation commit to cite.
-- Checks on 2026-11-01: full new-file diffs inspected; nine local Markdown links
-  resolve; fences are balanced; no trailing whitespace. Ran
-  `git diff --no-index --check -- /dev/null <file>` for each new file (exit 1
-  indicates new-file differences; no whitespace diagnostics).
-- SHA-256 comparison: all 526 pre-existing project files unchanged. Existing
-  Git status entries and the repository-wide staged index are preserved.
-- Not run: executable test suite/build, because only Markdown documentation changed.
-- Source: [session instructions](../AGENTS.md) and [index](INDEX.md).
-  No executable source, tests, configuration or runtime behaviour is changed.
-
-## Open questions
-
-No unresolved design questions for this convention. Existing access limitation:
-
-The current Bridge host write prefixes exclude root `AGENTS.md` and
-`.ai-context/`. The user approved direct Codex execution for this application.
-Future sessions must use an already authorized path or report pending note
-updates. This convention does not expand permissions.
-
-## Sharing and reuse
-
-Attach/paste this topic and necessary linked excerpts in any ChatGPT conversation;
-include project identity, revision and uncommitted state. Local relative links
-need their target excerpts when the reader cannot access the checkout. Treat new
-suggestions as proposals and persist them only in an authorized session; never
-assume chat history or automatic synchronization.
-
-To adopt this convention elsewhere, separately authorize that repository's
-changes, reuse the generic session guidance/index/template, and adapt identities,
-paths and existing documentation. No project-specific runtime logic is required.
-
-## Template for a new topic
-
-Use this within a new, focused file only when no existing topic fits:
-
-```markdown
-# <Topic>
-Project: <identity/root; Git root if different>.
-Purpose/problem: <enough context to read independently>.
-Last reviewed: <YYYY-MM-DD>.
+Source paths are relative to the project root unless stated otherwise.
+Canonical reusable guidance: [project Markdown context](../docs/operations/project-markdown-context.md).
 
 ## Decisions
-Approved: <choice; approval source/date, or none>.
-Proposed (discussion required): <options/questions, or none>.
-Supersedes / superseded by: <linked choice and reason, or none>.
+
+**Approved (2026-11-01):** the user's request established a lightweight Markdown
+convention: one index plus one small file per topic. The user replied "yes" to
+direct application of the original three-file patch.
+
+**Approved ownership clarification:** context belongs to the repository being
+worked on. Each explicitly selected project owns its own `.ai-context/INDEX.md`
+and topics. This directory holds Bridge Monitor decisions only; it is never a
+fallback, central store or mirror. The user conditionally authorized completing
+the ownership corrections and safe permission handling.
+
+**Proposals:** none. Superseded: none.
+Use Approved / Proposed (discussion required) / Superseded; writing a note or
+implementing an idea is not approval.
 
 ## Reasoning and trade-offs
-<Why this choice; alternatives considered and their costs.>
+
+- Notes stay at the selected project root so ownership is clear and nothing
+  accumulates in an unrelated repository.
+- The host `write_prefixes` entry is only an upper bound; each task grant must be
+  narrower. An already valid grant may make multiple updates. If it lacks a
+  context path, use a fresh explicitly authorized grant; host edits never widen
+  an existing grant. Authorized sessions maintain notes; no automatic writer is
+  added.
+- Small files are easy to review and share, but need deliberate upkeep and manual
+  sharing with ChatGPT. Review dates and Git refs expose staleness; they do not
+  prove freshness.
+- Separate from [BM-06 pinned context](../docs/specifications/pinned-context.md):
+  no loader, synchronization or runtime input. The
+  [runbook](../docs/operations/runbook.md),
+  [repository execution](../docs/operations/repository-execution.md) and
+  [project access guidance](../docs/operations/project-access-and-queue-maintenance.md)
+  remain canonical for Bridge behaviour.
 
 ## Implementation and verification
-State: <not started / partial / implemented / verified; independent of approval>.
-Checks run: <commands, results and evidence>. Not run: <checks and reasons>.
-Git: <actual baseline/implementation revisions; identify uncommitted work>.
+
+State: implemented and verified (approval is separate from this status).
+
+- Host config: only `"AGENTS.md"` and `".ai-context/"` were added to the
+  `bridge-monitor` host write prefixes. Other configured roots are untouched.
+- Context writes need explicit read-write access, the selected approved root and exact
+  Markdown paths; exact `AGENTS.md` only when that file must change. Existing
+  permission and routing policies are not widened or changed in code.
+- Existing tasks keep their bound grants. A long-lived MCP process keeps its old
+  runtime snapshot; a fresh coordinator via the same launcher loads the new host
+  config.
+- Checks run: 19 new permission fixture tests passed (run
+  `6eb8245a-b8a8-4d0f-9554-b40c6930dc4a`). Red before config: 1 failed, 18 passed,
+  expected `task write scope exceeds host grant` (run
+  `494b3498-f4f4-4a35-88aa-dc628128acde`). Relevant regression run
+  `7fb0c508-97b8-4aa2-989c-ff4e59d6c6f1`: 147 passed, 46 skipped, 0 failures
+  (45 DB DSN skips, 1 symlink privilege skip). No full-suite claim.
+- Read-only inventory of 8 stored packets: 6 identical grant bindings, 2 still
+  denied, 0 authority changes or unknowns before/after the candidate.
+- Documentation: root `AGENTS.md`, this index, this topic and the reusable guide
+  were written by authorized Bridge file writes (Codex parent, existing Claude
+  worker, fresh explicit task grants). Live-write and parent verification evidence
+  is recorded in the implementation report.
+- Git: baseline `ec5ab9727a937dc04d1a357dec1c3a22debd1ae8`; no new commit.
+- No autonomous dedup, sync or new runtime task type. Significant-decision updates
+  reuse this topic by convention (hash-guarded update tested). No other repository
+  is adopted automatically.
 
 ## Open questions
-<Unresolved questions and next bounded step, or none.>
+
+None for the convention. Limitation: other repositories need an applicable host
+allowance and their own explicit task grants before any context write.
 
 ## References
-<Source/test/doc paths relative to the named project, with meaningful labels.>
-```
+
+- [AGENTS.md](../AGENTS.md), [INDEX.md](INDEX.md)
+- [Reusable guide](../docs/operations/project-markdown-context.md)
+- [Permission fixtures](../tests/adapters/test_markdown_context_permissions.py)
+- [Host allowance](../config/runtime-capabilities.proposal.toml)
+- [Permission enforcement](../bridge/repository.py), [grant binding](../bridge/repository_worker.py)
+- [Implementation report](../docs/verification/2026-11-01-persistent-markdown-context-implementation-report.md)

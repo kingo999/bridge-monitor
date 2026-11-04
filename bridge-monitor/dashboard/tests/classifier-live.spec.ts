@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
 
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'ignoreErrors' }); });
+
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/services', route => route.fulfill({ json: {
+    checked_at: new Date().toISOString(), services: { claude: true, qwen: true, gemma: true },
+  } }));
+});
+
 test('classifier updates without filter changes, pauses, resumes and clears stale activity on failure', async ({ page }) => {
   let completed = 0;
   let active = true;
@@ -26,6 +34,7 @@ test('classifier updates without filter changes, pauses, resumes and clears stal
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await page.getByRole('tab', { name: 'Experiments', exact: true }).click();
   const panel = page.getByRole('region', { name: 'Gemma classifier shadow cohort' });
   await panel.locator('summary').click();
   const submitted = panel.locator('.shadow-stats div').filter({ hasText: 'Submitted' }).locator('strong');

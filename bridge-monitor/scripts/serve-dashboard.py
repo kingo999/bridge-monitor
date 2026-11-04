@@ -55,7 +55,10 @@ def main() -> None:
                      preview_max_bytes=int(settings["dashboard"].get("preview_max_bytes", 16384)),
                      timeline_head_events=int(settings["dashboard"].get("timeline_head_events", 100)),
                      timeline_tail_events=int(settings["dashboard"].get("timeline_tail_events", 400)),
-                     work_item_max_limit=int(settings["dashboard"].get("work_item_max_limit", 100)))
+                     work_item_max_limit=int(settings["dashboard"].get("work_item_max_limit", 100)),
+                     # Validated by create_app; omitted -> None (decision filter disabled).
+                     design_mode_owner_id=settings["dashboard"].get("design_mode_owner_id"),
+                     classifier_config_path=settings["dashboard"].get("classifier_config_path"))
     pid_file = os.environ.get("BRIDGE_MONITOR_SERVER_PID_FILE")
     record = None
     if pid_file:

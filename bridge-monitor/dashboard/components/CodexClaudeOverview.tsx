@@ -1,13 +1,19 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { api, type CohortFilters } from '@/lib/api';
 import type { CodexClaudeEfficiency, CodexClaudeEfficiencyGroup, CodexClaudeOutcome, CodexClaudeReport, CodexClaudeRow } from '@/lib/contracts.generated';
+import { auditRequest, type AuditCoverage, type AuditLaunch } from '@/lib/audit';
 import ModelBreakdownChart from './ModelBreakdownChart';
 
-type Props = { filters: CohortFilters; refreshKey: string; onSelect: (id: string) => void; paused: boolean };
+type Props = { filters: CohortFilters; refreshKey: string; onSelect: (id: string) => void; paused: boolean; orchestration?: ReactNode; onAudit?: (launch: AuditLaunch) => void };
 const unknown = (value: string | number | null | undefined) => value == null ? 'Unknown' : value;
-export default function CodexClaudeOverview({ filters, refreshKey, onSelect, paused }: Props) {
-  const [report, setReport] = useState<CodexClaudeReport | null>(null);
+export default function CodexClaudeOverview({ filters, refreshKey, onSelect, paused, onAudit, orchestration }: Props) {
+  const [report, setReport] = useState<(CodexClaudeReport & { audit_token?: string }) | null>(null);
+  const [coverage, setCoverage] = useState<AuditCoverage | null>(null);
+  useEffect(() => { const controller = new AbortController();
+    auditRequest<AuditCoverage>('status', undefined, controller.signal).then(setCoverage).catch(() => {});
+    return () => controller.abort();
+  }, [refreshKey]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [extra, setExtra] = useState({ category: '', project: '', model: '', profile: '', policy_digest: '', evidence: '' });
@@ -16,7 +22,7 @@ export default function CodexClaudeOverview({ filters, refreshKey, onSelect, pau
   useEffect(() => {
     if (paused && report) return;
     const controller = new AbortController();
-    const params = new URLSearchParams({ origin: filters.origin, completed_only: String(filters.completedOnly), ...extra });
+    const params = new URLSearchParams({ audit_snapshot: 'true', origin: filters.origin, completed_only: String(filters.completedOnly), ...extra });
     if (filters.createdFrom) params.set('created_from', new Date(filters.createdFrom).toISOString());
     if (filters.createdUntil) params.set('created_until', new Date(filters.createdUntil).toISOString());
     setLoading(true);
@@ -53,6 +59,17 @@ export default function CodexClaudeOverview({ filters, refreshKey, onSelect, pau
       <div><strong>{time(report?.latency_seconds.median)}</strong><span>Median duration · n={report?.latency_seconds.samples ?? 0}</span></div>
       <div><strong>{time(report?.latency_seconds.p95)}</strong><span>p95 duration</span></div>
       <div><strong>{report ? '$' + Number(report.cost.known_subtotal).toFixed(4) : 'Unknown'}</strong><span>Known API-equivalent subtotal</span></div>
+    </div>
+    {orchestration}
+    {report?.audit_token && <div className="audit-summary">
+      <span>Audit · </span><button type="button" onClick={() => onAudit?.({ key: Date.now(), view: 'executions', token: report.audit_token })}>{report.total} recorded workflows</button>
+      <span> · </span><button type="button" onClick={() => onAudit?.({ key: Date.now(), view: 'executions', token: report.audit_token, usage: 'yes' })}>
+        {report.rows.filter(r => Object.values(r.usage).some(v => v != null)).length} with measured usage</button>
+      <button type="button" onClick={() => onAudit?.({ key: Date.now(), view: 'executions', token: report.audit_token })}>View audit</button>
+    </div>}
+    <div className="audit-summary"><button type="button" onClick={() => onAudit?.({ key: Date.now(), view: 'network' })}>Network audit</button>
+      <span>One local journal / host · Last successful sync {coverage?.synced_at ? new Date(coverage.synced_at).toLocaleString() : 'Unknown'}
+      {' · '}Last health signal processed {coverage?.health_processed_at ? new Date(coverage.health_processed_at).toLocaleString() : 'Unknown'} (consumer time)</span>
     </div>
     <div className="cc-explanation"><p>{report?.scope_note || 'Missing measurements stay unknown; completion is separate from verified correctness.'}</p>
       <p>Cost evidence: {report?.cost.known_workflows ?? 0} workflow(s) with receipts · {report?.cost.unknown_workflows ?? 0} unknown.

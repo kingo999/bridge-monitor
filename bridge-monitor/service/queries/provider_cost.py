@@ -2,11 +2,11 @@
 from collections import defaultdict
 from decimal import Decimal,InvalidOperation
 
-def provider_quotes(conn, as_of, *, created_from=None, exclude_calls=()):
+def provider_quotes(conn, as_of, *, created_from=None, exclude_calls=(), work_item_ids=None):
     rows=conn.execute("SELECT e.model_execution_id,e.call_id,e.work_item_id,e.payload,e.occurred_at "
         "FROM events e JOIN calls c USING(call_id) JOIN content_objects content "
         "ON content.content_id=e.payload->>'content_id' "
-        "WHERE e.event_type='usage.reported' AND e.model_execution_id IS NOT NULL "
+        "WHERE (%s::text[] IS NULL OR e.work_item_id=ANY(%s)) AND e.event_type='usage.reported' AND e.model_execution_id IS NOT NULL "
         "AND c.execution_mode='production' AND e.capture_completeness='complete' "
         "AND cardinality(e.unresolved_references)=0 "
         "AND e.payload->>'provenance'='claude_cli_result' AND e.payload->>'scope'='execution' "
@@ -14,7 +14,7 @@ def provider_quotes(conn, as_of, *, created_from=None, exclude_calls=()):
         "AND content.sha256=e.payload->>'receipt_sha256' "
         "AND e.occurred_at<=%s AND e.received_at<=%s "
         "AND (%s::timestamptz IS NULL OR e.occurred_at>=%s) "
-        "ORDER BY e.occurred_at,e.event_id",(as_of,as_of,created_from,created_from)).fetchall()
+        "ORDER BY e.occurred_at,e.event_id",(work_item_ids,work_item_ids,as_of,as_of,created_from,created_from)).fetchall()
     groups=defaultdict(list)
     for execution,call,work,payload,observed in rows:
         if call in exclude_calls:continue

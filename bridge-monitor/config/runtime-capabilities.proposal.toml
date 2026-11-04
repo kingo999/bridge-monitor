@@ -28,32 +28,15 @@ max_file_bytes = 524288
 command_timeout_seconds = 500
 
 [repository.roots]
-ideaprojects = 'D:\IdeaProjects'
-mri3 = 'D:\IdeaProjects\mine\mri3'
+ai = 'C:\AI'
 bridge-monitor = 'C:\AI\bridge-monitor'
+ideaprojects = 'D:\IdeaProjects'
 
 [repository.write_prefixes]
 ideaprojects = ["data/", "mine/", "mri/", "neo_performance/", "temp/", "work/"]
-bridge-monitor = ["bridge/", "config/", "contracts/", "dashboard/", "database/", "docs/", "scripts/", "service/", "skynet_agent/", "tests/", "pyproject.toml", "requirements-skynet-agent.txt", "requirements.lock"]
 
-[repository.check_kinds]
-mri3 = "maven"
-bridge-monitor = "bridge-selftest"
-
-[repository.selftest_profiles.bridge-monitor]
-python = 'C:\AI\bridge-monitor\.venv\Scripts\python.exe'
-node = 'C:\Program Files\nodejs\node.exe'
-browser_channel = 'msedge'
-test_dsn_file = 'C:\AI\bridge-monitor\var\secrets\selftest-33d5-20261101.json'
-
-[repository.maven_modules]
-mri3 = []
-
-[repository.isolated_neo4j_test_homes]
-mri3 = 'C:\Users\kian\.Neo4jDesktop2\Data\dbmss\dbms-b6a2fcaa-a4aa-444a-80ad-bbb826c95565'
-
-# MRI3's MCP component is outside the authorized instruction scope. Raw report
-# and database seed directories are excluded from worker file access.
 [repository.denied_prefixes]
-bridge-monitor = ["var/", ".venv/", ".pytest_cache/", ".superpowers/"]
 ideaprojects = ["mine/mri3/mcp/", "mine/mri3/report/", "mine/mri3/seed_db/", "mri/mri-java-services-4/.security-ai-rehearsal/"]
+
+[repository.sql_write_prefixes]
+ideaprojects = ["mri/mri-java-services-3/report-application/src/main/resources/db/"]

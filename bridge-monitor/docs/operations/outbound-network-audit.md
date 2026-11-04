@@ -1,6 +1,34 @@
 # Observe outbound agent traffic on Windows
 
-The collector observes connections and sends on the local Windows host. Bridge hooks add logical application requests and run identities. Records live in a separate SQLite file. The operator selects its location, access permissions and retention. Use a directory accessible only to the collector, Bridge and authorized readers. The database, WAL and related files share that directory.
+The collector observes connections and sends on the local Windows host. Bridge hooks add logical application requests and run identities. The local SQLite journal buffers capture. The production deployment retains its observations and registration, process and policy state in the Bridge PostgreSQL database under the `outbound_audit` schema. Protect the capture directory, including the WAL and related files.
+
+## PostgreSQL retention and recovery
+
+### Audit dashboard
+
+The Codex/Claude overview includes workflow and measured-usage links. Each opens the exact captured overview cohort in the Audit tab. Audit has Executions and Network activity views. Search normally expands the initial recent view to all retained records. An explicitly chosen time restriction stays active. The Match control distinguishes metadata words, exact identifiers/IPs, process/requested-name prefixes and passive DNS aliases.
+
+Queries create session-owned immutable result snapshots, kept for up to 30 minutes. Active result pages survive background overview refreshes. A session can retain 100 active searches. Expiry preserves the visible form so a new search can regenerate results. Full history refers to PostgreSQL retention and disclosed indexing coverage. It includes older records outside the initial recent view.
+
+The dashboard indexes new PostgreSQL observations and affected workflows in bounded background batches. Migration 015 supplies the search and snapshot schema; 016 replaces shared-key invalidations with an append-only queue. Network and execution publication use independent transactions. Failed indexing retries on a later cycle, with pending work and indexed extent shown by the status API.
+
+Last successful sync comes from the importer checkpoint. Last health signal processed is the time the capture consumer handled a health frame. Backlogged or replayed frames can have recent processing times, so the signal does not prove reader liveness or uninterrupted capture. Requested names and passive aliases, recorded policy results, application-reported bytes and observed host-send bytes remain distinct in evidence.
+
+For maintenance, inspect `/api/v1/audit/status` as an authenticated operator. A source ID is either projected as valid metadata or retained as an explicit validation error. The UI never reads or modifies the SQLite buffer. Pausing the dashboard stops its indexer. Its result projections and tokens can be rebuilt from retained source data, with active result tokens expiring during maintenance.
+
+On this installation, `BridgeMonitor-OutboundAudit-PostgresSync` runs under the logged-in operator every minute. It is independent of both host capture tasks. New SQLite rows accumulate during PostgreSQL downtime or logout and are imported on a later successful run. The buffer is append-only in normal operation. Its disk usage still requires monitoring. A separate retention change is needed before pruning or rotating it.
+
+The restricted importer login reads and inserts into the audit tables, updates the sync marker and mutable process/policy state, and uses temporary staging tables. The local PostgreSQL deployment uses loopback trust authentication. Database role grants constrain the importer connection; the PostgreSQL host authentication rules determine which other local clients may claim a role.
+
+Check `Get-ScheduledTaskInfo -TaskName BridgeMonitor-OutboundAudit-PostgresSync` and `SELECT last_id, synced_at FROM outbound_audit.source`. To reconcile all retained fields, from the project root run:
+
+~~~powershell
+.\.venv\Scripts\python.exe -m bridge.audit_pg_sync --settings var\secrets\outbound-pg-sync.json --verify-all
+~~~
+
+Protected settings name the canonical SQLite journal and a DSN for the ingest role. Migration 014 creates the schema. Each import binds the canonical path and filesystem identity, reads one SQLite WAL snapshot, and commits PostgreSQL rows and its checkpoint together. Full verification compares every source and target value in both directions. Ordinary sync compares the observation tail including its previous checkpoint, all registrations, both policy tables and current process state. Invalid keys, unexpected source types, replacement files and conflicting stored observations fail the transaction. A failed import can be retried after resolving the cause. For a source replacement or truncation, preserve both files and reconcile manually before any rebind.
+
+To pause transfer, disable the PostgresSync task and wait for any running import to exit. Capture continues according to its independent settings. Preserve both databases before considering the destructive SQL rollback. The verified pre-import SQLite backup is kept in the protected project backups directory. To recreate the scheduled registration, use `scripts/install-audit-pg-sync.ps1` under the normal operator account after configuring the ingest role and settings.
 
 ## Privileged installation: disabled pending review
 
