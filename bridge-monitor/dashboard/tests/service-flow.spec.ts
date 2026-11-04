@@ -50,7 +50,7 @@ test('ChatGPT tile opens a separate handoff audit', async ({ page }) => {
 });
 
 
-test('unavailable Claude and all attached connectors disappear', async ({ page }) => {
+test('core tiles stay visible with grey idle links when Claude is unavailable', async ({ page }) => {
   await page.route('**/api/v1/services', route => route.fulfill({ json: {
     checked_at: new Date().toISOString(), services: { claude: false, qwen: true, gemma: true },
   } }));
@@ -59,8 +59,12 @@ test('unavailable Claude and all attached connectors disappear', async ({ page }
   await page.getByRole('button', { name: 'Open dashboard', exact: true }).click();
   const flow = page.getByRole('region', { name: 'Current orchestration flow' });
   await expect(flow.locator('[data-id="qwen"]')).toBeVisible();
-  await expect(flow.locator('[data-id="claude"]')).toHaveCount(0);
-  await expect(flow.locator('[data-id="gpt-claude"],[data-id="claude-qwen"]')).toHaveCount(0);
+  await expect(flow.locator('[data-id="chatgpt"],[data-id="gpt"],[data-id="claude"]')).toHaveCount(3);
+  await expect(flow.locator('[data-id="claude"]')).toContainText('Activity unavailable');
+  for (const id of ['chatgpt-gpt', 'gpt-claude', 'claude-qwen']) {
+    await expect(flow.locator(`[data-id="${id}"] .react-flow__edge-path`)).toHaveCSS('stroke', 'rgb(100, 116, 139)');
+    await expect(flow.locator(`[data-id="${id}"]`)).not.toHaveClass(/animated/);
+  }
   await expect(flow.locator('[data-id="gpt-gemma"]')).toBeVisible();
 });
 
@@ -76,7 +80,7 @@ test('pending background readiness is polled promptly without waiting ten second
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard', exact: true }).click();
   const flow = page.getByRole('region', { name: 'Current orchestration flow' });
-  await expect(flow.locator('[data-id="claude"]')).toBeVisible({ timeout: 4000 });
+  await expect(flow.locator('[data-id="claude"] .node-status')).toHaveAttribute('data-state', /^(working|waiting|idle|uncertain)$/, { timeout: 4000 });
   expect(calls).toBeGreaterThan(1);
   await expect(flow.locator('[data-id="qwen"],[data-id="gemma"]')).toHaveCount(0);
 });

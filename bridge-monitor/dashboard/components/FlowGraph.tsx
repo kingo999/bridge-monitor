@@ -5,6 +5,7 @@ import { Background, Controls, Position, ReactFlow, type Edge, type Node, type R
 import type { DashboardStatus, PoolCapacity, WorkerExecution, WorkItem } from '@/lib/contracts.generated';
 import { MarkerType } from '@xyflow/react';
 import { useHandoffPage } from '@/lib/useHandoffPage';
+import { HANDOFF_ACTIVITY_MS, handoffActivityRemaining } from '@/lib/flowActivity';
 import WorkerGroup from './WorkerGroup';
 import { useServiceAvailability } from '@/lib/useServiceAvailability';
 import ClassifierActivity from './ClassifierActivity';
@@ -19,14 +20,29 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
   onHandoffs: () => void;
   paused?: boolean;
 }) {
-  const { page: handoffs, error: handoffError } = useHandoffPage('limit=0', !paused);
+  const { page: handoffs, error: handoffError } = useHandoffPage('limit=1', !paused);
   const total = handoffs?.total;
+  const latestHandoffTime = handoffs?.rows[0]?.time;
+  const handoffAvailable = handoffs?.available === true && !handoffError && !paused;
+  const [handoffNow, setHandoffNow] = useState(() => Date.now());
+  const handoffActive = handoffActivityRemaining(latestHandoffTime, handoffNow, handoffAvailable) > 0;
+  useEffect(() => {
+    const now = Date.now();
+    setHandoffNow(now);
+    const remaining = handoffActivityRemaining(latestHandoffTime, now, handoffAvailable);
+    if (!remaining || !latestHandoffTime) return;
+    const expiresAt = Date.parse(latestHandoffTime) + HANDOFF_ACTIVITY_MS;
+    const timer = setTimeout(() => setHandoffNow(Math.max(Date.now(), expiresAt)), remaining);
+    return () => clearTimeout(timer);
+  }, [latestHandoffTime, handoffAvailable]);
   const services = useServiceAvailability(paused);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [instance, setInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
   const active = capacity?.claude.active ?? status?.active ?? 0;
   const claudeQueued = capacity?.claude.queued ?? status?.queued ?? 0;
   const qwenActive = capacity?.qwen.active ?? 0;
+  const delegateActive = !paused && services.claude && active > 0;
+  const localActive = !paused && services.claude && services.qwen && qwenActive > 0;
   const originState = nodeActivityState({ active: 0, queued: active + claudeQueued,
     available: !!capacity || !!status, paused });
   const qwenState = nodeActivityState({ active: qwenActive, queued: capacity?.qwen.queued ?? 0,
@@ -68,33 +84,39 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
       <NodeActivityStatus state={originState} label={originState === 'waiting' ? 'Waiting for bridge workers' : undefined} /></div> }, type: 'default', draggable: false, style: { width: 160 } },
     { id: 'claude', position: { x: 215, y: 0 }, data: { label: <WorkerGroup active={active} queued={claudeQueued}
       held={capacity?.claude.held_uncertain ?? status?.held_uncertain ?? 0} blocked={status?.blocked ?? 0} executions={executions}
-      expanded={expanded} onToggle={onToggle} onSelect={onSelect} paused={paused} available={!!capacity || !!status} /> }, type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 250 } },
+      expanded={expanded} onToggle={onToggle} onSelect={onSelect} paused={paused} available={services.claude && (!!capacity || !!status)} /> }, type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 250 } },
     { id: 'qwen', position: { x: 515, y: 85 }, data: { label: <div className={`flow-node skynet-node${nodeActivityClass(qwenState)}`}><div className="node-orb qwen">✦</div><strong>Skynet / Qwen</strong><small>RTX 4080 Super · local inference</small>
       <NodeActivityStatus state={qwenState} queued={capacity?.qwen.queued ?? 0} />
       {capacity && <small>{capacity.qwen.active} active · {capacity.qwen.queued} queued · {capacity.qwen.held_uncertain} held uncertain</small>}</div> }, type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 170 } },
     { id: 'gemma', position: { x: 215, y: 265 }, data: { label: <ClassifierActivity activity={activity} failed={failed} paused={paused} /> },
       type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 250 } },
-  ], [total, handoffError, handoffs, onHandoffs, active, claudeQueued, qwenActive, originState, qwenState, status, capacity, executions, expanded, onToggle, onSelect, activity, failed, paused]);
+  ], [total, handoffError, handoffs, onHandoffs, active, claudeQueued, qwenActive, originState, qwenState, status, capacity, executions, expanded, onToggle, onSelect, activity, failed, paused, services.claude]);
   const allEdges = useMemo<Edge[]>(() => [
     { id: 'chatgpt-gpt', source: 'chatgpt', target: 'gpt', label: 'Handoffs',
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#05d7c0' }, style: { stroke: '#05d7c0', strokeWidth: 2 } },
-    { id: 'gpt-claude', source: 'gpt', target: 'claude', label: 'Delegate', animated: !paused && active > 0,
-      style: { stroke: '#05d7c0', strokeWidth: selectedId ? 3 : 2 }, labelStyle: { fill: '#91d7d4' } },
-    { id: 'claude-qwen', source: 'claude', target: 'qwen', label: 'Request / return', animated: !paused && qwenActive > 0,
-      style: { stroke: '#9a80f5', strokeWidth: selectedId && items.find(x => x.work_item_id === selectedId)?.routed ? 3 : 2 },
-      labelStyle: { fill: '#b9aafa' } },
+      animated: handoffActive, ariaLabel: `Handoffs · ${handoffActive ? 'recent activity' : 'idle'}`,
+      markerEnd: { type: MarkerType.ArrowClosed, color: handoffActive ? '#05d7c0' : '#64748b' },
+      style: { stroke: handoffActive ? '#05d7c0' : '#64748b', strokeWidth: 2 },
+      labelStyle: { fill: handoffActive ? '#91d7d4' : '#94a3b8' } },
+    { id: 'gpt-claude', source: 'gpt', target: 'claude', label: 'Delegate', animated: delegateActive,
+      ariaLabel: `Delegate · ${delegateActive ? 'active' : 'idle'}`,
+      markerEnd: { type: MarkerType.ArrowClosed, color: delegateActive ? '#05d7c0' : '#64748b' },
+      style: { stroke: delegateActive ? '#05d7c0' : '#64748b', strokeWidth: selectedId ? 3 : 2 },
+      labelStyle: { fill: delegateActive ? '#91d7d4' : '#94a3b8' } },
+    { id: 'claude-qwen', source: 'claude', target: 'qwen', label: 'Request / return', animated: localActive,
+      style: { stroke: localActive ? '#9a80f5' : '#64748b', strokeWidth: selectedId && items.find(x => x.work_item_id === selectedId)?.routed ? 3 : 2 },
+      labelStyle: { fill: localActive ? '#b9aafa' : '#94a3b8' } },
     { id: 'gpt-gemma', source: 'gpt', target: 'gemma', label: gemmaActive ? 'Observe · processing' : recentResult ? 'Result · recently completed' : 'Observe · advisory',
-      animated: gemmaActive || recentResult, selectable: false, style: { stroke: '#e2ba69', strokeDasharray: '5 5' },
-      labelStyle: { fill: '#e2ba69' } },
-  ], [active, qwenActive, gemmaActive, recentResult, paused, selectedId, items]);
-  const nodes = allNodes.filter(node => node.id === 'chatgpt' || node.id === 'gpt' || services[node.id as keyof typeof services]);
+      animated: gemmaActive || recentResult, selectable: false, style: { stroke: gemmaActive || recentResult ? '#e2ba69' : '#64748b', strokeDasharray: '5 5' },
+      labelStyle: { fill: gemmaActive || recentResult ? '#e2ba69' : '#94a3b8' } },
+  ], [handoffActive, delegateActive, localActive, gemmaActive, recentResult, selectedId, items]);
+  const nodes = allNodes.filter(node => ['chatgpt', 'gpt', 'claude'].includes(node.id) || services[node.id as keyof typeof services]);
   const visibleIds = new Set(nodes.map(node => node.id));
   const edges = allEdges.filter(edge => visibleIds.has(edge.source) && visibleIds.has(edge.target));
   const nodeKey = nodes.map(node => node.id).join(',');
   useEffect(() => { if (instance) void instance.fitView({ padding: 0.12, maxZoom: 1, duration: 0 }); }, [instance, nodeKey]);
   return <section className="panel flow-panel" aria-label="Current orchestration flow">
-    <div className="panel-heading"><div><h2>Live orchestration flow</h2><p>Recorded worker activity · available configured services</p></div>
-      <span className="flow-legend"><i className="dot teal" /> Request <i className="dot violet" /> Return</span></div>
+    <div className="panel-heading"><div><h2>Live orchestration flow</h2><p>Core tiles always visible · connectors reflect observed activity</p></div>
+      <span className="flow-legend"><i className="dot" style={{ background: '#64748b' }} /> Idle <i className="dot teal" /> Request <i className="dot violet" /> Return</span></div>
     <div className="flow-canvas" ref={canvasRef} role="img" aria-label={nodes.map(node => node.id === 'chatgpt' ? 'ChatGPT' : node.id === 'gpt' ? 'GPT / Codex' : node.id === 'qwen' ? 'Skynet / Qwen' : node.id === 'gemma' ? 'Gemma advisory observer' : 'Claude').join(' · ')}>
       <ReactFlow nodes={nodes} edges={edges} fitView fitViewOptions={{ padding: 0.12, maxZoom: 1 }}
         onInit={setInstance}
