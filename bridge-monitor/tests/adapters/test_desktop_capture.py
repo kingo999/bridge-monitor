@@ -137,3 +137,66 @@ def test_hook_diagnostics_are_bounded_and_structural(tmp_path):
         rows = conn.execute('SELECT event,outcome FROM hook_diagnostics').fetchall()
     assert len(rows) == 32
     assert set(rows) == {('PostToolUse', 'no_forward_checkpoint')}
+
+
+def test_active_model_reads_only_current_checkpoint_and_matching_effort(tmp_path):
+    from bridge.desktop_capture import active_desktop_models, capture_hook
+
+    home, path, _, _ = fixture(tmp_path)
+    state = tmp_path / 'capture.sqlite'
+    common = {'session_id': 'session-1', 'turn_id': 'live', 'cwd': str(tmp_path),
+              'transcript_path': str(path), 'model': 'runtime-model'}
+    capture_hook({**common, 'hook_event_name': 'UserPromptSubmit'}, codex_home=home, state_path=state)
+    assert active_desktop_models(state) == [{'model': 'runtime-model', 'effort': None}]
+    calls = []
+
+    def configured(turns):
+        calls.extend(turns)
+        return {('session-1', 'live', 'runtime-model'): 'high'}
+
+    assert active_desktop_models(state, configured) == [
+        {'model': 'runtime-model', 'effort': 'high', 'effort_source': 'last_configured'}]
+    assert calls == [('session-1', 'live', 'runtime-model')]
+    with path.open('ab') as stream:
+        for turn, model, effort in [('other', 'runtime-model', 'high'), ('live', 'other-model', 'max'),
+                                    ('live', 'runtime-model', 'medium')]:
+            frame = {'type': 'turn_context', 'payload': {'turn_id': turn, 'model': model, 'effort': effort}}
+            stream.write((json.dumps(frame) + '\n').encode())
+    capture_hook({**common, 'hook_event_name': 'PostToolUse', 'tool_name': 'Bash'},
+                 codex_home=home, state_path=state)
+    calls.clear()
+    assert active_desktop_models(state, configured) == [{'model': 'runtime-model', 'effort': 'medium'}]
+    assert calls == []
+    capture_hook({**common, 'hook_event_name': 'Stop'}, codex_home=home, state_path=state)
+    assert active_desktop_models(state) == []
+
+
+def test_desktop_effort_written_before_prompt_hook_uses_previous_stop_checkpoint(tmp_path):
+    from bridge.desktop_capture import active_desktop_models, capture_hook
+
+    home, path, _, _ = fixture(tmp_path)
+    state = tmp_path / 'capture.sqlite'
+    common = {'session_id': 'session-1', 'cwd': str(tmp_path),
+              'transcript_path': str(path), 'model': 'runtime-model'}
+
+    def hook(event, turn):
+        capture_hook({**common, 'hook_event_name': event, 'turn_id': turn},
+                     codex_home=home, state_path=state)
+
+    def append(kind, **payload):
+        with path.open('ab') as stream:
+            stream.write((json.dumps({'type': kind, 'payload': payload}) + '\n').encode())
+
+    hook('UserPromptSubmit', 'previous')
+    append('response_item', type='message')
+    hook('Stop', 'previous')
+    append('event_msg', type='task_complete', turn_id='previous')
+    append('event_msg', type='task_started', turn_id='current')
+    append('turn_context', turn_id='previous', model='runtime-model', effort='low')
+    append('turn_context', turn_id='current', model='other-model', effort='max')
+    append('turn_context', turn_id='current', model='runtime-model', effort='medium')
+    hook('UserPromptSubmit', 'current')
+
+    configured = {('session-1', 'current', 'runtime-model'): 'high'}
+    assert active_desktop_models(state, lambda _: configured) == [
+        {'model': 'runtime-model', 'effort': 'medium'}]

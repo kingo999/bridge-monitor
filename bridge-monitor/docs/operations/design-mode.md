@@ -12,7 +12,7 @@ Monitor: `service/http/query.py` (`/api/v1/design-mode/*`). Context: `.ai-contex
 
 - **Parent-only, single operator.** The tools exist only in the `parent` MCP audience. The
   Claude child audience still has only `delegate_local_analysis`. The owner is derived by the
-  host as `<producer_id>@<OS account>`; no tool accepts an owner, review, model, content or
+  host as `<producer_id>@<OS account>`; no tool accepts an owner, review, worker model, content or
   write-scope argument. Another parent process cannot read, list or change your workflows.
 - **Read-only project scope.** `design_mode_submit` accepts only an exact registered
   `repository_id` + `project_root` whose scoped policy is read-only with no write prefixes or
@@ -30,7 +30,7 @@ Monitor: `service/http/query.py` (`/api/v1/design-mode/*`). Context: `.ai-contex
 
 | Tool | Signature | Use |
 | --- | --- | --- |
-| `design_mode_submit` | `(opt_in: bool, repository_id: str, project_root: str, request_key: str, brief: str)` | Start. Requires `opt_in=true`. Reusing the same key with the same payload returns the same workflow/iteration. Reusing it with a changed payload returns `conflict`. |
+| `design_mode_submit` | `(opt_in: bool, repository_id: str, project_root: str, request_key: str, brief: str, chat_model=None, chat_effort=None)` | Start. Requires `opt_in=true`. Reusing the same key with the same payload returns the same workflow/iteration. Reusing it with a changed payload returns `conflict`. |
 | `design_mode_status` | `(workflow_id: str)` | Reconcile and report with `next_action`. Never dispatches. |
 | `design_mode_list` | `()` | Your workflows only. |
 | `design_mode_read_evidence` | `(workflow_id, operation, path=None, start_line=1, max_lines=160, text=None, prefix="", pattern="*")` | `read_file`, `find_files`, `search_text` and `git_status` only, and only while `awaiting_planner`. `read_file` hashes are used for staleness checks. |
@@ -38,10 +38,15 @@ Monitor: `service/http/query.py` (`/api/v1/design-mode/*`). Context: `.ai-contex
 | `design_mode_pause` / `design_mode_resume` | `(workflow_id, expected_version: int)` | Pause works only while `awaiting_planner`. Resume returns the workflow to `awaiting_planner`, except when it is paused awaiting a revised brief (`revised_brief_required` conflict). |
 | `design_mode_retrieve` | `(workflow_id, iteration: int \| None = None)` | Returns the stored brief/plan/review/package, hops and evidence, plus the additive `decision_document` and `delivery_instructions` (see Delivery). It never starts a worker or creates an iteration. |
 | `design_mode_confirm_delivery` | `(workflow_id, iteration: int, package_sha256: str)` | Records the delivery receipt after the completed decision document's link and the inline summary were shown in Chat. The digest must match. Idempotent. Arguments unchanged. |
-| `design_mode_decide` | `(workflow_id, iteration, expected_version, decision, reason, revised_brief=None, request_key=None)` | `accept`, `reject` or `revise`. Revise without `revised_brief`/`request_key` pauses awaiting a revised brief. Cancel is a separate tool. |
+| `design_mode_decide` | `(workflow_id, iteration, expected_version, decision, reason, revised_brief=None, request_key=None, chat_model=None, chat_effort=None)` | `accept`, `reject` or `revise`. Revise without `revised_brief`/`request_key` pauses awaiting a revised brief. Cancel is a separate tool. |
 | `design_mode_cancel` | `(workflow_id, expected_version: int, reason: str)` | Owner-scoped cancel. Either fences the review before Claude admission (`cancellation="fenced_before_admission"`) or requests cancellation of the admitted review job only (`"requested"`). `worker_termination_confirmed` is always `false`; only reconciliation proves termination. |
 
 Changing calls take `expected_version`. A stale version returns `state="conflict"` and changes nothing.
+
+When submitting a brief or revised brief from ChatGPT, pass the known composer model and effort
+as `chat_model` and `chat_effort`. Both fields are optional. The flow tile labels them **Last handoff**
+and shows the handoff time on hover. The fields are included in request-key matching and stored
+with the corresponding audit record. They describe the caller's selection and have no routing effect.
 
 ## Submit and review
 

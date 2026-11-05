@@ -3,14 +3,20 @@
 import hashlib
 import json
 import os
+import re
 import sqlite3
 import uuid
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
 from contracts.direct_execution import CodexTurnReceipt
 
 MAX_RANGE = 8 * 1024 * 1024
+FLOW_CONTEXT_BYTES = 256 * 1024
+DESKTOP_STATE_PATH = Path(__file__).resolve().parents[1] / 'var/spool/codex-desktop.sqlite'
+FLOW_MODEL = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:/+@-]{0,127}')
+FLOW_EFFORTS = ('none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra')
 DELEGATION = {"mcp__bridge_monitor__route_work", "mcp__bridge_monitor__delegate_claude",
               "mcp__claude_implementer_internal__implement_changes",
               "mcp__claude_implementer_internal__review_changes", "spawn_agent", "Agent", "Task"}
@@ -150,6 +156,121 @@ def _state(path):
     return conn
 
 
+def _flow_context(path, offset, turn, model, *, end=None):
+    limit = FLOW_CONTEXT_BYTES if end is None else min(FLOW_CONTEXT_BYTES, end - offset)
+    with path.open('rb') as stream:
+        stream.seek(offset)
+        raw = stream.read(limit)
+    effort = None
+    for line in raw.splitlines(keepends=True):
+        if not line.endswith(b'\n'):
+            break
+        frame = json.loads(line)
+        if frame.get('type') != 'turn_context':
+            continue
+        context = frame.get('payload') or {}
+        value = context.get('effort')
+        if context.get('turn_id') == turn and context.get('model') == model and value in FLOW_EFFORTS:
+            effort = value
+    return effort, len(raw) == FLOW_CONTEXT_BYTES
+
+
+def _observe_prompt_effort(conn, data, path, session, turn):
+    # Codex can write the turn context before UserPromptSubmit. The last terminal
+    # hook on this transcript supplies a forward checkpoint for that metadata.
+    model = data['model']
+    if not isinstance(model, str) or not FLOW_MODEL.fullmatch(model):
+        return
+    previous = conn.execute("SELECT json_extract(data,'$.path'), json_extract(data,'$.next_flow_offset') "
+        "FROM turns WHERE session_id=? ORDER BY rowid DESC LIMIT 1", (session,)).fetchone()
+    if previous is None:
+        return
+    previous_path, start = previous
+    end = data['offset']
+    if previous_path != str(path) or type(start) is not int or not 0 <= start < end:
+        return
+    try:
+        effort, _ = _flow_context(path, start, turn, model, end=end)
+        if effort is not None:
+            data['flow_effort'] = effort
+    except (AttributeError, OSError, ValueError):
+        pass  # Optional label. The regular post-tool capture can still observe effort.
+
+
+def _checkpoint_next_flow(data, payload, codex_home, session):
+    supplied = payload.get('transcript_path')
+    if not isinstance(supplied, str):
+        return
+    try:
+        path, header = transcript_header(supplied, codex_home, session)
+        if str(path) != data['path'] or header.get('originator') != 'Codex Desktop':
+            return
+        with path.open('rb') as stream:
+            end = stream.seek(0, os.SEEK_END)
+            if end <= data['offset']:
+                return
+            stream.seek(end - 1)
+            if stream.read(1) == b'\n':
+                data['next_flow_offset'] = end
+    except (AttributeError, OSError, ValueError):
+        pass  # Closing the turn does not depend on optional flow metadata.
+
+
+def _observe_flow_model(data, payload, codex_home, session, turn, now):
+    if data['ended_at']:
+        return
+    model = payload.get('model')
+    if not isinstance(model, str) or not FLOW_MODEL.fullmatch(model):
+        return
+    if model != data.get('flow_model', data['model']):
+        data.update(flow_effort=None, flow_context_exhausted=False)
+    data.update(flow_model=model, flow_seen_at=now)
+    if data.get('flow_effort') or data.get('flow_context_exhausted'):
+        return
+    try:
+        path, header = transcript_header(data['path'], codex_home, session)
+        if header.get('originator') != 'Codex Desktop':
+            return
+        effort, exhausted = _flow_context(path, data['offset'], turn, model)
+        data.update(flow_effort=effort, flow_context_exhausted=exhausted)
+    except (AttributeError, OSError, ValueError):
+        # Format changes affect the optional label only.
+        pass
+
+
+def active_desktop_models(state_path, configured_lookup=None):
+    """Project recent live model settings from the local spool without opening transcripts."""
+    try:
+        uri = Path(state_path).resolve().as_uri() + '?mode=ro'
+        with closing(sqlite3.connect(uri, uri=True, timeout=0.1)) as conn:
+            rows = conn.execute("""WITH recent AS (
+                    SELECT session_id,turn_id,rowid,data FROM turns ORDER BY rowid DESC LIMIT 64
+                ), latest AS (
+                    SELECT session_id,turn_id,data,rowid,
+                           row_number() OVER(PARTITION BY session_id ORDER BY rowid DESC) AS rank
+                    FROM recent
+                ) SELECT session_id,turn_id,COALESCE(json_extract(data,'$.flow_model'),json_extract(data,'$.model')),
+                         json_extract(data,'$.flow_effort') FROM latest
+                WHERE rank=1 AND json_extract(data,'$.ended_at') IS NULL
+                  AND julianday(COALESCE(json_extract(data,'$.flow_seen_at'),json_extract(data,'$.started_at')))
+                      BETWEEN julianday('now','-30 minutes') AND julianday('now')
+                ORDER BY rowid DESC""").fetchall()
+    except (OSError, sqlite3.Error):
+        return []
+    observed = {(session, turn, model): effort if effort in FLOW_EFFORTS else None
+                for session, turn, model, effort in rows if isinstance(model, str) and FLOW_MODEL.fullmatch(model)}
+    configured = configured_lookup([key for key, effort in observed.items() if effort is None]) if configured_lookup else {}
+    models = {}
+    for key, effort in observed.items():
+        model = key[2]
+        fallback = configured.get(key) if effort is None else None
+        if fallback in FLOW_EFFORTS:
+            models[(model, fallback, 'last_configured')] = dict(model=model, effort=fallback, effort_source='last_configured')
+        else:
+            models[(model, effort, None)] = dict(model=model, effort=effort)
+    return list(models.values())
+
+
 def capture_hook(payload, *, codex_home, state_path):
     """Checkpoint structural fields only; prompt/tool bodies are never retained."""
     event = payload.get('hook_event_name')
@@ -158,6 +279,7 @@ def capture_hook(payload, *, codex_home, state_path):
         return {'state': 'ignored', 'reason': 'turn_identity_unavailable'}
     now = datetime.now(timezone.utc).isoformat()
     with _state(state_path) as conn:
+        conn.execute('BEGIN IMMEDIATE')
         row = conn.execute('SELECT data FROM turns WHERE session_id=? AND turn_id=?', (session, turn)).fetchone()
         if event == 'UserPromptSubmit':
             if row:
@@ -175,6 +297,7 @@ def capture_hook(payload, *, codex_home, state_path):
                 model=payload.get('model'), started_at=now, ended_at=None,
                 delegated=False, unknown_tool=False, interrupted=False, recorded=False,
                 finalized=False, attempts=0)
+            _observe_prompt_effort(conn, data, path, session, turn)
         elif not row:
             return {'state': 'ignored', 'reason': 'no_forward_checkpoint'}
         else:
@@ -183,8 +306,11 @@ def capture_hook(payload, *, codex_home, state_path):
                 kind = tool_kind(str(payload.get('tool_name', '')))
                 data['delegated'] |= kind == 'delegated'
                 data['unknown_tool'] |= kind == 'unknown'
+                _observe_flow_model(data, payload, codex_home, session, turn, now)
             elif event in ('Stop', 'Interrupt'):
-                data['ended_at'] = data['ended_at'] or now
+                if not data['ended_at']:
+                    _checkpoint_next_flow(data, payload, codex_home, session)
+                    data['ended_at'] = now
                 data['interrupted'] |= event == 'Interrupt'
             else:
                 return {'state': 'ignored'}

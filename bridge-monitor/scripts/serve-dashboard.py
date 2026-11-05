@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 from service.http.app import create_app  # noqa: E402
 from bridge.telemetry.claude_subscription import subscription_producer_ids  # noqa: E402
+from bridge.desktop_capture import DESKTOP_STATE_PATH  # noqa: E402
 
 
 def main() -> None:
@@ -70,6 +71,7 @@ def main() -> None:
                      # Validated by create_app; omitted -> None (decision filter disabled).
                      design_mode_owner_id=settings["dashboard"].get("design_mode_owner_id"),
                      classifier_config_path=settings["dashboard"].get("classifier_config_path"),
+                     desktop_state_path=DESKTOP_STATE_PATH,
                      local_test_login_origin=local_test_origin)
     pid_file = os.environ.get("BRIDGE_MONITOR_SERVER_PID_FILE")
     record = None

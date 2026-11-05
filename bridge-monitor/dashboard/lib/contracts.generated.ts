@@ -82,7 +82,10 @@ export type Snapshot = {
 export type PoolCapacity = { active: number; queued: number; held_uncertain: number };
 export type WorkerExecution = { call_id: string; work_item_id: string | null;
   worker_instance_id: string | null; requested_model: string | null;
-  reported_model: string | null; occurred_at: string; waiting_on_local?: boolean };
+  reported_model: string | null; occurred_at: string; waiting_on_local?: boolean;
+  active?: boolean; configured_effort?: string | null };
+export type FlowModelSetting = { model: string; effort: string | null };
+export type CodexFlowModelSetting = FlowModelSetting & { effort_source?: 'last_configured' };
 export type MetricValue = { numerator: number; denominator: number; percent: number | null };
 export type DistributionSlice = { key: string; label: string; count: number; percent: number | null };
 export type Distribution = { title: string; basis: string; total: number; slices: DistributionSlice[] };

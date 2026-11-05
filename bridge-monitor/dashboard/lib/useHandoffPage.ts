@@ -4,6 +4,7 @@ import { auditRequest } from './audit';
 type HandoffPage = {
   available: boolean; total: number | null; next: string | null;
   rows: { id: string; time: string; workflow_id: string; iteration: number; action: string }[];
+  chat_selection?: { model?: string; effort?: string; time: string };
 };
 
 export function useHandoffPage(query: string, active = true) {

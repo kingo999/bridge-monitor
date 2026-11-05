@@ -309,6 +309,12 @@ def _design_handoffs(dsn: str, workflow: str, before: int | None, limit: int) ->
         if not _design_mode_available(conn):
             return {"available": False, "total": None, "rows": [], "next": None}
         total = conn.execute("SELECT count(*)" + source, params).fetchone()[0]
+        last_brief = None
+        if limit and before is None:
+            brief_scope = " AND workflow_id=%s" if workflow else ""
+            last_brief = conn.execute("SELECT recorded_at,detail->'chat_selection' FROM dm_audit "
+                "WHERE actor='chat' AND action IN ('submit','revise')" + brief_scope +
+                " ORDER BY audit_id DESC LIMIT 1", params).fetchone()
         if before is not None:
             source += " AND audit_id < %s"
             params += (before,)
@@ -317,8 +323,14 @@ def _design_handoffs(dsn: str, workflow: str, before: int | None, limit: int) ->
                             + source + " ORDER BY a.audit_id DESC LIMIT %s",
                             params + (limit + 1,)).fetchall() if limit else []
     keys = ("id", "time", "workflow_id", "iteration", "action")
-    return {"available": True, "total": total, "rows": [dict(zip(keys, r)) for r in rows[:limit]],
-            "next": rows[limit - 1][0] if limit and len(rows) > limit else None}
+    report = {"available": True, "total": total, "rows": [dict(zip(keys, r)) for r in rows[:limit]],
+              "next": rows[limit - 1][0] if limit and len(rows) > limit else None}
+    if last_brief and isinstance(last_brief[1], dict):
+        selection = {key: last_brief[1][key] for key in ("model", "effort")
+                     if isinstance(last_brief[1].get(key), str)}
+        if selection:
+            report["chat_selection"] = {**selection, "time": last_brief[0]}
+    return report
 
 
 def _design_mode_list(dsn: str, limit: int, repository_id: str | None = None, *,

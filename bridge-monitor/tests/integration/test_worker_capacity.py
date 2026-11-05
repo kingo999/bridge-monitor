@@ -204,9 +204,15 @@ def test_queue_monitor_recovers_from_a_transient_database_failure(capacity, monk
         monitor.close()
 
 
-@pytest.mark.parametrize('terminated,reconciliation_error', [(True,False),(False,False),(True,True)])
-def test_bounded_analysis_exit_reconciles_only_confirmed_termination(capacity, tmp_path, monkeypatch, terminated, reconciliation_error):
-    from bridge.adapters.base import AdapterResult
+@pytest.mark.parametrize('terminated,reconciliation_error,fault_event', [
+    (True, False, 'response.delta'), (False, False, 'response.delta'),
+    (True, True, 'response.delta'), (True, False, 'response.completed'),
+])
+def test_bounded_analysis_exit_reconciles_despite_telemetry_timeout(
+        capacity, tmp_path, monkeypatch, terminated, reconciliation_error, fault_event):
+    import json
+    from contextlib import contextmanager
+    from bridge.adapters.claude_cli import ClaudeCLIAdapter
     from bridge.mcp_server import BridgeCoordinator
     from bridge.telemetry.emitter import TelemetryEmitter
     from bridge.telemetry.spool import DurableSpool
@@ -220,14 +226,39 @@ def test_bounded_analysis_exit_reconciles_only_confirmed_termination(capacity, t
     class Collector:
         def ingest_batch(self, producer, events, content):
             return ingest_batch(dsn, producer, events, content)
-    emitter = TelemetryEmitter(DurableSpool(tmp_path/'spool.sqlite', limit_bytes=100000),
-        Collector(), producer_id='capacity-'+str(uuid.uuid4()), incarnation='boot')
-    class FailedAnalysis:
-        profile_models = ('claude-sonnet-5-5',)
-        def run_profile(self, lease, task, prompt, emitter, *, profile):
-            return AdapterResult(state='uncertain', reported_model='claude-sonnet-5-5',
-                uncertainty='execution_outcome_unconfirmed', terminated=terminated)
-    service = BridgeCoordinator(dsn, base, version, emitter, claude_adapter=FailedAnalysis())
+    class ContendedSpool(DurableSpool):
+        drain_blocked = False
+
+        def append(self, event, content=None):
+            stored = super().append(event, content)
+            if event.event_type == fault_event:
+                self.drain_blocked = True
+            return stored
+
+        @contextmanager
+        def drain_lock(self):
+            if self.drain_blocked:
+                raise TimeoutError('spool drain lock unavailable')
+            with super().drain_lock():
+                yield
+
+    class LocalStream:
+        terminated = False
+
+        def stream(self, command, prompt):
+            try:
+                yield json.dumps({'type': 'system', 'model': 'claude-sonnet-5-5'})
+                yield json.dumps({'type': 'stream_event', 'event': {'type': 'content_block_delta',
+                    'delta': {'type': 'text_delta', 'text': 'partial answer'}}})
+                yield json.dumps({'type': 'result', 'result': 'offline answer'})
+            finally:
+                self.terminated = terminated
+
+    spool = ContendedSpool(tmp_path/'spool.sqlite', limit_bytes=100000)
+    emitter = TelemetryEmitter(spool, Collector(), producer_id='capacity-'+str(uuid.uuid4()), incarnation='boot')
+    adapter = ClaudeCLIAdapter(LocalStream(), executable='claude', model='claude-sonnet-5-5',
+        mcp_config_path=tmp_path/'mcp.json', profile_models=('claude-sonnet-5-5',))
+    service = BridgeCoordinator(dsn, base, version, emitter, claude_adapter=adapter)
     if reconciliation_error:
         def unavailable(*args, **kw):
             raise psycopg.OperationalError('synthetic reconciliation outage')
@@ -243,6 +274,7 @@ def test_bounded_analysis_exit_reconciles_only_confirmed_termination(capacity, t
              Jsonb({'policy_snapshot':extension.model_dump(mode='json'),'selected_profile':'sonnet'})))
     try:
         result = service.run_one('claude', call_id=old)
+        assert spool.pending_count() == 2  # Original event and failure diagnostic remain durable.
         confirmed = terminated and not reconciliation_error
         assert result['state'] == ('terminated' if confirmed else 'uncertain')
         if confirmed:

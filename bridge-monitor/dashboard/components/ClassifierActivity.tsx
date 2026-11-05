@@ -1,8 +1,10 @@
 import type { ClassifierActivity as Activity } from '@/lib/api';
+import type { FlowModelSetting } from '@/lib/contracts.generated';
+import { formatFlowModel } from '@/lib/flowActivity';
 import NodeActivityStatus, { nodeActivityClass, nodeActivityState } from './NodeActivityStatus';
 
-export default function ClassifierActivity({ activity, failed, paused }: {
-  activity: Activity | null; failed: boolean; paused: boolean;
+export default function ClassifierActivity({ activity, failed, paused, modelSetting }: {
+  activity: Activity | null; failed: boolean; paused: boolean; modelSetting?: FlowModelSetting;
 }) {
   const state = nodeActivityState({ active: activity?.classifying ?? 0, queued: activity?.queued ?? 0,
     uncertain: activity?.uncertain ?? 0, available: !!activity?.available && !failed, paused });
@@ -10,6 +12,7 @@ export default function ClassifierActivity({ activity, failed, paused }: {
   return <div className={`flow-node gemma-activity${nodeActivityClass(state)}`}
     role="region" aria-label="Gemma advisory activity">
     <div className="node-orb gemma">◈</div><strong>Gemma classifier</strong><small>Advisory only · local inference</small>
+    <small className="flow-model-details">{formatFlowModel(modelSetting?.model, modelSetting?.effort, 'Configured')}</small>
     <NodeActivityStatus state={state} queued={activity?.queued ?? 0}
       label={!paused && !failed && !activity ? 'Loading activity…' : undefined} />
     {!paused && !failed && activity?.available && <>

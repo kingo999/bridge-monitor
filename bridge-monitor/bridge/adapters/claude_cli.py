@@ -2,6 +2,7 @@
 
 import json
 import hashlib
+import logging
 import re
 from decimal import Decimal, InvalidOperation
 import os
@@ -18,6 +19,7 @@ from bridge.adapters.base import AdapterResult, ensure_lease
 
 
 LOCAL_TOOL = "mcp__bridge_monitor__delegate_local_analysis"
+logger = logging.getLogger(__name__)
 
 
 class StreamGuardError(ValueError):
@@ -394,6 +396,8 @@ class ClaudeCLIAdapter:
         local_tool_ids = set()
         provider_error = None
         runner = self.runner.fork(cwd=workspace) if isinstance(self.runner, SubprocessRunner) else self.runner
+        lines = None
+        stream_finished = False
         try:
             config_path = (self.mcp_config_factory(lease) if self.mcp_config_factory
                            else self.mcp_config_path)
@@ -501,49 +505,57 @@ class ClaudeCLIAdapter:
                                          payload={"tool_id": tool[0], "tool_name": tool[1]}, **common)
                 if frame.get("type") == "result":
                     final = frame
+            stream_finished = True
+            usage = capture_provider_usage(final, emitter=emitter, common=common,
+                execution_id=model_execution_id, requested_model=self.model, reported_model=reported)
+            if provider_error and final and final.get('is_error'):
+                emitter.emit(EventType.CALL_FAILED,
+                             payload={'reason': 'provider_api_error', **provider_error}, **common)
+                return AdapterResult(state='failed', reported_model=reported,
+                                     terminated=getattr(runner, 'terminated', False))
+            if (getattr(runner, "cancelled", False) or getattr(runner, "timed_out", False)
+                    or getattr(runner, "returncode", 0)):
+                emitter.emit(EventType.ATTEMPT_UNCERTAIN,
+                             payload={"reason": "claude_exit_unconfirmed", "returncode": runner.returncode},
+                             **common)
+                return AdapterResult(state="uncertain", reported_model=reported,
+                                     uncertainty="execution_cancelled" if getattr(runner, "cancelled", False)
+                                                 else "execution_outcome_unconfirmed",
+                                     terminated=getattr(runner, "terminated", False),
+                                     cancelled=getattr(runner, "cancelled", False))
+            if not final or final.get("is_error") or not isinstance(final.get("result"), str):
+                emitter.emit(EventType.CALL_FAILED, payload={"reason": "no_successful_result"}, **common)
+                return AdapterResult(state="failed", reported_model=reported,
+                                     terminated=getattr(runner, "terminated", False))
+            raw_answer = final["result"]
+            answer, completion_claim = _completion_reply(raw_answer)
+            raw_content_id = str(uuid.uuid4())
+            emitter.emit(EventType.RESPONSE_COMPLETED, body=raw_answer.encode("utf-8"),
+                         content_id=raw_content_id,
+                         requested_model=self.model, reported_model=reported, **common)
+            return AdapterResult(state="completed", answer=answer, reported_model=reported,
+                                 usage=usage, raw_answer=raw_answer,
+                                 raw_content_id=raw_content_id,
+                                 completion_claim=completion_claim,
+                                 local_tool_attempts=len(local_tool_ids),
+                                 terminated=getattr(runner,"terminated",False),
+                                 receipt_sha256=hashlib.sha256(
+                                     json.dumps(final, sort_keys=True).encode()).hexdigest())
         except Exception as exc:
-            if "lines" in locals() and hasattr(lines, "close"):
+            if not stream_finished and hasattr(lines, "close"):
                 lines.close()
-            emitter.emit(EventType.ATTEMPT_UNCERTAIN,
-                         payload={"reason": "claude_stream_lost", "exception_type": type(exc).__name__,
-                                  **(exc.facts if isinstance(exc, StreamGuardError) else {})},
-                         **common)
-            return AdapterResult(state="uncertain", reported_model=reported,
-                                 uncertainty="execution_may_have_run",
-                                 terminated=getattr(runner, "terminated", False),
-                                 cancelled=getattr(runner, "cancelled", False))
-        usage = capture_provider_usage(final, emitter=emitter, common=common,
-            execution_id=model_execution_id, requested_model=self.model, reported_model=reported)
-        if provider_error and final and final.get('is_error'):
-            emitter.emit(EventType.CALL_FAILED,
-                         payload={'reason': 'provider_api_error', **provider_error}, **common)
-            return AdapterResult(state='failed', reported_model=reported,
-                                 terminated=getattr(runner, 'terminated', False))
-        if (getattr(runner, "cancelled", False) or getattr(runner, "timed_out", False)
-                or getattr(runner, "returncode", 0)):
-            emitter.emit(EventType.ATTEMPT_UNCERTAIN,
-                         payload={"reason": "claude_exit_unconfirmed", "returncode": runner.returncode},
-                         **common)
-            return AdapterResult(state="uncertain", reported_model=reported,
-                                 uncertainty="execution_cancelled" if getattr(runner, "cancelled", False)
-                                             else "execution_outcome_unconfirmed",
-                                 terminated=getattr(runner, "terminated", False),
-                                 cancelled=getattr(runner, "cancelled", False))
-        if not final or final.get("is_error") or not isinstance(final.get("result"), str):
-            emitter.emit(EventType.CALL_FAILED, payload={"reason": "no_successful_result"}, **common)
-            return AdapterResult(state="failed", reported_model=reported,
-                                 terminated=getattr(runner, "terminated", False))
-        raw_answer = final["result"]
-        answer, completion_claim = _completion_reply(raw_answer)
-        raw_content_id = str(uuid.uuid4())
-        emitter.emit(EventType.RESPONSE_COMPLETED, body=raw_answer.encode("utf-8"),
-                     content_id=raw_content_id,
-                     requested_model=self.model, reported_model=reported, **common)
-        return AdapterResult(state="completed", answer=answer, reported_model=reported,
-                             usage=usage, raw_answer=raw_answer,
-                             raw_content_id=raw_content_id,
-                             completion_claim=completion_claim,
-                             local_tool_attempts=len(local_tool_ids),
-                             terminated=getattr(runner,"terminated",False),
-                            receipt_sha256=hashlib.sha256(
-                                 json.dumps(final, sort_keys=True).encode()).hexdigest())
+            outcome = AdapterResult(state="uncertain", reported_model=reported,
+                                    uncertainty="execution_may_have_run",
+                                    terminated=getattr(runner, "terminated", False),
+                                    cancelled=getattr(runner, "cancelled", False))
+            try:
+                emitter.emit(EventType.ATTEMPT_UNCERTAIN,
+                             payload={"reason": "claude_result_processing_failed" if stream_finished else "claude_stream_lost",
+                                      "exception_type": type(exc).__name__,
+                                      **(exc.facts if isinstance(exc, StreamGuardError) else {})},
+                             **common)
+            except Exception as diagnostic_error:
+                # Failure to deliver the diagnostic must not hide the worker's exit from the coordinator.
+                logger.warning("Claude failure telemetry unavailable for %s (%s)",
+                               lease.call_id, type(diagnostic_error).__name__)
+            return outcome

@@ -1299,9 +1299,25 @@ class DesignMode:
         sha = self._artifact(conn, workflow_id, iteration, "brief", brief)
         self._hop(conn, workflow_id, iteration, 1, "chat", "codex", "brief", "completed", artifact_sha256=sha)
 
-    def _payload(self, repository_id, project_root, brief):
+    @staticmethod
+    def _chat_selection(model, effort):
+        selection = {}
+        if model is not None:
+            if not isinstance(model, str) or model != model.strip() or not re.fullmatch(
+                    r'[A-Za-z0-9][A-Za-z0-9 ._:/+()-]{0,79}', model):
+                raise ValueError("invalid_chat_selection")
+            selection["model"] = model
+        if effort is not None:
+            if not isinstance(effort, str) or effort.lower() not in {
+                    "auto", "default", "none", "minimal", "light", "low", "medium", "high",
+                    "extra high", "xhigh", "max", "ultra", "standard", "extended"}:
+                raise ValueError("invalid_chat_selection")
+            selection["effort"] = effort
+        return {"chat_selection": selection} if selection else {}
+
+    def _payload(self, repository_id, project_root, brief, **metadata):
         return _dm_sha(json.dumps({"repository_id": repository_id, "project_root": project_root,
-                                   "brief": brief}, sort_keys=True))
+                                   "brief": brief, **metadata}, sort_keys=True))
 
     def _prior_key(self, conn, request_key):
         return conn.execute("SELECT i.workflow_id,i.iteration,i.payload_sha256 FROM dm_iterations i "
@@ -1309,13 +1325,18 @@ class DesignMode:
                             (self.owner_id(), request_key)).fetchone()
 
     # --- caller operations ------------------------------------------------------------
-    def submit(self, *, opt_in, repository_id, project_root, request_key, brief) -> dict:
+    def submit(self, *, opt_in, repository_id, project_root, request_key, brief,
+               chat_model=None, chat_effort=None) -> dict:
         if opt_in is not True:
             return {"state": "rejected", "reason": "explicit_opt_in_required"}
         if not isinstance(request_key, str) or not self.KEY.fullmatch(request_key):
             return {"state": "rejected", "reason": "invalid_request_key"}
         if not isinstance(brief, str) or not brief.strip() or len(brief.encode("utf-8")) > self.MAX_BRIEF_BYTES:
             return {"state": "rejected", "reason": "invalid_brief"}
+        try:
+            metadata = self._chat_selection(chat_model, chat_effort)
+        except ValueError:
+            return {"state": "rejected", "reason": "invalid_chat_selection"}
         owner = self.owner_id()
         try:
             from bridge.repository import approved_root
@@ -1323,7 +1344,7 @@ class DesignMode:
             root = str(approved_root(project_root))
         except (PermissionError, ValueError, OSError, TypeError):
             return {"state": "rejected", "reason": "project_not_approved"}
-        payload = self._payload(repository_id, root, brief)
+        payload = self._payload(repository_id, root, brief, **metadata)
         workflow_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"bridge-monitor:design-mode:{owner}:{request_key}"))
         head = self._head(policy, repository_id)
         with psycopg.connect(self.c.dsn) as conn, conn.transaction():
@@ -1340,7 +1361,7 @@ class DesignMode:
                          (workflow_id, owner, repository_id, root, request_key))
             self._new_iteration(conn, workflow_id, 1, request_key, payload, brief, head)
             self._audit(conn, workflow_id, 1, "chat", "submit", request_key=request_key,
-                        payload_sha256=payload, source_head=head)
+                        payload_sha256=payload, source_head=head, **metadata)
             return self._view(conn, workflow_id, state="submitted", submitted_iteration=1)
 
     def list(self, limit: int = 50) -> dict:
@@ -1764,7 +1785,7 @@ class DesignMode:
         return job is not None and (job[0] not in self.FINISHED_JOB_STATES or job[1] is not False)
 
     def decide(self, workflow_id, *, iteration, expected_version, decision, reason,
-               revised_brief=None, request_key=None) -> dict:
+               revised_brief=None, request_key=None, chat_model=None, chat_effort=None) -> dict:
         if decision not in ("accept", "revise", "reject"):
             raise ValueError("decision must be accept, revise or reject; use design_mode_cancel to cancel")
         if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
@@ -1774,13 +1795,19 @@ class DesignMode:
         payload = head = None
         # revise without brief/key pauses awaiting the revised brief; with them it starts iteration N+1.
         resubmit = decision == "revise" and (revised_brief is not None or request_key is not None)
+        try:
+            metadata = self._chat_selection(chat_model, chat_effort)
+        except ValueError:
+            return self._summary(wf, state="rejected", reason="invalid_chat_selection")
+        if metadata and not resubmit:
+            return self._summary(wf, state="rejected", reason="chat_selection_requires_brief")
         if resubmit:
             if not isinstance(request_key, str) or not self.KEY.fullmatch(request_key):
                 return self._summary(wf, state="rejected", reason="invalid_request_key")
             if (not isinstance(revised_brief, str) or not revised_brief.strip()
                     or len(revised_brief.encode("utf-8")) > self.MAX_BRIEF_BYTES):
                 return self._summary(wf, state="rejected", reason="invalid_brief")
-            payload = self._payload(wf["repository_id"], wf["project_root"], revised_brief)
+            payload = self._payload(wf["repository_id"], wf["project_root"], revised_brief, **metadata)
             try:
                 head = self._head(self._scoped_policy(wf["repository_id"], wf["project_root"]), wf["repository_id"])
             except (PermissionError, ValueError, OSError):
@@ -1817,7 +1844,7 @@ class DesignMode:
                 self._set(conn, wf, "awaiting_planner", "codex", None, iteration=following)
                 self._audit(conn, workflow_id, iteration, "chat", "revise", reason=reason,
                             new_iteration=following, request_key=request_key, payload_sha256=payload,
-                            after_revision_request=wf["status"] == "paused")
+                            after_revision_request=wf["status"] == "paused", **metadata)
             elif decision == "revise":
                 # Same iteration; the reviewed plan stays frozen until the revised brief arrives.
                 self._set(conn, wf, "paused", "chat", self.REVISION_PENDING)
@@ -1950,14 +1977,16 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
 
         @mcp.tool()
         def design_mode_submit(opt_in: bool, repository_id: str, project_root: str,
-                               request_key: str, brief: str) -> dict:
+                               request_key: str, brief: str, chat_model: str | None = None,
+                               chat_effort: str | None = None) -> dict:
             """Opt in to Design Mode for one registered exact project root (read-only).
 
             Requires opt_in=true. A repeated request_key with the same payload returns the same
             workflow/iteration; a changed payload conflicts. The reply's next_action says what to do.
+            Supply chat_model/chat_effort only when the ChatGPT composer selection is known.
             """
             return design.submit(opt_in=opt_in, repository_id=repository_id, project_root=project_root,
-                                 request_key=request_key, brief=brief)
+                                 request_key=request_key, brief=brief, chat_model=chat_model, chat_effort=chat_effort)
 
         @mcp.tool()
         def design_mode_status(workflow_id: str) -> dict:
@@ -2025,15 +2054,17 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
         @mcp.tool()
         def design_mode_decide(workflow_id: str, iteration: int, expected_version: int, decision: str,
                                reason: str, revised_brief: str | None = None,
-                               request_key: str | None = None) -> dict:
+                               request_key: str | None = None, chat_model: str | None = None,
+                               chat_effort: str | None = None) -> dict:
             """Record the user's accept, revise or reject.
 
             Revise without revised_brief/request_key pauses the workflow awaiting a revised brief (same
             iteration). Revise with both starts the next iteration. Identical retries replay the outcome.
+            A revised brief can carry the known ChatGPT composer selection in chat_model/chat_effort.
             """
             return design.decide(workflow_id, iteration=iteration, expected_version=expected_version,
                                  decision=decision, reason=reason, revised_brief=revised_brief,
-                                 request_key=request_key)
+                                 request_key=request_key, chat_model=chat_model, chat_effort=chat_effort)
 
         @mcp.tool()
         def design_mode_cancel(workflow_id: str, expected_version: int, reason: str) -> dict:

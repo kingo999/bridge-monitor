@@ -1424,6 +1424,28 @@ def test_design_handoffs_separate_history(dm_dsn, tmp_path):
     assert read(limit=0)["total"] == 3
 
 
+def test_handoff_settings_are_versioned_with_the_brief_and_report_the_latest_selection(dm_dsn, tmp_path):
+    root = _project(tmp_path)
+    h = Harness(dm_dsn, tmp_path, root)
+    submit = dict(opt_in=True, repository_id="demo", project_root=str(root), request_key=_key(),
+                  brief="Design a cache layer", chat_model="GPT-6 Sol", chat_effort="Extra High")
+    started = h.dm.submit(**submit)
+    assert h.dm.submit(**submit)["state"] == "existing"
+    assert h.dm.submit(**{**submit, "chat_effort": "Light"})["state"] == "conflict"
+    assert h.dm.submit(**{**submit, "chat_effort": "High\nMedium"})["state"] == "rejected"
+    paused = h.dm.pause(started["workflow_id"], expected_version=started["version"])
+    client = _client(dm_dsn)
+    def read():
+        return client.get("/api/v1/audit/design-handoffs", headers={"Authorization": "Bearer " + TOKEN},
+                          params={"limit": 1, "workflow": started["workflow_id"]}).json()
+    page = read()
+    assert page["rows"][0]["action"] == "pause"
+    assert page["chat_selection"]["model"] == "GPT-6 Sol"
+    assert page["chat_selection"]["effort"] == "Extra High"
+    assert page["chat_selection"]["time"]
+    assert paused["status"] == "paused"
+
+
 def _seed_workflow(dsn, owner, status, *, repository_id="demo", project_root="C:/seed", reason=None):
     """Direct row (dm_workflows has no immutability trigger) for states/owners not reachable cheaply."""
     wid = "dm-seed-" + uuid.uuid4().hex

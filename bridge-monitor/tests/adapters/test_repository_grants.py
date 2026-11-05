@@ -148,6 +148,51 @@ def test_nested_root_cannot_escalate_parent_or_select_excluded_project(tmp_path)
         RepositoryPolicy(enabled=True, roots={'first':str(tmp_path),'alias':str(tmp_path)})
 
 
+def test_exact_nested_root_special_writes_require_task_scope_and_keep_legacy_read_only(tmp_path):
+    child = tmp_path/'project'
+    (child/'legacy').mkdir(parents=True)
+    (child/'legacy/Main.java').write_text('legacy')
+    configured = RepositoryPolicy(enabled=True, roots={'outer':str(tmp_path),'child':str(child)},
+        write_prefixes={'outer':['project/']},
+        write_denied_prefixes={'child':['legacy/']},
+        pom_write_paths={'child':['pom.xml','new/pom.xml']},
+        sql_write_prefixes={'child':['new/migrations/']},
+        check_kinds={'child':'maven'}, maven='mvn.cmd', maven_modules={'child':['new']})
+    grant = configured.for_task(task(child,'read-write',repository_ids='child',
+        repository_write_prefixes='{"child":["pom.xml","new/","legacy/"]}'))
+    repo = RepositoryTools(grant, lambda:True)
+    assert repo.read_file('child','legacy/Main.java')['text'] == '1: legacy'
+    repo.write_file('child','pom.xml','<project/>')
+    repo.write_file('child','new/pom.xml','<project/>')
+    repo.write_file('child','new/migrations/V1.sql','SELECT 1;')
+    assert repo.build_command('child','maven','test')[5:8] == ['-pl','new','-am']
+    for path in ('legacy/Main.java','Legacy/New.java','new/other/pom.xml',
+                 'new/package.json','new/migrations-other/V1.sql'):
+        with pytest.raises(PermissionError):
+            repo.path('child',path,write=True)
+
+    narrow = configured.for_task(task(child,'read-write',repository_ids='child',
+        repository_write_prefixes='{"child":["new/src/"]}'))
+    with pytest.raises(PermissionError):
+        RepositoryTools(narrow, lambda:True).path('child','new/pom.xml',write=True)
+
+    parent = configured.for_task(task(tmp_path,'read-write',repository_ids='outer',
+        repository_write_prefixes='{"outer":["project/"]}'))
+    for path in ('project/legacy/Main.java','project/pom.xml','project/new/migrations/V1.sql'):
+        with pytest.raises(PermissionError):
+            RepositoryTools(parent, lambda:True).path('outer',path,write=True)
+
+    with pytest.raises(PermissionError):
+        configured.for_task(task(child/'legacy','read-write',repository_ids='child',
+            repository_write_prefixes='{"child":["Main.java"]}'))
+
+
+@pytest.mark.parametrize('path', ['pom.xml/', 'new/', 'new/package.json', '.mvn/pom.xml'])
+def test_pom_grants_only_accept_exact_maven_build_files(tmp_path, path):
+    with pytest.raises(ValueError):
+        host(tmp_path, pom_write_paths={'mri3':[path]})
+
+
 def test_hardlinked_files_are_not_a_read_escape(tmp_path):
     import os
     root = tmp_path/'root'

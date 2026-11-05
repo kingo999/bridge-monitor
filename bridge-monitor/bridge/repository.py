@@ -150,6 +150,8 @@ class RepositoryPolicy(BaseModel):
     worktree_expirations: dict[str, datetime] = Field(default_factory=dict, exclude_if=lambda value: not value)
     maven_modules: dict[str, list[str]] = Field(default_factory=dict)
     write_prefixes: dict[str, list[str]] = Field(default_factory=dict)
+    write_denied_prefixes: dict[str, list[str]] = Field(default_factory=dict, exclude_if=lambda value: not value)
+    pom_write_paths: dict[str, list[str]] = Field(default_factory=dict, exclude_if=lambda value: not value)
     sql_write_prefixes: dict[str, list[str]] = Field(default_factory=dict)
     security_ai_campaigns: dict[str, list[str]] = Field(default_factory=dict)
     release_rehearsal_commit: str = Field(default="", pattern=r"^(?:[0-9a-f]{40})?$",
@@ -181,7 +183,8 @@ class RepositoryPolicy(BaseModel):
         data = deepcopy(data)
         for field in ('roots', 'lease_roots', 'worktree_origins', 'worktree_expirations',
                       'write_prefixes', 'denied_prefixes', 'check_kinds', 'selftest_profiles',
-                      'sql_write_prefixes', 'security_ai_campaigns', 'maven_modules', 'isolated_neo4j_test_homes'):
+                      'write_denied_prefixes', 'pom_write_paths', 'sql_write_prefixes',
+                      'security_ai_campaigns', 'maven_modules', 'isolated_neo4j_test_homes'):
             for key in expired:
                 data.get(field, {}).pop(key, None)
         return data
@@ -206,10 +209,15 @@ class RepositoryPolicy(BaseModel):
                     raise ValueError('worktree registration must name an explicit root')
                 verify(approved_root(self.roots[key]), approved_root(origin),
                        environment=build_environment(), expires_at=self.worktree_expirations[key])
-        for prefixes in (self.write_prefixes, self.sql_write_prefixes, self.denied_prefixes):
+        for prefixes in (self.write_prefixes, self.sql_write_prefixes, self.denied_prefixes,
+                         self.write_denied_prefixes, self.pom_write_paths):
             for values in prefixes.values():
                 for value in values:
                     valid_prefix(value)
+        for key, paths in self.pom_write_paths.items():
+            if key not in self.roots or any(path.endswith('/') or Path(path).name != 'pom.xml'
+                                           or '.mvn' in path.lower().split('/') for path in paths):
+                raise ValueError('POM write permissions require an exact registered Maven build file')
         if any(not re.fullmatch(r'[A-Za-z0-9_./-]{1,150}', module)
                or '..' in module.split('/') or module.startswith(('/', '-'))
                for modules in self.maven_modules.values() for module in modules):
@@ -255,6 +263,8 @@ class RepositoryPolicy(BaseModel):
             owners[key] = min((k for k,p in registered.items() if origin.is_relative_to(p)),
                               key=lambda k:len(registered[k].parts))
         denied = {}
+        write_denied = {}
+        entirely_write_protected = set()
         for key,root in selected.items():
             parts = source_selected[key].relative_to(registered[owners[key]]).parts
             if any(s.lower() in DENIED_PARTS or s.lower().startswith(('.env','env-local'))
@@ -273,6 +283,14 @@ class RepositoryPolicy(BaseModel):
                         raise PermissionError('worktree origin is excluded by host policy')
                     if blocked.is_relative_to(source_root):
                         exclusions.add(blocked.relative_to(source_root).as_posix() + ('/' if prefix.endswith('/') else ''))
+                for prefix in self.write_denied_prefixes.get(registered_id, []):
+                    blocked = base / prefix.rstrip('/')
+                    for location in (root, source_root):
+                        if location.is_relative_to(blocked):
+                            entirely_write_protected.add(key)
+                        elif blocked.is_relative_to(location):
+                            relative = blocked.relative_to(location).as_posix()
+                            write_denied.setdefault(key, set()).add(relative + ('/' if prefix.endswith('/') else ''))
             denied[key] = sorted(exclusions)
         writes = {}
         if access == 'read-write':
@@ -281,6 +299,8 @@ class RepositoryPolicy(BaseModel):
                 if not isinstance(requested, dict) or not requested or set(requested) - set(ids):
                     raise ValueError('selected-root write scopes required')
                 for key, prefixes in requested.items():
+                    if key in entirely_write_protected:
+                        raise PermissionError('repository project is read-only by host policy')
                     if not isinstance(prefixes, list) or not prefixes:
                         raise ValueError('nonempty prefix lists required')
                     for prefix in prefixes:
@@ -306,11 +326,15 @@ class RepositoryPolicy(BaseModel):
             'worktree_origins':worktree_origins,
             'worktree_expirations':{k:self.worktree_expirations[k] for k in worktree_origins},
             'denied_prefixes':denied,
+            'write_denied_prefixes':{k:sorted(write_denied[k]) for k in writes if k in write_denied},
             'isolated_neo4j_test_homes':{k:self.isolated_neo4j_test_homes[k] for k in writes
                                         if k in exact and k in self.isolated_neo4j_test_homes},
             'release_rehearsal_commit': self.release_rehearsal_commit if rehearsal else '',
             'write_prefixes':writes,
-            'sql_write_prefixes':({k:list(self.sql_write_prefixes.get(k, [])) for k in exact if owners[k]==k}
+            'pom_write_paths':{k:list(self.pom_write_paths[k]) for k in exact & writes.keys()
+                               if k in self.pom_write_paths},
+            'sql_write_prefixes':({k:list(self.sql_write_prefixes.get(k, [])) for k in exact
+                                   if owners[k]==k or k in writes and k in self.sql_write_prefixes}
                                   if access == 'read-write' else {}),
             'security_ai_campaigns':({k:list(self.security_ai_campaigns.get(k, [])) for k in writes if k in exact and owners[k]==k}
                                       if access == 'read-write' else {}),
@@ -389,11 +413,16 @@ class RepositoryTools:
         if not target.is_relative_to(root):
             raise PermissionError('repository containment failed')
         if write:
+            if any(within_prefix(lower, prefix.lower())
+                   for prefix in self.policy.write_denied_prefixes.get(repository, [])):
+                raise PermissionError('repository component is read-only by host policy')
             allowed = self.policy.write_prefixes.get(repository)
             if not allowed or not any(within_prefix(relative, prefix)
                                    for prefix in allowed):
                 raise PermissionError('write is outside the task file scope')
-            if target.name.lower() in {'pom.xml','package.json','pnpm-lock.yaml','package-lock.json'} or '.mvn' in parts:
+            pom_granted = relative in self.policy.pom_write_paths.get(repository, [])
+            if (target.name.lower() in {'package.json','pnpm-lock.yaml','package-lock.json'}
+                    or '.mvn' in lower.split('/') or target.name.lower() == 'pom.xml' and not pom_granted):
                 raise PermissionError('build descriptor mutation is not granted')
             sql_granted = (target.suffix.lower() == '.sql' and any(
                 prefix.endswith('/') and relative.startswith(prefix)

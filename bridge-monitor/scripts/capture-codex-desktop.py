@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from bridge.desktop_capture import capture_hook, flush_capture, tool_kind, _state  # noqa: E402
+from bridge.desktop_capture import DESKTOP_STATE_PATH, capture_hook, flush_capture, tool_kind, _state  # noqa: E402
 
 
 def diagnostic(state, event, outcome):
@@ -28,7 +28,7 @@ def diagnostic(state, event, outcome):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--codex-home', required=True, type=Path)
-    parser.add_argument('--state', type=Path, default=ROOT / 'var/spool/codex-desktop.sqlite')
+    parser.add_argument('--state', type=Path, default=DESKTOP_STATE_PATH)
     parser.add_argument('--status', action='store_true')
     parser.add_argument('--flush', action='store_true')
     parser.add_argument('--dsn-env')

@@ -1,14 +1,35 @@
 import { expect, test } from '@playwright/test';
 
+test.afterEach(async ({ page }) => { await page.unrouteAll({ behavior: 'ignoreErrors' }); });
+
 test('Codex Claude includes live flow and hides unavailable service nodes and connectors', async ({ page }) => {
   expect((await page.request.get('/api/v1/services')).status()).toBe(401);
   let localAvailable = false;
   await page.route('**/api/v1/services', route => route.fulfill({ json: {
     checked_at: new Date().toISOString(), services: { claude: true, qwen: localAvailable, gemma: localAvailable },
+    model_settings: {
+      claude: [{ model: 'claude-haiku-test', effort: 'low' }, { model: 'claude-sonnet-test', effort: 'medium' },
+        { model: 'claude-opus-test', effort: 'medium' }],
+      qwen: [{ model: 'qwen-test:32b', effort: null }],
+      gemma: [{ model: 'gemma-test:12b', effort: 'Thinking off' }],
+    },
+    codex_models: [{ model: 'gpt-codex-test', effort: 'high', effort_source: 'last_configured' }],
+  } }));
+  await page.route('**/api/v1/audit/design-handoffs?limit=1', route => route.fulfill({ json: {
+    available: true, total: 1, next: null, rows: [],
+    chat_selection: { model: 'GPT Chat Test', effort: 'Extra High', time: new Date().toISOString() },
   } }));
   await page.route('**/api/v1/classifier/activity', route => route.fulfill({ json: {
     available: true, checked_at: new Date().toISOString(), queued: 0, classifying: 0, uncertain: 0, latest: null,
   } }));
+  await page.route('**/api/v1/snapshot?*', async route => {
+    const response = await route.fetch();
+    const snapshot = await response.json();
+    snapshot.status = { ...snapshot.status, active: 0, queued: 0 };
+    snapshot.capacity = null;
+    snapshot.worker_executions = [];
+    await route.fulfill({ response, json: snapshot });
+  });
   await page.goto('/');
   await page.getByLabel('Operator credential').fill('operator-secret');
   await page.getByRole('button', { name: 'Open dashboard', exact: true }).click();
@@ -29,6 +50,16 @@ test('Codex Claude includes live flow and hides unavailable service nodes and co
   await expect(flow.getByText('Skynet / Qwen', { exact: true })).toBeVisible();
   await expect(flow.locator('[data-id="gemma"]')).toBeVisible();
   await expect(flow.locator('[data-id="claude-qwen"],[data-id="gpt-gemma"]')).toHaveCount(2);
+  await expect(flow.locator('[data-id="chatgpt"]')).toContainText('Last handoff · GPT Chat Test · Extra High effort');
+  await expect(flow.locator('[data-id="gpt"]')).toContainText('gpt-codex-test · high effort · Last configured');
+  await expect(flow.locator('[data-id="qwen"]')).toContainText('Configured · qwen-test:32b · Effort unavailable');
+  await expect(flow.locator('[data-id="gemma"]')).toContainText('Configured · gemma-test:12b · Thinking off');
+  const claude = flow.locator('.react-flow__node[data-id="claude"]');
+  const gemma = flow.locator('.react-flow__node[data-id="gemma"]');
+  await expect(claude.locator('.flow-model-details')).toHaveCount(0);
+  const claudeBox = (await claude.boundingBox())!;
+  const gemmaBox = (await gemma.boundingBox())!;
+  expect(claudeBox.y + claudeBox.height).toBeLessThan(gemmaBox.y);
 });
 
 

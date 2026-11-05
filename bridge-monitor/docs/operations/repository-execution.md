@@ -5,6 +5,16 @@ for mandatory task access/write grants, the distinct MRI3 `mri3` root, automatic
 expired-queue cleanup, current activation requirements and verification evidence.
 The historical notes below describe earlier MRI services work.
 
+**5 November update:** an exact registered repository can opt in to specific
+`pom_write_paths` and `sql_write_prefixes`, including when it is nested under a
+broader registered root. The task write scope and the host's ordinary write grant
+still apply. `write_denied_prefixes` protects files from writes while retaining
+read access, including when a task selects an enclosing root. For
+`mri-java-services-2`, the runtime permits the two requested POMs and the
+`hardware-report-2` migration directory, protects `hardware-report/`, and selects
+only `hardware-report-2` for Maven. Database tests use disposable targets through
+the existing command runner.
+
 Enabled by explicit user instruction on 27 October 2026 for the MRI P1 plan.
 
 The existing route_work entry point, model-selection policy, budgets, telemetry and durable job ownership remain the only routing path. Analysis workers still have no repository tools. Repository execution is separately opt-in in runtime-capabilities.proposal.toml and requires exact scope [repository-execution], context.repository_ids and an approved context.project_root.

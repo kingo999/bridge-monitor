@@ -1,10 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
+import type { CodexFlowModelSetting, FlowModelSetting } from './contracts.generated';
+
+type Service = 'claude' | 'qwen' | 'gemma';
+type Availability = Record<Service, boolean> & { modelSettings: Partial<Record<Service, FlowModelSetting[]>>;
+  codexModels: CodexFlowModelSetting[] };
+const unavailable: Availability = { claude: false, qwen: false, gemma: false, modelSettings: {}, codexModels: [] };
 
 export function useServiceAvailability(paused: boolean) {
-  const [services, setServices] = useState<Record<'claude' | 'qwen' | 'gemma', boolean>>({
-    claude: false, qwen: false, gemma: false,
-  });
+  const [services, setServices] = useState(unavailable);
   useEffect(() => {
     if (paused) return;
     const controller = new AbortController();
@@ -19,9 +23,11 @@ export function useServiceAvailability(paused: boolean) {
         if (value.refreshing) nextPoll = 500;
         if (!controller.signal.aborted) setServices({
           claude: value.services?.claude === true, qwen: value.services?.qwen === true, gemma: value.services?.gemma === true,
+          modelSettings: value.model_settings ?? {},
+          codexModels: value.codex_models ?? [],
         });
       } catch {
-        if (!controller.signal.aborted) setServices({ claude: false, qwen: false, gemma: false });
+        if (!controller.signal.aborted) setServices(unavailable);
       } finally {
         if (!controller.signal.aborted) timer = setTimeout(refresh, nextPoll);
       }

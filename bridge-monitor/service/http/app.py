@@ -24,6 +24,7 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
                subscription_producer_ids: frozenset[str] = frozenset(),
                design_mode_owner_id: str | None = None,
                classifier_config_path: str | None = None,
+               desktop_state_path: Path | None = None,
                local_test_login_origin: str | None = None) -> FastAPI:
     design_mode_owner_id = validate_design_mode_owner_id(design_mode_owner_id)
     if payload_limit_bytes <= 0:
@@ -126,11 +127,22 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
             return {"authenticated": False}
         return {"authenticated": True, "work_item_max_limit": work_item_max_limit}
 
+    if desktop_state_path is not None:
+        from service.queries.codex_settings import CodexSettingsCache
+        desktop_settings = CodexSettingsCache()
+    else:
+        desktop_settings = None
+
     @app.get("/api/v1/services")
     def services(request: Request, authorization: str | None = Header(default=None)):
         require_browser_operator(request, authorization, operator_token, sessions)
         from service.queries.service_availability import service_report
-        return service_report(dsn, classifier_config_path)
+        report = service_report(dsn, classifier_config_path)
+        if desktop_settings is not None:
+            from bridge.desktop_capture import active_desktop_models
+            report['codex_models'] = active_desktop_models(desktop_state_path, desktop_settings.lookup)
+            report['refreshing'] = report['refreshing'] or desktop_settings.refreshing
+        return report
 
     @app.post("/api/v1/session/logout", status_code=204)
     def logout(request: Request, response: Response):

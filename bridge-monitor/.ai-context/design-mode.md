@@ -13,9 +13,10 @@ Operating guide: [docs/operations/design-mode.md](../docs/operations/design-mode
   `route_work`, `deep_review`, `auto`) → Chat (accept, revise or reject after a delivery receipt).
 - Parent MCP audience only, with a single operator owner derived by the host
   (`producer_id@OS account`). The Claude child inventory is unchanged.
-- No caller-supplied owner, review, model or write scope. Evidence is bounded bridge reads
+- Ownership, review, worker model and write scope are controlled by Bridge. Evidence is bounded bridge reads
   (`read_file`, `find_files`, `search_text`, `git_status`). This is bridge policy, not native or OS
   read confinement.
+- Optional `chat_model` and `chat_effort` on submitted briefs are display metadata for the last handoff.
 - Durable and idempotent: request keys, `expected_version` concurrency, immutable artifacts,
   evidence, deliveries and audit. Closed-chat recovery = `design_mode_retrieve`, then
   `design_mode_confirm_delivery` with the package sha256.

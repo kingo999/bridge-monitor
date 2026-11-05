@@ -181,9 +181,10 @@ def _check_claude(dsn, classifier_config):
     policy = availability_policy(dsn)
     if not policy or not policy.codex_claude.enabled:
         return False
-    models = [profile.model_id for profile in policy.codex_claude.profiles.values() if profile.enabled]
-    available = claude_model_availability(dsn, models) if models else {}
-    return {"available": any(available.values()), "models": available}
+    settings = [{"model": profile.model_id, "effort": profile.effort}
+                for profile in policy.codex_claude.profiles.values() if profile.enabled]
+    available = claude_model_availability(dsn, [item["model"] for item in settings]) if settings else {}
+    return {"available": any(available.values()), "models": available, "model_settings": settings}
 
 
 def _check_qwen(dsn, classifier_config):
@@ -199,12 +200,15 @@ def _check_qwen(dsn, classifier_config):
             return False
         with socket.create_connection((target.hostname, target.port or (443 if target.scheme == "https" else 80)), timeout=1):
             pass
-    return True
+    return {"available": True, "model_settings": [{"model": deployment.qwen_model_profile, "effort": None}]}
 
 
 def _check_gemma(dsn, classifier_config):
     config = load_config(classifier_config).classifier_shadow
-    return config.enabled and ollama_ready(config.endpoint, config.model, config.model_digest)
+    if not config.enabled or not ollama_ready(config.endpoint, config.model, config.model_digest):
+        return False
+    effort = "Thinking on" if config.profile.think else "Thinking off"
+    return {"available": True, "model_settings": [{"model": config.model, "effort": effort}]}
 
 
 @dataclass
@@ -215,15 +219,17 @@ class _ServiceCheck:
     checked_at: str | None = None
     available: bool = False
     models: dict = field(default_factory=dict)
+    model_settings: list[dict] = field(default_factory=list)
 
 
 def _refresh_one(key, entry, probe, dsn, classifier_config):
-    available, models = False, {}
+    available, models, model_settings = False, {}, []
     try:
         result = probe(dsn, classifier_config)
         if isinstance(result, dict):
             available = result.get("available") is True
             models = dict(result.get("models") or {})
+            model_settings = result.get("model_settings", [])
         else:
             available = result is True
     except Exception:
@@ -233,6 +239,7 @@ def _refresh_one(key, entry, probe, dsn, classifier_config):
     if finished - entry.started >= PROBE_SECONDS:
         available = False
         models = {model: False for model in models}
+        model_settings = []
     with _lock:
         if _cache.get(key) is entry:
             entry.running = False
@@ -240,12 +247,13 @@ def _refresh_one(key, entry, probe, dsn, classifier_config):
             entry.checked_at = datetime.now(timezone.utc).isoformat()
             entry.available = available
             entry.models = models
+            entry.model_settings = model_settings
 
 
 def service_report(dsn, classifier_config=None):
     """Return immediately. One independently bounded background refresh per service."""
     jobs = []
-    services, checks, claude_models = {}, {}, {}
+    services, checks, claude_models, model_settings = {}, {}, {}, {}
     now = time.monotonic()
     probes = {"claude": _check_claude, "qwen": _check_qwen, "gemma": _check_gemma}
     with _lock:
@@ -262,6 +270,7 @@ def service_report(dsn, classifier_config=None):
             state = ("timed_out" if timed_out else "refreshing" if entry.running
                      else "available" if services[name] else "unavailable")
             checks[name] = {"state": state, "checked_at": entry.checked_at}
+            model_settings[name] = entry.model_settings if fresh_enough and not timed_out else []
             if name == "claude":
                 claude_models = {model: ready and fresh_enough and not timed_out for model, ready in entry.models.items()}
     for key, entry, probe in jobs:
@@ -275,4 +284,5 @@ def service_report(dsn, classifier_config=None):
                 entry.checked_at = datetime.now(timezone.utc).isoformat()
                 entry.available = False
     return {"checked_at": datetime.now(timezone.utc).isoformat(), "services": services, "checks": checks,
-            "claude_models": claude_models, "refreshing": any(c["state"] == "refreshing" for c in checks.values())}
+            "claude_models": claude_models, "model_settings": model_settings,
+            "refreshing": any(c["state"] == "refreshing" for c in checks.values())}

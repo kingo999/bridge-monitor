@@ -31,6 +31,7 @@ command_timeout_seconds = 500
 ai = 'C:\AI'
 bridge-monitor = 'C:\AI\bridge-monitor'
 ideaprojects = 'D:\IdeaProjects'
+mri-java-services-2 = 'D:\IdeaProjects\mri\mri-java-services-2'
 
 [repository.write_prefixes]
 ideaprojects = ["data/", "mine/", "mri/", "neo_performance/", "temp/", "work/"]
@@ -40,3 +41,16 @@ ideaprojects = ["mine/mri3/mcp/", "mine/mri3/report/", "mine/mri3/seed_db/", "mr
 
 [repository.sql_write_prefixes]
 ideaprojects = ["mri/mri-java-services-3/report-application/src/main/resources/db/"]
+mri-java-services-2 = ["hardware-report-2/src/main/resources/db/migration/"]
+
+[repository.pom_write_paths]
+mri-java-services-2 = ["pom.xml", "hardware-report-2/pom.xml"]
+
+[repository.write_denied_prefixes]
+mri-java-services-2 = ["hardware-report/"]
+
+[repository.maven_modules]
+mri-java-services-2 = ["hardware-report-2"]
+
+[repository.check_kinds]
+mri-java-services-2 = "maven"

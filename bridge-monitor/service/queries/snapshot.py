@@ -15,6 +15,19 @@ class CursorExpired(ValueError):
         self.earliest_position = earliest_position
 
 
+def _worker_efforts(conn, executions):
+    if not executions or not conn.execute("""SELECT to_regclass('cc_reservations') IS NOT NULL
+            AND to_regclass('cc_decisions') IS NOT NULL AS available""").fetchone()["available"]:
+        return {}
+    rows = conn.execute("""SELECT r.call_id,
+            d.payload #>> ARRAY['policy_snapshot', 'profiles', r.profile, 'model_id'] AS model,
+            d.payload #>> ARRAY['policy_snapshot', 'profiles', r.profile, 'effort'] AS effort
+        FROM cc_reservations r JOIN cc_decisions d USING (work_item_id)
+        WHERE r.call_id=ANY(%s) AND d.payload->>'selected_profile'=r.profile""",
+        ([row["call_id"] for row in executions],)).fetchall()
+    return {row["call_id"]: (row["model"], row["effort"]) for row in rows}
+
+
 def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> DashboardSnapshot:
     if not 1 <= limit <= 100:
         raise ValueError("snapshot page out of bounds")
@@ -68,6 +81,7 @@ def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> Dashboard
             if capacity is not None:
                 executions = conn.execute("""SELECT j.call_id,j.work_item_id,j.worker_instance_id,
                     j.requested_model,j.admitted_at AS occurred_at,
+                    (j.state='active' AND j.slot_held) AS active,
                     (j.state='active' AND j.slot_held AND EXISTS (
                         SELECT 1 FROM runtime_jobs local
                         WHERE local.pool='qwen' AND local.state IN ('queued','active')
@@ -80,7 +94,12 @@ def read_snapshot(dsn: str, query: CohortQuery, *, limit: int = 50) -> Dashboard
                     FROM runtime_jobs j JOIN work_items w ON w.work_item_id=j.work_item_id
                     WHERE w.origin='observed' AND j.execution_mode='production'
                     AND j.pool='claude' AND j.state IN ('active','uncertain')
-                    ORDER BY j.admitted_at DESC LIMIT 8""").fetchall()
+                    ORDER BY active DESC,j.admitted_at DESC LIMIT 8""").fetchall()
+                efforts = _worker_efforts(conn, executions)
+                for row in executions:
+                    model, effort = efforts.get(row["call_id"], (None, None))
+                    row["configured_effort"] = (effort if model == row["requested_model"] and
+                        model == (row["reported_model"] or row["requested_model"]) else None)
             else:
                 executions = conn.execute("""SELECT e.call_id,e.work_item_id,e.worker_instance_id,
                     e.requested_model,e.occurred_at,
