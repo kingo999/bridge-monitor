@@ -1,11 +1,13 @@
 from pathlib import Path
 from contextlib import asynccontextmanager
+import re
 
 from fastapi import FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from service.http.auth import (COOKIE_NAME, authenticated_producer, bearer, create_session,
+from service.http.auth import (COOKIE_NAME, LOCAL_TEST_CREDENTIAL, authenticated_producer,
+                               bearer, create_session, matches_local_test_login,
                                require_browser_operator, require_operator)
 from service.http.ingest import accept_batch
 from service.http.query import query_router, validate_design_mode_owner_id
@@ -21,7 +23,8 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
                work_item_max_limit: int = 100,
                subscription_producer_ids: frozenset[str] = frozenset(),
                design_mode_owner_id: str | None = None,
-               classifier_config_path: str | None = None) -> FastAPI:
+               classifier_config_path: str | None = None,
+               local_test_login_origin: str | None = None) -> FastAPI:
     design_mode_owner_id = validate_design_mode_owner_id(design_mode_owner_id)
     if payload_limit_bytes <= 0:
         raise ValueError("a positive configured payload limit is required")
@@ -33,6 +36,13 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
     tokens = [operator_token, *producer_tokens.values()]
     if len(tokens) != len(set(tokens)):
         raise ValueError("producer and operator credentials must be distinct")
+    if local_test_login_origin is not None:
+        origin = re.fullmatch(r"https?://127\.0\.0\.1(?::([1-9][0-9]{0,4}))?",
+                              local_test_login_origin)
+        if origin is None or int(origin[1] or 1) > 65535:
+            raise ValueError("local test login requires a literal loopback origin")
+        if LOCAL_TEST_CREDENTIAL in tokens:
+            raise ValueError("local test login must use a distinct credential")
     if session_ttl_seconds <= 0:
         raise ValueError("session TTL must be positive")
     if not (1 <= preview_max_chunks <= 500 and 1 <= preview_max_bytes <= 65536):
@@ -98,8 +108,10 @@ def create_app(dsn: str, *, producer_tokens: dict[str, str], operator_token: str
         return Response(raw, media_type="application/octet-stream")
 
     @app.post("/api/v1/session")
-    def login(body: dict, response: Response):
-        require_operator(str(body.get("operator_token", "")), operator_token)
+    def login(body: dict, request: Request, response: Response):
+        token = str(body.get("operator_token", ""))
+        if not matches_local_test_login(request, token, local_test_login_origin):
+            require_operator(token, operator_token)
         identifier = create_session(sessions, session_ttl_seconds)
         response.set_cookie(COOKIE_NAME, identifier, httponly=True, secure=secure_cookies,
                             samesite="strict", max_age=session_ttl_seconds, path="/")

@@ -91,6 +91,27 @@ def test_missing_owner_passes_none_and_starts(launcher, tmp_path):
     assert app is seen["app"] and kwargs["host"] == "127.0.0.1" and kwargs["port"] == 8873
 
 
+def test_local_test_login_uses_literal_loopback_and_disables_proxy_headers(launcher, tmp_path):
+    config = _config(tmp_path)
+    config.write_text(config.read_text().replace("[operator]", "[operator]\nlocal_test_login = true"))
+    seen = launcher(config)
+    [call] = seen["create_app"]
+    assert call["local_test_login_origin"] == "http://127.0.0.1:8873"
+    [(_, kwargs)] = seen["run"]
+    assert kwargs["proxy_headers"] is False
+
+
+def test_local_test_login_cannot_start_a_remote_listener(launcher, tmp_path):
+    config = _config(tmp_path)
+    config.write_text(config.read_text().replace("[operator]", "[operator]\nlocal_test_login = true")
+                      .replace('host = "127.0.0.1"', 'host = "0.0.0.0"')
+                      .replace('tls_cert_path = ""', 'tls_cert_path = "cert.pem"')
+                      .replace('tls_key_path = ""', 'tls_key_path = "key.pem"'))
+    with pytest.raises(SystemExit, match="local_test_login requires"):
+        launcher(config)
+    assert launcher.seen["run"] == []
+
+
 @pytest.mark.parametrize("owner", ["bridge-monitor-parent@dave", "Harness-Producer@Test.Account"])
 def test_valid_owner_is_passed_exactly(launcher, tmp_path, owner):
     seen = launcher(_config(tmp_path, f"design_mode_owner_id = {json.dumps(owner)}"))

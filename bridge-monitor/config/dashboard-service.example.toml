@@ -8,6 +8,8 @@ tls_key_path = ""
 [operator]
 credential_env = "BRIDGE_MONITOR_OPERATOR_TOKEN"
 session_ttl_seconds = 3600
+# Enable only in a private local config bound to 127.0.0.1 for browser testing.
+local_test_login = false
 
 [capture]
 dsn_env = "BRIDGE_MONITOR_DSN"

@@ -27,6 +27,23 @@ def require_operator(token: str, operator_token: str) -> None:
 
 
 COOKIE_NAME = "bridge_monitor_session"
+LOCAL_TEST_CREDENTIAL = "password"
+
+
+def matches_local_test_login(request: Request, token: str, origin: str | None) -> bool:
+    if origin is None or token != LOCAL_TEST_CREDENTIAL:
+        return False
+    scheme, authority = origin.split("://", 1)
+    server = request.scope.get("server")
+    return bool(
+        server and server[0] == "127.0.0.1"
+        and request.client and request.client.host == "127.0.0.1"
+        and request.url.scheme == scheme
+        and request.headers.getlist("host") == [authority]
+        and request.headers.getlist("origin") == [origin]
+        and not any(name in {"forwarded", "via"} or name.startswith("x-forwarded-")
+                    for name in request.headers)
+    )
 
 
 def create_session(sessions: dict[str, float], ttl_seconds: int) -> str:

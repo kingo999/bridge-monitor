@@ -37,6 +37,17 @@ def main() -> None:
         raise SystemExit("TLS certificate and key must be configured together")
     capture = settings["capture"]
     operator = settings["operator"]
+    local_test_login = operator.get("local_test_login", False)
+    if type(local_test_login) is not bool:
+        raise SystemExit("local_test_login must be a boolean")
+    port = int(listen["port"])
+    local_test_origin = None
+    if local_test_login:
+        if host != "127.0.0.1" or not 1 <= port <= 65535:
+            raise SystemExit("local_test_login requires a literal 127.0.0.1 listener and a fixed port")
+        scheme = "https" if cert else "http"
+        authority = host if port == (443 if cert else 80) else f"{host}:{port}"
+        local_test_origin = f"{scheme}://{authority}"
     dsn = os.environ.get(capture["dsn_env"], "")
     token = os.environ.get(operator["credential_env"], "")
     producers = json.loads(os.environ.get(capture["producer_tokens_env"], "{}"))
@@ -58,7 +69,8 @@ def main() -> None:
                      work_item_max_limit=int(settings["dashboard"].get("work_item_max_limit", 100)),
                      # Validated by create_app; omitted -> None (decision filter disabled).
                      design_mode_owner_id=settings["dashboard"].get("design_mode_owner_id"),
-                     classifier_config_path=settings["dashboard"].get("classifier_config_path"))
+                     classifier_config_path=settings["dashboard"].get("classifier_config_path"),
+                     local_test_login_origin=local_test_origin)
     pid_file = os.environ.get("BRIDGE_MONITOR_SERVER_PID_FILE")
     record = None
     if pid_file:
@@ -73,7 +85,8 @@ def main() -> None:
             temporary = Path(pending.name)
         os.replace(temporary, record)
     try:
-        uvicorn.run(app, host=host, port=int(listen["port"]), ssl_certfile=cert, ssl_keyfile=key)
+        uvicorn.run(app, host=host, port=port, ssl_certfile=cert, ssl_keyfile=key,
+                    proxy_headers=not local_test_login)
     finally:
         if record and record.is_file():
             try:
