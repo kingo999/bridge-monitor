@@ -10,7 +10,9 @@ import sys
 import threading
 import time
 import uuid
+from copy import copy
 from datetime import datetime, timezone, timedelta
+from functools import partial
 from pathlib import Path
 
 import psycopg
@@ -76,6 +78,13 @@ class BridgeCoordinator:
         self._recovery_threads_lock = threading.Lock()
         for pool in ("claude", "qwen"):
             register_incarnation(dsn, self.incarnations[pool], self.workers[pool])
+
+    def _for_dispatch(self):
+        # Policy refresh is request-local. Status and cancellation still share
+        # the parent identity, owned calls, capture and recovery state.
+        request = copy(self)
+        request.ingress = copy(self.ingress)
+        return request
 
     def _refresh_policy(self):
         self.policy = self.ingress.refresh_policy()
@@ -1871,6 +1880,7 @@ class DesignMode:
 
 
 def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
+    from anyio import to_thread
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("Bridge Monitor")
@@ -1891,23 +1901,28 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
                           report=report)
 
         @mcp.tool()
-        def route_work(task: dict, prompt: str, requested_model: str,
-                       reserve_tokens: int, output_contract: str,
-                       verifier_ref: str | None = None,
-                       source_id: str | None = None) -> dict:
+        async def route_work(task: dict, prompt: str, requested_model: str,
+                             reserve_tokens: int, output_contract: str,
+                             verifier_ref: str | None = None,
+                             source_id: str | None = None) -> dict:
             """Return the paid worker answer and queue an audited, undelivered Qwen shadow."""
-            return coordinator.route_work(TaskPacket.model_validate(task), prompt,
+            request = coordinator._for_dispatch()
+            # Wait for durable settlement even if the MCP request is cancelled.
+            return await to_thread.run_sync(partial(request.route_work,
+                TaskPacket.model_validate(task), prompt,
                 requested_model=requested_model, reserve_tokens=reserve_tokens,
                 output_contract=output_contract, verifier_ref=verifier_ref,
-                source_id=source_id)
+                source_id=source_id))
 
         @mcp.tool()
-        def delegate_claude(task: dict, prompt: str, requested_model: str,
-                            reserve_tokens: int, source_id: str | None = None) -> dict:
+        async def delegate_claude(task: dict, prompt: str, requested_model: str,
+                                  reserve_tokens: int, source_id: str | None = None) -> dict:
             """Submit a scoped Claude worker call and return its result or durable queue ticket."""
-            return coordinator.delegate_claude(TaskPacket.model_validate(task), prompt,
+            request = coordinator._for_dispatch()
+            return await to_thread.run_sync(partial(request.delegate_claude,
+                TaskPacket.model_validate(task), prompt,
                 requested_model=requested_model, reserve_tokens=reserve_tokens,
-                source_id=source_id)
+                source_id=source_id))
 
         @mcp.tool()
         def complete_work(call_id: str, envelope: dict) -> dict:
@@ -1967,11 +1982,12 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
                                         max_lines=max_lines, text=text, prefix=prefix, pattern=pattern)
 
         @mcp.tool()
-        def design_mode_save_plan(workflow_id: str, iteration: int, expected_version: int,
-                                  plan: str) -> dict:
+        async def design_mode_save_plan(workflow_id: str, iteration: int, expected_version: int,
+                                        plan: str) -> dict:
             """Save the active Codex plan and trigger the Claude review via route_work (deep_review)."""
-            return design.save_plan(workflow_id, iteration=iteration, expected_version=expected_version,
-                                    plan=plan)
+            request = DesignMode(coordinator._for_dispatch())
+            return await to_thread.run_sync(partial(request.save_plan, workflow_id,
+                iteration=iteration, expected_version=expected_version, plan=plan))
 
         @mcp.tool()
         def design_mode_pause(workflow_id: str, expected_version: int) -> dict:

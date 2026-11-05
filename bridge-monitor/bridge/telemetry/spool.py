@@ -88,6 +88,8 @@ class DurableSpool:
             content_json = "null"
         size = len(event_json.encode()) + len(content_json.encode())
         with self._connect() as db:
+            # Reserve the write transaction before checking the shared byte budget.
+            db.execute("BEGIN IMMEDIATE")
             used = db.execute("SELECT coalesce(sum(size_bytes),0) FROM entries").fetchone()[0]
             if used + size > self.limit_bytes:
                 db.execute("UPDATE metadata SET value=value+1 WHERE key='known_gaps'")

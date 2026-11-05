@@ -1,12 +1,22 @@
-# Tabler Icons
+# Icon licenses
+
+## Tabler Icons
 
 The OpenAI / ChatGPT icon in `components/FlowGraph.tsx` is adapted from
 https://github.com/tabler/tabler-icons/blob/main/icons/outline/brand-openai.svg.
 OpenAI and ChatGPT names and marks belong to OpenAI.
 
-MIT License
+## LobeHub Icons
+
+The Codex icon in `components/FlowGraph.tsx` is from
+https://github.com/lobehub/lobe-icons/blob/master/packages/static-svg/icons/codex.svg.
+Codex names and marks belong to OpenAI.
+
+## MIT License
 
 Copyright (c) 2020-2026 Paweł Kuna
+
+Copyright (c) 2023 LobeHub
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
