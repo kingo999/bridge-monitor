@@ -77,6 +77,7 @@ def test_no_complete_marker_means_no_final_measurement(tmp_path):
 
 @pytest.mark.parametrize('call_type,name,reason', [
     ('custom_tool_call', 'mcp__bridge_monitor__route_work', 'delegation_observed'),
+    ('custom_tool_call', 'mcp__bridge_monitor__route_work_batch', 'delegation_observed'),
     ('future_worker_call', 'worker', 'tool_coverage_unknown'),
 ])
 def test_other_tool_call_shapes_cannot_hide_delegation(tmp_path, call_type, name, reason):

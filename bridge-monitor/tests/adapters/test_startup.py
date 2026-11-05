@@ -128,7 +128,7 @@ def test_real_stdio_handshake_exposes_only_audience_tools(runtime_dsn, monkeypat
                     return {item.name for item in (await session.list_tools()).tools}
 
         assert asyncio.run(listed("parent")) == {
-            "record_direct_task", "route_work", "delegate_claude", "complete_work",
+            "record_direct_task", "route_work", "route_work_batch", "delegate_claude", "complete_work",
             "acknowledge_claude_result", "get_execution_status", "cancel_work",
             "design_mode_submit", "design_mode_status", "design_mode_list",
             "design_mode_read_evidence", "design_mode_save_plan", "design_mode_pause",

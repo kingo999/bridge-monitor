@@ -14,14 +14,16 @@ from copy import copy
 from datetime import datetime, timezone, timedelta
 from functools import partial
 from pathlib import Path
+from typing import Annotated
 
 import psycopg
 from psycopg.types.json import Jsonb
+from pydantic import Field
 
 from contracts.events import EventType
 from contracts.outcomes import (CompletionEnvelope, ContributionLink, DispositionRecord,
                                 ParentAcknowledgement)
-from contracts.work import AdmissionDecision, CallRequest, ExecutionBinding, TaskPacket
+from contracts.work import AdmissionDecision, CallRequest, ExecutionBinding, RouteWorkBatchItem, TaskPacket
 from contracts.route_capture import RouteCapture, RouteObserver, BridgeCapture
 from bridge.adapters.codex_ingress import CodexIngress, runtime_status
 from bridge.runtime.completions import record_completion
@@ -240,7 +242,7 @@ class BridgeCoordinator:
     def route_work(self, task: TaskPacket, prompt: str, *, requested_model: str,
                    reserve_tokens: int, output_contract: str,
                    verifier_ref: str | None = None,
-                   source_id: str | None = None) -> dict:
+                   source_id: str | None = None, _require_codex_claude: bool = False) -> dict:
         """Use the opt-in workflow, or preserve the historical shadow experiment."""
         self._refresh_policy()
         if task.task_id.startswith(DesignMode.TASK_PREFIX):
@@ -254,6 +256,8 @@ class BridgeCoordinator:
             return self._route_codex_claude(task, prompt, requested_model=requested_model,
                 reserve_tokens=reserve_tokens, output_contract=output_contract,
                 verifier_ref=verifier_ref, source_id=source_id)
+        if _require_codex_claude:
+            return {"state": "rejected", "reason": "codex_claude_disabled"}
         paid_id, shadow_id, decision_id = router_call_ids(task)
         prior = existing_parent_decision(self.dsn, task.work_item_id)
         if prior:
@@ -1906,8 +1910,35 @@ class DesignMode:
                               worker_termination_confirmed=False)
 
 
+def _validate_route_batch(items: list[RouteWorkBatchItem], independent: bool) -> None:
+    if not independent:
+        raise ValueError("The parent must confirm the assignments are independent and verifiable")
+    parent = items[0].task
+    project = parent.context.get("project_root", "")
+    if not parent.task_id.strip() or not project.strip():
+        raise ValueError("A batch requires a parent task ID and project root")
+    if parent.task_id.startswith(DesignMode.TASK_PREFIX):
+        raise ValueError("Design Mode formal reviews use their existing workflow tool")
+    if any(item.task.scope != ["analysis"] or "source_id" in item.task.context for item in items):
+        raise ValueError("Batch items are limited to read-only supplied-context analysis")
+    if any(item.task.task_id != parent.task_id or item.task.context.get("project_root") != project
+           or item.task.call_budget != parent.call_budget or item.task.token_budget != parent.token_budget
+           for item in items):
+        raise ValueError("Batch items must share one task, project root and budget")
+    work_ids = [item.task.work_item_id for item in items]
+    if any(not work_id.strip() for work_id in work_ids) or len(set(work_ids)) != len(items):
+        raise ValueError("Batch items require distinct work item IDs")
+    if not len(items) <= parent.call_budget <= 2:
+        raise ValueError("Batch items must fit the shared call budget of at most two")
+    if sum(item.reserve_tokens for item in items) > parent.token_budget:
+        raise ValueError("Batch reservations exceed the shared token budget")
+    if any(not item.prompt.strip() or not item.requested_model.strip() or not item.output_contract.strip()
+           for item in items):
+        raise ValueError("Each batch item requires a prompt, requested model and output contract")
+
+
 def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
-    from anyio import to_thread
+    from anyio import create_task_group, to_thread
     from mcp.server.fastmcp import FastMCP
 
     mcp = FastMCP("Bridge Monitor")
@@ -1940,6 +1971,43 @@ def create_mcp(coordinator: BridgeCoordinator, *, audience: str = "parent"):
                 requested_model=requested_model, reserve_tokens=reserve_tokens,
                 output_contract=output_contract, verifier_ref=verifier_ref,
                 source_id=source_id))
+
+        @mcp.tool()
+        async def route_work_batch(
+            items: Annotated[list[RouteWorkBatchItem], Field(min_length=1, max_length=2)],
+            independent: bool,
+        ) -> dict:
+            """Route up to two independent, read-only assignments from one controlling session.
+
+            Set independent=true only after checking stable inputs, no shared mutable resources,
+            and an acceptance check for each item. Use one parent task ID and budget, distinct
+            work item IDs and scope ["analysis"]. Verify each outcome and the combined result before
+            accepting. Reconcile uncertain call IDs through get_execution_status before replacement.
+            """
+            _validate_route_batch(items, independent)
+            from bridge.runtime.codex_claude_routing import codex_claude_call_id
+
+            outcomes = {}
+
+            async def route_item(item: RouteWorkBatchItem):
+                work_id = item.task.work_item_id
+                try:
+                    request = coordinator._for_dispatch()
+                    outcomes[work_id] = await to_thread.run_sync(partial(request.route_work,
+                        item.task, item.prompt, requested_model=item.requested_model,
+                        reserve_tokens=item.reserve_tokens, output_contract=item.output_contract,
+                        _require_codex_claude=True))
+                except Exception:
+                    # Admission may have committed. Report its identity without replaying work.
+                    outcomes[work_id] = {"state": "uncertain", "reason": "batch_dispatch_error",
+                                         "call_id": codex_claude_call_id(work_id)}
+
+            async with create_task_group() as batch:
+                for item in items:
+                    batch.start_soon(route_item, item)
+            return {"parent_verification_required": True, "results": [
+                {"work_item_id": item.task.work_item_id, "outcome": outcomes[item.task.work_item_id]}
+                for item in items]}
 
         @mcp.tool()
         async def delegate_claude(task: dict, prompt: str, requested_model: str,

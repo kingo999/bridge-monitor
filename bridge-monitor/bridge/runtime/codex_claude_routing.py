@@ -8,6 +8,10 @@ from bridge.router.codex_claude import prepare_codex_claude_route
 from bridge.runtime.codex_claude import (record_codex_claude_decision,
     reserve_codex_claude_call, release_codex_claude_call, claim_codex_claude_dispatch)
 
+def codex_claude_call_id(work_item_id):
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "cc-call:" + work_item_id))
+
+
 def route_codex_claude(coordinator, task, prompt, *, requested_model, reserve_tokens,
                       output_contract, verifier_ref=None, source_id=None):
     policy=coordinator.policy.codex_claude
@@ -32,7 +36,7 @@ def route_codex_claude(coordinator, task, prompt, *, requested_model, reserve_to
     adapter=coordinator.claude_adapter
     if not callable(getattr(adapter,"run_profile",None)):
         return {**answer,"state":"rejected","reason":"profile_adapter_unavailable"}
-    call_id=str(uuid.uuid5(uuid.NAMESPACE_URL,"cc-call:"+task.work_item_id))
+    call_id=codex_claude_call_id(task.work_item_id)
     held=reserve_codex_claude_call(coordinator.dsn,call_id=call_id,work_item_id=task.work_item_id,
         workflow_id=task.task_id,profile=decision.selected_profile,amount=profile.reference_usd,policy=policy)
     if held["state"]=="rejected":return {**answer,**held}

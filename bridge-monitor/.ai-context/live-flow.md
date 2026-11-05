@@ -1,5 +1,19 @@
 # Live orchestration flow
 
+Parent MCP batch routing (2026-11-05): the desktop sent simultaneous tool
+invocations serially in the observed trials. `route_work_batch` submits up to two
+independent, supplied-context read-only assignments in one request to the existing
+Bridge. Each item keeps its own work, call, and result identity under one parent
+budget. The controlling Codex session verifies the separate outcomes and their
+combination. Shared repository writes stay sequential, and the batch does not
+dispatch formal Design Mode reviews. See the [operator runbook](../docs/operations/runbook.md#batch-routing-for-independent-analysis).
+
+Verified with 72 targeted checks on disposable PostgreSQL. The batch reached
+both stub workers at once under a shared task budget, delivered two separate
+results, and released both slots. The checks also cover partial dispatch failure,
+invalid input, parent-only registration, and separate acknowledgements for
+sibling results. Desktop reload and a live worker trial are pending.
+
 Codex live effort capture (2026-11-05): the installed Codex build writes matching `turn_context` metadata before `UserPromptSubmit`. The existing terminal hook now records a forward byte checkpoint for the same desktop transcript. The next prompt can read at most 256 KiB from that checkpoint up to its own start offset, and accepts effort only when the turn and model both match. The usage capture offset is separate. With no usable checkpoint or matching turn effort, the tile still uses **Last configured** for a matching saved model.
 
 Verified the ordering and effort values with the installed Codex binary against a loopback fixture. The actual fixture Stop checkpoint and the next turn's generated metadata projected `gpt-6.1-sol · medium effort` over a saved high setting. Targeted Python checks passed (22 passed, 7 database checks skipped) and all 11 flow checks passed. Existing hooks load the Python change on subsequent invocations without a Bridge or dashboard restart. The already-running desktop turn remains on its original capture range; confirmation on the next eligible real turn is pending.

@@ -17,7 +17,8 @@ FLOW_CONTEXT_BYTES = 256 * 1024
 DESKTOP_STATE_PATH = Path(__file__).resolve().parents[1] / 'var/spool/codex-desktop.sqlite'
 FLOW_MODEL = re.compile(r'[A-Za-z0-9][A-Za-z0-9._:/+@-]{0,127}')
 FLOW_EFFORTS = ('none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra')
-DELEGATION = {"mcp__bridge_monitor__route_work", "mcp__bridge_monitor__delegate_claude",
+DELEGATION = {"mcp__bridge_monitor__route_work", "mcp__bridge_monitor__route_work_batch",
+              "mcp__bridge_monitor__delegate_claude",
               "mcp__claude_implementer_internal__implement_changes",
               "mcp__claude_implementer_internal__review_changes", "spawn_agent", "Agent", "Task"}
 

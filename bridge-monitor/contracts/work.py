@@ -14,6 +14,15 @@ class TaskPacket(BaseModel):
     call_budget: int = Field(ge=0)
 
 
+class RouteWorkBatchItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    task: TaskPacket
+    prompt: str = Field(min_length=1)
+    requested_model: str = Field(min_length=1)
+    reserve_tokens: int = Field(gt=0)
+    output_contract: str = Field(min_length=1)
+
+
 class CallRequest(BaseModel):
     call_id: str
     task: TaskPacket

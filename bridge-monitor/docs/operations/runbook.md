@@ -89,6 +89,24 @@ records a paid route with reason `root_budget_exhausted`; it does not test
 Skynet availability. The [18 October diagnostic](../verification/code-reasoning-pilot-2026-10-18.md)
 records both cases.
 
+## Batch routing for independent analysis
+
+The controlling Codex session can call `route_work_batch(items, independent=true)`
+to submit one or two supplied-context analysis assignments in one parent MCP
+request. Confirm that each assignment can finish independently, uses stable inputs
+without shared mutable resources, and has an acceptance check the parent can perform.
+Each item supplies `task`, `prompt`, `requested_model`, `reserve_tokens` and
+`output_contract`. Use distinct work item IDs under one task ID, project root,
+`scope=["analysis"]`, and shared token and call budgets. The call budget is at most two.
+
+Bridge validates the whole batch before dispatch and applies normal routing and
+admission to each item. Results are returned separately, in input order. The
+parent checks each result and the combined outcome before accepting the work,
+using `acknowledge_claude_result` for each delivered result it has verified.
+Use `get_execution_status` for an uncertain call before considering a replacement.
+Writes under the same repository lease stay sequential. Design Mode uses its
+existing single formal review per iteration.
+
 ## Stop, restart, and uncertainty
 
 Run `scripts\stop-monitor.ps1` to stop only the dashboard PID recorded by
