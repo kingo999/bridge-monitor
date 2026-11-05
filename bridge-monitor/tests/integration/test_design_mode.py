@@ -1446,6 +1446,39 @@ def test_handoff_settings_are_versioned_with_the_brief_and_report_the_latest_sel
     assert paused["status"] == "paused"
 
 
+def test_handoffs_report_chat_activity_from_retrieval_to_decision(dm_dsn, tmp_path, monkeypatch):
+    import service.http.query as query
+    root = _project(tmp_path)
+    h = Harness(dm_dsn, tmp_path, root)
+    client = _client(dm_dsn)
+    def read(wid, **params):
+        return client.get("/api/v1/audit/design-handoffs", headers={"Authorization": "Bearer " + TOKEN},
+                          params={"limit": 1, "workflow": wid, **params}).json()
+    ready = _ready(h, root)
+    wid = ready["workflow_id"]
+    assert ready["status"] == "ready" and "chat_activity" not in read(wid)  # unobserved before retrieval
+    package = h.dm.retrieve(wid)["package"]["sha256"]
+    activity = read(wid)["chat_activity"]
+    assert activity["state"] == "preparing" and activity["iteration"] == 1
+    assert activity["expires_in_seconds"] == query.DESIGN_CHAT_PREPARING_SECONDS and activity["since"]
+    assert "chat_activity" not in read(wid, limit=0)
+    monkeypatch.setattr(query, "DESIGN_CHAT_PREPARING_SECONDS", 0)
+    assert "chat_activity" not in read(wid)  # an abandoned retrieval expires
+    monkeypatch.undo()
+    delivered = h.dm.confirm_delivery(wid, iteration=1, package_sha256=package)
+    activity = read(wid)["chat_activity"]
+    assert activity["state"] == "awaiting_decision" and "expires_in_seconds" not in activity
+    h.dm.decide(wid, iteration=1, expected_version=delivered["version"], decision="accept", reason="ok")
+    assert "chat_activity" not in read(wid)  # advancing clears the state
+
+    other = _ready(h, root)
+    h.dm.retrieve(other["workflow_id"])
+    assert read(other["workflow_id"])["chat_activity"]["state"] == "preparing"
+    assert read("")["chat_activity"]["state"] == "preparing"
+    h.dm.cancel(other["workflow_id"], expected_version=other["version"], reason="stop")
+    assert "chat_activity" not in read(other["workflow_id"])  # cancelling clears the state
+
+
 def _seed_workflow(dsn, owner, status, *, repository_id="demo", project_root="C:/seed", reason=None):
     """Direct row (dm_workflows has no immutability trigger) for states/owners not reachable cheaply."""
     wid = "dm-seed-" + uuid.uuid4().hex

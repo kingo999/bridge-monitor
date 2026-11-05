@@ -309,12 +309,13 @@ def _design_handoffs(dsn: str, workflow: str, before: int | None, limit: int) ->
         if not _design_mode_available(conn):
             return {"available": False, "total": None, "rows": [], "next": None}
         total = conn.execute("SELECT count(*)" + source, params).fetchone()[0]
-        last_brief = None
+        last_brief = chat_activity = None
         if limit and before is None:
             brief_scope = " AND workflow_id=%s" if workflow else ""
             last_brief = conn.execute("SELECT recorded_at,detail->'chat_selection' FROM dm_audit "
                 "WHERE actor='chat' AND action IN ('submit','revise')" + brief_scope +
                 " ORDER BY audit_id DESC LIMIT 1", params).fetchone()
+            chat_activity = _design_chat_activity(conn, workflow)
         if before is not None:
             source += " AND audit_id < %s"
             params += (before,)
@@ -330,7 +331,39 @@ def _design_handoffs(dsn: str, workflow: str, before: int | None, limit: int) ->
                      if isinstance(last_brief[1].get(key), str)}
         if selection:
             report["chat_selection"] = {**selection, "time": last_brief[0]}
+    if chat_activity:
+        report["chat_activity"] = chat_activity
     return report
+
+
+# ChatGPT's work is observable only between retrieving the current iteration's review
+# package and confirming its delivery. The expiry bounds an abandoned retrieval.
+DESIGN_CHAT_PREPARING_SECONDS = 300
+
+
+def _design_chat_activity(conn, workflow: str) -> dict | None:
+    # Status-bound: advancing (revise/accept/reject), cancelling or staling the workflow
+    # leaves both 'ready' and 'delivered', which clears the state.
+    row = conn.execute(
+        "SELECT w.workflow_id,w.current_iteration,"
+        "CASE WHEN w.status='delivered' THEN 'awaiting_decision' ELSE 'preparing' END,"
+        "COALESCE(d.delivered_at,r.recorded_at) FROM dm_workflows w "
+        "LEFT JOIN LATERAL (SELECT a.recorded_at FROM dm_audit a WHERE a.workflow_id=w.workflow_id "
+        "AND a.iteration=w.current_iteration AND a.actor='chat' AND a.action='package_retrieved' "
+        "ORDER BY a.audit_id DESC LIMIT 1) r ON true "
+        "LEFT JOIN dm_deliveries d ON d.workflow_id=w.workflow_id AND d.iteration=w.current_iteration "
+        "WHERE (%s::text = '' OR w.workflow_id=%s) AND ("
+        "(w.status='ready' AND d.receipt_id IS NULL AND r.recorded_at <= now() "
+        "AND r.recorded_at > now() - make_interval(secs => %s)) "
+        "OR (w.status='delivered' AND d.receipt_id IS NOT NULL)) "
+        "ORDER BY w.status='ready' DESC, COALESCE(d.delivered_at,r.recorded_at) DESC LIMIT 1",
+        (workflow, workflow, DESIGN_CHAT_PREPARING_SECONDS)).fetchone()
+    if not row:
+        return None
+    activity = {"state": row[2], "workflow_id": row[0], "iteration": row[1], "since": row[3]}
+    if row[2] == "preparing":
+        activity["expires_in_seconds"] = DESIGN_CHAT_PREPARING_SECONDS
+    return activity
 
 
 def _design_mode_list(dsn: str, limit: int, repository_id: str | None = None, *,

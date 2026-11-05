@@ -5,12 +5,12 @@ import { Background, Controls, Position, ReactFlow, type Edge, type Node, type R
 import type { DashboardStatus, PoolCapacity, WorkerExecution, WorkItem } from '@/lib/contracts.generated';
 import { MarkerType } from '@xyflow/react';
 import { useHandoffPage } from '@/lib/useHandoffPage';
-import { formatFlowModel, HANDOFF_ACTIVITY_MS, handoffActivityRemaining } from '@/lib/flowActivity';
+import { chatPreparingRemaining, formatFlowModel, HANDOFF_ACTIVITY_MS, handoffActivityRemaining } from '@/lib/flowActivity';
 import WorkerGroup from './WorkerGroup';
 import { useServiceAvailability } from '@/lib/useServiceAvailability';
 import ClassifierActivity from './ClassifierActivity';
 import { useClassifierActivity } from '@/lib/useClassifierActivity';
-import NodeActivityStatus, { nodeActivityClass, nodeActivityState } from './NodeActivityStatus';
+import NodeActivityStatus, { nodeActivityClass, nodeActivityState, type NodeActivityState } from './NodeActivityStatus';
 
 export default function FlowGraph({ status, capacity, items, executions, selectedId, expanded, onToggle, onSelect, onEdge, onHandoffs, paused = false }: {
   status: DashboardStatus | null; capacity: Record<'claude' | 'qwen', PoolCapacity> | null;
@@ -36,6 +36,21 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
     const timer = setTimeout(() => setHandoffNow(Math.max(Date.now(), expiresAt)), remaining);
     return () => clearTimeout(timer);
   }, [latestHandoffTime, handoffAvailable]);
+  const chatActivity = handoffAvailable ? handoffs?.chat_activity : undefined;
+  const [chatNow, setChatNow] = useState(() => Date.now());
+  const chatPreparing = chatPreparingRemaining(chatActivity, chatNow, handoffAvailable) > 0;
+  const chatState: NodeActivityState | null = paused ? 'paused'
+    : handoffError || handoffs?.available === false ? 'unavailable'
+    : chatPreparing ? 'working' : chatActivity?.state === 'awaiting_decision' ? 'idle' : null;
+  useEffect(() => {
+    const now = Date.now();
+    setChatNow(now);
+    const remaining = chatPreparingRemaining(chatActivity, now, handoffAvailable);
+    if (!remaining) return;
+    const timer = setTimeout(() => setChatNow(Date.now() + 1), remaining);
+    return () => clearTimeout(timer);
+    // Primitive dependencies: each poll returns a new object for the same observation.
+  }, [chatActivity?.state, chatActivity?.since, chatActivity?.expires_in_seconds, handoffAvailable]);
   const { modelSettings, codexModels, ...services } = useServiceAvailability(paused);
   const qwenModel = modelSettings.qwen?.[0];
   const gemmaModel = modelSettings.gemma?.[0];
@@ -46,7 +61,10 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
   const qwenActive = capacity?.qwen.active ?? 0;
   const delegateActive = !paused && services.claude && active > 0;
   const localActive = !paused && services.claude && services.qwen && qwenActive > 0;
-  const originState = nodeActivityState({ active: 0, queued: active + claudeQueued,
+  // An open desktop turn (planning or direct work) glows; waiting for a worker takes precedence.
+  const codexTurnActive = (codexModels?.length ?? 0) > 0;
+  const workerWaiting = active + claudeQueued > 0;
+  const originState = nodeActivityState({ active: codexTurnActive && !workerWaiting ? 1 : 0, queued: active + claudeQueued,
     available: !!capacity || !!status, paused });
   const qwenState = nodeActivityState({ active: qwenActive, queued: capacity?.qwen.queued ?? 0,
     uncertain: capacity?.qwen.held_uncertain ?? 0, available: !!capacity, paused });
@@ -66,7 +84,7 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
   }, [instance]);
   const allNodes = useMemo<Node[]>(() => [
     { id: 'chatgpt', position: { x: -250, y: 85 }, type: 'input', sourcePosition: Position.Right,
-      draggable: false, style: { width: 160 }, data: { label: <div className="flow-node origin-node">
+      draggable: false, style: { width: 160 }, data: { label: <div className={`flow-node origin-node${chatState ? nodeActivityClass(chatState) : ''}`}>
         <div className="node-orb gpt" aria-hidden="true">
           {/* OpenAI brand icon: Tabler Icons, MIT (github.com/tabler/tabler-icons). */}
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -82,6 +100,8 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
         <small className="flow-model-details" title={chatSelection && new Date(chatSelection.time).toLocaleString()}>
           {formatFlowModel(chatSelection?.model, chatSelection?.effort, 'Last handoff')}
         </small>
+        {chatState && <NodeActivityStatus state={chatState} label={chatState === 'working' ? 'Preparing response'
+          : chatState === 'idle' ? 'Awaiting your decision' : undefined} />}
         <button className="nodrag chatgpt-handoffs" type="button" onClick={onHandoffs} aria-label="Open Design Mode handoff audit">
           {total != null ? `${total.toLocaleString()} handoff${total === 1 ? '' : 's'}` :
             handoffError || handoffs ? 'Count unavailable' : 'View handoffs'}
@@ -108,7 +128,7 @@ export default function FlowGraph({ status, capacity, items, executions, selecte
       {capacity && <small>{capacity.qwen.active} active · {capacity.qwen.queued} queued · {capacity.qwen.held_uncertain} held uncertain</small>}</div> }, type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 170 } },
     { id: 'gemma', position: { x: 215, y: 265 }, data: { label: <ClassifierActivity activity={activity} failed={failed} paused={paused} modelSetting={gemmaModel} /> },
       type: 'default', draggable: false, sourcePosition: Position.Right, targetPosition: Position.Left, style: { width: 250 } },
-  ], [total, handoffError, handoffs, onHandoffs, active, claudeQueued, qwenActive, originState, qwenState, status, capacity, executions, expanded, onToggle, onSelect, activity, failed, paused, services.claude, qwenModel, gemmaModel, chatSelection, codexModels]);
+  ], [total, handoffError, handoffs, onHandoffs, chatState, active, claudeQueued, qwenActive, originState, qwenState, status, capacity, executions, expanded, onToggle, onSelect, activity, failed, paused, services.claude, qwenModel, gemmaModel, chatSelection, codexModels]);
   const allEdges = useMemo<Edge[]>(() => [
     { id: 'chatgpt-gpt', source: 'chatgpt', target: 'gpt', label: 'Handoffs',
       animated: handoffActive, ariaLabel: `Handoffs · ${handoffActive ? 'recent activity' : 'idle'}`,

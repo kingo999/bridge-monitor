@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { auditRequest } from './audit';
+import type { ChatActivity } from './flowActivity';
 
 type HandoffPage = {
   available: boolean; total: number | null; next: string | null;
   rows: { id: string; time: string; workflow_id: string; iteration: number; action: string }[];
   chat_selection?: { model?: string; effort?: string; time: string };
+  chat_activity?: ChatActivity;
 };
 
 export function useHandoffPage(query: string, active = true) {

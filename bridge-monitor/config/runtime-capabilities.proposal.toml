@@ -28,6 +28,8 @@ max_file_bytes = 524288
 command_timeout_seconds = 500
 
 [repository.roots]
+health-check = 'D:\IdeaProjects\mine\health-check'
+mri = 'D:\IdeaProjects\mri\mri-java-services-3'
 ai = 'C:\AI'
 bridge-monitor = 'C:\AI\bridge-monitor'
 ideaprojects = 'D:\IdeaProjects'

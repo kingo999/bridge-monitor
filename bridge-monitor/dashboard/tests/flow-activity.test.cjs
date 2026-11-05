@@ -39,7 +39,8 @@ test('historical, invalid, future or unavailable handoffs are idle', () => {
 });
 
 function graph({ active = 0, queued = 0, ready = false, paused = false, handoffTime, handoffAvailable = true, handoffError = '',
-  localReady = false, modelSettings = {}, executions = [], expanded = true, codexModels, chatSelection } = {}) {
+  localReady = false, modelSettings = {}, executions = [], expanded = true, codexModels, chatSelection, chatActivity,
+  capacity = null, classifier = null } = {}) {
   let config;
   const FlowGraph = load('components/FlowGraph.tsx', {
     '@xyflow/react': {
@@ -47,13 +48,13 @@ function graph({ active = 0, queued = 0, ready = false, paused = false, handoffT
       Background: () => null, Controls: () => null,
       Position: { Right: 'right', Left: 'left' }, MarkerType: { ArrowClosed: 'arrowclosed' },
     },
-    '@/lib/useHandoffPage': { useHandoffPage: () => ({ page: { available: handoffAvailable, total: 12, rows: handoffTime ? [{ time: handoffTime }] : [], chat_selection: chatSelection }, error: handoffError }) },
+    '@/lib/useHandoffPage': { useHandoffPage: () => ({ page: { available: handoffAvailable, total: 12, rows: handoffTime ? [{ time: handoffTime }] : [], chat_selection: chatSelection, chat_activity: chatActivity }, error: handoffError }) },
     '@/lib/useServiceAvailability': { useServiceAvailability: () => ({ claude: ready, qwen: localReady, gemma: localReady, modelSettings, codexModels }) },
-    '@/lib/useClassifierActivity': { useClassifierActivity: () => ({ activity: null, failed: false }) },
+    '@/lib/useClassifierActivity': { useClassifierActivity: () => ({ activity: classifier, failed: false }) },
     '@/lib/flowActivity': activity(),
   }).default;
   const html = renderToStaticMarkup(React.createElement(FlowGraph, {
-    status: { active, queued }, capacity: null, items: [], executions, selectedId: null,
+    status: { active, queued }, capacity, items: [], executions, selectedId: null,
     expanded, paused, onToggle() {}, onSelect() {}, onEdge() {}, onHandoffs() {},
   }));
   return { ...config, html };
@@ -146,4 +147,84 @@ test('paused, failed and unavailable handoff observations suppress a fresh recor
     assert.equal(edge.style.stroke, '#64748b');
     assert.equal(edge.animated, false);
   }
+});
+
+const tileHtml = (rendered, id) => renderToStaticMarkup(rendered.nodes.find(node => node.id === id).data.label);
+const glows = html => /class="[^"]*\bis-working\b/.test(html);
+const preparing = (since = new Date().toISOString()) =>
+  ({ state: 'preparing', workflow_id: 'wf', iteration: 2, since, expires_in_seconds: 300 });
+
+test('ChatGPT preparing expires after a short window and ignores other states', () => {
+  const { chatPreparingRemaining } = activity();
+  const since = new Date(now).toISOString();
+  assert.equal(chatPreparingRemaining(preparing(since), now, true), 300000);
+  assert.equal(chatPreparingRemaining(preparing(since), now + 299999, true), 1);
+  assert.equal(chatPreparingRemaining(preparing(since), now + 300000, true), 0);
+  assert.equal(chatPreparingRemaining(preparing(since), now, false), 0);
+  assert.equal(chatPreparingRemaining({ ...preparing(since), since: 'bad' }, now, true), 0);
+  assert.equal(chatPreparingRemaining({ ...preparing(since), expires_in_seconds: 86400 }, now, true), 300000);
+  assert.equal(chatPreparingRemaining({ ...preparing(since), state: 'awaiting_decision' }, now, true), 0);
+  assert.equal(chatPreparingRemaining(undefined, now, true), 0);
+});
+test('ChatGPT glows while preparing a retrieved review and stops once delivery is confirmed', () => {
+  const working = tileHtml(graph({ ready: true, chatActivity: preparing() }), 'chatgpt');
+  assert.ok(glows(working));
+  assert.match(working, /data-state="working"[^>]*>.*Preparing response/);
+  const delivered = tileHtml(graph({ ready: true, chatActivity: { state: 'awaiting_decision', workflow_id: 'wf',
+    iteration: 2, since: new Date().toISOString() } }), 'chatgpt');
+  assert.ok(!glows(delivered));
+  assert.match(delivered, /Awaiting your decision/);
+});
+test('ChatGPT stays unlit before the first handover, after expiry, and when paused or unavailable', () => {
+  const unobserved = tileHtml(graph({ ready: true }), 'chatgpt');
+  assert.ok(!glows(unobserved));
+  assert.doesNotMatch(unobserved, /node-status/);
+  const expired = tileHtml(graph({ ready: true, chatActivity: preparing(new Date(Date.now() - 300001).toISOString()) }), 'chatgpt');
+  assert.ok(!glows(expired));
+  assert.doesNotMatch(expired, /Preparing response/);
+  for (const options of [{ paused: true }, { handoffAvailable: false }, { handoffError: 'unavailable' }]) {
+    const html = tileHtml(graph({ ready: true, chatActivity: preparing(), ...options }), 'chatgpt');
+    assert.ok(!glows(html));
+    assert.doesNotMatch(html, /Preparing response/);
+  }
+});
+test('ChatGPT activity leaves the Handoffs and Delegate arrows on their own signals', () => {
+  const edges = graph({ ready: true, chatActivity: preparing(), handoffTime: '2020-01-01T00:00:00Z' }).edges;
+  for (const edge of edges) {
+    assert.equal(edge.style.stroke, '#64748b');
+    assert.equal(edge.animated, false);
+  }
+});
+test('Codex glows during an observed desktop turn and keeps waiting while a worker runs', () => {
+  const codexModels = [{ model: 'gpt-6.1-sol', effort: 'high' }];
+  const working = tileHtml(graph({ ready: true, codexModels }), 'gpt');
+  assert.ok(glows(working));
+  assert.match(working, /data-state="working"/);
+  for (const options of [{ active: 1 }, { queued: 1 }]) {
+    const waiting = tileHtml(graph({ ready: true, codexModels, ...options }), 'gpt');
+    assert.ok(!glows(waiting));
+    assert.match(waiting, /is-waiting/);
+    assert.match(waiting, /Waiting for bridge workers/);
+  }
+  assert.ok(!glows(tileHtml(graph({ ready: true }), 'gpt')));
+  assert.ok(!glows(tileHtml(graph({ ready: true, codexModels, paused: true }), 'gpt')));
+});
+test('Claude, Skynet and Gemma glow only for observed execution', () => {
+  const capacity = qwen => ({ claude: { active: 0, queued: 0, held_uncertain: 0 }, qwen: { held_uncertain: 0, ...qwen } });
+  const gemma = counts => ({ available: true, classifying: 0, queued: 0, uncertain: 0, checked_at: new Date().toISOString(), ...counts });
+  assert.ok(glows(tileHtml(graph({ ready: true, active: 1 }), 'claude')));
+  for (const options of [{ queued: 2 }, {}, { active: 1, paused: true }, { active: 1, ready: false }]) {
+    assert.ok(!glows(tileHtml(graph({ ready: true, ...options }), 'claude')), JSON.stringify(options));
+  }
+  const local = (qwen, extra = {}) => tileHtml(graph({ ready: true, localReady: true, capacity: capacity(qwen), ...extra }), 'qwen');
+  assert.ok(glows(local({ active: 1, queued: 0 })));
+  assert.ok(!glows(local({ active: 0, queued: 2 })));
+  assert.ok(!glows(local({ active: 0, queued: 0 })));
+  assert.ok(!glows(local({ active: 1, queued: 0 }, { paused: true })));
+  const classifier = (counts, extra = {}) => tileHtml(graph({ ready: true, localReady: true, classifier: gemma(counts), ...extra }), 'gemma');
+  assert.ok(glows(classifier({ classifying: 1 })));
+  assert.ok(!glows(classifier({ queued: 1 })));
+  assert.ok(!glows(classifier({})));
+  assert.ok(!glows(classifier({ classifying: 1 }, { paused: true })));
+  assert.ok(!glows(classifier({ classifying: 1, available: false })));
 });
