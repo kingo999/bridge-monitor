@@ -9,6 +9,12 @@ Operating guide: [docs/operations/design-mode.md](../docs/operations/design-mode
 
 ## Decisions
 
+- Approved 2026-11-05: before saving a plan, record whether work can be split
+  safely. The initial execution policy permits at most two independent read-only
+  workers per parent task, keeps writes under a shared repository lease sequential,
+  and requires the controlling Codex session to verify both results and their
+  combined outcome. Recorded in the Codex rules and Design Mode operating guide.
+  Design Mode retains its existing single formal review per iteration.
 - Opt-in (`opt_in=true`) read-only planning loop: Chat → Codex (planner) → Claude (review via
   `route_work`, `deep_review`, `auto`) → Chat (accept, revise or reject after a delivery receipt).
 - Parent MCP audience only, with a single operator owner derived by the host

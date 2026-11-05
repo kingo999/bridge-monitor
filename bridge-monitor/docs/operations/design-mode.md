@@ -51,7 +51,8 @@ with the corresponding audit record. They describe the caller's selection and ha
 ## Submit and review
 
 1. `design_mode_submit(opt_in=true, ...)` returns `awaiting_planner` (actor `codex`) at iteration 1.
-2. Gather evidence with `design_mode_read_evidence`.
+2. Gather evidence with `design_mode_read_evidence`. Record the parallelism
+   decision in the plan using the [parallelism checklist](#parallelism-checklist-for-the-plan).
 3. `design_mode_save_plan(...)`. The bridge checks for staleness first: a changed evidence file
    gives `stale` with `source_changed:<path>`, and a moved HEAD gives `head_changed`. In both
    cases no review is dispatched. Otherwise it routes the review. Possible results:
@@ -72,6 +73,22 @@ across `ingress.submit`. It admits only the active original claim: status `revie
 `claimed`, the exact call ID and the iteration's task/work item. Reconciliation accepts runtime
 jobs and results only with `pool='claude'` and the immutable iteration's `task_id` and
 `work_item_id`. Ordinary (non-Design-Mode) admission is unchanged.
+
+## Parallelism checklist for the plan
+
+The controlling Codex session records whether to sequence the work or propose
+at most two concurrent read-only Bridge workers. For each proposed slice,
+record the authorized scope, dependencies, expected evidence and the acceptance
+check the controlling session will perform. A slice must be able to finish
+independently, with stable inputs and no shared mutable resources. If either
+slice fails that check, plan sequential work. Writes under the same registered
+repository lease stay sequential even when file scopes differ.
+
+The controlling Codex session verifies each result against its own acceptance
+criteria and checks the combined outcome before accepting it. Keep incomplete
+or uncertain results open until ownership is reconciled. The parallelism
+decision describes the proposed execution under normal Bridge authorization.
+Design Mode remains read-only and retains one formal Claude review per iteration.
 
 ## Delivery, including closed or new Chat sessions
 
